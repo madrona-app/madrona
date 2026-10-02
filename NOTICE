@@ -1,0 +1,76 @@
+Madrona
+Copyright 2026 Madrona LLC
+
+This product includes software developed as part of the Madrona project,
+licensed under the Apache License, Version 2.0 (see LICENSE).
+
+"Madrona", the Madrona wordmark and the Madrona logo are trademarks of Madrona
+LLC. The Apache License does not grant permission to use them (section 6). You
+may say a product is built on, powered by, or compatible with Madrona; you may
+not name it Madrona. See TRADEMARK.md.
+
+The following third-party components are redistributed with this software or
+bundled into its built artifacts. Each remains under its own license.
+
+--------------------------------------------------------------------------
+Fonts — SIL Open Font License 1.1
+--------------------------------------------------------------------------
+Cormorant Garamond (@fontsource/cormorant-garamond)
+IBM Plex Mono (@fontsource/ibm-plex-mono)
+
+Bundled into the frontend build output. OFL-1.1 permits redistribution and
+embedding; the fonts may not be sold on their own.
+https://openfontlicense.org/
+
+--------------------------------------------------------------------------
+DOMPurify — dual licensed (MPL-2.0 OR Apache-2.0)
+--------------------------------------------------------------------------
+This project elects the Apache-2.0 arm of that dual license.
+https://github.com/cure53/DOMPurify
+
+--------------------------------------------------------------------------
+axe-core — Mozilla Public License 2.0
+--------------------------------------------------------------------------
+Used as a development/test dependency for accessibility checks. Not bundled
+into the distributed application. MPL-2.0 is a file-level copyleft: source
+for any modified axe-core file must be made available.
+https://github.com/dequelabs/axe-core
+
+--------------------------------------------------------------------------
+pypdfium2 / PDFium
+--------------------------------------------------------------------------
+PDF rendering, metadata and text extraction.
+pypdfium2 is Apache-2.0 or BSD-3-Clause; PDFium is BSD-3-Clause
+(Copyright the PDFium Authors, Copyright Google Inc).
+https://github.com/pypdfium2-team/pypdfium2
+
+--------------------------------------------------------------------------
+react-icons — icon sets under their own licenses
+--------------------------------------------------------------------------
+Icon components bundled into the frontend build (connector and navigation
+icons). The react-icons package itself is MIT; each icon set keeps its own
+license, and the sets this project imports are:
+
+  Font Awesome Free (react-icons/fa)  — icons CC BY 4.0, attribution required
+                                        https://fontawesome.com/license/free
+  Simple Icons (react-icons/si)       — CC0 1.0
+  Material Design icons (react-icons/md) — Apache-2.0
+  Devicons (react-icons/di)           — MIT
+
+Font Awesome Free icons are used unmodified; this notice is the attribution
+CC BY 4.0 requires.
+
+--------------------------------------------------------------------------
+Demo collection images — CC0 1.0 Universal
+--------------------------------------------------------------------------
+backend/app/services/sandbox_seeder/fixtures/images/ contains photographs of
+public-domain works released under CC0 by their holding institutions'
+open-access programs:
+
+  The Metropolitan Museum of Art  — https://www.metmuseum.org/art/collection
+  Rijksmuseum                     — https://www.rijksmuseum.nl/en/rijksstudio
+  Smithsonian Institution         — https://www.si.edu/openaccess
+
+Per-item provenance and license are recorded in the manifest beside them.
+CC0 waives copyright; attribution is offered here as a courtesy, not an
+obligation.

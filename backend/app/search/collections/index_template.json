@@ -1,0 +1,391 @@
+{
+  "index_patterns": [
+    "madrona-collections-*"
+  ],
+  "template": {
+    "settings": {
+      "number_of_shards": 2,
+      "number_of_replicas": 0,
+      "refresh_interval": "1s",
+      "index.knn": true,
+      "analysis": {
+        "analyzer": {
+          "object_number_analyzer": {
+            "type": "custom",
+            "tokenizer": "object_number_tokenizer",
+            "filter": [
+              "lowercase",
+              "asciifolding"
+            ]
+          },
+          "autocomplete_analyzer": {
+            "type": "custom",
+            "tokenizer": "standard",
+            "filter": [
+              "lowercase",
+              "asciifolding",
+              "autocomplete_filter"
+            ]
+          },
+          "autocomplete_search_analyzer": {
+            "type": "custom",
+            "tokenizer": "standard",
+            "filter": [
+              "lowercase",
+              "asciifolding"
+            ]
+          },
+          "procedure_text_analyzer": {
+            "type": "custom",
+            "tokenizer": "standard",
+            "filter": [
+              "lowercase",
+              "asciifolding",
+              "english_possessive_stemmer",
+              "english_stop",
+              "english_stemmer"
+            ]
+          }
+        },
+        "tokenizer": {
+          "object_number_tokenizer": {
+            "type": "pattern",
+            "pattern": "[.\\-_/:\\s]+"
+          }
+        },
+        "filter": {
+          "autocomplete_filter": {
+            "type": "edge_ngram",
+            "min_gram": 2,
+            "max_gram": 20
+          },
+          "english_possessive_stemmer": {
+            "type": "stemmer",
+            "language": "possessive_english"
+          },
+          "english_stop": {
+            "type": "stop",
+            "stopwords": "_english_"
+          },
+          "english_stemmer": {
+            "type": "stemmer",
+            "language": "english"
+          }
+        }
+      }
+    },
+    "mappings": {
+      "_routing": {
+        "required": true
+      },
+      "dynamic": "strict",
+      "properties": {
+        "object_id": {
+          "type": "keyword"
+        },
+        "organization_id": {
+          "type": "keyword"
+        },
+        "object_number": {
+          "type": "text",
+          "analyzer": "object_number_analyzer",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            },
+            "autocomplete": {
+              "type": "text",
+              "analyzer": "autocomplete_analyzer",
+              "search_analyzer": "autocomplete_search_analyzer"
+            }
+          }
+        },
+        "title": {
+          "type": "text",
+          "analyzer": "procedure_text_analyzer",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 512
+            },
+            "autocomplete": {
+              "type": "text",
+              "analyzer": "autocomplete_analyzer",
+              "search_analyzer": "autocomplete_search_analyzer"
+            }
+          }
+        },
+        "object_name": {
+          "type": "text",
+          "analyzer": "procedure_text_analyzer",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
+        },
+        "brief_description": {
+          "type": "text",
+          "analyzer": "procedure_text_analyzer"
+        },
+        "full_description": {
+          "type": "text",
+          "analyzer": "procedure_text_analyzer"
+        },
+        "object_type": {
+          "type": "keyword"
+        },
+        "classification": {
+          "type": "keyword"
+        },
+        "category": {
+          "type": "keyword"
+        },
+        "object_status": {
+          "type": "keyword"
+        },
+        "is_discoverable": {
+          "type": "boolean"
+        },
+        "has_primary_image": {
+          "type": "boolean"
+        },
+        "creators": {
+          "type": "nested",
+          "properties": {
+            "name": {
+              "type": "text",
+              "analyzer": "standard",
+              "fields": {
+                "keyword": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "role": {
+              "type": "keyword"
+            },
+            "attribution": {
+              "type": "keyword"
+            },
+            "authority_id": {
+              "type": "keyword"
+            },
+            "ulan_id": {
+              "type": "keyword"
+            },
+            "viaf_id": {
+              "type": "keyword"
+            },
+            "wikidata_id": {
+              "type": "keyword"
+            },
+            "authority_uris": {
+              "type": "keyword"
+            }
+          }
+        },
+        "person_authority_count": {
+          "type": "integer"
+        },
+        "materials": {
+          "type": "nested",
+          "properties": {
+            "name": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "aat_id": {
+              "type": "keyword"
+            }
+          }
+        },
+        "techniques": {
+          "type": "nested",
+          "properties": {
+            "name": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "aat_id": {
+              "type": "keyword"
+            }
+          }
+        },
+        "subjects": {
+          "type": "nested",
+          "properties": {
+            "term": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "type": {
+              "type": "keyword"
+            }
+          }
+        },
+        "style_period": {
+          "type": "keyword"
+        },
+        "creation_date": {
+          "properties": {
+            "display": {
+              "type": "text"
+            },
+            "earliest": {
+              "type": "date",
+              "format": "yyyy-MM-dd||yyyy-MM||yyyy||epoch_millis"
+            },
+            "latest": {
+              "type": "date",
+              "format": "yyyy-MM-dd||yyyy-MM||yyyy||epoch_millis"
+            }
+          }
+        },
+        "creation_place": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            }
+          }
+        },
+        "measurements": {
+          "properties": {
+            "display": {
+              "type": "text"
+            },
+            "height_cm": {
+              "type": "float"
+            },
+            "width_cm": {
+              "type": "float"
+            },
+            "depth_cm": {
+              "type": "float"
+            },
+            "weight_kg": {
+              "type": "float"
+            }
+          }
+        },
+        "inscriptions": {
+          "type": "text",
+          "analyzer": "procedure_text_analyzer"
+        },
+        "provenance": {
+          "type": "text",
+          "analyzer": "procedure_text_analyzer"
+        },
+        "credit_line": {
+          "type": "text"
+        },
+        "acquisition_method": {
+          "type": "keyword"
+        },
+        "acquisition_date": {
+          "type": "date"
+        },
+        "current_location": {
+          "properties": {
+            "location_id": {
+              "type": "keyword"
+            },
+            "name": {
+              "type": "keyword"
+            },
+            "type": {
+              "type": "keyword"
+            },
+            "on_display": {
+              "type": "boolean"
+            }
+          }
+        },
+        "condition": {
+          "properties": {
+            "rating": {
+              "type": "keyword"
+            },
+            "date": {
+              "type": "date"
+            }
+          }
+        },
+        "associated_people": {
+          "type": "nested",
+          "properties": {
+            "name": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "role": {
+              "type": "keyword"
+            }
+          }
+        },
+        "associated_places": {
+          "type": "nested",
+          "properties": {
+            "name": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "role": {
+              "type": "keyword"
+            },
+            "tgn_id": {
+              "type": "keyword"
+            }
+          }
+        },
+        "copyright_status": {
+          "type": "keyword"
+        },
+        "created_at": {
+          "type": "date"
+        },
+        "updated_at": {
+          "type": "date"
+        },
+        "indexed_at": {
+          "type": "date"
+        },
+        "semantic_embedding": {
+          "type": "knn_vector",
+          "dimension": 1024,
+          "method": {
+            "name": "hnsw",
+            "space_type": "cosinesimil",
+            "engine": "lucene",
+            "parameters": {
+              "ef_construction": 256,
+              "m": 16
+            }
+          }
+        }
+      }
+    }
+  },
+  "priority": 100
+}

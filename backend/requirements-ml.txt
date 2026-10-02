@@ -1,0 +1,17 @@
+# Optional ML extras for the Media app's AI features.
+#
+# Not installed by default: torch alone (with the NVIDIA CUDA runtime it
+# pulls on Linux) is several GB, and both features it serves are disabled
+# unless you turn them on.
+#
+#   CLIP visual search      -> CLIP_ENABLED=true
+#   Whisper transcription   -> WHISPER_ENABLED=true
+#
+# app/services/clip_service.py and whisper_service.py check the flag before
+# importing, so the application starts normally when these are absent.
+
+-r requirements.txt
+
+openai-clip>=1.0.1
+torch>=2.0.0
+faster-whisper>=1.0.0

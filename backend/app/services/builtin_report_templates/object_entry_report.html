@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Object Entry Record — {{ entry_number or "Unknown" }}</title>
+<style>
+  :root {
+    --forest: #1F3A2E;
+    --parchment: #F6F2EC;
+    --ink: #1C1C1C;
+    --lichen: #E6E4E1;
+    --stone: #D8D2C8;
+    --archive: #6B7A7E;
+    --bark: #8E3B2F;
+  }
+
+  @page {
+    size: letter;
+    margin: 0.75in 0.75in 0.6in 0.75in;
+    @top-left {
+      content: element(header-left);
+    }
+    @bottom-left {
+      content: "Generated {{ generated_at }}";
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 8pt;
+      color: var(--archive);
+    }
+    @bottom-right {
+      content: "Page " counter(page) " of " counter(pages);
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 8pt;
+      color: var(--archive);
+    }
+  }
+
+  .header-left {
+    position: running(header-left);
+    font-family: Helvetica, Arial, sans-serif;
+    font-weight: bold;
+    font-size: 14pt;
+    color: white;
+    background: var(--forest);
+    padding: 10pt 0;
+    line-height: 1;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.4;
+    color: var(--ink);
+    background: white;
+  }
+
+  h1.doc-title {
+    font-size: 22pt;
+    color: var(--forest);
+    margin-bottom: 4pt;
+    font-weight: bold;
+  }
+
+  .doc-subtitle {
+    font-size: 11pt;
+    color: var(--archive);
+    margin-bottom: 14pt;
+  }
+
+  h2.section-header {
+    font-size: 13pt;
+    color: var(--forest);
+    font-weight: bold;
+    margin: 14pt 0 8pt 0;
+    padding-bottom: 3pt;
+    border-bottom: 1pt solid var(--lichen);
+    page-break-after: avoid;
+  }
+
+  table.field-grid {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 6pt;
+  }
+
+  table.field-grid td.field {
+    width: 50%;
+    padding: 0 8pt 6pt 0;
+    vertical-align: top;
+  }
+
+  .field-label {
+    font-size: 9pt;
+    font-weight: bold;
+    color: var(--archive);
+    margin-bottom: 1pt;
+    text-transform: uppercase;
+    letter-spacing: 0.3pt;
+  }
+
+  .field-value {
+    font-size: 10pt;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+
+  .field-full {
+    margin-bottom: 8pt;
+    break-inside: avoid;
+  }
+
+  .field-full .field-value {
+    white-space: pre-wrap;
+  }
+
+  table.record-info {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 14pt;
+    border-top: 0.5pt solid var(--lichen);
+    font-size: 8pt;
+    color: var(--archive);
+  }
+
+  table.record-info td {
+    padding: 4pt 0;
+    width: 50%;
+  }
+
+  .keep-together {
+    break-inside: avoid;
+  }
+</style>
+</head>
+<body>
+
+<div class="header-left">{{ org_name }}</div>
+
+<h1 class="doc-title">Object Entry Record</h1>
+<p class="doc-subtitle">{{ entry_number }}</p>
+
+{# ── Entry Details ── #}
+<h2 class="section-header">Entry Details</h2>
+<table class="field-grid">
+  {% if entry_number or entry_date %}
+  <tr>
+    {% if entry_number %}
+    <td class="field">
+      <div class="field-label">Entry Number</div>
+      <div class="field-value">{{ entry_number }}</div>
+    </td>
+    {% endif %}
+    {% if entry_date %}
+    <td class="field">
+      <div class="field-label">Entry Date</div>
+      <div class="field-value">{{ entry_date }}</div>
+    </td>
+    {% endif %}
+  </tr>
+  {% endif %}
+  {% if depositor_name or current_owner %}
+  <tr>
+    {% if depositor_name %}
+    <td class="field">
+      <div class="field-label">Depositor</div>
+      <div class="field-value">{{ depositor_name }}</div>
+    </td>
+    {% endif %}
+    {% if current_owner %}
+    <td class="field">
+      <div class="field-label">Current Owner</div>
+      <div class="field-value">{{ current_owner }}</div>
+    </td>
+    {% endif %}
+  </tr>
+  {% endif %}
+  {% if entry_reason or status %}
+  <tr>
+    {% if entry_reason %}
+    <td class="field">
+      <div class="field-label">Entry Reason</div>
+      <div class="field-value">{{ entry_reason }}</div>
+    </td>
+    {% endif %}
+    {% if status %}
+    <td class="field">
+      <div class="field-label">Status</div>
+      <div class="field-value">{{ status }}</div>
+    </td>
+    {% endif %}
+  </tr>
+  {% endif %}
+  {% if objects_count or assigned_to_name %}
+  <tr>
+    {% if objects_count %}
+    <td class="field">
+      <div class="field-label">Number of Objects</div>
+      <div class="field-value">{{ objects_count }}</div>
+    </td>
+    {% endif %}
+    {% if assigned_to_name %}
+    <td class="field">
+      <div class="field-label">Assigned To</div>
+      <div class="field-value">{{ assigned_to_name }}</div>
+    </td>
+    {% endif %}
+  </tr>
+  {% endif %}
+</table>
+
+{% if objects_description %}
+<div class="field-full">
+  <div class="field-label">Objects Description</div>
+  <div class="field-value">{{ objects_description }}</div>
+</div>
+{% endif %}
+
+{# ── Dates ── #}
+<h2 class="section-header">Dates</h2>
+<table class="field-grid">
+  {% if expected_return_date or return_date %}
+  <tr>
+    {% if expected_return_date %}
+    <td class="field">
+      <div class="field-label">Expected Return</div>
+      <div class="field-value">{{ expected_return_date }}</div>
+    </td>
+    {% endif %}
+    {% if return_date %}
+    <td class="field">
+      <div class="field-label">Return Date</div>
+      <div class="field-value">{{ return_date }}</div>
+    </td>
+    {% endif %}
+  </tr>
+  {% endif %}
+  {% if expected_duration %}
+  <tr>
+    <td class="field">
+      <div class="field-label">Expected Duration</div>
+      <div class="field-value">{{ expected_duration }}</div>
+    </td>
+    <td></td>
+  </tr>
+  {% endif %}
+</table>
+
+{# ── Insurance ── #}
+{% if insurance_value %}
+<div class="keep-together">
+  <h2 class="section-header">Insurance</h2>
+  <table class="field-grid">
+    <tr>
+      <td class="field">
+        <div class="field-label">Insurance Value</div>
+        <div class="field-value">{{ insurance_value }}</div>
+      </td>
+      {% if insurance_currency %}
+      <td class="field">
+        <div class="field-label">Currency</div>
+        <div class="field-value">{{ insurance_currency }}</div>
+      </td>
+      {% else %}
+      <td></td>
+      {% endif %}
+    </tr>
+  </table>
+</div>
+{% endif %}
+
+{# ── Outcome ── #}
+{% if outcome %}
+<div class="keep-together">
+  <h2 class="section-header">Outcome</h2>
+  <div class="field-full">
+    <div class="field-label">Outcome</div>
+    <div class="field-value">{{ outcome }}</div>
+  </div>
+</div>
+{% endif %}
+
+{# ── Notes ── #}
+{% if entry_note %}
+<div class="keep-together">
+  <h2 class="section-header">Notes</h2>
+  <div class="field-full">
+    <div class="field-value">{{ entry_note }}</div>
+  </div>
+</div>
+{% endif %}
+
+{# ── Record Information ── #}
+<table class="record-info">
+  <tr>
+    {% if created_at %}
+    <td>Created: {{ created_at }}</td>
+    {% endif %}
+    <td></td>
+  </tr>
+</table>
+
+</body>
+</html>

@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Environment files
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+vite.log
+
+# Database
+*.db
+*.sqlite
+
+# Testing
+.pytest_cache/
+test_*.py
+tests/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Git
+.git/
+.gitignore
+
+# Misc
+.DS_Store
+Thumbs.db
+
+# Secrets/credentials (should be mounted at runtime, not baked into image)
+*service-account*.json
+*_config.json
+*.pem
+*.key
+
+# Test artifacts
+.pytest_cache/
+tests/
+
+# Demo fixture images (~296MB of CC0 originals) ship in the repo, not the
+# image. compose bind-mounts them read-only so `python -m
+# seeds.seed_demo_collection` can upload them to the configured bucket.
+app/services/sandbox_seeder/fixtures/images/

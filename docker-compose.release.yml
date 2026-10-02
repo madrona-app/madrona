@@ -1,0 +1,37 @@
+# Run a published release instead of building from source.
+#
+#   export MADRONA_VERSION=v1.0.0
+#   export MADRONA_REGISTRY=ghcr.io/madrona-app
+#   docker compose -f docker-compose.yml -f docker-compose.release.yml pull
+#   docker compose -f docker-compose.yml -f docker-compose.release.yml up -d
+#
+# The base file builds these three images from the working tree, which is what
+# you want as a contributor and not what you want as an operator: it needs a
+# build toolchain, takes minutes, and gives every install a slightly different
+# image. This override points them at the tags published by .github/workflows/
+# release.yml.
+#
+# `pull` first, then `up -d` WITHOUT --build. The base file's build: stanzas
+# are still present after the merge, so `--build` would rebuild from source and
+# quietly defeat the point.
+#
+# Everything else — postgres data, object storage, OpenSearch, Redis — is unchanged.
+# They are pinned upstream images in the base file already.
+
+services:
+  backend:
+    image: ${MADRONA_REGISTRY:-ghcr.io/madrona-app}/madrona-backend:${MADRONA_VERSION:-latest}
+    pull_policy: always
+
+  celery-worker:
+    # Same image as the backend by design — see the note in docker-compose.yml.
+    image: ${MADRONA_REGISTRY:-ghcr.io/madrona-app}/madrona-backend:${MADRONA_VERSION:-latest}
+    pull_policy: always
+
+  frontend:
+    image: ${MADRONA_REGISTRY:-ghcr.io/madrona-app}/madrona-frontend:${MADRONA_VERSION:-latest}
+    pull_policy: always
+
+  postgres:
+    image: ${MADRONA_REGISTRY:-ghcr.io/madrona-app}/madrona-postgres:${MADRONA_VERSION:-latest}
+    pull_policy: always

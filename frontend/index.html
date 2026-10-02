@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Madrona</title>
+    <style>
+      /* Critical CSS to prevent flash - matches app theme */
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background-color: #F6F2EC; /* parchment */
+        overflow: hidden;
+      }
+      #root {
+        height: 100%;
+      }
+      /* Initial loading screen */
+      #initial-loader {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #F6F2EC; /* parchment */
+        z-index: 9999;
+        transition: opacity 0.3s ease-out;
+      }
+      #initial-loader.fade-out {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #initial-loader .loader {
+        position: relative;
+        width: 64px;
+        height: 64px;
+      }
+      #initial-loader .loader svg {
+        position: absolute;
+        inset: 0;
+      }
+      #initial-loader .loader .arc {
+        animation: madrona-spin 1s linear infinite;
+        transform-origin: center;
+      }
+      @keyframes madrona-spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Initial loading screen - hidden by React once app is ready -->
+    <div id="initial-loader">
+      <div class="loader">
+        <!-- Track ring -->
+        <svg width="64" height="64" viewBox="0 0 64 64">
+          <circle cx="32" cy="32" r="28" fill="none" stroke="#E6E4E1" stroke-width="3"/>
+        </svg>
+        <!-- Animated arc -->
+        <svg width="64" height="64" viewBox="0 0 64 64">
+          <circle class="arc" cx="32" cy="32" r="28" fill="none" stroke="#8E3B2F" stroke-width="3" stroke-linecap="round" stroke-dasharray="58 118"/>
+        </svg>
+        <!-- Leaf icon -->
+        <svg width="20" height="20" viewBox="0 0 24 24" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);opacity:0.6">
+          <path d="M12 1C12 1 6 5.5 5.5 12C5 16.5 8 21.5 12 23C16 21.5 19 16.5 18.5 12C18 5.5 12 1 12 1Z" fill="#1F3A2E"/>
+          <path d="M12 4L12 20" stroke="#F6F2EC" stroke-width="0.8" stroke-linecap="round" fill="none" opacity="0.5"/>
+        </svg>
+      </div>
+    </div>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,289 @@
+{
+  "mapping": {
+    "id": "mapping_canonical_to_orangedam_v1",
+    "version": "1.0.0",
+    "source": "canonical",
+    "target": "orangedam",
+    "description": "Projects canonical Object entities to Orange DAM API format (simplified example)",
+    "createdAt": "2026-01-14T00:00:00Z"
+  },
+  "rules": [
+    {
+      "id": "proj_asset_id",
+      "name": "Map canonical ID to Orange asset_id",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "asset_id",
+      "from": "id",
+      "transform": "removePrefix"
+    },
+    {
+      "id": "proj_title",
+      "name": "Map label to title",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "title",
+      "from": "label"
+    },
+    {
+      "id": "warn_missing_title",
+      "name": "Warn if title will be empty",
+      "type": "EmitWarning",
+      "enabled": true,
+      "whenMissing": ["label"],
+      "message": "Canonical record missing label - Orange DAM title will be empty",
+      "severity": "error"
+    },
+    {
+      "id": "proj_description",
+      "name": "Map description",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "description",
+      "from": "description",
+      "default": ""
+    },
+    {
+      "id": "proj_asset_type",
+      "name": "Map canonical type to Orange asset type",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "asset_type",
+      "from": "type",
+      "transform": "mapToOrangeType"
+    },
+    {
+      "id": "proj_keywords",
+      "name": "Extract keywords from classifications",
+      "type": "MapArray",
+      "enabled": true,
+      "toPath": "keywords",
+      "fromMany": "classifications",
+      "mapperFn": "extractClassificationValues",
+      "filter": "{{item.type === 'keyword' || item.type === 'tag'}}"
+    },
+    {
+      "id": "proj_categories",
+      "name": "Map object_type classifications to categories",
+      "type": "MapArray",
+      "enabled": true,
+      "toPath": "categories",
+      "fromMany": "classifications",
+      "mapperFn": "extractClassificationValues",
+      "filter": "{{item.type === 'object_type'}}"
+    },
+    {
+      "id": "proj_custom_fields_medium",
+      "name": "Map medium to custom field",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "custom_fields.medium",
+      "from": "properties.medium"
+    },
+    {
+      "id": "proj_custom_fields_dimensions",
+      "name": "Map dimensions to custom field",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "custom_fields.dimensions",
+      "from": "properties.dimensions"
+    },
+    {
+      "id": "proj_custom_fields_credit",
+      "name": "Map credit line to custom field",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "custom_fields.credit_line",
+      "from": "properties.creditLine"
+    },
+    {
+      "id": "proj_custom_fields_department",
+      "name": "Map department to custom field",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "custom_fields.department",
+      "from": "properties.department"
+    },
+    {
+      "id": "proj_identifiers",
+      "name": "Format identifiers as Orange metadata",
+      "type": "MapArray",
+      "enabled": true,
+      "toPath": "metadata.identifiers",
+      "fromMany": "identifiers",
+      "itemTemplate": {
+        "key": "{{item.type}}_number",
+        "value": "{{item.value}}",
+        "source_system": "{{item.system}}"
+      }
+    },
+    {
+      "id": "proj_created_date",
+      "name": "Map creation date",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "metadata.date_created",
+      "from": "dates.created",
+      "transform": "formatISO8601"
+    },
+    {
+      "id": "proj_modified_date",
+      "name": "Map last modified date",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "metadata.date_modified",
+      "from": "dates.modified",
+      "coalesce": ["meta.updatedAt"],
+      "transform": "formatISO8601"
+    },
+    {
+      "id": "proj_creator_name",
+      "name": "Extract creator from relationships",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "creator",
+      "from": "relationships",
+      "mapperFn": "findCreatorRelationship"
+    },
+    {
+      "id": "warn_missing_creator",
+      "name": "Warn if no creator relationship found",
+      "type": "EmitWarning",
+      "enabled": true,
+      "whenMissing": ["relationships"],
+      "message": "No relationships found - creator information will be missing in Orange DAM",
+      "severity": "info"
+    },
+    {
+      "id": "proj_source_system",
+      "name": "Include provenance system",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "metadata.source_system",
+      "from": "provenance.system"
+    },
+    {
+      "id": "proj_source_id",
+      "name": "Include original source ID",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "metadata.source_record_id",
+      "from": "provenance.recordId"
+    },
+    {
+      "id": "proj_canonical_id",
+      "name": "Preserve canonical ID for reference",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "metadata.madrona_canonical_id",
+      "from": "id"
+    },
+    {
+      "id": "warn_no_media",
+      "name": "Warn if no media attachments",
+      "type": "EmitWarning",
+      "enabled": true,
+      "whenMissing": ["media"],
+      "message": "Canonical record has no media - Orange DAM asset will have no files",
+      "severity": "warning"
+    },
+    {
+      "id": "proj_status",
+      "name": "Set default Orange status",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "status",
+      "from": "properties.status",
+      "default": "active"
+    }
+  ],
+  "metadata": {
+    "author": "Madrona Team",
+    "organization": "orange_logic",
+    "usageNotes": "This projection mapping converts Madrona canonical records to Orange Logic DAM format. Requires Orange DAM API v2.0+. Custom fields may need adjustment based on Orange workspace configuration.",
+    "orangeDAMVersion": "2.0",
+    "apiEndpoint": "https://api.orangelogic.com/v2/assets",
+    "sampleInput": {
+      "id": "obj_starry_night_001",
+      "type": "Object",
+      "label": "The Starry Night",
+      "description": "Oil painting depicting a swirling night sky over a French village",
+      "identifiers": [
+        {
+          "type": "accession",
+          "value": "1941.39",
+          "system": "tms",
+          "primary": true
+        }
+      ],
+      "classifications": [
+        {
+          "type": "object_type",
+          "value": "Paintings",
+          "system": "aat"
+        },
+        {
+          "type": "keyword",
+          "value": "Post-Impressionism",
+          "system": "local"
+        }
+      ],
+      "relationships": [
+        {
+          "type": "created_by",
+          "targetId": "person_van_gogh",
+          "role": "Artist"
+        }
+      ],
+      "dates": {
+        "created": "1889-06-01"
+      },
+      "properties": {
+        "medium": "Oil on canvas",
+        "dimensions": "73.7 × 92.1 cm",
+        "creditLine": "Gift of the Artist Foundation",
+        "department": "European Paintings"
+      },
+      "provenance": {
+        "system": "tms",
+        "recordId": "12345",
+        "snapshotId": "snap_001",
+        "mappingId": "mapping_tms_v1"
+      },
+      "meta": {
+        "schemaVersion": "1.0.0",
+        "createdAt": "2026-01-14T10:00:00Z",
+        "updatedAt": "2026-01-14T12:30:00Z"
+      }
+    },
+    "sampleOutput": {
+      "asset_id": "starry_night_001",
+      "title": "The Starry Night",
+      "description": "Oil painting depicting a swirling night sky over a French village",
+      "asset_type": "image",
+      "keywords": ["Post-Impressionism"],
+      "categories": ["Paintings"],
+      "custom_fields": {
+        "medium": "Oil on canvas",
+        "dimensions": "73.7 × 92.1 cm",
+        "credit_line": "Gift of the Artist Foundation",
+        "department": "European Paintings"
+      },
+      "metadata": {
+        "identifiers": [
+          {
+            "key": "accession_number",
+            "value": "1941.39",
+            "source_system": "tms"
+          }
+        ],
+        "date_created": "1889-06-01T00:00:00Z",
+        "source_system": "tms",
+        "source_record_id": "12345",
+        "madrona_canonical_id": "obj_starry_night_001"
+      },
+      "creator": "Vincent van Gogh",
+      "status": "active"
+    }
+  }
+}

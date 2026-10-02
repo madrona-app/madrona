@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Condition Report — {{ report_number or "Unknown" }}</title>
+<style>
+  :root {
+    --forest: #1F3A2E;
+    --parchment: #F6F2EC;
+    --ink: #1C1C1C;
+    --lichen: #E6E4E1;
+    --stone: #D8D2C8;
+    --archive: #6B7A7E;
+    --bark: #8E3B2F;
+  }
+
+  @page {
+    size: letter;
+    margin: 0.75in 0.75in 0.6in 0.75in;
+    @top-left {
+      content: element(header-left);
+    }
+    @bottom-left {
+      content: "Generated {{ generated_at }}";
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 8pt;
+      color: var(--archive);
+    }
+    @bottom-right {
+      content: "Page " counter(page) " of " counter(pages);
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 8pt;
+      color: var(--archive);
+    }
+  }
+
+  .header-left {
+    position: running(header-left);
+    font-family: Helvetica, Arial, sans-serif;
+    font-weight: bold;
+    font-size: 14pt;
+    color: white;
+    background: var(--forest);
+    padding: 10pt 0;
+    line-height: 1;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.4;
+    color: var(--ink);
+    background: white;
+  }
+
+  h1.doc-title {
+    font-size: 22pt;
+    color: var(--forest);
+    margin-bottom: 4pt;
+    font-weight: bold;
+  }
+
+  .doc-subtitle {
+    font-size: 11pt;
+    color: var(--archive);
+    margin-bottom: 14pt;
+  }
+
+  h2.section-header {
+    font-size: 13pt;
+    color: var(--forest);
+    font-weight: bold;
+    margin: 14pt 0 8pt 0;
+    padding-bottom: 3pt;
+    border-bottom: 1pt solid var(--lichen);
+    page-break-after: avoid;
+  }
+
+  hr.section-divider {
+    border: none;
+    border-top: 0.5pt solid var(--lichen);
+    margin: 10pt 0 4pt 0;
+  }
+
+  table.field-grid {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 6pt;
+  }
+
+  table.field-grid td.field {
+    width: 50%;
+    padding: 0 8pt 6pt 0;
+    vertical-align: top;
+  }
+
+  .field-label {
+    font-size: 9pt;
+    font-weight: bold;
+    color: var(--archive);
+    margin-bottom: 1pt;
+    text-transform: uppercase;
+    letter-spacing: 0.3pt;
+  }
+
+  .field-value {
+    font-size: 10pt;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+
+  .field-full {
+    margin-bottom: 8pt;
+    break-inside: avoid;
+  }
+
+  .field-full .field-value {
+    white-space: pre-wrap;
+  }
+
+  table.record-info {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 14pt;
+    border-top: 0.5pt solid var(--lichen);
+    font-size: 8pt;
+    color: var(--archive);
+  }
+
+  table.record-info td {
+    padding: 4pt 0;
+    width: 50%;
+  }
+
+  .keep-together {
+    break-inside: avoid;
+  }
+</style>
+</head>
+<body>
+
+<div class="header-left">{{ org_name }}</div>
+
+<h1 class="doc-title">Condition Report</h1>
+<p class="doc-subtitle">{{ report_number }}</p>
+
+{# ── Linked Object ── #}
+{% if linked_object %}
+<div class="keep-together">
+  <h2 class="section-header">Object</h2>
+  <div class="field-full">
+    <div class="field-value">{{ linked_object }}</div>
+  </div>
+</div>
+{% endif %}
+
+{# ── Report Details ── #}
+<h2 class="section-header">Report Details</h2>
+<table class="field-grid">
+  {% if report_number or report_type %}
+  <tr>
+    {% if report_number %}
+    <td class="field">
+      <div class="field-label">Report Number</div>
+      <div class="field-value">{{ report_number }}</div>
+    </td>
+    {% endif %}
+    {% if report_type %}
+    <td class="field">
+      <div class="field-label">Report Type</div>
+      <div class="field-value">{{ report_type }}</div>
+    </td>
+    {% endif %}
+  </tr>
+  {% endif %}
+  {% if report_date or status %}
+  <tr>
+    {% if report_date %}
+    <td class="field">
+      <div class="field-label">Report Date</div>
+      <div class="field-value">{{ report_date }}</div>
+    </td>
+    {% endif %}
+    {% if status %}
+    <td class="field">
+      <div class="field-label">Status</div>
+      <div class="field-value">{{ status }}</div>
+    </td>
+    {% endif %}
+  </tr>
+  {% endif %}
+  {% if examiner_name or examiner_institution %}
+  <tr>
+    {% if examiner_name %}
+    <td class="field">
+      <div class="field-label">Examiner</div>
+      <div class="field-value">{{ examiner_name }}</div>
+    </td>
+    {% endif %}
+    {% if examiner_institution %}
+    <td class="field">
+      <div class="field-label">Institution</div>
+      <div class="field-value">{{ examiner_institution }}</div>
+    </td>
+    {% endif %}
+  </tr>
+  {% endif %}
+  {% if examination_method or examination_place %}
+  <tr>
+    {% if examination_method %}
+    <td class="field">
+      <div class="field-label">Method</div>
+      <div class="field-value">{{ examination_method }}</div>
+    </td>
+    {% endif %}
+    {% if examination_place %}
+    <td class="field">
+      <div class="field-label">Place</div>
+      <div class="field-value">{{ examination_place }}</div>
+    </td>
+    {% endif %}
+  </tr>
+  {% endif %}
+</table>
+
+{# ── Assessment ── #}
+<h2 class="section-header">Assessment</h2>
+<table class="field-grid">
+  {% if overall_condition or conservation_needed %}
+  <tr>
+    {% if overall_condition %}
+    <td class="field">
+      <div class="field-label">Overall Condition</div>
+      <div class="field-value">{{ overall_condition }}</div>
+    </td>
+    {% endif %}
+    {% if conservation_needed %}
+    <td class="field">
+      <div class="field-label">Conservation Needed</div>
+      <div class="field-value">{{ conservation_needed }}</div>
+    </td>
+    {% endif %}
+  </tr>
+  {% endif %}
+  {% if conservation_priority or completed_date %}
+  <tr>
+    {% if conservation_priority %}
+    <td class="field">
+      <div class="field-label">Conservation Priority</div>
+      <div class="field-value">{{ conservation_priority }}</div>
+    </td>
+    {% endif %}
+    {% if completed_date %}
+    <td class="field">
+      <div class="field-label">Completed</div>
+      <div class="field-value">{{ completed_date }}</div>
+    </td>
+    {% endif %}
+  </tr>
+  {% endif %}
+</table>
+{% if condition_summary %}
+<div class="field-full">
+  <div class="field-label">Condition Summary</div>
+  <div class="field-value">{{ condition_summary }}</div>
+</div>
+{% endif %}
+{% if recommendations %}
+<div class="field-full">
+  <div class="field-label">Recommendations</div>
+  <div class="field-value">{{ recommendations }}</div>
+</div>
+{% endif %}
+
+{# ── Handling & Requirements ── #}
+{% if handling_requirements or packing_requirements or display_restrictions %}
+<div class="keep-together">
+  <h2 class="section-header">Handling &amp; Requirements</h2>
+  {% if handling_requirements %}
+  <div class="field-full">
+    <div class="field-label">Handling Requirements</div>
+    <div class="field-value">{{ handling_requirements }}</div>
+  </div>
+  {% endif %}
+  {% if packing_requirements %}
+  <div class="field-full">
+    <div class="field-label">Packing Requirements</div>
+    <div class="field-value">{{ packing_requirements }}</div>
+  </div>
+  {% endif %}
+  {% if display_restrictions %}
+  <div class="field-full">
+    <div class="field-label">Display Restrictions</div>
+    <div class="field-value">{{ display_restrictions }}</div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{# ── Notes ── #}
+{% if report_note %}
+<div class="keep-together">
+  <h2 class="section-header">Notes</h2>
+  <div class="field-full">
+    <div class="field-value">{{ report_note }}</div>
+  </div>
+</div>
+{% endif %}
+
+{# ── Record Information ── #}
+<table class="record-info">
+  <tr>
+    {% if assigned_to_name %}
+    <td>Assigned To: {{ assigned_to_name }}</td>
+    {% endif %}
+    {% if created_at %}
+    <td>Created: {{ created_at }}</td>
+    {% endif %}
+  </tr>
+</table>
+
+</body>
+</html>

@@ -1,0 +1,146 @@
+name: Release
+
+# Publishes container images so an operator can run a version of Madrona
+# instead of building one. Without this, every self-hosted install compiles
+# the frontend and the Python stack itself, and no two installs are running
+# provably the same bytes.
+#
+# Triggered by a version tag:
+#   git tag -fa v1.0.0 -m "v1.0.0" && git push -f origin v1.0.0
+#
+# -f on both, deliberately. Until launch the version is fixed at v1.0.0 and the
+# tag is moved onto the root commit each time that commit is amended, so this
+# runs many times for one version. The release step is create-or-update and the
+# image tags are overwritten; both are safe while nobody is pulling v1.0.0, and
+# both stop being safe the day someone is. At that point the tag stops moving.
+#
+# Images land in GHCR, which is free for public repositories:
+#   ghcr.io/<owner>/madrona-backend:v1.0.0   (also :latest)
+#   ghcr.io/<owner>/madrona-frontend:v1.0.0
+#   ghcr.io/<owner>/madrona-postgres:v1.0.0
+#
+# The backend image is deliberately the ML-free build (INSTALL_ML=false, the
+# Dockerfile default): requirements-ml.txt pulls torch and friends, which adds
+# gigabytes most installs never use. An org that wants CLIP or Whisper builds
+# its own with --build-arg INSTALL_ML=true.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version to publish (e.g. v1.0.0)'
+        required: true
+
+permissions:
+  contents: write     # create the GitHub release
+  packages: write     # push to GHCR
+
+jobs:
+  images:
+    name: Build and publish ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: backend
+            context: ./backend
+            dockerfile: ./backend/Dockerfile
+          - name: frontend
+            context: ./frontend
+            dockerfile: ./frontend/Dockerfile
+          - name: postgres
+            context: ./docker/postgres
+            dockerfile: ./docker/postgres/Dockerfile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve the version
+        id: version
+        run: |
+          VERSION="${{ github.event.inputs.tag }}"
+          [ -z "$VERSION" ] && VERSION="${GITHUB_REF#refs/tags/}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Publishing $VERSION"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          # Lowercase: GHCR rejects uppercase in image names, and repository
+          # owners are not required to be lowercase.
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/madrona-${{ matrix.name }}:${{ steps.version.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/madrona-${{ matrix.name }}:latest
+          # image.source is what links a GHCR package to this repository. An
+          # unlinked package under a personal account is created private, so
+          # the pull in README's install steps would fail for everyone but
+          # the owner.
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.licenses=Apache-2.0
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  release:
+    name: Create the GitHub release
+    runs-on: ubuntu-latest
+    needs: images
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create or update the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # Create-or-update, not create.
+        #
+        # Before launch the tag is not fixed: v1.0.0 is moved onto the root
+        # commit each time that commit is amended, so this workflow runs
+        # repeatedly for the same version. `gh release create` fails on the
+        # second run because the release already exists, which would leave a
+        # red workflow after every re-tag and train everyone to ignore it.
+        #
+        # Re-pushing an image to the same GHCR tag overwrites it, which is the
+        # intended behaviour here for the same reason: nobody is consuming
+        # v1.0.0 yet. Once it is live and people are pulling it, the tag stops
+        # moving and this becomes an ordinary one-shot release.
+        run: |
+          VERSION="${{ github.event.inputs.tag }}"
+          [ -z "$VERSION" ] && VERSION="${GITHUB_REF#refs/tags/}"
+
+          NOTES="Container images for \`$VERSION\` are published to GHCR.
+
+          Upgrading an existing install: see [UPGRADING.md](UPGRADING.md).
+          **Back up your database first** — migrations run automatically on boot and are not reversible.
+
+          \`\`\`
+          ghcr.io/${{ github.repository_owner }}/madrona-backend:$VERSION
+          ghcr.io/${{ github.repository_owner }}/madrona-frontend:$VERSION
+          ghcr.io/${{ github.repository_owner }}/madrona-postgres:$VERSION
+          \`\`\`"
+
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "release $VERSION exists — updating it to point at the current tag"
+            gh release edit "$VERSION" --title "$VERSION" --notes "$NOTES" --verify-tag
+          else
+            gh release create "$VERSION" --title "$VERSION" --notes "$NOTES" --verify-tag
+          fi

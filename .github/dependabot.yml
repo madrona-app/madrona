@@ -1,0 +1,82 @@
+version: 2
+
+# Version updates are PAUSED (open-pull-requests-limit: 0).
+#
+# They were opening up to 40 PRs a week across four ecosystems, and every one
+# of them was auto-closed the next time main's root commit was rewritten —
+# a rewritten branch has no common ancestor, so GitHub closes the PR and
+# Dependabot comments on the way out. Two closure storms so far: 26 PRs on
+# 2026-09-18, 20 more on 2026-09-21.
+#
+# Re-enable at launch, once history is stable: set the limits below back to a
+# real number. The grouping and major-version rules are already in place so
+# that when it comes back it arrives as ~4 PRs a week, not ~40.
+#
+# This does NOT affect Dependabot SECURITY updates, which are a separate
+# feature driven by Dependabot alerts (enabled on this repo) and are not
+# subject to open-pull-requests-limit.
+
+updates:
+  # Backend Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    target-branch: "main"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 0
+    groups:
+      backend:
+        patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    labels:
+      - "dependencies"
+      - "backend"
+
+  # Frontend npm dependencies
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    target-branch: "main"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 0
+    groups:
+      frontend:
+        patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    labels:
+      - "dependencies"
+      - "frontend"
+
+  # Docker base images
+  - package-ecosystem: "docker"
+    directory: "/backend"
+    target-branch: "main"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    groups:
+      docker:
+        patterns: ["*"]
+    labels:
+      - "dependencies"
+      - "docker"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "main"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    groups:
+      actions:
+        patterns: ["*"]
+    labels:
+      - "dependencies"
+      - "ci"

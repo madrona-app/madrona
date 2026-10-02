@@ -1,0 +1,48 @@
+{
+  "id": "edanmdm-nmah_1234567",
+  "title": "Wright Brothers Flyer Model",
+  "unitCode": "NMAH",
+  "type": "edanmdm",
+  "content": {
+    "descriptiveNonRepeating": {
+      "title": {
+        "content": "Wright Brothers Flyer Model"
+      },
+      "record_link": "https://www.si.edu/object/edanmdm-nmah_1234567",
+      "online_media": {
+        "mediaCount": 1,
+        "media": [
+          {
+            "thumbnail": "https://ids.si.edu/ids/deliveryService?id=NMAH-AHB2016q10038-000001&max=150"
+          }
+        ]
+      }
+    },
+    "indexedStructured": {
+      "name": ["Wright, Orville", "Wright, Wilbur"],
+      "date": ["1903"],
+      "topic": ["Aviation", "Transportation"],
+      "object_type": ["Model"]
+    },
+    "freetext": {
+      "notes": [
+        {
+          "content": "Scale model of the Wright Brothers' 1903 Flyer, the first powered aircraft to achieve controlled flight."
+        }
+      ],
+      "name": [
+        {
+          "label": "Maker",
+          "content": "Wright Company"
+        }
+      ],
+      "date": [
+        {
+          "label": "Date",
+          "content": "ca. 1910"
+        }
+      ]
+    }
+  },
+  "timestamp": "2024-01-15T12:00:00Z"
+}

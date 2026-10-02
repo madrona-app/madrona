@@ -1,0 +1,101 @@
+name: Frontend Tests
+
+# Least privilege: none of these jobs write to the repository. Without an
+# explicit block they inherit the repo default token scope, which on older
+# repositories is read/write — so a compromised third-party action (all are on
+# mutable major tags) would run with a token that can push.
+permissions:
+  contents: read
+
+on:
+  # Manual trigger, kept so a run can be forced without a push.
+  workflow_dispatch:
+  # No `paths` filter on push, deliberately.
+  #
+  # GitHub cannot compute a changed-path set for a force-push whose new history
+  # shares no ancestor with the old, and when it cannot, a workflow with
+  # `paths` is skipped SILENTLY — no run, no failure, nothing in the checks
+  # list. This repository's root commit is amended and force-pushed, so every
+  # push after the first produced zero CI. A push to main is also the thing you
+  # least want unverified, so it now always runs.
+  #
+  # No `paths` filter on pull_request either. main requires these checks, and
+  # a required check whose workflow a path filter skipped never reports, so
+  # GitHub holds the PR at "Expected — Waiting for status to be reported" with
+  # no way to satisfy it: a docs-only PR could never merge, and a backend-only
+  # PR would wait on the frontend suite. Every PR runs everything instead.
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Lint, Typecheck & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript type check
+        working-directory: frontend
+        # `tsc --noEmit` resolves the root tsconfig.json, which is
+        # solution-style ("files": [] + references). Without -b, tsc does not
+        # follow project references, so that command type-checked ZERO files
+        # and could never fail. -b builds the referenced projects for real.
+        run: pnpm exec tsc -b
+
+      - name: ESLint
+        working-directory: frontend
+        # `eslint .` alone exits 0 on warnings, so this step could not fail: it
+        # was green on 3,326 of them, 2,060 being jsx-a11y. --max-warnings turns
+        # that count into a ceiling — new warnings fail the build, and the
+        # existing ones stay visible instead of being silently promoted to
+        # errors nobody has time to fix today.
+        #
+        # The ceiling is 3340 against a measured 3326: a small deliberate
+        # margin. Set exactly at the measured count it had no headroom, and the
+        # count is not perfectly reproducible — the same tree reported 3320 and
+        # 3326 on consecutive runs — so a ceiling with no margin can fail on a
+        # wobble and say "new lint warnings" when nothing was added.
+        #
+        # This is a ratchet, like the backend coverage floor. When you fix a
+        # batch, lower the number in package.json. Do not raise it to make room
+        # for new warnings; raise it only if the margin itself proves too thin.
+        run: pnpm run lint:ci
+
+      - name: Run tests with coverage
+        working-directory: frontend
+        run: pnpm run test:coverage
+        # Vitest will fail if coverage thresholds in vitest.config.ts are not met
+
+      # No separate threshold step: the run above fails on its own if coverage
+      # drops below the floors in vitest.config.ts, which is the real gate.
+      # A step named "Verify coverage thresholds" used to sit here printing
+      # four numbers and asserting nothing — and two of the four disagreed with
+      # the config it claimed to be reporting (branches 42 vs 40, functions 33
+      # vs 31). A green step that checks nothing is worse than no step.
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: frontend/coverage/lcov.info
+          flags: frontend
+          name: frontend-tests
+          fail_ci_if_error: false

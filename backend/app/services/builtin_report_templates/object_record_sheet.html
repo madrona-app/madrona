@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Object Record Sheet — {{ object_number or "Unknown" }}</title>
+<style>
+  :root {
+    --forest: #1F3A2E;
+    --parchment: #F6F2EC;
+    --ink: #1C1C1C;
+    --lichen: #E6E4E1;
+    --stone: #D8D2C8;
+    --archive: #6B7A7E;
+    --bark: #8E3B2F;
+  }
+
+  @page {
+    size: letter;
+    margin: 0.75in 0.75in 0.6in 0.75in;
+
+    @top-left {
+      content: element(header-left);
+    }
+    @top-right {
+      content: element(header-right);
+    }
+    @bottom-left {
+      content: "Generated {{ generated_at }}";
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 8pt;
+      color: var(--archive);
+    }
+    @bottom-right {
+      content: "Page " counter(page) " of " counter(pages);
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 8pt;
+      color: var(--archive);
+    }
+  }
+
+  /* Running header elements */
+  .header-left {
+    position: running(header-left);
+    font-family: Helvetica, Arial, sans-serif;
+    font-weight: bold;
+    font-size: 14pt;
+    color: white;
+    background: var(--forest);
+    padding: 10pt 0;
+    line-height: 1;
+  }
+  .header-right {
+    position: running(header-right);
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 9pt;
+    color: white;
+    background: var(--forest);
+    padding: 14pt 0 10pt 0;
+    text-align: right;
+    line-height: 1;
+  }
+
+  /* Reset and base */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.4;
+    color: var(--ink);
+    background: white;
+  }
+
+  /* Section headers */
+  h1.doc-title {
+    font-size: 22pt;
+    color: var(--forest);
+    margin-bottom: 4pt;
+    font-weight: bold;
+  }
+
+  .doc-subtitle {
+    font-size: 11pt;
+    color: var(--archive);
+    margin-bottom: 14pt;
+  }
+
+  h2.section-header {
+    font-size: 13pt;
+    color: var(--forest);
+    font-weight: bold;
+    margin: 14pt 0 8pt 0;
+    padding-bottom: 3pt;
+    border-bottom: 1pt solid var(--lichen);
+    page-break-after: avoid;
+  }
+
+  /* Divider */
+  hr.section-divider {
+    border: none;
+    border-top: 0.5pt solid var(--lichen);
+    margin: 10pt 0 4pt 0;
+  }
+
+  /* Field grid — table-based for htmldocx compatibility */
+  table.field-grid {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 6pt;
+  }
+
+  table.field-grid td.field {
+    width: 50%;
+    padding: 0 8pt 6pt 0;
+    vertical-align: top;
+  }
+
+  table.field-grid.single-column td.field {
+    width: 100%;
+  }
+
+  .field {
+    margin-bottom: 6pt;
+    break-inside: avoid;
+  }
+
+  .field-label {
+    font-size: 9pt;
+    font-weight: bold;
+    color: var(--archive);
+    margin-bottom: 1pt;
+    text-transform: uppercase;
+    letter-spacing: 0.3pt;
+  }
+
+  .field-value {
+    font-size: 10pt;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+
+  /* Full-width field (descriptions, notes) */
+  .field-full {
+    margin-bottom: 8pt;
+    break-inside: avoid;
+  }
+
+  .field-full .field-value {
+    white-space: pre-wrap;
+  }
+
+  /* Identification + image side-by-side */
+  table.ident-layout {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 6pt;
+  }
+
+  table.ident-layout td {
+    vertical-align: top;
+    padding: 0;
+  }
+
+  table.ident-layout td.ident-fields {
+    width: auto;
+  }
+
+  table.ident-layout td.ident-image {
+    width: 2.5in;
+    text-align: right;
+  }
+
+  .primary-image {
+    max-width: 2.5in;
+    max-height: 3in;
+    object-fit: contain;
+    border: 0.5pt solid var(--lichen);
+    background: var(--parchment);
+    padding: 2pt;
+  }
+
+  /* Table styles (for items lists) */
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8pt;
+    font-size: 9pt;
+  }
+
+  table.data-table thead th {
+    background: var(--forest);
+    color: white;
+    font-weight: bold;
+    padding: 5pt 6pt;
+    text-align: left;
+    font-size: 8pt;
+  }
+
+  table.data-table tbody td {
+    padding: 4pt 6pt;
+    border-bottom: 0.5pt solid var(--stone);
+    vertical-align: top;
+  }
+
+  table.data-table tbody tr:nth-child(even) {
+    background: var(--parchment);
+  }
+
+  /* Record info footer */
+  table.record-info {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 14pt;
+    padding-top: 6pt;
+    border-top: 0.5pt solid var(--lichen);
+    font-size: 8pt;
+    color: var(--archive);
+  }
+
+  table.record-info td {
+    padding: 2pt 0;
+    width: 50%;
+  }
+
+  /* Page break control */
+  .keep-together {
+    break-inside: avoid;
+  }
+</style>
+</head>
+<body>
+
+{# Running header elements — picked up by @page margin boxes #}
+<div class="header-left">{{ org_name }}</div>
+
+{# Title block #}
+<h1 class="doc-title">Object Record Sheet</h1>
+<p class="doc-subtitle">{{ title }}</p>
+
+{# ── Identification ── #}
+<h2 class="section-header">Identification</h2>
+{% if image_b64 %}
+<table class="ident-layout">
+  <tr>
+    <td class="ident-fields">
+      <table class="field-grid single-column">
+        {% for label, value in ident_fields %}
+          {% if value %}
+          <tr><td class="field">
+            <div class="field-label">{{ label }}</div>
+            <div class="field-value">{{ value }}</div>
+          </td></tr>
+          {% endif %}
+        {% endfor %}
+      </table>
+    </td>
+    <td class="ident-image">
+      <img class="primary-image" src="data:{{ image_mime }};base64,{{ image_b64 }}" alt="Primary image">
+    </td>
+  </tr>
+</table>
+{% else %}
+<table class="field-grid single-column">
+  {% for label, value in ident_fields %}
+    {% if value %}
+    <tr><td class="field">
+      <div class="field-label">{{ label }}</div>
+      <div class="field-value">{{ value }}</div>
+    </td></tr>
+    {% endif %}
+  {% endfor %}
+</table>
+{% endif %}
+
+{# ── Artists / Creators ── #}
+{% if creators %}
+<div class="keep-together">
+  <h2 class="section-header">Artists / Creators</h2>
+  <div class="field-full">
+    <div class="field-value">{{ creators }}</div>
+  </div>
+</div>
+{% endif %}
+
+{# ── Description ── #}
+{% if brief_description or full_description or color or form or physical_description or distinguishing_features %}
+<div class="keep-together">
+  <h2 class="section-header">Description</h2>
+  {% if brief_description %}
+  <div class="field-full">
+    <div class="field-label">Brief Description</div>
+    <div class="field-value">{{ brief_description }}</div>
+  </div>
+  {% endif %}
+  {% if full_description %}
+  <div class="field-full">
+    <div class="field-label">Full Description</div>
+    <div class="field-value">{{ full_description }}</div>
+  </div>
+  {% endif %}
+  <table class="field-grid">
+    {% if color or form %}
+    <tr>
+      {% if color %}
+      <td class="field">
+        <div class="field-label">Color</div>
+        <div class="field-value">{{ color }}</div>
+      </td>
+      {% endif %}
+      {% if form %}
+      <td class="field">
+        <div class="field-label">Form</div>
+        <div class="field-value">{{ form }}</div>
+      </td>
+      {% endif %}
+    </tr>
+    {% endif %}
+    {% if physical_description or distinguishing_features %}
+    <tr>
+      {% if physical_description %}
+      <td class="field">
+        <div class="field-label">Physical Description</div>
+        <div class="field-value">{{ physical_description }}</div>
+      </td>
+      {% endif %}
+      {% if distinguishing_features %}
+      <td class="field">
+        <div class="field-label">Distinguishing Features</div>
+        <div class="field-value">{{ distinguishing_features }}</div>
+      </td>
+      {% endif %}
+    </tr>
+    {% endif %}
+  </table>
+</div>
+{% endif %}
+
+{# ── Dimensions ── #}
+{% if dimensions %}
+<div class="keep-together">
+  <h2 class="section-header">Dimensions</h2>
+  <div class="field-full">
+    <div class="field-value">{{ dimensions }}</div>
+  </div>
+</div>
+{% endif %}
+
+{# ── Materials & Techniques ── #}
+{% if materials or techniques %}
+<div class="keep-together">
+  <h2 class="section-header">Materials &amp; Techniques</h2>
+  <table class="field-grid">
+    <tr>
+      {% if materials %}
+      <td class="field">
+        <div class="field-label">Materials</div>
+        <div class="field-value">{{ materials }}</div>
+      </td>
+      {% endif %}
+      {% if techniques %}
+      <td class="field">
+        <div class="field-label">Techniques</div>
+        <div class="field-value">{{ techniques }}</div>
+      </td>
+      {% endif %}
+    </tr>
+  </table>
+</div>
+{% endif %}
+
+{# ── Inscriptions ── #}
+{% if inscriptions %}
+<div class="keep-together">
+  <h2 class="section-header">Inscriptions &amp; Markings</h2>
+  <div class="field-full">
+    <div class="field-value">{{ inscriptions }}</div>
+  </div>
+</div>
+{% endif %}
+
+{# ── Edition ── #}
+{% if edition or copy_number or edition_size or state_display %}
+<div class="keep-together">
+  <h2 class="section-header">Edition</h2>
+  <table class="field-grid">
+    {% if edition or copy_number %}
+    <tr>
+      {% if edition %}
+      <td class="field">
+        <div class="field-label">Edition</div>
+        <div class="field-value">{{ edition }}</div>
+      </td>
+      {% endif %}
+      {% if copy_number %}
+      <td class="field">
+        <div class="field-label">Copy Number</div>
+        <div class="field-value">{{ copy_number }}</div>
+      </td>
+      {% endif %}
+    </tr>
+    {% endif %}
+    {% if edition_size or state_display %}
+    <tr>
+      {% if edition_size %}
+      <td class="field">
+        <div class="field-label">Edition Size</div>
+        <div class="field-value">{{ edition_size }}</div>
+      </td>
+      {% endif %}
+      {% if state_display %}
+      <td class="field">
+        <div class="field-label">State</div>
+        <div class="field-value">{{ state_display }}</div>
+      </td>
+      {% endif %}
+    </tr>
+    {% endif %}
+  </table>
+  {% if state_description %}
+  <div class="field-full">
+    <div class="field-label">State Description</div>
+    <div class="field-value">{{ state_description }}</div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{# ── Production ── #}
+{% if creation_date_display or creation_place or style_period or production_note %}
+<div class="keep-together">
+  <h2 class="section-header">Production</h2>
+  <table class="field-grid">
+    {% if creation_date_display or creation_place %}
+    <tr>
+      {% if creation_date_display %}
+      <td class="field">
+        <div class="field-label">Date</div>
+        <div class="field-value">{{ creation_date_display }}</div>
+      </td>
+      {% endif %}
+      {% if creation_place %}
+      <td class="field">
+        <div class="field-label">Place of Creation</div>
+        <div class="field-value">{{ creation_place }}</div>
+      </td>
+      {% endif %}
+    </tr>
+    {% endif %}
+    {% if style_period %}
+    <tr>
+      <td class="field">
+        <div class="field-label">Style / Period</div>
+        <div class="field-value">{{ style_period }}</div>
+      </td>
+      <td></td>
+    </tr>
+    {% endif %}
+  </table>
+  {% if production_note %}
+  <div class="field-full">
+    <div class="field-label">Production Note</div>
+    <div class="field-value">{{ production_note }}</div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{# ── Subject ── #}
+{% if subjects_display %}
+<div class="keep-together">
+  <h2 class="section-header">Subject</h2>
+  <div class="field-full">
+    <div class="field-label">Subjects</div>
+    <div class="field-value">{{ subjects_display }}</div>
+  </div>
+  {% if content_description %}
+  <div class="field-full">
+    <div class="field-label">Content Description</div>
+    <div class="field-value">{{ content_description }}</div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{# ── History ── #}
+{% if provenance or credit_line or object_history_note or comments %}
+<div class="keep-together">
+  <h2 class="section-header">History</h2>
+  {% if provenance %}
+  <div class="field-full">
+    <div class="field-label">Provenance</div>
+    <div class="field-value">{{ provenance }}</div>
+  </div>
+  {% endif %}
+  {% if credit_line %}
+  <div class="field-full">
+    <div class="field-label">Credit Line</div>
+    <div class="field-value">{{ credit_line }}</div>
+  </div>
+  {% endif %}
+  {% if object_history_note %}
+  <div class="field-full">
+    <div class="field-label">Object History</div>
+    <div class="field-value">{{ object_history_note }}</div>
+  </div>
+  {% endif %}
+  {% if comments %}
+  <div class="field-full">
+    <div class="field-label">Comments</div>
+    <div class="field-value">{{ comments }}</div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{# ── Location & Inventory ── #}
+{% if barcode or last_inventoried_date %}
+<div class="keep-together">
+  <h2 class="section-header">Location &amp; Inventory</h2>
+  <table class="field-grid">
+    <tr>
+      {% if barcode %}
+      <td class="field">
+        <div class="field-label">Barcode</div>
+        <div class="field-value">{{ barcode }}</div>
+      </td>
+      {% endif %}
+      {% if last_inventoried_date %}
+      <td class="field">
+        <div class="field-label">Last Inventoried</div>
+        <div class="field-value">{{ last_inventoried_date }}</div>
+      </td>
+      {% endif %}
+    </tr>
+  </table>
+</div>
+{% endif %}
+
+{# ── Condition ── #}
+{% if condition_rating %}
+<div class="keep-together">
+  <h2 class="section-header">Condition</h2>
+  <table class="field-grid">
+    {% if condition_rating or condition_date %}
+    <tr>
+      {% if condition_rating %}
+      <td class="field">
+        <div class="field-label">Condition Rating</div>
+        <div class="field-value">{{ condition_rating }}</div>
+      </td>
+      {% endif %}
+      {% if condition_date %}
+      <td class="field">
+        <div class="field-label">Condition Date</div>
+        <div class="field-value">{{ condition_date }}</div>
+      </td>
+      {% endif %}
+    </tr>
+    {% endif %}
+    {% if completeness or conservation_priority %}
+    <tr>
+      {% if completeness %}
+      <td class="field">
+        <div class="field-label">Completeness</div>
+        <div class="field-value">{{ completeness }}</div>
+      </td>
+      {% endif %}
+      {% if conservation_priority %}
+      <td class="field">
+        <div class="field-label">Conservation Priority</div>
+        <div class="field-value">{{ conservation_priority }}</div>
+      </td>
+      {% endif %}
+    </tr>
+    {% endif %}
+  </table>
+  {% if condition_note %}
+  <div class="field-full">
+    <div class="field-label">Condition Note</div>
+    <div class="field-value">{{ condition_note }}</div>
+  </div>
+  {% endif %}
+  {% if handling_requirements %}
+  <div class="field-full">
+    <div class="field-label">Handling Requirements</div>
+    <div class="field-value">{{ handling_requirements }}</div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{# ── Valuation ── #}
+{% if current_value_display or insurance_value_display %}
+<div class="keep-together">
+  <h2 class="section-header">Valuation</h2>
+  <table class="field-grid">
+    {% if current_value_display or current_value_date %}
+    <tr>
+      {% if current_value_display %}
+      <td class="field">
+        <div class="field-label">Current Value</div>
+        <div class="field-value">{{ current_value_display }}</div>
+      </td>
+      {% endif %}
+      {% if current_value_date %}
+      <td class="field">
+        <div class="field-label">Valuation Date</div>
+        <div class="field-value">{{ current_value_date }}</div>
+      </td>
+      {% endif %}
+    </tr>
+    {% endif %}
+    {% if insurance_value_display %}
+    <tr>
+      <td class="field">
+        <div class="field-label">Insurance Value</div>
+        <div class="field-value">{{ insurance_value_display }}</div>
+      </td>
+      <td></td>
+    </tr>
+    {% endif %}
+  </table>
+  {% if insurance_note %}
+  <div class="field-full">
+    <div class="field-label">Insurance Note</div>
+    <div class="field-value">{{ insurance_note }}</div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{# ── Record Information ── #}
+<table class="record-info">
+  <tr>
+    {% if created_at %}
+    <td>Created: {{ created_at }}</td>
+    {% endif %}
+    {% if updated_at %}
+    <td>Updated: {{ updated_at }}</td>
+    {% endif %}
+  </tr>
+</table>
+
+</body>
+</html>

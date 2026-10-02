@@ -1,0 +1,225 @@
+{
+  "index_patterns": ["madrona-entities-*"],
+  "template": {
+    "settings": {
+      "number_of_shards": 2,
+      "number_of_replicas": 0,
+      "refresh_interval": "1s",
+      "analysis": {
+        "analyzer": {
+          "accession_analyzer": {
+            "type": "custom",
+            "tokenizer": "accession_tokenizer",
+            "filter": ["lowercase", "asciifolding"]
+          },
+          "autocomplete_analyzer": {
+            "type": "custom",
+            "tokenizer": "standard",
+            "filter": ["lowercase", "asciifolding", "autocomplete_filter"]
+          },
+          "autocomplete_search_analyzer": {
+            "type": "custom",
+            "tokenizer": "standard",
+            "filter": ["lowercase", "asciifolding"]
+          },
+          "glam_text_analyzer": {
+            "type": "custom",
+            "tokenizer": "standard",
+            "filter": [
+              "lowercase",
+              "asciifolding",
+              "english_possessive_stemmer",
+              "english_stop",
+              "english_stemmer"
+            ]
+          }
+        },
+        "tokenizer": {
+          "accession_tokenizer": {
+            "type": "pattern",
+            "pattern": "[.\\-_/:\\s]+"
+          }
+        },
+        "filter": {
+          "autocomplete_filter": {
+            "type": "edge_ngram",
+            "min_gram": 2,
+            "max_gram": 20
+          },
+          "english_possessive_stemmer": {
+            "type": "stemmer",
+            "language": "possessive_english"
+          },
+          "english_stop": {
+            "type": "stop",
+            "stopwords": "_english_"
+          },
+          "english_stemmer": {
+            "type": "stemmer",
+            "language": "english"
+          }
+        }
+      }
+    },
+    "mappings": {
+      "_routing": {
+        "required": true
+      },
+      "dynamic": "strict",
+      "properties": {
+        "organization_id": {
+          "type": "keyword"
+        },
+        "dataset_id": {
+          "type": "keyword"
+        },
+        "entity_key": {
+          "type": "keyword"
+        },
+        "entity_type": {
+          "type": "keyword"
+        },
+        "source_system": {
+          "type": "keyword"
+        },
+        "source_id": {
+          "type": "keyword"
+        },
+        "title": {
+          "type": "text",
+          "analyzer": "glam_text_analyzer",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 512
+            },
+            "autocomplete": {
+              "type": "text",
+              "analyzer": "autocomplete_analyzer",
+              "search_analyzer": "autocomplete_search_analyzer"
+            }
+          }
+        },
+        "object_number": {
+          "type": "text",
+          "analyzer": "accession_analyzer",
+          "fields": {
+            "keyword": {
+              "type": "keyword"
+            },
+            "autocomplete": {
+              "type": "text",
+              "analyzer": "autocomplete_analyzer",
+              "search_analyzer": "autocomplete_search_analyzer"
+            }
+          }
+        },
+        "description": {
+          "type": "text",
+          "analyzer": "glam_text_analyzer"
+        },
+        "thumbnail_url": {
+          "type": "keyword",
+          "index": false
+        },
+        "creators": {
+          "type": "nested",
+          "properties": {
+            "name": {
+              "type": "text",
+              "analyzer": "standard",
+              "fields": {
+                "keyword": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "role": {
+              "type": "keyword"
+            },
+            "id": {
+              "type": "keyword"
+            }
+          }
+        },
+        "classifications": {
+          "type": "nested",
+          "properties": {
+            "scheme": {
+              "type": "keyword"
+            },
+            "term_id": {
+              "type": "keyword"
+            },
+            "label": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword"
+                }
+              }
+            }
+          }
+        },
+        "dates": {
+          "properties": {
+            "created_display": {
+              "type": "text"
+            },
+            "created_earliest": {
+              "type": "date",
+              "format": "yyyy-MM-dd||yyyy-MM||yyyy||epoch_millis"
+            },
+            "created_latest": {
+              "type": "date",
+              "format": "yyyy-MM-dd||yyyy-MM||yyyy||epoch_millis"
+            },
+            "acquired": {
+              "type": "date"
+            }
+          }
+        },
+        "dimensions": {
+          "properties": {
+            "display": {
+              "type": "text"
+            },
+            "height_cm": {
+              "type": "float"
+            },
+            "width_cm": {
+              "type": "float"
+            },
+            "depth_cm": {
+              "type": "float"
+            }
+          }
+        },
+        "location": {
+          "properties": {
+            "gallery": {
+              "type": "keyword"
+            },
+            "on_display": {
+              "type": "boolean"
+            }
+          }
+        },
+        "dynamic_fields": {
+          "type": "object",
+          "enabled": false
+        },
+        "last_seen_at": {
+          "type": "date"
+        },
+        "updated_at": {
+          "type": "date"
+        },
+        "indexed_at": {
+          "type": "date"
+        }
+      }
+    }
+  },
+  "priority": 100
+}

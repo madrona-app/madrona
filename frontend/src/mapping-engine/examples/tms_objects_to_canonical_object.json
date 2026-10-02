@@ -1,0 +1,246 @@
+{
+  "mapping": {
+    "id": "mapping_tms_objects_v1",
+    "version": "1.0.0",
+    "source": "tms",
+    "target": "canonical",
+    "description": "Maps TMS (The Museum System) object records to canonical Object entities",
+    "createdAt": "2026-01-14T00:00:00Z"
+  },
+  "rules": [
+    {
+      "id": "set_id",
+      "name": "Set canonical ID from ObjectID",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "id",
+      "from": "ObjectID",
+      "transform": "prefixWithObj"
+    },
+    {
+      "id": "set_type",
+      "name": "Set entity type to Object",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "type",
+      "from": "ObjectType",
+      "default": "Object"
+    },
+    {
+      "id": "set_label",
+      "name": "Set label with fallbacks",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "label",
+      "from": "Title",
+      "coalesce": ["ObjectName", "DisplayTitle", "AccessionNumber"],
+      "default": "Untitled"
+    },
+    {
+      "id": "set_description",
+      "name": "Set description from multiple fields",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "description",
+      "from": "Description",
+      "coalesce": ["CatalogueDescription", "PublicDescription"]
+    },
+    {
+      "id": "warn_missing_title",
+      "name": "Warn if title is missing",
+      "type": "EmitWarning",
+      "enabled": true,
+      "whenMissing": ["Title"],
+      "message": "Object record missing title field",
+      "severity": "warning"
+    },
+    {
+      "id": "map_identifiers",
+      "name": "Map accession numbers to identifiers",
+      "type": "MapArray",
+      "enabled": true,
+      "toPath": "identifiers",
+      "fromMany": "AccessionNumbers",
+      "itemTemplate": {
+        "type": "accession",
+        "value": "{{item}}",
+        "system": "tms",
+        "primary": "{{index === 0}}"
+      }
+    },
+    {
+      "id": "map_alt_identifiers",
+      "name": "Map other numbers to identifiers",
+      "type": "MapArray",
+      "enabled": true,
+      "toPath": "identifiers",
+      "fromMany": "OtherNumbers",
+      "itemTemplate": {
+        "type": "other",
+        "value": "{{item.number}}",
+        "label": "{{item.type}}",
+        "system": "tms"
+      }
+    },
+    {
+      "id": "map_classifications",
+      "name": "Map object classifications",
+      "type": "MapArray",
+      "enabled": true,
+      "toPath": "classifications",
+      "fromMany": "Classifications",
+      "itemTemplate": {
+        "type": "object_type",
+        "value": "{{item.term}}",
+        "system": "aat",
+        "uri": "{{item.uri}}"
+      }
+    },
+    {
+      "id": "map_materials",
+      "name": "Map materials as classifications",
+      "type": "MapArray",
+      "enabled": true,
+      "toPath": "classifications",
+      "fromMany": "Materials",
+      "itemTemplate": {
+        "type": "material",
+        "value": "{{item}}",
+        "system": "tms"
+      }
+    },
+    {
+      "id": "emit_creator_relationship",
+      "name": "Create relationship to artist/creator",
+      "type": "EmitRelationship",
+      "enabled": true,
+      "relationshipType": "created_by",
+      "targetFrom": "ConstituentID",
+      "roleFrom": "Role",
+      "whenFrom": "DateBegin",
+      "whereFrom": "Location"
+    },
+    {
+      "id": "emit_collection_relationship",
+      "name": "Create relationship to parent collection",
+      "type": "EmitRelationship",
+      "enabled": true,
+      "relationshipType": "part_of",
+      "targetFrom": "ParentID"
+    },
+    {
+      "id": "warn_missing_creator",
+      "name": "Warn if creator is missing",
+      "type": "EmitWarning",
+      "enabled": true,
+      "whenMissing": ["ConstituentID"],
+      "message": "Object record missing creator information",
+      "severity": "info"
+    },
+    {
+      "id": "set_dates_created",
+      "name": "Set creation date",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "dates.created",
+      "from": "DateBegin",
+      "transform": "normalizeDate"
+    },
+    {
+      "id": "set_dates_modified",
+      "name": "Set last modified date",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "dates.modified",
+      "from": "DateModified",
+      "transform": "normalizeDate"
+    },
+    {
+      "id": "set_properties_medium",
+      "name": "Set medium property",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "properties.medium",
+      "from": "Medium"
+    },
+    {
+      "id": "set_properties_dimensions",
+      "name": "Set dimensions property",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "properties.dimensions",
+      "from": "Dimensions"
+    },
+    {
+      "id": "set_properties_credit_line",
+      "name": "Set credit line property",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "properties.creditLine",
+      "from": "CreditLine"
+    },
+    {
+      "id": "set_properties_department",
+      "name": "Set department property",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "properties.department",
+      "from": "Department"
+    },
+    {
+      "id": "set_tms_extension",
+      "name": "Preserve TMS-specific metadata",
+      "type": "SetExtension",
+      "enabled": true,
+      "namespace": "org.tms",
+      "extensionType": "provenance",
+      "dataFrom": "TMSData"
+    },
+    {
+      "id": "set_conservation_extension",
+      "name": "Include conservation data",
+      "type": "SetExtension",
+      "enabled": true,
+      "namespace": "org.tms",
+      "extensionType": "conservation",
+      "dataFrom": "ConservationData"
+    },
+    {
+      "id": "warn_large_record",
+      "name": "Warn if record has excessive data",
+      "type": "EmitWarning",
+      "enabled": true,
+      "whenPresent": ["TMSData.rawSize"],
+      "condition": "{{TMSData.rawSize > 100000}}",
+      "message": "TMS record exceeds 100KB, may need review",
+      "severity": "warning"
+    }
+  ],
+  "metadata": {
+    "author": "Madrona Team",
+    "organization": "museum",
+    "usageNotes": "This mapping is designed for TMS v2020+ exports. Requires ConstituentID mapping table for creator relationships.",
+    "sampleSource": {
+      "ObjectID": "12345",
+      "Title": "The Starry Night",
+      "ObjectName": "Painting",
+      "Description": "Oil on canvas depicting a swirling night sky over a French village",
+      "AccessionNumbers": ["1941.39", "2024.1.1"],
+      "OtherNumbers": [
+        {"type": "Catalog", "number": "CAT-1889-01"},
+        {"type": "Exhibition", "number": "EXH-2023-45"}
+      ],
+      "Classifications": [
+        {"term": "Paintings", "uri": "http://vocab.getty.edu/aat/300033618"}
+      ],
+      "Materials": ["Oil paint", "Canvas"],
+      "ConstituentID": "artist_456",
+      "Role": "Artist",
+      "DateBegin": "1889",
+      "Medium": "Oil on canvas",
+      "Dimensions": "73.7 × 92.1 cm",
+      "CreditLine": "Gift of the Artist Foundation",
+      "Department": "European Paintings"
+    }
+  }
+}

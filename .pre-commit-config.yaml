@@ -1,0 +1,60 @@
+repos:
+  # Secret scanning — block commits containing API keys, passwords, etc.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.22.1
+    hooks:
+      - id: gitleaks
+
+  # Python linting and formatting with Ruff
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.6
+    hooks:
+      - id: ruff
+        name: ruff lint
+        args: [--fix]
+        files: ^backend/
+      - id: ruff-format
+        name: ruff format
+        files: ^backend/
+
+  # Python type checking with mypy
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.14.1
+    hooks:
+      - id: mypy
+        name: mypy type check
+        files: ^backend/app/
+        args: [--config-file=backend/pyproject.toml]
+        # Stubs mypy needs to type-check app/. flask and flask-sqlalchemy were
+        # here for an application that has been FastAPI throughout this
+        # repository's life — they slowed the hook down and told mypy about a
+        # framework the code never imports.
+        additional_dependencies:
+          - fastapi>=0.115.0
+          - sqlalchemy>=2.0.0
+          - pydantic>=2.5.0
+          - types-requests
+
+  # Frontend ESLint
+  - repo: local
+    hooks:
+      - id: eslint
+        name: eslint
+        entry: bash -c 'cd frontend && npm run lint'
+        language: system
+        files: ^frontend/.*\.(ts|tsx|js|jsx)$
+        pass_filenames: false
+
+      - id: typescript-check
+        name: typescript check
+        entry: bash -c 'cd frontend && npx tsc -b'  # -b: root tsconfig is solution-style, --noEmit checks nothing
+        language: system
+        files: ^frontend/.*\.(ts|tsx)$
+        pass_filenames: false
+
+      - id: lint-celery-tasks
+        name: celery task RLS lint
+        entry: bash -c 'cd backend && ./venv/bin/python scripts/lint_celery_tasks.py'
+        language: system
+        files: ^backend/app/tasks/.*\.py$
+        pass_filenames: false

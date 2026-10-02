@@ -1,0 +1,21 @@
+export { default as MediaWorkPage } from './MediaWorkPage';
+// Media workspace pages removed - using unified WorkspaceDetailPage, WorkspaceEditPage
+export { default as DownloadRequestsPage } from './DownloadRequestsPage';
+export { default as DownloadRequestWorkspacePage } from './DownloadRequestWorkspacePage';
+export { default as MediaAIConfigPage } from './MediaAIConfigPage';
+export { default as MediaAnalyticsPage } from './MediaAnalyticsPage';
+export { default as MediaCollectionDetailPage } from './MediaCollectionDetailPage';
+export { default as MediaCollectionsPage } from './MediaCollectionsPage';
+export { default as MediaConfigPage } from './MediaConfigPage';
+export { default as MediaDetailPage } from './MediaDetailPage';
+export { default as MediaFieldInheritanceSettingsPage } from './MediaFieldInheritanceSettingsPage';
+export { default as MediaLibraryPage } from './MediaLibraryPage';
+export { default as MediaPublishingPage } from './MediaPublishingPage';
+export { default as MediaTagSettingsPage } from './MediaTagSettingsPage';
+export { default as MyDownloadRequestsPage } from './MyDownloadRequestsPage';
+export { default as ProcessingJobsPage } from './ProcessingJobsPage';
+export { default as WatermarkTemplatesPage } from './WatermarkTemplatesPage';
+export { default as MetadataTemplatesPage } from './MetadataTemplatesPage';
+export { default as MediaPreservationDashboardPage } from './MediaPreservationDashboardPage';
+export { default as MediaDerivativeSettingsPage } from './MediaDerivativeSettingsPage';
+export { default as MetadataReviewPage } from './MetadataReviewPage';

@@ -1,0 +1,16 @@
+# Optional dependencies under copyleft licenses.
+#
+# NOT installed by default, and deliberately kept out of the shipped image:
+# bundling them would distribute a combined work under their terms, which
+# conflicts with Madrona's own permissive license.
+#
+# Install them yourself if you want the feature and accept the license:
+#
+#   pip install -r requirements-copyleft.txt
+#
+#   mutagen (GPL-2.0-or-later) -> audio tag extraction (ID3, Vorbis, MP4).
+#     app/services/audio_processing.py checks MUTAGEN_AVAILABLE before use, so
+#     audio uploads still work without it; they simply carry no embedded tag
+#     metadata (duration, bitrate, artist, album).
+
+mutagen>=1.47.0

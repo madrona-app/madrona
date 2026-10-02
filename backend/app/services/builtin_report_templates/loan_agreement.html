@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ loan_type }} Agreement — {{ loan_number or "Unknown" }}</title>
+<style>
+  :root {
+    --forest: #1F3A2E;
+    --parchment: #F6F2EC;
+    --ink: #1C1C1C;
+    --lichen: #E6E4E1;
+    --stone: #D8D2C8;
+    --archive: #6B7A7E;
+    --bark: #8E3B2F;
+  }
+
+  @page {
+    size: letter;
+    margin: 0.75in 0.75in 0.6in 0.75in;
+    @top-left {
+      content: element(header-left);
+    }
+    @bottom-left {
+      content: "Generated {{ generated_at }}";
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 8pt;
+      color: var(--archive);
+    }
+    @bottom-right {
+      content: "Page " counter(page) " of " counter(pages);
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 8pt;
+      color: var(--archive);
+    }
+  }
+
+  .header-left {
+    position: running(header-left);
+    font-family: Helvetica, Arial, sans-serif;
+    font-weight: bold;
+    font-size: 14pt;
+    color: white;
+    background: var(--forest);
+    padding: 10pt 0;
+    line-height: 1;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.4;
+    color: var(--ink);
+    background: white;
+  }
+
+  h1.doc-title {
+    font-size: 22pt;
+    color: var(--forest);
+    margin-bottom: 4pt;
+    font-weight: bold;
+  }
+
+  .doc-subtitle {
+    font-size: 11pt;
+    color: var(--archive);
+    margin-bottom: 14pt;
+  }
+
+  h2.section-header {
+    font-size: 13pt;
+    color: var(--forest);
+    font-weight: bold;
+    margin: 14pt 0 8pt 0;
+    padding-bottom: 3pt;
+    border-bottom: 1pt solid var(--lichen);
+    page-break-after: avoid;
+  }
+
+  hr.section-divider {
+    border: none;
+    border-top: 0.5pt solid var(--lichen);
+    margin: 10pt 0 4pt 0;
+  }
+
+  table.field-grid {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 6pt;
+  }
+
+  table.field-grid td.field {
+    width: 50%;
+    padding: 0 8pt 6pt 0;
+    vertical-align: top;
+  }
+
+  .field-label {
+    font-size: 9pt;
+    font-weight: bold;
+    color: var(--archive);
+    margin-bottom: 1pt;
+    text-transform: uppercase;
+    letter-spacing: 0.3pt;
+  }
+
+  .field-value {
+    font-size: 10pt;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+
+  .field-full {
+    margin-bottom: 8pt;
+    break-inside: avoid;
+  }
+
+  .field-full .field-value {
+    white-space: pre-wrap;
+  }
+
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8pt;
+    font-size: 9pt;
+  }
+
+  table.data-table thead th {
+    background: var(--forest);
+    color: white;
+    font-weight: bold;
+    padding: 5pt 6pt;
+    text-align: left;
+    font-size: 8pt;
+  }
+
+  table.data-table tbody td {
+    padding: 4pt 6pt;
+    border-bottom: 0.5pt solid var(--stone);
+    vertical-align: top;
+  }
+
+  table.data-table tbody tr:nth-child(even) {
+    background: var(--parchment);
+  }
+
+  /* Signature block */
+  table.signature-block {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 24pt;
+  }
+
+  table.signature-block td {
+    width: 50%;
+    vertical-align: top;
+    padding: 0 16pt 0 0;
+  }
+
+  .sig-role {
+    font-weight: bold;
+    font-size: 10pt;
+    margin-bottom: 4pt;
+  }
+
+  .sig-name {
+    font-size: 10pt;
+    margin-bottom: 30pt;
+  }
+
+  .sig-line {
+    border-bottom: 0.5pt solid var(--ink);
+    margin-bottom: 4pt;
+    height: 1pt;
+  }
+
+  .sig-label {
+    font-size: 9pt;
+    color: var(--archive);
+    margin-bottom: 20pt;
+  }
+
+  table.record-info {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 14pt;
+    border-top: 0.5pt solid var(--lichen);
+    font-size: 8pt;
+    color: var(--archive);
+  }
+
+  table.record-info td {
+    padding: 4pt 0;
+    width: 50%;
+  }
+
+  .keep-together {
+    break-inside: avoid;
+  }
+</style>
+</head>
+<body>
+
+<div class="header-left">{{ org_name }}</div>
+
+<h1 class="doc-title">{{ loan_type }} Agreement</h1>
+<p class="doc-subtitle">{{ loan_number }}</p>
+
+{# ── Parties ── #}
+<h2 class="section-header">Parties</h2>
+<table class="field-grid">
+  {% if is_loan_in %}
+  {% if lender_name or loan_purpose %}
+  <tr>
+    {% if lender_name %}
+    <td class="field">
+      <div class="field-label">Lender</div>
+      <div class="field-value">{{ lender_name }}</div>
+    </td>
+    {% endif %}
+    {% if loan_purpose %}
+    <td class="field">
+      <div class="field-label">Purpose</div>
+      <div class="field-value">{{ loan_purpose }}</div>
+    </td>
+    {% endif %}
+  </tr>
+  {% endif %}
+  {% if exhibition_name or exhibition_venue %}
+  <tr>
+    {% if exhibition_name %}
+    <td class="field">
+      <div class="field-label">Exhibition</div>
+      <div class="field-value">{{ exhibition_name }}</div>
+    </td>
+    {% endif %}
+    {% if exhibition_venue %}
+    <td class="field">
+      <div class="field-label">Venue</div>
+      <div class="field-value">{{ exhibition_venue }}</div>
+    </td>
+    {% endif %}
+  </tr>
+  {% endif %}
+  {% else %}
+  {% if borrower_name or loan_purpose %}
+  <tr>
+    {% if borrower_name %}
+    <td class="field">
+      <div class="field-label">Borrower</div>
+      <div class="field-value">{{ borrower_name }}</div>
+    </td>
+    {% endif %}
+    {% if loan_purpose %}
+    <td class="field">
+      <div class="field-label">Purpose</div>
+      <div class="field-value">{{ loan_purpose }}</div>
+    </td>
+    {% endif %}
+  </tr>
+  {% endif %}
+  {% if exhibition_title or venue_name %}
+  <tr>
+    {% if exhibition_title %}
+    <td class="field">
+      <div class="field-label">Exhibition</div>
+      <div class="field-value">{{ exhibition_title }}</div>
+    </td>
+    {% endif %}
+    {% if venue_name %}
+    <td class="field">
+      <div class="field-label">Venue</div>
+      <div class="field-value">{{ venue_name }}</div>
+    </td>
+    {% endif %}
+  </tr>
+  {% endif %}
+  {% endif %}
+  {% if status %}
+  <tr>
+    <td class="field">
+      <div class="field-label">Status</div>
+      <div class="field-value">{{ status }}</div>
+    </td>
+    <td></td>
+  </tr>
+  {% endif %}
+</table>
+
+{# ── Dates ── #}
+<h2 class="section-header">Dates</h2>
+<table class="field-grid">
+  {% if request_date or approval_date %}
+  <tr>
+    {% if request_date %}
+    <td class="field">
+      <div class="field-label">Request Date</div>
+      <div class="field-value">{{ request_date }}</div>
+    </td>
+    {% endif %}
+    {% if approval_date %}
+    <td class="field">
+      <div class="field-label">Approval Date</div>
+      <div class="field-value">{{ approval_date }}</div>
+    </td>
+    {% endif %}
+  </tr>
+  {% endif %}
+  {% if loan_start_date or loan_end_date %}
+  <tr>
+    {% if loan_start_date %}
+    <td class="field">
+      <div class="field-label">Start Date</div>
+      <div class="field-value">{{ loan_start_date }}</div>
+    </td>
+    {% endif %}
+    {% if loan_end_date %}
+    <td class="field">
+      <div class="field-label">End Date</div>
+      <div class="field-value">{{ loan_end_date }}</div>
+    </td>
+    {% endif %}
+  </tr>
+  {% endif %}
+  {% if received_dispatched_date or actual_return_date %}
+  <tr>
+    {% if received_dispatched_date %}
+    <td class="field">
+      <div class="field-label">{{ received_dispatched_label }}</div>
+      <div class="field-value">{{ received_dispatched_date }}</div>
+    </td>
+    {% endif %}
+    {% if actual_return_date %}
+    <td class="field">
+      <div class="field-label">Returned</div>
+      <div class="field-value">{{ actual_return_date }}</div>
+    </td>
+    {% endif %}
+  </tr>
+  {% endif %}
+</table>
+
+{# ── Insurance & Shipping ── #}
+<h2 class="section-header">Insurance &amp; Shipping</h2>
+<table class="field-grid">
+  {% if insurance_value or insurance_currency %}
+  <tr>
+    {% if insurance_value %}
+    <td class="field">
+      <div class="field-label">Insurance Value</div>
+      <div class="field-value">{{ insurance_value }}</div>
+    </td>
+    {% endif %}
+    {% if insurance_currency %}
+    <td class="field">
+      <div class="field-label">Currency</div>
+      <div class="field-value">{{ insurance_currency }}</div>
+    </td>
+    {% endif %}
+  </tr>
+  {% endif %}
+  {% if shipping_method or courier_required %}
+  <tr>
+    {% if shipping_method %}
+    <td class="field">
+      <div class="field-label">Shipping Method</div>
+      <div class="field-value">{{ shipping_method }}</div>
+    </td>
+    {% endif %}
+    {% if courier_required %}
+    <td class="field">
+      <div class="field-label">Courier Required</div>
+      <div class="field-value">{{ courier_required }}</div>
+    </td>
+    {% endif %}
+  </tr>
+  {% endif %}
+  {% if assigned_to_name %}
+  <tr>
+    <td class="field">
+      <div class="field-label">Assigned To</div>
+      <div class="field-value">{{ assigned_to_name }}</div>
+    </td>
+    <td></td>
+  </tr>
+  {% endif %}
+</table>
+
+{# ── Conditions & Requirements ── #}
+{% if loan_conditions or special_requirements or display_requirements or photography_restrictions %}
+<div class="keep-together">
+  <h2 class="section-header">Conditions &amp; Requirements</h2>
+  {% if loan_conditions %}
+  <div class="field-full">
+    <div class="field-label">Loan Conditions</div>
+    <div class="field-value">{{ loan_conditions }}</div>
+  </div>
+  {% endif %}
+  {% if special_requirements %}
+  <div class="field-full">
+    <div class="field-label">Special Requirements</div>
+    <div class="field-value">{{ special_requirements }}</div>
+  </div>
+  {% endif %}
+  {% if display_requirements %}
+  <div class="field-full">
+    <div class="field-label">Display Requirements</div>
+    <div class="field-value">{{ display_requirements }}</div>
+  </div>
+  {% endif %}
+  {% if photography_restrictions %}
+  <div class="field-full">
+    <div class="field-label">Photography Restrictions</div>
+    <div class="field-value">{{ photography_restrictions }}</div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{# ── Objects on Loan ── #}
+{% if loan_objects %}
+<h2 class="section-header">Objects on Loan</h2>
+{% if is_loan_in %}
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>Title / Description</th>
+      <th>Lender No.</th>
+      <th>Artist / Maker</th>
+      <th>Medium</th>
+      <th>Dimensions</th>
+      <th>Insurance Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for obj in loan_objects %}
+    <tr>
+      <td>{{ obj.object_title }}</td>
+      <td>{{ obj.object_number_lender }}</td>
+      <td>{{ obj.artist_maker }}</td>
+      <td>{{ obj.medium }}</td>
+      <td>{{ obj.dimensions }}</td>
+      <td>{{ obj.insurance_value }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>Object No.</th>
+      <th>Name</th>
+      <th>Insurance Value</th>
+      <th>Credit Line</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for obj in loan_objects %}
+    <tr>
+      <td>{{ obj.object_number }}</td>
+      <td>{{ obj.object_name }}</td>
+      <td>{{ obj.insurance_value }}</td>
+      <td>{{ obj.display_credit_line }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endif %}
+
+{# ── Agreement ── #}
+{% if loan_agreement_reference or loan_agreement_date %}
+<div class="keep-together">
+  <h2 class="section-header">Agreement</h2>
+  <table class="field-grid">
+    <tr>
+      {% if loan_agreement_reference %}
+      <td class="field">
+        <div class="field-label">Agreement Reference</div>
+        <div class="field-value">{{ loan_agreement_reference }}</div>
+      </td>
+      {% endif %}
+      {% if loan_agreement_date %}
+      <td class="field">
+        <div class="field-label">Agreement Date</div>
+        <div class="field-value">{{ loan_agreement_date }}</div>
+      </td>
+      {% endif %}
+    </tr>
+    {% if loan_agreement_signed_date %}
+    <tr>
+      <td class="field">
+        <div class="field-label">Signed Date</div>
+        <div class="field-value">{{ loan_agreement_signed_date }}</div>
+      </td>
+      <td></td>
+    </tr>
+    {% endif %}
+  </table>
+</div>
+{% endif %}
+
+{# ── Notes ── #}
+{% if loan_note %}
+<div class="keep-together">
+  <h2 class="section-header">Notes</h2>
+  <div class="field-full">
+    <div class="field-value">{{ loan_note }}</div>
+  </div>
+</div>
+{% endif %}
+
+{# ── Signatures ── #}
+<hr class="section-divider" style="margin-top: 24pt;">
+<h2 class="section-header">Signatures</h2>
+<table class="signature-block">
+  <tr>
+    <td>
+      <div class="sig-role">{{ sig_party_1_role }}</div>
+      <div class="sig-name">{{ sig_party_1_name }}</div>
+      <div class="sig-line"></div>
+      <div class="sig-label">Signature</div>
+      <div class="sig-line"></div>
+      <div class="sig-label">Date</div>
+    </td>
+    <td>
+      <div class="sig-role">{{ sig_party_2_role }}</div>
+      <div class="sig-name">{{ sig_party_2_name }}</div>
+      <div class="sig-line"></div>
+      <div class="sig-label">Signature</div>
+      <div class="sig-line"></div>
+      <div class="sig-label">Date</div>
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>

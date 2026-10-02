@@ -1,0 +1,536 @@
+name: E2E Tests
+
+# Least privilege: none of these jobs write to the repository. Without an
+# explicit block they inherit the repo default token scope, which on older
+# repositories is read/write — so a compromised third-party action (all are on
+# mutable major tags) would run with a token that can push.
+permissions:
+  contents: read
+
+on:
+  # No `paths` filter on push, deliberately.
+  #
+  # GitHub cannot compute a changed-path set for a force-push whose new history
+  # shares no ancestor with the old, and when it cannot, a workflow with
+  # `paths` is skipped SILENTLY — no run, no failure, nothing in the checks
+  # list. This repository's root commit is amended and force-pushed, so every
+  # push after the first produced zero CI. A push to main is also the thing you
+  # least want unverified, so it now always runs.
+  #
+  # No `paths` filter on pull_request either. main requires these checks, and
+  # a required check whose workflow a path filter skipped never reports, so
+  # GitHub holds the PR at "Expected — Waiting for status to be reported" with
+  # no way to satisfy it: a docs-only PR could never merge, and a backend-only
+  # PR would wait on the frontend suite. Every PR runs everything instead.
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        description: 'Run with debug mode'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  e2e-tests:
+    name: Playwright E2E Tests (${{ matrix.shard }}/4)
+    runs-on: ubuntu-latest
+    # Sharded because one job could not hold the suite: ~550 tests at 2
+    # workers ran past the limit on every run, with the report unwritten.
+    # Most of that time was the page sweeps waiting out clicks the Guide
+    # welcome scrim swallowed — 3 s each, ~1,200 a run — until
+    # tests/e2e/auth.setup.ts started dismissing it. The shards now have wide
+    # headroom; they also keep wall-clock down.
+    #
+    # --shard splits by position. The heavy page sweeps sit together in the
+    # file order, so more shards does not spread them evenly — four puts no
+    # more than ~60 sweep pages in any one shard.
+    #
+    # ~8 min setup + playwright.config.ts's 30-minute globalTimeout, which ends
+    # a slow shard with its summary and report intact before this limit does.
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+
+    # Postgres is started manually rather than via `services:` so we can use
+    # the project's own docker/postgres image — which builds postgis on top
+    # of pgvector/pgvector:0.8.0-pg16. The migration in
+    # 20260421_1134_initial_consolidated_schema.py creates BOTH the vector
+    # AND postgis extensions; vanilla postgres images don't ship either.
+    # Using the same Dockerfile as docker-compose.yml ensures CI matches
+    # local dev exactly.
+
+    # OpenSearch serves the collections list and every search box. Without it
+    # the search endpoints answer 503 by design, the seed skips indexing, and
+    # the suite tests an install nobody runs: the Cataloging and QR pages
+    # failed on that 503 at page load, and so did the lifecycle spec's search
+    # for the object it had just created. Same image and settings as
+    # docker-compose.yml and the backend API sweep.
+    services:
+      opensearch:
+        image: opensearchproject/opensearch:2.19.0
+        env:
+          discovery.type: single-node
+          DISABLE_SECURITY_PLUGIN: 'true'
+          OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+        options: >-
+          --health-cmd "curl -sf http://localhost:9200/_cluster/health || exit 1"
+          --health-interval 15s
+          --health-timeout 10s
+          --health-retries 10
+        ports:
+          - 9200:9200
+
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/madrona_test
+      APP_ENV: testing
+      OPENSEARCH_HOSTS: localhost:9200
+      OPENSEARCH_ENABLED: 'true'
+      SECRET_KEY: test-secret-key-for-ci
+      AGENT_ENABLED: "true"
+      # E2E test credentials - seeded by seed_e2e_test_data.py
+      PLAYWRIGHT_TEST_EMAIL: "e2e-test@example.com"
+      PLAYWRIGHT_TEST_PASSWORD: "E2E-Test-Password-123!"
+      PLAYWRIGHT_TEST_ORG_ID: "c62f6243-b50e-4f10-a6b3-80425de6c01d"
+      # Object storage. Without these the E2E seed's _upload_seed_media() hits
+      # "storage unavailable", prints a skip and carries on — so every media
+      # row it creates points at an s3_key with no object behind it, and any
+      # test that opens an image has never once had one to open.
+      S3_ENDPOINT_URL: http://localhost:8333
+      S3_PUBLIC_ENDPOINT_URL: http://localhost:8333
+      S3_MEDIA_BUCKET: madrona-media
+      S3_PLATFORM_BUCKET: madrona-platform
+      AWS_ACCESS_KEY_ID: madrona-s3
+      AWS_SECRET_ACCESS_KEY: madrona-s3-ci
+      AWS_REGION: us-west-2
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build and start madrona-postgres (matches local image)
+        run: |
+          docker build -t madrona-postgres:ci ./docker/postgres
+          docker run -d --name madrona-postgres-ci \
+            -p 5432:5432 \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            -e POSTGRES_DB=madrona_test \
+            -e DB_APP_USERNAME=madrona_app \
+            -e DB_APP_PASSWORD=madrona_app_test \
+            madrona-postgres:ci
+          # Wait for the DB to be ready AND for the init scripts to finish.
+          # Init scripts run after first pg_isready tick, so check for the
+          # vector extension as a "fully bootstrapped" signal.
+          for i in {1..60}; do
+            if docker exec madrona-postgres-ci pg_isready -U postgres -d madrona_test >/dev/null 2>&1; then
+              if docker exec madrona-postgres-ci psql -U postgres -d madrona_test -tc "SELECT 1 FROM pg_extension WHERE extname='vector';" 2>/dev/null | grep -q 1; then
+                echo "postgres + extensions ready."
+                break
+              fi
+            fi
+            echo "  waiting for init-db.sh to finish (attempt $i)..."
+            sleep 2
+          done
+
+      # Backend setup
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run database migrations
+        working-directory: backend
+        run: |
+          python -m alembic upgrade head
+
+      - name: Start SeaweedFS (S3-compatible object storage)
+        # docker run, not a `services:` block: Actions gives no way to set a
+        # service container's command, and this needs `mini` with specific
+        # flags — the buckets to create, and the WebDAV/admin/Iceberg/Lance
+        # listeners turned off.
+        run: |
+          # SeaweedFS, matching docker-compose.yml.
+          # Credentials come from AWS_* because SeaweedFS seeds its S3 admin
+          # identity from them; -bucket creates the buckets on startup.
+          docker run -d --name seaweedfs-e2e \
+            -p 8333:8333 \
+            -e AWS_ACCESS_KEY_ID=madrona-s3 \
+            -e AWS_SECRET_ACCESS_KEY=madrona-s3-ci \
+            chrislusf/seaweedfs:4.48 \
+            mini -dir=/data \
+            -bucket=madrona-media,madrona-platform \
+            -webdav=false -admin.ui=false \
+            -s3.port.iceberg=0 -s3.port.lance=0
+          # An unsigned GET / against a working, credentialed S3 endpoint is a
+          # 403 — that is the ready signal, so `curl -f` would never pass.
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8333 || true)
+            case "$code" in
+              200|403) echo "SeaweedFS S3 ready after ${i}s"; exit 0 ;;
+            esac
+            sleep 1
+          done
+          echo "SeaweedFS did not become ready"; docker logs seaweedfs-e2e; exit 1
+
+      - name: Create the object-store buckets
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          import boto3, botocore
+          s3 = boto3.client(
+              "s3", endpoint_url="http://localhost:8333",
+              aws_access_key_id="madrona-s3",
+              aws_secret_access_key="madrona-s3-ci",
+              region_name="us-west-2",
+          )
+          for bucket in ("madrona-media", "madrona-platform"):
+              try:
+                  s3.create_bucket(Bucket=bucket)
+                  print("created", bucket)
+              except botocore.exceptions.ClientError as exc:
+                  print(bucket, "->", exc.response["Error"]["Code"])
+          PY
+
+      - name: Seed roles and E2E test data
+        working-directory: backend
+        run: |
+          python -m seeds.seed_roles_and_permissions
+          python -m seeds.seed_role_profiles || echo "Role profiles may already exist"
+          python -m seeds.seed_e2e_test_data --enable-all-apps --include-contract-apps --org-id c62f6243-b50e-4f10-a6b3-80425de6c01d
+
+      - name: Start backend server
+        working-directory: backend
+        run: |
+          uvicorn app.asgi:application --host 0.0.0.0 --port 8000 &
+          # Wait for backend to be ready
+          for i in {1..30}; do
+            curl -s http://localhost:8000/health && break
+            echo "Waiting for backend..."
+            sleep 2
+          done
+
+      # Frontend setup
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build frontend
+        working-directory: frontend
+        # Bundle is large enough that V8's default ~2 GB heap OOMs the build.
+        # 4 GB matches frontend/Dockerfile.
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+        run: pnpm run build
+
+      - name: Start frontend preview server
+        working-directory: frontend
+        # serve-e2e.mjs does BOTH things CI needs and `serve --single`
+        # could not: SPA fallback (unknown URL → index.html, /admin* →
+        # admin.html, mirroring prod nginx try_files) AND proxy /api/* to
+        # the backend on :8000. The SPA is built with the default relative
+        # API_BASE_URL=/api, so without the proxy every API call hit the
+        # static fallback and returned index.html — see #59.
+        run: |
+          node scripts/serve-e2e.mjs dist &
+          # Gate on BOTH the SPA root and the /api proxy reaching the
+          # backend — a broken proxy must fail here, loudly, not surface
+          # as confusing JSON-parse errors deep in the Playwright run.
+          for i in {1..30}; do
+            if curl -sf http://localhost:4173/ > /dev/null \
+               && curl -sf http://localhost:4173/api/health > /dev/null; then
+              echo "frontend + /api proxy ready"; break
+            fi
+            echo "Waiting for frontend + /api proxy..."
+            sleep 2
+          done
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:4173
+          BACKEND_ORIGIN: http://localhost:8000
+
+      # Run tests
+      - name: Run Playwright tests
+        working-directory: frontend
+        run: pnpm exec playwright test --project=chromium --shard=${{ matrix.shard }}/4
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:4173
+          CI: true
+
+      # Upload artifacts on failure. Named per shard: upload-artifact@v4
+      # rejects a second artifact with the same name in one run.
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-${{ matrix.shard }}
+          path: frontend/playwright-report/
+          retention-days: 30
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results-${{ matrix.shard }}
+          path: frontend/test-results/
+          retention-days: 7
+
+  visual-regression:
+    name: Visual Regression Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Only run visual regression tests on specific label or manual trigger
+    if: contains(github.event.pull_request.labels.*.name, 'visual-test') || github.event_name == 'workflow_dispatch'
+
+    # Postgres is started manually rather than via `services:` so we can use
+    # the project's own docker/postgres image — which builds postgis on top
+    # of pgvector/pgvector:0.8.0-pg16. The migration in
+    # 20260421_1134_initial_consolidated_schema.py creates BOTH the vector
+    # AND postgis extensions; vanilla postgres images don't ship either.
+    # Using the same Dockerfile as docker-compose.yml ensures CI matches
+    # local dev exactly.
+
+    # OpenSearch serves the collections list and every search box. Without it
+    # the search endpoints answer 503 by design, the seed skips indexing, and
+    # the suite tests an install nobody runs: the Cataloging and QR pages
+    # failed on that 503 at page load, and so did the lifecycle spec's search
+    # for the object it had just created. Same image and settings as
+    # docker-compose.yml and the backend API sweep.
+    services:
+      opensearch:
+        image: opensearchproject/opensearch:2.19.0
+        env:
+          discovery.type: single-node
+          DISABLE_SECURITY_PLUGIN: 'true'
+          OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+        options: >-
+          --health-cmd "curl -sf http://localhost:9200/_cluster/health || exit 1"
+          --health-interval 15s
+          --health-timeout 10s
+          --health-retries 10
+        ports:
+          - 9200:9200
+
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/madrona_test
+      APP_ENV: testing
+      OPENSEARCH_HOSTS: localhost:9200
+      OPENSEARCH_ENABLED: 'true'
+      SECRET_KEY: test-secret-key-for-ci
+      AGENT_ENABLED: "true"
+      # E2E test credentials - seeded by seed_e2e_test_data.py
+      PLAYWRIGHT_TEST_EMAIL: "e2e-test@example.com"
+      PLAYWRIGHT_TEST_PASSWORD: "E2E-Test-Password-123!"
+      PLAYWRIGHT_TEST_ORG_ID: "c62f6243-b50e-4f10-a6b3-80425de6c01d"
+      # Object storage. Without these the E2E seed's _upload_seed_media() hits
+      # "storage unavailable", prints a skip and carries on — so every media
+      # row it creates points at an s3_key with no object behind it, and any
+      # test that opens an image has never once had one to open.
+      S3_ENDPOINT_URL: http://localhost:8333
+      S3_PUBLIC_ENDPOINT_URL: http://localhost:8333
+      S3_MEDIA_BUCKET: madrona-media
+      S3_PLATFORM_BUCKET: madrona-platform
+      AWS_ACCESS_KEY_ID: madrona-s3
+      AWS_SECRET_ACCESS_KEY: madrona-s3-ci
+      AWS_REGION: us-west-2
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build and start madrona-postgres (matches local image)
+        run: |
+          docker build -t madrona-postgres:ci ./docker/postgres
+          docker run -d --name madrona-postgres-ci \
+            -p 5432:5432 \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            -e POSTGRES_DB=madrona_test \
+            -e DB_APP_USERNAME=madrona_app \
+            -e DB_APP_PASSWORD=madrona_app_test \
+            madrona-postgres:ci
+          for i in {1..60}; do
+            if docker exec madrona-postgres-ci pg_isready -U postgres -d madrona_test >/dev/null 2>&1; then
+              if docker exec madrona-postgres-ci psql -U postgres -d madrona_test -tc "SELECT 1 FROM pg_extension WHERE extname='vector';" 2>/dev/null | grep -q 1; then
+                echo "postgres + extensions ready."
+                break
+              fi
+            fi
+            echo "  waiting for init-db.sh to finish (attempt $i)..."
+            sleep 2
+          done
+
+      # Backend setup (same as e2e-tests job)
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run database migrations
+        working-directory: backend
+        run: python -m alembic upgrade head
+
+      - name: Start SeaweedFS (S3-compatible object storage)
+        # docker run, not a `services:` block: Actions gives no way to set a
+        # service container's command, and this needs `mini` with specific
+        # flags — the buckets to create, and the WebDAV/admin/Iceberg/Lance
+        # listeners turned off.
+        run: |
+          # SeaweedFS, matching docker-compose.yml.
+          # Credentials come from AWS_* because SeaweedFS seeds its S3 admin
+          # identity from them; -bucket creates the buckets on startup.
+          docker run -d --name seaweedfs-e2e \
+            -p 8333:8333 \
+            -e AWS_ACCESS_KEY_ID=madrona-s3 \
+            -e AWS_SECRET_ACCESS_KEY=madrona-s3-ci \
+            chrislusf/seaweedfs:4.48 \
+            mini -dir=/data \
+            -bucket=madrona-media,madrona-platform \
+            -webdav=false -admin.ui=false \
+            -s3.port.iceberg=0 -s3.port.lance=0
+          # An unsigned GET / against a working, credentialed S3 endpoint is a
+          # 403 — that is the ready signal, so `curl -f` would never pass.
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8333 || true)
+            case "$code" in
+              200|403) echo "SeaweedFS S3 ready after ${i}s"; exit 0 ;;
+            esac
+            sleep 1
+          done
+          echo "SeaweedFS did not become ready"; docker logs seaweedfs-e2e; exit 1
+
+      - name: Create the object-store buckets
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          import boto3, botocore
+          s3 = boto3.client(
+              "s3", endpoint_url="http://localhost:8333",
+              aws_access_key_id="madrona-s3",
+              aws_secret_access_key="madrona-s3-ci",
+              region_name="us-west-2",
+          )
+          for bucket in ("madrona-media", "madrona-platform"):
+              try:
+                  s3.create_bucket(Bucket=bucket)
+                  print("created", bucket)
+              except botocore.exceptions.ClientError as exc:
+                  print(bucket, "->", exc.response["Error"]["Code"])
+          PY
+
+      - name: Seed roles and E2E test data
+        working-directory: backend
+        run: |
+          python -m seeds.seed_roles_and_permissions
+          python -m seeds.seed_role_profiles || echo "Role profiles may already exist"
+          python -m seeds.seed_e2e_test_data --enable-all-apps --include-contract-apps --org-id c62f6243-b50e-4f10-a6b3-80425de6c01d
+
+      - name: Start backend server
+        working-directory: backend
+        run: |
+          uvicorn app.asgi:application --host 0.0.0.0 --port 8000 &
+          for i in {1..30}; do
+            curl -s http://localhost:8000/health && break
+            sleep 2
+          done
+
+      # Frontend setup
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build frontend
+        working-directory: frontend
+        # Bundle is large enough that V8's default ~2 GB heap OOMs the build.
+        # 4 GB matches frontend/Dockerfile.
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+        run: pnpm run build
+
+      - name: Start frontend preview server
+        working-directory: frontend
+        # Same serve-e2e.mjs as the e2e-tests job: SPA fallback + /api
+        # proxy. `pnpm run preview` (vite preview) did neither reliably
+        # (MPA mode = no SPA fallback; no /api proxy) — see #59.
+        run: |
+          node scripts/serve-e2e.mjs dist &
+          for i in {1..30}; do
+            if curl -sf http://localhost:4173/ > /dev/null \
+               && curl -sf http://localhost:4173/api/health > /dev/null; then
+              echo "frontend + /api proxy ready"; break
+            fi
+            sleep 2
+          done
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:4173
+          BACKEND_ORIGIN: http://localhost:8000
+
+      # Run visual tests
+      - name: Run visual regression tests
+        working-directory: frontend
+        run: pnpm exec playwright test --project=visual-chromium
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:4173
+          CI: true
+
+      - name: Upload visual test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-test-results
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 30

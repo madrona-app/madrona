@@ -1,0 +1,640 @@
+name: Backend Tests
+
+# Least privilege: none of these jobs write to the repository. Without an
+# explicit block they inherit the repo default token scope, which on older
+# repositories is read/write — so a compromised third-party action (all are on
+# mutable major tags) would run with a token that can push.
+permissions:
+  contents: read
+
+on:
+  # Manual trigger, kept so a run can be forced without a push.
+  workflow_dispatch:
+  # No `paths` filter on push, deliberately.
+  #
+  # GitHub cannot compute a changed-path set for a force-push whose new history
+  # shares no ancestor with the old, and when it cannot, a workflow with
+  # `paths` is skipped SILENTLY — no run, no failure, nothing in the checks
+  # list. This repository's root commit is amended and force-pushed, so every
+  # push after the first produced zero CI. A push to main is also the thing you
+  # least want unverified, so it now always runs.
+  #
+  # No `paths` filter on pull_request either. main requires these checks, and
+  # a required check whose workflow a path filter skipped never reports, so
+  # GitHub holds the PR at "Expected — Waiting for status to be reported" with
+  # no way to satisfy it: a docs-only PR could never merge, and a backend-only
+  # PR would wait on the frontend suite. Every PR runs everything instead.
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Single "tests" job — the suite is now postgres-only. The previous
+  # split between Unit Tests (SQLite) and Integration Tests (postgres)
+  # was backed by a SQLite adapter that mutated Base.metadata in place
+  # and poisoned postgres tests whenever both ran in the same process.
+  # That adapter is gone; every test runs against postgres with PostGIS
+  # and pgvector installed.
+  # ---------------------------------------------------------------------------
+  tests:
+    name: Tests (PostgreSQL) ${{ matrix.shard }}/6
+    runs-on: ubuntu-latest
+
+    # Sharded, and not for speed alone: a single whole-suite job has never
+    # completed on a hosted runner here. The runs that finished (15m, 18m) were
+    # ones with early failures; every run that got far enough to need the full
+    # ~30 minutes was killed mid-step with "The runner has received a shutdown
+    # signal" — at 21m02s, 21m27s and 62m02s — discarding its logs and
+    # reporting no summary at all.
+    #
+    # Three shards was not enough. Shards 1 and 3 passed every time; shard 2
+    # died three times running, at 90%, 90% and 93% — and -v showed why it is
+    # not about any particular test. Both xdist workers stalled at the same
+    # instant: a schema comparison that normally takes milliseconds took 23
+    # seconds, two in-process webhook tests with mocked settings blew the 30s
+    # per-test timeout, then a 161-second gap and the runner was gone. That is
+    # the machine seizing up late in a shard, not a slow test, and the victims
+    # differ run to run.
+    #
+    # Six shards, and NOT because shard size was the cause — it was not.
+    # Halving the work per job was tried on that theory and disproved it:
+    # shard 1 finished its tests in 3m53s while shard 4 burned 30 minutes on
+    # ~6 minutes of work and was killed with its log discarded. Shard size
+    # does not govern this. Six is kept anyway because short jobs are cheap
+    # to re-run and a killed one costs less.
+    #
+    # The better-supported reading, from the one shard that did report: work
+    # sensitive to wall-clock time on contended hardware exceeds the 30s
+    # pytest-timeout, and pytest-timeout then either recovers and reports a
+    # clean failure or leaves the worker wedged, in which case the job hangs
+    # until the runner is reclaimed. That is why tests/performance/ is now
+    # deselected below. If jobs still hang with those gone, this reading is
+    # wrong too, and the next person should say so here rather than re-deriving
+    # the three dead ends already buried in this file's history: job duration
+    # (a 10m job died while an 11m one passed), disk (72G, 33G free), and
+    # per-test slowness (both xdist workers stalled at the same instant, one
+    # on a millisecond-scale schema comparison).
+    strategy:
+      # One shard's failure should not cancel the others: the point is to see
+      # every failure in one run, not the first one.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+
+    # An explicit ceiling, so a wedged job fails legibly and keeps its log
+    # instead of being reclaimed an hour later with nothing to show.
+    timeout-minutes: 25
+
+    env:
+      APP_ENV: testing
+      TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/madrona_test
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/madrona_test
+      SECRET_KEY: "ci-dummy-secret-key-not-used-for-signing-anything-real"
+      CANONICAL_VALIDATION_MODE: error
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free up runner disk
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android \
+                      /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo docker image prune --all --force >/dev/null 2>&1 || true
+          df -h /
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-xdist pytest-timeout pytest-split fakeredis
+
+      - name: Start Postgres (the image docker-compose builds)
+        # Built from docker/postgres, the image a self-hoster actually runs,
+        # rather than a stock postgis/postgis service container with pgvector
+        # apt-installed into it at job time. That patch stopped working when
+        # apt.postgresql.org dropped bullseye, the release postgis/postgis:16-3.4
+        # is built on, and it tested against a server nobody deploys. A service
+        # container cannot be built in the job, hence docker run.
+        #
+        # Init scripts are mounted away, so the database is bare: the packages
+        # are installed but no extension, schema or role exists. The suite
+        # creates what it needs itself (tests/conftest.py).
+        #
+        # max_locks_per_transaction: pytest runs with `-n auto` (xdist). Each
+        # worker builds the full multi-schema model in its own database;
+        # concurrent DROP SCHEMA CASCADE / create_all exhaust the server-global
+        # lock table at the default of 64 ("out of shared memory").
+        #
+        # Readiness is checked over TCP. The entrypoint's bootstrap server
+        # listens on the socket only, so a socket check can pass against it
+        # moments before it shuts down for the real one.
+        run: |
+          docker build -t madrona-postgres:ci ./docker/postgres
+          mkdir -p "$RUNNER_TEMP/no-initdb"
+          docker run -d --name madrona-postgres-ci -p 5432:5432 \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            -e POSTGRES_DB=madrona_test \
+            -v "$RUNNER_TEMP/no-initdb:/docker-entrypoint-initdb.d" \
+            madrona-postgres:ci postgres -c max_locks_per_transaction=1024
+          for i in $(seq 1 60); do
+            docker exec madrona-postgres-ci pg_isready -h 127.0.0.1 -U postgres -d madrona_test >/dev/null 2>&1 && break
+            sleep 1
+          done
+          docker exec madrona-postgres-ci pg_isready -h 127.0.0.1 -U postgres -d madrona_test \
+            || { docker logs madrona-postgres-ci; exit 1; }
+          docker exec madrona-postgres-ci psql -U postgres -d madrona_test -c "SHOW max_locks_per_transaction;"
+
+      - name: Verify test collection (catch broken imports)
+        working-directory: backend
+        run: |
+          python -m pytest --collect-only -q --tb=short 2>&1 | tee collect.log
+          if grep -q "ERROR" collect.log; then
+            echo "::error::Broken test imports detected — see output above"
+            exit 1
+          fi
+
+      - name: Run tests
+        # One invocation now, where there used to be two. The second pass
+        # existed because test_pipeline_service_coverage.py was not xdist-safe:
+        # it depended on another module leaking a `warn` canonical-validation
+        # mode into the process-global settings singleton, so it failed
+        # whenever xdist put the two files on different workers. All three
+        # modules with that precondition now pin it themselves, and the whole
+        # suite passes under xdist with none of them carved out — so the
+        # --cov-append dance and the --cov-fail-under=0 override are gone too.
+        #
+        # -n auto spreads the shard across the runner's cores; each worker gets
+        # its own database (tests/conftest.py _ensure_worker_database), so
+        # workers never share rows. --splits/--group is pytest-split, which
+        # partitions collection deterministically across the matrix.
+        #
+        # Coverage here is a fragment of the whole: the gate lives in the
+        # coverage job below, after the fragments are combined. Gating a single
+        # shard against a whole-suite floor would fail for the wrong reason.
+        working-directory: backend
+        run: |
+          # -v is deliberate, not noise. When a job is killed mid-step the log
+          # keeps whatever streamed before the runner went away, and pytest's
+          # default progress dots identify nothing — three runs were spent
+          # inferring the cause from the position of an "F" in a row of dots.
+          # Under xdist -v prints "[gw0] [ 90%] FAILED tests/x.py::test_y" as
+          # each test finishes, so a truncated log still names what was running.
+          # -m "not performance" deselects tests/performance/, which asserts
+          # wall-clock latency ("elapsed < 2.0") against a large seeded
+          # dataset. On a shared 2-core runner that measures the runner, not
+          # the code: test_list_objects_performance did not merely miss its
+          # 2s budget, it blew the 30s pytest-timeout entirely. The module has
+          # always declared @pytest.mark.performance and documented "run with
+          # pytest -m performance" — that intent just was never honoured here.
+          # Run them deliberately, on hardware where the number means
+          # something: pytest -m performance tests/performance/
+          python -m pytest -n auto -v --tb=short \
+            -m "not performance" \
+            --splits 6 --group ${{ matrix.shard }} \
+            --cov=app \
+            --cov-report=term-missing \
+            --cov-fail-under=0
+
+      - name: Upload this shard's coverage fragment
+        # Always: a shard that fails still measured real coverage, and the
+        # combine step below should report on what ran rather than silently
+        # under-counting.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-shard-${{ matrix.shard }}
+          path: backend/.coverage
+          # .coverage is a dotfile, which upload-artifact@v4 skips by default.
+          include-hidden-files: true
+          retention-days: 1
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Coverage gate — combines the shard fragments and enforces the floor once,
+  # over the whole suite. Split across six jobs, no single shard's number
+  # means anything on its own.
+  # ---------------------------------------------------------------------------
+  coverage:
+    name: Coverage Gate
+    runs-on: ubuntu-latest
+    needs: tests
+    # Run even when a shard failed: the coverage number is still worth having,
+    # and a failing shard already fails the workflow on its own.
+    if: always()
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install coverage
+        run: pip install coverage
+
+      - name: Download shard fragments
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-shard-*
+          path: fragments
+
+      - name: Combine and enforce the floor
+        working-directory: backend
+        run: |
+          # coverage combine, given no arguments, picks up .coverage.* in the
+          # working directory — hence the numbered names. The shards all ran
+          # from the same checkout path, so no [paths] remapping is needed.
+          i=0
+          for f in ../fragments/coverage-shard-*/.coverage; do
+            i=$((i + 1))
+            cp "$f" ".coverage.$i"
+          done
+          echo "combining $i shard fragment(s)"
+          coverage combine
+          # fail_under = 65 comes from pyproject.toml [tool.coverage.report].
+          coverage report --show-missing
+          coverage xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: backend/coverage.xml
+          flags: backend-tests
+          name: backend-tests
+
+  # ---------------------------------------------------------------------------
+  # Migration smoke — ensure `alembic upgrade head` builds a DB cleanly.
+  # ---------------------------------------------------------------------------
+  migration-smoke:
+    name: Migration Smoke Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free up runner disk
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android \
+                      /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo docker image prune --all --force >/dev/null 2>&1 || true
+          df -h /
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Start Postgres (the image docker-compose builds)
+        # See the tests job. Init scripts are mounted away on purpose here:
+        # the migrations must stand up a database by themselves, extensions
+        # included, as they do on a managed Postgres where init-db.sh never
+        # runs. The stock postgis image hid half of that by creating the
+        # postgis extension in its own init script.
+        run: |
+          docker build -t madrona-postgres:ci ./docker/postgres
+          mkdir -p "$RUNNER_TEMP/no-initdb"
+          docker run -d --name madrona-postgres-ci -p 5432:5432 \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            -e POSTGRES_DB=madrona_migration_test \
+            -v "$RUNNER_TEMP/no-initdb:/docker-entrypoint-initdb.d" \
+            madrona-postgres:ci
+          for i in $(seq 1 60); do
+            docker exec madrona-postgres-ci pg_isready -h 127.0.0.1 -U postgres -d madrona_migration_test >/dev/null 2>&1 && break
+            sleep 1
+          done
+          docker exec madrona-postgres-ci pg_isready -h 127.0.0.1 -U postgres -d madrona_migration_test \
+            || { docker logs madrona-postgres-ci; exit 1; }
+
+      - name: Run alembic upgrade head
+        working-directory: backend
+        env:
+          ALEMBIC_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/madrona_migration_test
+        run: |
+          python -m alembic upgrade head
+
+      - name: Verify current revision
+        working-directory: backend
+        env:
+          ALEMBIC_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/madrona_migration_test
+        run: |
+          python -m alembic current
+
+  # ---------------------------------------------------------------------------
+  # API sweep — call every endpoint and fail on an unexplained 5xx.
+  #
+  # The unit suite is large and green and still shipped eleven endpoints that
+  # returned 500 on every call: a serializer reading a column that does not
+  # exist, a dependency whose session was invisible to its own handler, a report
+  # download signed for a host no browser can reach. All were found by asking
+  # the running app for its route list and calling it. This is that, in CI.
+  #
+  # It is a smoke gate. A 4xx is usually the app correctly rejecting a synthetic
+  # request and is not counted; the script separates deliberate 5xx (a disabled
+  # feature answering 501/503) from defects, and exits non-zero only on the
+  # latter — or on a request the rate limiter swallowed, which would otherwise
+  # look like silence.
+  # ---------------------------------------------------------------------------
+  api-sweep:
+    name: API Sweep (every endpoint)
+    runs-on: ubuntu-latest
+
+    # Postgres is started as a step, from docker/postgres; see the tests job.
+    services:
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+      # OpenSearch and object storage are here because the job was simulated without them
+      # and 20 of its 22 failures were their absence: search answered 503, and
+      # every media, AI, contact-sheet, report-export and PDF endpoint returned a
+      # bare 500. A gate that only passes against a stripped-down environment is
+      # not a gate.
+      opensearch:
+        image: opensearchproject/opensearch:2.19.0
+        env:
+          discovery.type: single-node
+          DISABLE_SECURITY_PLUGIN: 'true'
+          OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+        options: >-
+          --health-cmd "curl -sf http://localhost:9200/_cluster/health || exit 1"
+          --health-interval 15s
+          --health-timeout 10s
+          --health-retries 10
+        ports:
+          - 9200:9200
+
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/madrona_sweep
+      ALEMBIC_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/madrona_sweep
+      REDIS_URL: redis://localhost:6379/0
+      # "testing", not "test": config.py accepts only development,
+      # production or testing, and a bare "test" fails validation before
+      # a single seed runs.
+      APP_ENV: testing
+      SECRET_KEY: sweep-ci-secret-key-not-used-for-anything-real
+      # Features that need an external service stay off, so they answer with a
+      # deliberate 503 the sweep classifies as a gate rather than crashing.
+      # Explicit, not AUTH_PROVIDER=auto: auto picks Cognito the moment any
+      # COGNITO_* value is in the environment, and then the sweep's password
+      # login is answered by Cognito with NotAuthorizedException. Local is
+      # what a seeded user in a throwaway database can actually authenticate
+      # against.
+      AUTH_PROVIDER: local
+      AGENT_ENABLED: 'false'
+      SEMANTIC_SEARCH_ENABLED: 'false'
+      EMAIL_ENABLED: 'false'
+      OPENSEARCH_HOSTS: localhost:9200
+      OPENSEARCH_ENABLED: 'true'
+      S3_ENDPOINT_URL: http://localhost:8333
+      S3_PUBLIC_ENDPOINT_URL: http://localhost:8333
+      S3_MEDIA_BUCKET: madrona-media
+      S3_PLATFORM_BUCKET: madrona-platform
+      AWS_ACCESS_KEY_ID: madrona-s3
+      AWS_SECRET_ACCESS_KEY: madrona-s3-ci
+      AWS_REGION: us-west-2
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free up runner disk
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android \
+                      /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo docker image prune --all --force >/dev/null 2>&1 || true
+          df -h /
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Start Postgres (the image docker-compose builds)
+        # See the tests job. Bare, like the other two: the next step creates
+        # the schemas and extensions the sweep needs.
+        run: |
+          docker build -t madrona-postgres:ci ./docker/postgres
+          mkdir -p "$RUNNER_TEMP/no-initdb"
+          docker run -d --name madrona-postgres-ci -p 5432:5432 \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            -e POSTGRES_DB=madrona_sweep \
+            -v "$RUNNER_TEMP/no-initdb:/docker-entrypoint-initdb.d" \
+            madrona-postgres:ci
+          for i in $(seq 1 60); do
+            docker exec madrona-postgres-ci pg_isready -h 127.0.0.1 -U postgres -d madrona_sweep >/dev/null 2>&1 && break
+            sleep 1
+          done
+          docker exec madrona-postgres-ci pg_isready -h 127.0.0.1 -U postgres -d madrona_sweep \
+            || { docker logs madrona-postgres-ci; exit 1; }
+
+      - name: Create schemas and extensions
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -d madrona_sweep -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE EXTENSION IF NOT EXISTS postgis;
+          CREATE EXTENSION IF NOT EXISTS vector;
+          CREATE SCHEMA IF NOT EXISTS collections;
+          CREATE SCHEMA IF NOT EXISTS content;
+          CREATE SCHEMA IF NOT EXISTS flow;
+          CREATE SCHEMA IF NOT EXISTS media;
+          CREATE SCHEMA IF NOT EXISTS reports;
+          SQL
+
+      - name: Start SeaweedFS (S3-compatible object storage)
+        # Not a service container: Actions gives no way to set a service
+        # container's command, and this needs `mini` with specific flags — the
+        # buckets to create, and the WebDAV/admin/Iceberg/Lance listeners off.
+        # Matches docker-compose.yml, tag pinned deliberately.
+        run: |
+          docker run -d --name seaweedfs \
+            -p 8333:8333 \
+            -e AWS_ACCESS_KEY_ID=madrona-s3 \
+            -e AWS_SECRET_ACCESS_KEY=madrona-s3-ci \
+            chrislusf/seaweedfs:4.48 \
+            mini -dir=/data \
+            -bucket=madrona-media,madrona-platform \
+            -webdav=false -admin.ui=false \
+            -s3.port.iceberg=0 -s3.port.lance=0
+          # An unsigned GET / against a working, credentialed S3 endpoint
+          # answers 403, so that is the ready signal and `curl -f` would hang
+          # until the loop expired.
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8333 || true)
+            case "$code" in
+              200|403) echo "SeaweedFS S3 ready after ${i}s"; exit 0 ;;
+            esac
+            sleep 1
+          done
+          echo "SeaweedFS did not become ready"; docker logs seaweedfs; exit 1
+
+      - name: Create the object-store buckets
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          import boto3, botocore
+          s3 = boto3.client(
+              "s3", endpoint_url="http://localhost:8333",
+              aws_access_key_id="madrona-s3",
+              aws_secret_access_key="madrona-s3-ci",
+              region_name="us-west-2",
+          )
+          for bucket in ("madrona-media", "madrona-platform"):
+              try:
+                  s3.create_bucket(Bucket=bucket)
+                  print("created", bucket)
+              except botocore.exceptions.ClientError as exc:
+                  print(bucket, "->", exc.response["Error"]["Code"])
+          PY
+
+      - name: Migrate
+        working-directory: backend
+        run: python -m alembic upgrade head
+
+      - name: Seed
+        working-directory: backend
+        run: |
+          for seed in seed_roles_and_permissions seed_applications seed_lookup_data \
+                      seed_document_templates seed_exhibit_defaults seed_role_profiles; do
+            echo "-- $seed"
+            python -m "seeds.$seed" || echo "   ($seed failed; continuing)"
+          done
+          # Creates the organization and the user the sweep signs in as.
+          python -m seeds.seed_e2e_test_data
+
+      - name: Seed one row per table the sweep needs an id from
+        working-directory: backend
+        run: |
+          ORG=$(PGPASSWORD=postgres psql -h localhost -U postgres -d madrona_sweep -tAc \
+            "SELECT organization_id FROM organizations WHERE slug = 'e2e-test-org' LIMIT 1")
+          echo "org: $ORG"
+          python scripts/seed_sweep_fixtures.py --org "$ORG" \
+            --db "postgresql+psycopg://postgres:postgres@localhost:5432/madrona_sweep"
+
+      - name: Start the API
+        working-directory: backend
+        run: |
+          python -m uvicorn app.asgi:application --host 127.0.0.1 --port 8000 \
+            > /tmp/api.log 2>&1 &
+          for _ in $(seq 1 60); do
+            if curl -sf -o /dev/null http://127.0.0.1:8000/health; then
+              echo "API up"; exit 0
+            fi
+            sleep 2
+          done
+          echo "API did not start"; tail -80 /tmp/api.log; exit 1
+
+      - name: Sweep every endpoint
+        working-directory: backend
+        run: |
+          python scripts/api_sweep.py --mode all \
+            --base http://127.0.0.1:8000 \
+            --db postgresql://postgres:postgres@localhost:5432/madrona_sweep \
+            --json /tmp/sweep.json
+
+      - name: API log (on failure)
+        if: failure()
+        # The tail is for a quick look; the tracebacks are what you actually
+        # need and they scroll off long before the run ends. Print every
+        # unhandled exception the app logged, then upload the whole log below
+        # — a 500 whose cause is off the top of a 200-line tail costs a full
+        # extra CI round trip to diagnose.
+        run: |
+          echo "=== unhandled exceptions ==="
+          grep -a -B2 -A25 "Unhandled exception on" /tmp/api.log | tail -400 || echo "(none logged)"
+          echo "=== last 200 lines ==="
+          tail -200 /tmp/api.log
+
+      - name: Upload the API log (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-sweep-app-log
+          path: /tmp/api.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload sweep results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-sweep-results
+          path: /tmp/sweep.json
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------------
+  # Schema audit — warn on model/migration/usage drift.
+  # ---------------------------------------------------------------------------
+  schema-audit:
+    name: Schema Usage Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # The script exits 0 unless --fail-on-unused is passed, so its findings
+      # are advisory by design. What must NOT be swallowed is the script
+      # failing to run at all: these steps used to invoke `scripts/...` from
+      # the repo root (the files live in backend/scripts/maintenance/) with no
+      # dependencies installed, and `|| true` turned both errors into a green
+      # check that uploaded a "can't open file" traceback as its report.
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run schema audit (warn mode)
+        working-directory: backend
+        run: |
+          python scripts/maintenance/audit_schema_usage.py > schema-audit.json
+
+      - name: Generate deprecation summary
+        working-directory: backend
+        run: |
+          python scripts/maintenance/schema_deprecate.py schema-audit.json --format summary > schema-summary.txt
+          cat schema-summary.txt
+
+      - name: Upload audit artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: schema-audit-report
+          path: |
+            backend/schema-audit.json
+            backend/schema-summary.txt
+          retention-days: 90

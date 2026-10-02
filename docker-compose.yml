@@ -1,0 +1,473 @@
+# Shared worker environment.
+#
+# celery-worker and pipeline-worker run the same image with different
+# commands and need the same configuration. This was 46 duplicated lines for
+# one worker; a second copy would be a third place for the three to drift
+# apart, which is exactly the failure the comments on celery-worker describe.
+x-worker-environment: &worker-environment
+      APP_ENV: ${APP_ENV:-production}
+      SECRET_KEY: ${SECRET_KEY}
+      # App runtime runs as the NOBYPASSRLS madrona_app role so RLS is enforced.
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://${DB_APP_USERNAME:-madrona_app}:${DB_APP_PASSWORD:-madrona_app_test}@postgres:5432/${POSTGRES_DB:-madrona}}
+      # Migrations + admin_db_session use the owner (BYPASSRLS) role.
+      ALEMBIC_DATABASE_URL: ${ALEMBIC_DATABASE_URL:-postgresql+psycopg://${POSTGRES_USER:-madrona}:${POSTGRES_PASSWORD:-madrona}@postgres:5432/${POSTGRES_DB:-madrona}}
+      REDIS_URL: ${REDIS_URL:-redis://:${REDIS_PASSWORD:-madrona-redis-changeme}@redis:6379/0}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      AI_PROVIDER_PREFERENCE: ${AI_PROVIDER_PREFERENCE:-auto}
+      AI_TAGGING_ENABLED: ${AI_TAGGING_ENABLED:-false}
+      # Origin for links in transactional email. nginx serves the app on :80
+      # in this stack; without this the code default (a Vite dev port) would be
+      # emailed to users.
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost}
+      # Sender and support addresses. Empty means <name>@<APP_BASE_URL host>.
+      SES_ACCOUNTS_FROM: ${SES_ACCOUNTS_FROM:-}
+      SES_NOTIFICATIONS_FROM: ${SES_NOTIFICATIONS_FROM:-}
+      SUPPORT_EMAIL: ${SUPPORT_EMAIL:-}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # AWS credentials for S3 and MediaConvert
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-madrona-s3}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-madrona-s3-changeme}
+      AWS_REGION: ${AWS_REGION:-us-west-2}
+      # Same self-hosted storage/search/email wiring as the backend —
+      # celery tasks upload derivatives, index search, and send emails.
+      S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-http://seaweedfs:8333}
+      # Presigned URLs are opened by the browser, which is outside the
+      # container network and cannot resolve "seaweedfs". Sign them against a
+      # host-reachable address instead. Change this to your public origin
+      # when serving Madrona to anyone other than localhost.
+      # Presigned URLs are signed for the origin the BROWSER uses. The
+      # frontend proxies the buckets same-origin (see frontend/nginx.conf),
+      # so this is the app's public URL, not the object store's own port — a direct
+      # plain-HTTP object URL is blocked by the page's img-src CSP.
+      # Set this to your real public URL when not on localhost.
+      S3_PUBLIC_ENDPOINT_URL: ${S3_PUBLIC_ENDPOINT_URL:-${PUBLIC_APP_URL:-http://localhost}}
+      S3_MEDIA_BUCKET: ${S3_MEDIA_BUCKET:-madrona-media}
+      S3_PLATFORM_BUCKET: ${S3_PLATFORM_BUCKET:-madrona-platform}
+      OPENSEARCH_HOSTS: ${OPENSEARCH_HOSTS:-opensearch:9200}
+      OPENSEARCH_ENABLED: ${OPENSEARCH_ENABLED:-true}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-smtp}
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      MEDIACONVERT_ROLE_ARN: ${MEDIACONVERT_ROLE_ARN}
+      MEDIA_CDN_URL: ${MEDIA_CDN_URL:-}
+      SMITHSONIAN_API_KEY: ${SMITHSONIAN_API_KEY:-}
+      # DAM AI Features
+      CLIP_ENABLED: ${CLIP_ENABLED:-false}
+      CLIP_MODEL_NAME: ${CLIP_MODEL_NAME:-ViT-B/32}
+      CLIP_DEVICE: ${CLIP_DEVICE:-cpu}
+      WHISPER_ENABLED: ${WHISPER_ENABLED:-false}
+      WHISPER_MODEL: ${WHISPER_MODEL:-base}
+      WHISPER_DEVICE: ${WHISPER_DEVICE:-cpu}
+      OCR_ENABLED: ${OCR_ENABLED:-false}
+      OCR_LANGUAGES: ${OCR_LANGUAGES:-eng}
+      TUS_ENABLED: ${TUS_ENABLED:-false}
+      TUS_ENDPOINT: ${TUS_ENDPOINT:-http://tusd:1080/files/}
+      UNOSERVER_ENABLED: ${UNOSERVER_ENABLED:-false}
+      UNOSERVER_HOST: ${UNOSERVER_HOST:-unoserver}
+      UNOSERVER_PORT: ${UNOSERVER_PORT:-2003}
+
+services:
+  postgres:
+    build:
+      context: ./docker/postgres
+      dockerfile: Dockerfile
+    image: madrona-postgres:16-3.4
+    container_name: madrona-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-madrona}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-madrona}
+      POSTGRES_DB: ${POSTGRES_DB:-madrona}
+      # Runtime app role (NOBYPASSRLS) created by docker/postgres/init-db.sh on
+      # first initdb. The app connects as this role so RLS is enforced locally
+      # exactly like staging (owner POSTGRES_USER is used only for migrations +
+      # admin_db_session via ALEMBIC_DATABASE_URL). See backend/.env.example.
+      DB_APP_USERNAME: ${DB_APP_USERNAME:-madrona_app}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:-madrona_app_test}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-madrona}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - madrona-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: madrona-redis
+    ports:
+      - "127.0.0.1:${REDIS_HOST_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-madrona-redis-changeme}
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-madrona-redis-changeme}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - madrona-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    # Named so celery-worker can reuse it rather than building a second,
+    # identical image from the same Dockerfile.
+    image: madrona-backend:latest
+    container_name: madrona-backend
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      SECRET_KEY: ${SECRET_KEY}
+      # App runtime runs as the NOBYPASSRLS madrona_app role so RLS is enforced.
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://${DB_APP_USERNAME:-madrona_app}:${DB_APP_PASSWORD:-madrona_app_test}@postgres:5432/${POSTGRES_DB:-madrona}}
+      # Migrations + admin_db_session use the owner (BYPASSRLS) role.
+      ALEMBIC_DATABASE_URL: ${ALEMBIC_DATABASE_URL:-postgresql+psycopg://${POSTGRES_USER:-madrona}:${POSTGRES_PASSWORD:-madrona}@postgres:5432/${POSTGRES_DB:-madrona}}
+      REDIS_URL: ${REDIS_URL:-redis://:${REDIS_PASSWORD:-madrona-redis-changeme}@redis:6379/0}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      AI_PROVIDER_PREFERENCE: ${AI_PROVIDER_PREFERENCE:-auto}
+      AI_TAGGING_ENABLED: ${AI_TAGGING_ENABLED:-false}
+      # Origin for links in transactional email. nginx serves the app on :80
+      # in this stack; without this the code default (a Vite dev port) would be
+      # emailed to users.
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost}
+      # Sender and support addresses. Empty means <name>@<APP_BASE_URL host>.
+      SES_ACCOUNTS_FROM: ${SES_ACCOUNTS_FROM:-}
+      SES_NOTIFICATIONS_FROM: ${SES_NOTIFICATIONS_FROM:-}
+      SUPPORT_EMAIL: ${SUPPORT_EMAIL:-}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET}
+      # Self-hosted defaults: local password auth, SeaweedFS storage, compose OpenSearch
+      AUTH_PROVIDER: ${AUTH_PROVIDER:-auto}
+      S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-http://seaweedfs:8333}
+      # Presigned URLs are opened by the browser, which is outside the
+      # container network and cannot resolve "seaweedfs". Sign them against a
+      # host-reachable address instead. Change this to your public origin
+      # when serving Madrona to anyone other than localhost.
+      # Presigned URLs are signed for the origin the BROWSER uses. The
+      # frontend proxies the buckets same-origin (see frontend/nginx.conf),
+      # so this is the app's public URL, not the object store's own port — a direct
+      # plain-HTTP object URL is blocked by the page's img-src CSP.
+      # Set this to your real public URL when not on localhost.
+      S3_PUBLIC_ENDPOINT_URL: ${S3_PUBLIC_ENDPOINT_URL:-${PUBLIC_APP_URL:-http://localhost}}
+      S3_MEDIA_BUCKET: ${S3_MEDIA_BUCKET:-madrona-media}
+      S3_PLATFORM_BUCKET: ${S3_PLATFORM_BUCKET:-madrona-platform}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-madrona-s3}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-madrona-s3-changeme}
+      # Must match the workers', or the API and workers sign S3 URLs for
+      # different regions — which real S3 rejects.
+      AWS_REGION: ${AWS_REGION:-us-west-2}
+      OPENSEARCH_HOSTS: ${OPENSEARCH_HOSTS:-opensearch:9200}
+      OPENSEARCH_ENABLED: ${OPENSEARCH_ENABLED:-true}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-smtp}
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      # Published at /.well-known/security.txt (RFC 9116). Unset, the endpoint
+      # advertises security@<app host>, which may be nobody's mailbox.
+      SECURITY_CONTACT: ${SECURITY_CONTACT:-}
+      # The API reads all three and had none of them.
+      #
+      # MEDIACONVERT_ROLE_ARN was in the worker environment only, so
+      # is_video_transcoding_available() — called by the media router — told
+      # the UI transcoding was unavailable on a stack where the workers were
+      # configured to do it.
+      #
+      # MEDIA_CDN_URL and SMITHSONIAN_API_KEY were in .env.example and in no
+      # service at all. The first is read on the public discover routes, so a
+      # configured CDN was ignored and every image fell back to a presigned
+      # S3 URL.
+      MEDIACONVERT_ROLE_ARN: ${MEDIACONVERT_ROLE_ARN}
+      MEDIA_CDN_URL: ${MEDIA_CDN_URL:-}
+      SMITHSONIAN_API_KEY: ${SMITHSONIAN_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${BACKEND_HOST_PORT:-8000}:8000"
+    volumes:
+      # Demo fixture images only — read-only, no secrets. Excluded from the
+      # image (296MB) but needed by seeds.seed_demo_collection, which uploads
+      # them into object storage. Deliberately narrow: mounting all of ./backend would
+      # inject the developer's .env into the container.
+      - ./backend/app/services/sandbox_seeder/fixtures/images:/app/app/services/sandbox_seeder/fixtures/images:ro
+    networks:
+      - madrona-network
+
+  celery-worker:
+    # Same image as the backend — identical code, different command. The shared
+    # `image:` tag is what keeps that true: both services build the same
+    # context to the same tag, so there is still exactly one image and `build
+    # backend` cannot leave the worker on stale code (caught 2026-09-01: the
+    # worker was 18h behind and silently ignored a config change).
+    #
+    # The build block is required, not redundant. Without it compose has no
+    # way to produce madrona-backend:latest for this service and tries to pull
+    # it from Docker Hub, which fails on any machine that has not already
+    # built the backend — i.e. every fresh clone.
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: madrona-backend:latest
+    container_name: madrona-celery-worker
+    environment:
+      <<: *worker-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # -Q matters: tasks are routed to named queues (media, reports, search,
+    # ai) and a worker with no -Q consumes only 'default'. Without this a
+    # single-worker deployment silently never generates derivatives or
+    # thumbnails — uploads succeed and stay 'pending' forever.
+    command: celery -A app.celery_app worker --loglevel=info --pool=prefork --concurrency=4 -Q default,media,reports,search,ai
+    # Override the image's healthcheck: it polls localhost:8000/health,
+    # which only exists in the API container. A worker runs no web server,
+    # so the inherited check can never pass and the container sits
+    # permanently "unhealthy" even while processing tasks fine. Ask celery
+    # itself instead.
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.celery_app inspect ping -d celery@$$HOSTNAME || exit 1"]
+      interval: 60s
+      timeout: 15s
+      start_period: 60s
+      retries: 3
+    networks:
+      - madrona-network
+
+  pipeline-worker:
+    # Bridge's pipeline runs. Separate from celery-worker on purpose: this is a
+    # polling loop over the `jobs` table, not a Celery consumer, so no broker
+    # queue reaches it and Celery's own worker cannot run it.
+    #
+    # Nothing started it before. `WORKER_ENABLED` exists in config.py and is
+    # read by nothing, and the only caller of start_worker() is this module's
+    # own __main__ — which crashed on an import of `init_engine`, a function
+    # that has never existed. So a default install accepted pipeline runs and
+    # left them queued forever, with no error anywhere to say why.
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: madrona-backend:latest
+    container_name: madrona-pipeline-worker
+    environment:
+      <<: *worker-environment
+      # The one knob for how hard this loop polls the jobs table.
+      WORKER_POLL_INTERVAL_SECONDS: ${WORKER_POLL_INTERVAL_SECONDS:-10}
+    # No volumes. ./backend:/app used to be mounted here and shadowed the
+    # image with host source, which defeats the shared-image guarantee the
+    # celery-worker comment above is careful about, and pulled any
+    # backend/.env into the container — the hazard the backend service's own
+    # volume comment warns of.
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: python -m app.services.worker
+    # The image's healthcheck polls localhost:8000/health, which only the API
+    # container serves — inherited here it could never pass. This loop exposes
+    # nothing to poll, so check the process is alive and let the log say the rest.
+    healthcheck:
+      # Reads the heartbeat the loop touches each tick (HEARTBEAT_PATH in
+      # app/services/worker.py). Two earlier versions of this check were
+      # useless: the image's inherited check polls localhost:8000, which this
+      # container does not serve, and a pgrep check could never pass because
+      # the image has no procps. Both leave a container permanently unhealthy
+      # while the worker is fine — and neither would notice the failure that
+      # matters, which is the loop thread dying while the process lives on.
+      test: ["CMD-SHELL", "python -c \"import os,sys,time; p='/tmp/madrona-worker-heartbeat'; sys.exit(0 if os.path.exists(p) and time.time()-os.path.getmtime(p) < 180 else 1)\""]
+      interval: 60s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - madrona-network
+
+  # Object storage: SeaweedFS, serving the S3 API the backend uses. The tag is
+  # pinned so an upstream release cannot change the stack underneath you.
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.48
+    container_name: madrona-seaweedfs
+    # `mini` is the documented single-process mode: master, volume server,
+    # filer and S3 gateway together. -bucket creates the buckets on startup,
+    # so no separate init container is needed.
+    #
+    # WebDAV, the admin UI, Iceberg and Lance are all enabled by default in
+    # mini mode. Madrona uses none of them, so they are turned off rather than
+    # shipped as four extra listening ports.
+    command: >
+      mini -dir=/data
+      -bucket=${S3_MEDIA_BUCKET:-madrona-media},${S3_PLATFORM_BUCKET:-madrona-platform}
+      -webdav=false
+      -admin.ui=false
+      -s3.port.iceberg=0
+      -s3.port.lance=0
+    environment:
+      # SeaweedFS seeds its S3 admin identity from these, which are the same
+      # two variables the backend signs with — so there is no separate
+      # credentials file to drift out of step with the application. Verified
+      # against this image: a wrong key gets InvalidAccessKeyId and an
+      # unsigned request gets 403, so it is not open by default.
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-madrona-s3}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-madrona-s3-changeme}
+    ports:
+      - "127.0.0.1:${S3_HOST_PORT:-8333}:8333"
+    volumes:
+      - seaweedfs_data:/data
+    healthcheck:
+      # Probes the S3 gateway rather than the master, because S3 is the only
+      # part the application uses. An unsigned GET / on a working, credentialed
+      # S3 endpoint is a 403 — that is the healthy answer, so `curl -f` would
+      # be wrong here.
+      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:8333 | grep -qE '^(200|403)$$'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - madrona-network
+
+  opensearch:
+    image: opensearchproject/opensearch:2.19.0
+    container_name: madrona-opensearch
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+      bootstrap.memory_lock: "true"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "127.0.0.1:${OPENSEARCH_HOST_PORT:-9200}:9200"
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    networks:
+      - madrona-network
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.19.0
+    container_name: madrona-opensearch-dashboards
+    environment:
+      OPENSEARCH_HOSTS: '["http://opensearch:9200"]'
+      DISABLE_SECURITY_DASHBOARDS_PLUGIN: "true"
+    ports:
+      - "127.0.0.1:${OPENSEARCH_DASHBOARDS_HOST_PORT:-5601}:5601"
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    networks:
+      - madrona-network
+    # Debug/ops UI, not needed by the app — start on demand:
+    #   docker compose --profile dashboards up -d opensearch-dashboards
+    profiles: ["dashboards"]
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: madrona-ollama
+    ports:
+      - "127.0.0.1:${OLLAMA_HOST_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - madrona-network
+    # Note: Pull models after starting: docker exec madrona-ollama ollama pull llama2:7b
+
+  # TUS resumable upload server (optional — enable via TUS_ENABLED=true)
+  tusd:
+    image: tusproject/tusd:latest
+    container_name: madrona-tusd
+    ports:
+      - "127.0.0.1:${TUSD_HOST_PORT:-1080}:1080"
+    volumes:
+      - tusd_data:/srv/tusd-data
+    command: >
+      -behind-proxy
+      -hooks-http http://backend:8000/api/hooks/tus
+      -hooks-enabled-events pre-create,post-finish
+    networks:
+      - madrona-network
+    profiles:
+      - tus  # Only start when explicitly requested: docker compose --profile tus up
+
+  # LibreOffice headless for office document preview (optional — enable via UNOSERVER_ENABLED=true)
+  unoserver:
+    image: libreofficehq/libreoffice-unoserver:latest
+    container_name: madrona-unoserver
+    ports:
+      - "127.0.0.1:${UNOSERVER_HOST_PORT:-2003}:2003"
+    networks:
+      - madrona-network
+    profiles:
+      - office  # Only start when explicitly requested: docker compose --profile office up
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      # Frontend configuration is compiled into the bundle, so it passes at
+      # build time rather than as a runtime environment variable, and changing
+      # one needs `docker compose build frontend`. Empty is the normal case —
+      # see "Frontend build-time configuration" in .env.example. Adding a
+      # VITE_* name to the Dockerfile without adding it here leaves it wired to
+      # nothing, with no error to say so.
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+        VITE_MAP_STYLE_LIGHT: ${VITE_MAP_STYLE_LIGHT:-}
+        VITE_MAP_STYLE_DARK: ${VITE_MAP_STYLE_DARK:-}
+        VITE_MAP_STYLE_STANDARD: ${VITE_MAP_STYLE_STANDARD:-}
+        VITE_CARTO_API_KEY: ${VITE_CARTO_API_KEY:-}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
+        VITE_SENTRY_ENVIRONMENT: ${VITE_SENTRY_ENVIRONMENT:-}
+        VITE_SENTRY_TRACES_SAMPLE_RATE: ${VITE_SENTRY_TRACES_SAMPLE_RATE:-}
+        VITE_SENTRY_ALLOW_DEV: ${VITE_SENTRY_ALLOW_DEV:-}
+        VITE_TUS_ENDPOINT: ${VITE_TUS_ENDPOINT:-}
+        VITE_GUIDE_WIDGET_URL: ${VITE_GUIDE_WIDGET_URL:-}
+    container_name: madrona-frontend
+    ports:
+      - "${HTTP_HOST_PORT:-80}:80"
+    environment:
+      # Must match the backend's buckets: these become the nginx locations
+      # that proxy object storage same-origin.
+      MADRONA_MEDIA_BUCKET: ${S3_MEDIA_BUCKET:-madrona-media}
+      MADRONA_PLATFORM_BUCKET: ${S3_PLATFORM_BUCKET:-madrona-platform}
+      MADRONA_S3_UPSTREAM: ${MADRONA_S3_UPSTREAM:-http://seaweedfs:8333}
+      MADRONA_RESOLVER: ${MADRONA_RESOLVER:-127.0.0.11}
+    depends_on:
+      - backend
+    networks:
+      - madrona-network
+
+volumes:
+  seaweedfs_data:
+  opensearch_data:
+  postgres_data:
+  redis_data:
+  ollama_data:
+  tusd_data:
+
+networks:
+  madrona-network:
+    driver: bridge

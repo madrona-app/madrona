@@ -1,0 +1,351 @@
+{
+  "_comment": "Example configurations for database source connectors. These demonstrate the normalized DatabaseSourceConfig envelope for each supported database type.",
+
+  "postgres": {
+    "_description": "PostgreSQL configuration - requires host, port, database, username",
+    "minimal": {
+      "name": "Production Analytics DB",
+      "type": "postgres",
+      "host": "analytics-db.example.com",
+      "port": 5432,
+      "database": "analytics",
+      "username": "readonly_user",
+      "auth": {
+        "mode": "password",
+        "password": "dev-password-only"
+      }
+    },
+    "with_secret_ref": {
+      "name": "Production Analytics DB",
+      "type": "postgres",
+      "host": "analytics-db.example.com",
+      "port": 5432,
+      "database": "analytics",
+      "username": "readonly_user",
+      "auth": {
+        "mode": "password",
+        "secretRef": {
+          "type": "secrets_manager",
+          "key": "prod/analytics-db/readonly_password"
+        }
+      },
+      "tls": {
+        "mode": "verify-full",
+        "caCertRef": {
+          "type": "secrets_manager",
+          "key": "prod/rds-ca-cert"
+        },
+        "serverName": "analytics-db.example.com"
+      },
+      "driverOptions": {
+        "connectTimeoutMs": 30000,
+        "statementTimeoutMs": 120000,
+        "maxPoolSize": 3
+      }
+    },
+    "with_ssh_tunnel": {
+      "name": "Bastion-Protected DB",
+      "type": "postgres",
+      "host": "10.0.1.50",
+      "port": 5432,
+      "database": "internal_db",
+      "username": "app_user",
+      "auth": {
+        "mode": "password",
+        "secretRef": {
+          "type": "vault",
+          "key": "secret/data/databases/internal-pg"
+        }
+      },
+      "network": {
+        "mode": "ssh_tunnel",
+        "sshTunnelRef": {
+          "host": "bastion.example.com",
+          "port": 22,
+          "username": "tunnel_user",
+          "privateKeyRef": {
+            "type": "secrets_manager",
+            "key": "prod/bastion/ssh-key"
+          }
+        }
+      }
+    },
+    "aws_rds_iam": {
+      "name": "AWS RDS with IAM Auth",
+      "type": "postgres",
+      "host": "mydb.cluster-xyz.us-east-1.rds.amazonaws.com",
+      "port": 5432,
+      "database": "myapp",
+      "username": "iam_db_user",
+      "auth": {
+        "mode": "iam"
+      },
+      "tls": {
+        "mode": "verify-full",
+        "caCertRef": {
+          "type": "file",
+          "key": "/etc/ssl/certs/rds-ca-2019-root.pem"
+        }
+      }
+    }
+  },
+
+  "mysql": {
+    "_description": "MySQL configuration - requires host, port, database, username",
+    "minimal": {
+      "name": "WordPress Database",
+      "type": "mysql",
+      "host": "mysql.example.com",
+      "port": 3306,
+      "database": "wordpress_prod",
+      "username": "wp_reader",
+      "auth": {
+        "mode": "password",
+        "password": "dev-password-only"
+      }
+    },
+    "production": {
+      "name": "Production MySQL",
+      "type": "mysql",
+      "host": "mysql-primary.example.com",
+      "port": 3306,
+      "database": "ecommerce",
+      "username": "analytics_ro",
+      "auth": {
+        "mode": "password",
+        "secretRef": {
+          "type": "vault",
+          "key": "secret/data/mysql/analytics"
+        }
+      },
+      "tls": {
+        "mode": "verify-ca",
+        "caCertRef": {
+          "type": "file",
+          "key": "/etc/mysql/ssl/ca-cert.pem"
+        }
+      },
+      "driverOptions": {
+        "connectTimeoutMs": 15000,
+        "statementTimeoutMs": 60000,
+        "maxPoolSize": 5
+      }
+    }
+  },
+
+  "sqlserver": {
+    "_description": "SQL Server configuration - requires host, port, database, username. Supports named instances.",
+    "minimal": {
+      "name": "Legacy ERP Database",
+      "type": "sqlserver",
+      "host": "sql-server.example.com",
+      "port": 1433,
+      "database": "ERP_Production",
+      "username": "report_user",
+      "auth": {
+        "mode": "password",
+        "password": "dev-password-only"
+      }
+    },
+    "named_instance": {
+      "name": "Named Instance DB",
+      "type": "sqlserver",
+      "host": "sql-cluster.example.com",
+      "port": 1433,
+      "instance": "REPORTING",
+      "database": "Analytics",
+      "username": "bi_reader",
+      "auth": {
+        "mode": "password",
+        "secretRef": {
+          "type": "ssm",
+          "key": "/prod/sqlserver/bi_reader_password"
+        }
+      },
+      "tls": {
+        "mode": "require"
+      }
+    },
+    "windows_auth": {
+      "name": "Windows Integrated Auth",
+      "type": "sqlserver",
+      "host": "corp-sql.internal.example.com",
+      "port": 1433,
+      "database": "CorpData",
+      "username": "DOMAIN\\svc_madrona",
+      "auth": {
+        "mode": "kerberos"
+      }
+    }
+  },
+
+  "oracle": {
+    "_description": "Oracle configuration - requires host, port, username, and ONE OF: serviceName, sid, or connectString",
+    "with_service_name": {
+      "name": "Oracle EBS Database",
+      "type": "oracle",
+      "host": "oracle-prod.example.com",
+      "port": 1521,
+      "serviceName": "EBSPROD",
+      "username": "APPS_RO",
+      "auth": {
+        "mode": "password",
+        "secretRef": {
+          "type": "vault",
+          "key": "secret/data/oracle/apps_ro"
+        }
+      }
+    },
+    "with_sid": {
+      "name": "Legacy Oracle SID",
+      "type": "oracle",
+      "host": "oracle-legacy.example.com",
+      "port": 1521,
+      "sid": "ORCL",
+      "username": "LEGACY_USER",
+      "auth": {
+        "mode": "password",
+        "password": "dev-password-only"
+      }
+    },
+    "with_connect_string": {
+      "name": "Oracle RAC Cluster",
+      "type": "oracle",
+      "host": "oracle-scan.example.com",
+      "port": 1521,
+      "connectString": "(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=rac-node1.example.com)(PORT=1521))(ADDRESS=(PROTOCOL=TCP)(HOST=rac-node2.example.com)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=RACPROD)))",
+      "username": "APP_USER",
+      "auth": {
+        "mode": "password",
+        "secretRef": {
+          "type": "secrets_manager",
+          "key": "prod/oracle-rac/app_user"
+        }
+      },
+      "tls": {
+        "mode": "verify-full"
+      }
+    }
+  },
+
+  "mongodb": {
+    "_description": "MongoDB configuration - supports EITHER connectionUri OR host+port. Database is optional.",
+    "with_connection_uri": {
+      "name": "MongoDB Atlas Cluster",
+      "type": "mongodb",
+      "connectionUri": "mongodb+srv://cluster0.example.mongodb.net/?retryWrites=true&w=majority",
+      "username": "app_user",
+      "auth": {
+        "mode": "password",
+        "secretRef": {
+          "type": "secrets_manager",
+          "key": "prod/mongodb-atlas/app_user"
+        }
+      }
+    },
+    "with_host_port": {
+      "name": "Self-Hosted MongoDB",
+      "type": "mongodb",
+      "host": "mongodb.example.com",
+      "port": 27017,
+      "database": "myapp",
+      "username": "reader",
+      "auth": {
+        "mode": "password",
+        "password": "dev-password-only"
+      },
+      "authSource": "admin",
+      "tls": {
+        "mode": "prefer"
+      }
+    },
+    "replica_set": {
+      "name": "MongoDB Replica Set",
+      "type": "mongodb",
+      "host": "mongo-primary.example.com",
+      "port": 27017,
+      "database": "analytics",
+      "replicaSet": "rs0",
+      "username": "analytics_reader",
+      "auth": {
+        "mode": "password",
+        "secretRef": {
+          "type": "vault",
+          "key": "secret/data/mongodb/analytics"
+        }
+      },
+      "authSource": "admin",
+      "tls": {
+        "mode": "require",
+        "caCertRef": {
+          "type": "file",
+          "key": "/etc/ssl/mongodb-ca.pem"
+        }
+      },
+      "driverOptions": {
+        "connectTimeoutMs": 10000,
+        "maxPoolSize": 10
+      }
+    }
+  },
+
+  "_secrets_pattern_notes": {
+    "description": "Secrets can be provided inline or via reference. Use secretRef in production.",
+    "supported_secret_types": {
+      "vault": "HashiCorp Vault - key is the secret path",
+      "env": "Environment variable - key is the variable name",
+      "ssm": "AWS Systems Manager Parameter Store - key is the parameter path",
+      "secrets_manager": "AWS Secrets Manager - key is the secret name/ARN",
+      "file": "Local file (for certs) - key is the file path"
+    },
+    "example_vault_ref": {
+      "type": "vault",
+      "key": "secret/data/databases/mydb"
+    },
+    "example_env_ref": {
+      "type": "env",
+      "key": "DATABASE_PASSWORD"
+    },
+    "example_ssm_ref": {
+      "type": "ssm",
+      "key": "/prod/myapp/db-password"
+    }
+  },
+
+  "_capabilities_summary": {
+    "postgres": {
+      "supportsSchemas": true,
+      "supportsViews": true,
+      "supportsSql": true,
+      "supportsSampling": true,
+      "defaultSchema": "public"
+    },
+    "mysql": {
+      "supportsSchemas": false,
+      "supportsViews": true,
+      "supportsSql": true,
+      "supportsSampling": true
+    },
+    "sqlserver": {
+      "supportsSchemas": true,
+      "supportsViews": true,
+      "supportsSql": true,
+      "supportsSampling": true,
+      "defaultSchema": "dbo"
+    },
+    "oracle": {
+      "supportsSchemas": true,
+      "supportsViews": true,
+      "supportsSql": true,
+      "supportsSampling": true
+    },
+    "mongodb": {
+      "supportsSchemas": false,
+      "supportsViews": false,
+      "supportsSql": false,
+      "supportsSampling": true,
+      "supportsTableDiscovery": true,
+      "supportsColumnDiscovery": false
+    }
+  }
+}

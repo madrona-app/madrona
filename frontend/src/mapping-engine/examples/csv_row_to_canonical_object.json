@@ -1,0 +1,257 @@
+{
+  "mapping": {
+    "id": "mapping_csv_simple_v1",
+    "version": "1.0.0",
+    "source": "csv_import",
+    "target": "canonical",
+    "description": "Maps simple CSV spreadsheet rows to canonical Object entities",
+    "createdAt": "2026-01-14T00:00:00Z"
+  },
+  "rules": [
+    {
+      "id": "set_id",
+      "name": "Generate ID from row data",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "id",
+      "from": "id",
+      "coalesce": ["object_id", "accession_number"],
+      "transform": "slugify"
+    },
+    {
+      "id": "warn_missing_id",
+      "name": "Warn if no ID field found",
+      "type": "EmitWarning",
+      "enabled": true,
+      "whenMissing": ["id", "object_id", "accession_number"],
+      "message": "CSV row missing identifier column (id, object_id, or accession_number)",
+      "severity": "error"
+    },
+    {
+      "id": "set_type",
+      "name": "Set type from CSV or default to Object",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "type",
+      "from": "object_type",
+      "coalesce": ["type", "category"],
+      "default": "Object"
+    },
+    {
+      "id": "set_label",
+      "name": "Set label from title columns",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "label",
+      "from": "title",
+      "coalesce": ["name", "object_name", "label"],
+      "default": "Untitled"
+    },
+    {
+      "id": "warn_missing_title",
+      "name": "Warn if title is missing",
+      "type": "EmitWarning",
+      "enabled": true,
+      "whenMissing": ["title", "name", "object_name"],
+      "message": "CSV row missing title/name field",
+      "severity": "warning"
+    },
+    {
+      "id": "set_description",
+      "name": "Set description from text fields",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "description",
+      "from": "description",
+      "coalesce": ["notes", "summary", "caption"],
+      "transform": "trimWhitespace"
+    },
+    {
+      "id": "map_identifiers_accession",
+      "name": "Map accession number to identifier",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "identifiers",
+      "from": "accession_number",
+      "itemTemplate": {
+        "type": "accession",
+        "value": "{{value}}",
+        "system": "csv_import",
+        "primary": true
+      }
+    },
+    {
+      "id": "map_identifiers_inventory",
+      "name": "Map inventory number to identifier",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "identifiers",
+      "from": "inventory_number",
+      "itemTemplate": {
+        "type": "inventory",
+        "value": "{{value}}",
+        "system": "csv_import"
+      }
+    },
+    {
+      "id": "map_tags_to_classifications",
+      "name": "Parse comma-separated tags",
+      "type": "MapArray",
+      "enabled": true,
+      "toPath": "classifications",
+      "fromMany": "tags",
+      "itemTemplate": {
+        "type": "tag",
+        "value": "{{item}}",
+        "system": "local"
+      }
+    },
+    {
+      "id": "map_keywords_to_classifications",
+      "name": "Parse semicolon-separated keywords",
+      "type": "MapArray",
+      "enabled": true,
+      "toPath": "classifications",
+      "fromMany": "keywords",
+      "itemTemplate": {
+        "type": "keyword",
+        "value": "{{item}}",
+        "system": "local"
+      }
+    },
+    {
+      "id": "emit_creator_relationship",
+      "name": "Create creator relationship from artist column",
+      "type": "EmitRelationship",
+      "enabled": true,
+      "relationshipType": "created_by",
+      "targetFrom": "artist_id",
+      "roleFrom": "artist_role"
+    },
+    {
+      "id": "emit_location_relationship",
+      "name": "Create location relationship",
+      "type": "EmitRelationship",
+      "enabled": true,
+      "relationshipType": "located_at",
+      "targetFrom": "location_id",
+      "whereFrom": "location_name"
+    },
+    {
+      "id": "set_date_created",
+      "name": "Parse creation date",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "dates.created",
+      "from": "date_created",
+      "coalesce": ["creation_date", "year", "date"],
+      "transform": "parseFlexibleDate"
+    },
+    {
+      "id": "warn_invalid_date",
+      "name": "Warn if date format is invalid",
+      "type": "EmitWarning",
+      "enabled": true,
+      "whenPresent": ["date_created"],
+      "condition": "{{!isValidDate(date_created)}}",
+      "message": "Date format could not be parsed: {{date_created}}",
+      "severity": "warning"
+    },
+    {
+      "id": "set_properties_medium",
+      "name": "Set medium/material",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "properties.medium",
+      "from": "medium",
+      "coalesce": ["material", "materials"]
+    },
+    {
+      "id": "set_properties_dimensions",
+      "name": "Combine dimension fields",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "properties.dimensions",
+      "from": "dimensions",
+      "coalesce": ["size"]
+    },
+    {
+      "id": "set_properties_condition",
+      "name": "Set condition notes",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "properties.condition",
+      "from": "condition",
+      "coalesce": ["condition_notes", "state"]
+    },
+    {
+      "id": "set_properties_collection",
+      "name": "Set collection name",
+      "type": "SetField",
+      "enabled": true,
+      "toPath": "properties.collection",
+      "from": "collection",
+      "coalesce": ["collection_name", "series"]
+    },
+    {
+      "id": "set_csv_extension",
+      "name": "Preserve original CSV data",
+      "type": "SetExtension",
+      "enabled": true,
+      "namespace": "org.madrona.csv",
+      "extensionType": "import_metadata",
+      "dataFrom": "$"
+    },
+    {
+      "id": "warn_empty_row",
+      "name": "Warn if critical fields are all empty",
+      "type": "EmitWarning",
+      "enabled": true,
+      "whenMissing": ["title", "name", "object_name", "description"],
+      "message": "CSV row appears to be mostly empty - may be invalid",
+      "severity": "error"
+    },
+    {
+      "id": "warn_special_characters",
+      "name": "Warn if title contains unusual characters",
+      "type": "EmitWarning",
+      "enabled": true,
+      "whenPresent": ["title"],
+      "condition": "{{hasControlCharacters(title)}}",
+      "message": "Title contains control characters or unusual encoding",
+      "severity": "info"
+    }
+  ],
+  "metadata": {
+    "author": "Madrona Team",
+    "organization": "generic",
+    "usageNotes": "This mapping works with generic CSV exports. Column names are flexible and use fallbacks. Expects UTF-8 encoding.",
+    "expectedColumns": [
+      "id or object_id or accession_number (required)",
+      "title or name or object_name (required)",
+      "description or notes (recommended)",
+      "artist_id (for relationships)",
+      "date_created or year (recommended)",
+      "medium or material (optional)",
+      "tags or keywords (optional)"
+    ],
+    "sampleSource": {
+      "id": "obj_2024_001",
+      "title": "Ceramic Vase with Blue Glaze",
+      "description": "Hand-thrown ceramic vase with cobalt blue glaze, featuring geometric patterns",
+      "accession_number": "2024.001",
+      "inventory_number": "INV-456",
+      "artist_id": "potter_123",
+      "artist_role": "Potter",
+      "date_created": "2023",
+      "medium": "Ceramic, cobalt glaze",
+      "dimensions": "15 × 8 × 8 cm",
+      "tags": "ceramics,modern,blue",
+      "keywords": "pottery;decorative arts;contemporary",
+      "condition": "Excellent",
+      "collection": "Contemporary Ceramics",
+      "location_id": "storage_a",
+      "location_name": "Storage Room A, Shelf 3"
+    }
+  }
+}

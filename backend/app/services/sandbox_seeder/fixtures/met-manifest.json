@@ -1,0 +1,4994 @@
+[
+  {
+    "media": {
+      "alt_text": "Vase by Louis C. Tiffany",
+      "copyright_status": "public_domain",
+      "creator": "Louis C. Tiffany",
+      "credit": "Gift of H. O. Havemeyer, 1896",
+      "file_size": 124481,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ad/original/DT190.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/9480.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 5515,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/9480_thumb.jpg",
+      "thumbnail_width": 160,
+      "title": "Vase",
+      "width": 960
+    },
+    "met_id": "9480",
+    "object_fields": {
+      "brief_description": "Vase",
+      "creation_date_display": "1893–96",
+      "creation_date_earliest": "1893-01-01",
+      "creation_date_latest": "1896-12-31",
+      "creation_place": "American",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Louis C. Tiffany",
+          "role": "Designer",
+          "ulan_id": "500030415"
+        }
+      ],
+      "credit_line": "Gift of H. O. Havemeyer, 1896",
+      "materials": [
+        {
+          "name": "Favrile glass",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Vase",
+      "object_status": "accessioned",
+      "object_type": "Vase",
+      "physical_description": "14 1/8 x 11 1/2 in. (35.9 x 29.2 cm)",
+      "responsible_department": "The American Wing",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Feathers",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-9480",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Vase",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Fur Traders Descending the Missouri by George Caleb Bingham",
+      "copyright_status": "public_domain",
+      "creator": "George Caleb Bingham",
+      "credit": "Morris K. Jesup Fund, 1933",
+      "file_size": 154734,
+      "height": 960,
+      "image_url": "https://images.metmuseum.org/CRDImages/ad/original/DT73.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/10159.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 6833,
+      "thumbnail_height": 160,
+      "thumbnail_s3_key": "sandbox-fixtures/met/10159_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Fur Traders Descending the Missouri",
+      "width": 1200
+    },
+    "met_id": "10159",
+    "object_fields": {
+      "brief_description": "Painting",
+      "creation_date_display": "1845",
+      "creation_date_earliest": "1845-01-01",
+      "creation_date_latest": "1845-12-31",
+      "creation_place": "American",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "George Caleb Bingham",
+          "role": "Artist",
+          "ulan_id": "500028547"
+        }
+      ],
+      "credit_line": "Morris K. Jesup Fund, 1933",
+      "materials": [
+        {
+          "name": "Oil on canvas",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Painting",
+      "object_status": "accessioned",
+      "object_type": "Painting",
+      "physical_description": "29 x 36 1/2 in. (73.7 x 92.7 cm)",
+      "responsible_department": "The American Wing",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Human Figures",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Men",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Cats",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Rivers",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Boats",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-10159",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Fur Traders Descending the Missouri",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Heart of the Andes by Frederic Edwin Church",
+      "copyright_status": "public_domain",
+      "creator": "Frederic Edwin Church",
+      "credit": "Bequest of Margaret E. Dows, 1909",
+      "file_size": 204147,
+      "height": 661,
+      "image_url": "https://images.metmuseum.org/CRDImages/ad/original/DT78.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/10481.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 7386,
+      "thumbnail_height": 110,
+      "thumbnail_s3_key": "sandbox-fixtures/met/10481_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Heart of the Andes",
+      "width": 1200
+    },
+    "met_id": "10481",
+    "object_fields": {
+      "brief_description": "Painting",
+      "creation_date_display": "1859",
+      "creation_date_earliest": "1859-01-01",
+      "creation_date_latest": "1859-12-31",
+      "creation_place": "American",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Frederic Edwin Church",
+          "role": "Artist",
+          "ulan_id": "500115265"
+        }
+      ],
+      "credit_line": "Bequest of Margaret E. Dows, 1909",
+      "materials": [
+        {
+          "name": "Oil on canvas",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Painting",
+      "object_status": "accessioned",
+      "object_type": "Painting",
+      "physical_description": "66 1/8 x 120 3/16 in. (168 x 302.9cm)",
+      "responsible_department": "The American Wing",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Rivers",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Waterfalls",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Forests",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Mountains",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Landscapes",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-10481",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Heart of the Andes",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "The Gulf Stream by Winslow Homer",
+      "copyright_status": "public_domain",
+      "creator": "Winslow Homer",
+      "credit": "Catharine Lorillard Wolfe Collection, Wolfe Fund, 1906",
+      "file_size": 166174,
+      "height": 740,
+      "image_url": "https://images.metmuseum.org/CRDImages/ad/original/DP-20821-001.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/11122.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 7175,
+      "thumbnail_height": 123,
+      "thumbnail_s3_key": "sandbox-fixtures/met/11122_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "The Gulf Stream",
+      "width": 1200
+    },
+    "met_id": "11122",
+    "object_fields": {
+      "brief_description": "Painting",
+      "creation_date_display": "1899; reworked by 1906",
+      "creation_date_earliest": "1899-01-01",
+      "creation_date_latest": "1906-12-31",
+      "creation_place": "American",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Winslow Homer",
+          "role": "Artist",
+          "ulan_id": "500019202"
+        }
+      ],
+      "credit_line": "Catharine Lorillard Wolfe Collection, Wolfe Fund, 1906",
+      "materials": [
+        {
+          "name": "Oil on canvas",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Painting",
+      "object_status": "accessioned",
+      "object_type": "Painting",
+      "physical_description": "28 1/8 x 49 1/8 in. (71.4 x 124.8 cm)\r\nFramed: 42 5/16 x 62 11/16 x 5 7/8 in. (107.5 x 159.3 x 15 cm)",
+      "responsible_department": "The American Wing",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Men",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Fish",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Seas",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Waves",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Boats",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-11122",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "The Gulf Stream",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Washington Crossing the Delaware by Emanuel Leutze",
+      "copyright_status": "public_domain",
+      "creator": "Emanuel Leutze",
+      "credit": "Gift of John Stewart Kennedy, 1897",
+      "file_size": 136355,
+      "height": 703,
+      "image_url": "https://images.metmuseum.org/CRDImages/ad/original/DP215410.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/11417.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 6790,
+      "thumbnail_height": 117,
+      "thumbnail_s3_key": "sandbox-fixtures/met/11417_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Washington Crossing the Delaware",
+      "width": 1200
+    },
+    "met_id": "11417",
+    "object_fields": {
+      "brief_description": "Painting",
+      "creation_date_display": "1851",
+      "creation_date_earliest": "1851-01-01",
+      "creation_date_latest": "1851-12-31",
+      "creation_place": "American",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Emanuel Leutze",
+          "role": "Artist",
+          "ulan_id": "500005129"
+        }
+      ],
+      "credit_line": "Gift of John Stewart Kennedy, 1897",
+      "materials": [
+        {
+          "name": "Oil on canvas",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Painting",
+      "object_status": "accessioned",
+      "object_type": "Painting",
+      "physical_description": "149 x 255 in. (378.5 x 647.7 cm)",
+      "responsible_department": "The American Wing",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Soldiers",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "American Revolution",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "George Washington",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Men",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Horses",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Flags",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Boats",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-11417",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Washington Crossing the Delaware",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Table lamp by Tiffany Studios",
+      "copyright_status": "public_domain",
+      "creator": "Tiffany Studios",
+      "credit": "Gift of Mr. and Mrs. Richard L. Chilton Jr., 2011",
+      "file_size": 109582,
+      "height": 900,
+      "image_url": "https://images.metmuseum.org/CRDImages/ad/original/DP254463.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/20633.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 5313,
+      "thumbnail_height": 150,
+      "thumbnail_s3_key": "sandbox-fixtures/met/20633_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Table lamp",
+      "width": 1200
+    },
+    "met_id": "20633",
+    "object_fields": {
+      "brief_description": "Table lamp",
+      "creation_date_display": "ca. 1895–98",
+      "creation_date_earliest": "1890-01-01",
+      "creation_date_latest": "1900-12-31",
+      "creation_place": "American",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Tiffany Studios",
+          "role": "Maker",
+          "ulan_id": "500331813"
+        }
+      ],
+      "credit_line": "Gift of Mr. and Mrs. Richard L. Chilton Jr., 2011",
+      "materials": [
+        {
+          "name": "Leaded Favrile glass and patinated bronze",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Table lamp",
+      "object_status": "accessioned",
+      "object_type": "Table lamp",
+      "physical_description": "21 1/8 in. (53.7 cm)\r\nBody diameter: 18 1/4 in. (46.4 cm)",
+      "responsible_department": "The American Wing",
+      "style_period": null,
+      "subjects": null
+    },
+    "object_number": "MET-20633",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Table lamp",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Armor (<i>Yoroi</i>) of Ashikaga Takauji (1305–1358)",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Gift of Bashford Dean, 1914",
+      "file_size": 166599,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/aa/original/DP-18838-005.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/22506.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 7112,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/22506_thumb.jpg",
+      "thumbnail_width": 143,
+      "title": "Armor (<i>Yoroi</i>) of Ashikaga Takauji (1305–1358)",
+      "width": 863
+    },
+    "met_id": "22506",
+    "object_fields": {
+      "brief_description": "Armor (<i>Yoroi</i>)",
+      "creation_date_display": "early 14th century",
+      "creation_date_earliest": "1300-01-01",
+      "creation_date_latest": "1350-12-31",
+      "creation_place": "Japanese",
+      "creators": null,
+      "credit_line": "Gift of Bashford Dean, 1914",
+      "materials": [
+        {
+          "name": "Iron, lacquer, leather, silk, gilt copper",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Armor (<i>Yoroi</i>)",
+      "object_status": "accessioned",
+      "object_type": "Armor (<i>Yoroi</i>)",
+      "physical_description": "H. 37 1/2 in. (95.3 cm); W. 22 in. (55.9 cm); Wt. 25 lb. 15 oz. (11.77 kg)",
+      "responsible_department": "Arms and Armor",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Deities",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-22506",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Armor (<i>Yoroi</i>) of Ashikaga Takauji (1305–1358)",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Armor (<i>Gusoku</i>) by Bamen Tomotsugu",
+      "copyright_status": "public_domain",
+      "creator": "Bamen Tomotsugu",
+      "credit": "Gift of Etsuko O. Morris and John H. Morris Jr., in memory of Dr. Frederick M. Pedersen, 2001",
+      "file_size": 151292,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/aa/original/DT5334.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/24975.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 6346,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/24975_thumb.jpg",
+      "thumbnail_width": 160,
+      "title": "Armor (<i>Gusoku</i>)",
+      "width": 960
+    },
+    "met_id": "24975",
+    "object_fields": {
+      "brief_description": "Armor (<i>Gusoku</i>)",
+      "creation_date_display": "18th century",
+      "creation_date_earliest": "1701-01-01",
+      "creation_date_latest": "1800-12-31",
+      "creation_place": "Japanese, Toyohara, Echizen province",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Bamen Tomotsugu",
+          "role": "Armorer",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Gift of Etsuko O. Morris and John H. Morris Jr., in memory of Dr. Frederick M. Pedersen, 2001",
+      "materials": [
+        {
+          "name": "Iron, lacquer, copper-gold alloy (shakudō), silver, silk, horse hair, ivory",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Armor (<i>Gusoku</i>)",
+      "object_status": "accessioned",
+      "object_type": "Armor (<i>Gusoku</i>)",
+      "physical_description": "as mounted, H. 58 5/8 in. (148.8 cm); W. 18 3/4 in. (47.6 cm)",
+      "responsible_department": "Arms and Armor",
+      "style_period": null,
+      "subjects": null
+    },
+    "object_number": "MET-24975",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Armor (<i>Gusoku</i>)",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Brahma",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Fletcher Fund, 1936",
+      "file_size": 100910,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/as/original/DT5227.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/38265.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 4605,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/38265_thumb.jpg",
+      "thumbnail_width": 160,
+      "title": "Brahma",
+      "width": 960
+    },
+    "met_id": "38265",
+    "object_fields": {
+      "brief_description": "Figure",
+      "creation_date_display": "first quarter of the 10th century",
+      "creation_date_earliest": "0900-01-01",
+      "creation_date_latest": "0925-12-31",
+      "creation_place": "Cambodia",
+      "creators": null,
+      "credit_line": "Fletcher Fund, 1936",
+      "materials": [
+        {
+          "name": "Sandstone",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Figure",
+      "object_status": "accessioned",
+      "object_type": "Figure",
+      "physical_description": "H. 47 1/2 in. (120.7 cm); W. 21 in. (53.3 cm); D. 9 in. (22.9 cm)",
+      "responsible_department": "Asian Art",
+      "style_period": "Angkor period",
+      "subjects": [
+        {
+          "term": "Brahma",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Hinduism",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-38265",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Brahma",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Bodhisattva Avalokiteshvara",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rogers Fund, 1967",
+      "file_size": 70964,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/as/original/LK_DP316445r3_25AA.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/38950.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 3391,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/38950_thumb.jpg",
+      "thumbnail_width": 145,
+      "title": "Bodhisattva Avalokiteshvara",
+      "width": 876
+    },
+    "met_id": "38950",
+    "object_fields": {
+      "brief_description": "Figure",
+      "creation_date_display": "second quarter of the 8th century",
+      "creation_date_earliest": "0750-01-01",
+      "creation_date_latest": "0775-12-31",
+      "creation_place": "Plai Bat II Temple, Lahan Sai District, Buriram Province, Thailand",
+      "creators": null,
+      "credit_line": "Rogers Fund, 1967",
+      "materials": [
+        {
+          "name": "Copper alloy inlaid with silver and glass or obsidian",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Figure",
+      "object_status": "accessioned",
+      "object_type": "Figure",
+      "physical_description": "H. 56 in. (142.2 cm); W. 22 1/2 in. (57.2 cm); D. 15 1/4 in. (38.7 cm)",
+      "responsible_department": "Asian Art",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Buddhism",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Avalokiteshvara",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Bodhisattvas",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-38950",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Bodhisattva Avalokiteshvara",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Buddha Offering Protection",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Purchase, Florance Waterbury Bequest, 1969",
+      "file_size": 97923,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/as/original/DP-15581-036.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/38965.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 5372,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/38965_thumb.jpg",
+      "thumbnail_width": 136,
+      "title": "Buddha Offering Protection",
+      "width": 820
+    },
+    "met_id": "38965",
+    "object_fields": {
+      "brief_description": "Figure",
+      "creation_date_display": "late 6th–early 7th century",
+      "creation_date_earliest": "0567-01-01",
+      "creation_date_latest": "0633-12-31",
+      "creation_place": "India (probably Bihar)",
+      "creators": null,
+      "credit_line": "Purchase, Florance Waterbury Bequest, 1969",
+      "materials": [
+        {
+          "name": "Copper alloy",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Figure",
+      "object_status": "accessioned",
+      "object_type": "Figure",
+      "physical_description": "H. 18 1/2 in. (47 cm); W. 6 1/8 in. (15.6 cm); D. 5 5/8 in. (14.3 cm)",
+      "responsible_department": "Asian Art",
+      "style_period": "Gupta period",
+      "subjects": [
+        {
+          "term": "Post-Gupta",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Buddhism",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Buddha",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-38965",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Buddha Offering Protection",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Standing Parvati",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Bequest of Cora Timken Burnett, 1956",
+      "file_size": 79338,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/as/original/DT239.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/39325.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 4428,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/39325_thumb.jpg",
+      "thumbnail_width": 150,
+      "title": "Standing Parvati",
+      "width": 900
+    },
+    "met_id": "39325",
+    "object_fields": {
+      "brief_description": "Figure",
+      "creation_date_display": "ca. first quarter 10th century",
+      "creation_date_earliest": "0900-01-01",
+      "creation_date_latest": "0925-12-31",
+      "creation_place": "Indian (Tamil Nadu)",
+      "creators": null,
+      "credit_line": "Bequest of Cora Timken Burnett, 1956",
+      "materials": [
+        {
+          "name": "Copper alloy",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Figure",
+      "object_status": "accessioned",
+      "object_type": "Figure",
+      "physical_description": "H. 27 3/8 in. (69.5 cm); W. 10 1/4 in. (26 cm); D. 6 11/16 in. (17 cm)",
+      "responsible_department": "Asian Art",
+      "style_period": "Chola period",
+      "subjects": [
+        {
+          "term": "Parvati",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-39325",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Standing Parvati",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Shiva Seated with Parvati",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Samuel Eilenberg Collection, Ex Coll.: Columbia University, Purchase, Rogers Fund, 1987",
+      "file_size": 162602,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/as/original/DT5159.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/39357.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 6111,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/39357_thumb.jpg",
+      "thumbnail_width": 160,
+      "title": "Shiva Seated with Parvati",
+      "width": 960
+    },
+    "met_id": "39357",
+    "object_fields": {
+      "brief_description": "Statuette",
+      "creation_date_display": "11th century",
+      "creation_date_earliest": "1000-01-01",
+      "creation_date_latest": "1099-12-31",
+      "creation_place": "Nepal (Kathmandu Valley)",
+      "creators": null,
+      "credit_line": "Samuel Eilenberg Collection, Ex Coll.: Columbia University, Purchase, Rogers Fund, 1987",
+      "materials": [
+        {
+          "name": "Copper alloy",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Statuette",
+      "object_status": "accessioned",
+      "object_type": "Statuette",
+      "physical_description": "H. 10 1/4 in. (26 cm); W. 11 in. (27.9 cm); D. 7 1/2 in. (19.1 cm)",
+      "responsible_department": "Asian Art",
+      "style_period": "Thakuri period",
+      "subjects": [
+        {
+          "term": "Couples",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Parvati",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Shiva",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-39357",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Shiva Seated with Parvati",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Old Trees, Level Distance by Guo Xi",
+      "copyright_status": "public_domain",
+      "creator": "Guo Xi",
+      "credit": "Gift of John M. Crawford Jr., in honor of Douglas Dillon, 1981",
+      "file_size": 96874,
+      "height": 640,
+      "image_url": "https://images.metmuseum.org/CRDImages/as/original/DP167812_CRD.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/39668.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 3932,
+      "thumbnail_height": 106,
+      "thumbnail_s3_key": "sandbox-fixtures/met/39668_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Old Trees, Level Distance",
+      "width": 1200
+    },
+    "met_id": "39668",
+    "object_fields": {
+      "brief_description": "Handscroll",
+      "creation_date_display": "ca. 1080",
+      "creation_date_earliest": "1070-01-01",
+      "creation_date_latest": "1090-12-31",
+      "creation_place": "China",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Guo Xi",
+          "role": "Artist",
+          "ulan_id": "500125758"
+        }
+      ],
+      "credit_line": "Gift of John M. Crawford Jr., in honor of Douglas Dillon, 1981",
+      "materials": [
+        {
+          "name": "Handscroll; ink and color on silk",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Handscroll",
+      "object_status": "accessioned",
+      "object_type": "Handscroll",
+      "physical_description": "Image: 14 × 41 1/8 in. (35.6 × 104.4 cm)\r\nOverall with mounting: 14 3/4 in. × 28 ft. 1/8 in. (37.5 × 853.8 cm)",
+      "responsible_department": "Asian Art",
+      "style_period": "Northern Song dynasty (960–1127)",
+      "subjects": [
+        {
+          "term": "Landscapes",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Trees",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-39668",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Old Trees, Level Distance",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Under the Wave off Kanagawa (Kanagawa oki nami ura), or The Great Wave, from the series Thirty-six Views of Mount Fuji (Fugaku sanjūrokkei) by Katsushika Hokusai",
+      "copyright_status": "public_domain",
+      "creator": "Katsushika Hokusai",
+      "credit": "The Howard Mansfield Collection, Purchase, Rogers Fund, 1936",
+      "file_size": 253726,
+      "height": 820,
+      "image_url": "https://images.metmuseum.org/CRDImages/as/original/DP141042.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/39799.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 9981,
+      "thumbnail_height": 136,
+      "thumbnail_s3_key": "sandbox-fixtures/met/39799_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Under the Wave off Kanagawa (Kanagawa oki nami ura), or The Great Wave, from the series Thirty-six Views of Mount Fuji (Fugaku sanjūrokkei)",
+      "width": 1200
+    },
+    "met_id": "39799",
+    "object_fields": {
+      "brief_description": "Woodblock print",
+      "creation_date_display": "ca. 1830–32",
+      "creation_date_earliest": "1820-01-01",
+      "creation_date_latest": "1842-12-31",
+      "creation_place": "Japan",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Katsushika Hokusai",
+          "role": "Artist",
+          "ulan_id": "500060426"
+        }
+      ],
+      "credit_line": "The Howard Mansfield Collection, Purchase, Rogers Fund, 1936",
+      "materials": [
+        {
+          "name": "Woodblock print; ink and color on paper",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Woodblock print",
+      "object_status": "accessioned",
+      "object_type": "Woodblock print",
+      "physical_description": "10 x 15 in. (25.4 x 38.1 cm)",
+      "responsible_department": "Asian Art",
+      "style_period": "Edo period (1615–1868)",
+      "subjects": [
+        {
+          "term": "Mountains",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Waves",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Boats",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-39799",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Under the Wave off Kanagawa (Kanagawa oki nami ura), or The Great Wave, from the series Thirty-six Views of Mount Fuji (Fugaku sanjūrokkei)",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Vase",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Bequest of Benjamin Altman, 1913",
+      "file_size": 61705,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/as/original/DP246426.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/42229.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 3255,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/42229_thumb.jpg",
+      "thumbnail_width": 150,
+      "title": "Vase",
+      "width": 900
+    },
+    "met_id": "42229",
+    "object_fields": {
+      "brief_description": "Vase",
+      "creation_date_display": "1713–22",
+      "creation_date_earliest": "1713-01-01",
+      "creation_date_latest": "1722-12-31",
+      "creation_place": "China",
+      "creators": null,
+      "credit_line": "Bequest of Benjamin Altman, 1913",
+      "materials": [
+        {
+          "name": "Porcelain with peach-bloom glaze (Jingdezhen ware)",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Vase",
+      "object_status": "accessioned",
+      "object_type": "Vase",
+      "physical_description": "H. 7 3/4 in. (19.7 cm)",
+      "responsible_department": "Asian Art",
+      "style_period": "Qing dynasty (1644–1911), Kangxi mark and period (1662–1722)",
+      "subjects": null
+    },
+    "object_number": "MET-42229",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Vase",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Robe à la française",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Harris Brisbane Dick Fund, 1995",
+      "file_size": 172663,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ci/original/DT3884.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/79893.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 6987,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/79893_thumb.jpg",
+      "thumbnail_width": 160,
+      "title": "Robe à la française",
+      "width": 960
+    },
+    "met_id": "79893",
+    "object_fields": {
+      "brief_description": "Robe à la française",
+      "creation_date_display": "1740s",
+      "creation_date_earliest": "1740-01-01",
+      "creation_date_latest": "1749-12-31",
+      "creation_place": "British",
+      "creators": null,
+      "credit_line": "Harris Brisbane Dick Fund, 1995",
+      "materials": [
+        {
+          "name": "silk, pigment, linen",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Robe à la française",
+      "object_status": "accessioned",
+      "object_type": "Robe à la française",
+      "physical_description": null,
+      "responsible_department": "Costume Institute",
+      "style_period": null,
+      "subjects": null
+    },
+    "object_number": "MET-79893",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Robe à la française",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Dress",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Purchase, Gifts in memory of Paul M. Ettesvold, and Judith and Gerson Leiber Fund, 1994",
+      "file_size": 92326,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ci/original/DT3719.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/80389.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 5445,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/80389_thumb.jpg",
+      "thumbnail_width": 160,
+      "title": "Dress",
+      "width": 960
+    },
+    "met_id": "80389",
+    "object_fields": {
+      "brief_description": "Dress",
+      "creation_date_display": "ca. 1850",
+      "creation_date_earliest": "1845-01-01",
+      "creation_date_latest": "1855-12-31",
+      "creation_place": "British",
+      "creators": null,
+      "credit_line": "Purchase, Gifts in memory of Paul M. Ettesvold, and Judith and Gerson Leiber Fund, 1994",
+      "materials": [
+        {
+          "name": "silk",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Dress",
+      "object_status": "accessioned",
+      "object_type": "Dress",
+      "physical_description": null,
+      "responsible_department": "Costume Institute",
+      "style_period": null,
+      "subjects": null
+    },
+    "object_number": "MET-80389",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Dress",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Robe à la française",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Purchase, Irene Lewisohn Bequest, 1954",
+      "file_size": 162890,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ci/original/CI54.70ab.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/83605.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 6454,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/83605_thumb.jpg",
+      "thumbnail_width": 158,
+      "title": "Robe à la française",
+      "width": 952
+    },
+    "met_id": "83605",
+    "object_fields": {
+      "brief_description": "Robe à la française",
+      "creation_date_display": "1750–75",
+      "creation_date_earliest": "1750-01-01",
+      "creation_date_latest": "1775-12-31",
+      "creation_place": "French",
+      "creators": null,
+      "credit_line": "Purchase, Irene Lewisohn Bequest, 1954",
+      "materials": [
+        {
+          "name": "silk",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Robe à la française",
+      "object_status": "accessioned",
+      "object_type": "Robe à la française",
+      "physical_description": null,
+      "responsible_department": "Costume Institute",
+      "style_period": null,
+      "subjects": null
+    },
+    "object_number": "MET-83605",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Robe à la française",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Perseus with the Head of Medusa by Antonio Canova",
+      "copyright_status": "public_domain",
+      "creator": "Antonio Canova",
+      "credit": "Fletcher Fund, 1967",
+      "file_size": 104994,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/es/original/DP249451.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/204758.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 6089,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/204758_thumb.jpg",
+      "thumbnail_width": 150,
+      "title": "Perseus with the Head of Medusa",
+      "width": 904
+    },
+    "met_id": "204758",
+    "object_fields": {
+      "brief_description": "Statue",
+      "creation_date_display": "1804–6",
+      "creation_date_earliest": "1804-01-01",
+      "creation_date_latest": "1806-12-31",
+      "creation_place": "Italian",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Antonio Canova",
+          "role": "Artist",
+          "ulan_id": "500115339"
+        }
+      ],
+      "credit_line": "Fletcher Fund, 1967",
+      "materials": [
+        {
+          "name": "Marble",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Statue",
+      "object_status": "accessioned",
+      "object_type": "Statue",
+      "physical_description": "Overall (confirmed): H. 95 1/2 x W. 75 1/2 x D. 40 1/2 in. (242.6 x 191.8 x 102.9 cm)",
+      "responsible_department": "European Sculpture and Decorative Arts",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Swords",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Male Nudes",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Medusa",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Perseus",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-204758",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Perseus with the Head of Medusa",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Drop-front desk (secrétaire à abattant or secrétaire en cabinet) by Martin Carlin",
+      "copyright_status": "public_domain",
+      "creator": "Martin Carlin",
+      "credit": "Gift of Mr. and Mrs. Charles Wrightsman, 1976",
+      "file_size": 198262,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/es/original/DP105712.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/206499.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 9120,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/206499_thumb.jpg",
+      "thumbnail_width": 199,
+      "title": "Drop-front desk (secrétaire à abattant or secrétaire en cabinet)",
+      "width": 1200
+    },
+    "met_id": "206499",
+    "object_fields": {
+      "brief_description": "Desk",
+      "creation_date_display": "ca. 1776",
+      "creation_date_earliest": "1771-01-01",
+      "creation_date_latest": "1781-12-31",
+      "creation_place": "French",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Martin Carlin",
+          "role": "Maker",
+          "ulan_id": "500014041"
+        }
+      ],
+      "credit_line": "Gift of Mr. and Mrs. Charles Wrightsman, 1976",
+      "materials": [
+        {
+          "name": "Oak veneered with tulipwood, amaranth, holly, and sycamore; six Sèvres soft-paste porcelain plaques and two painted tin plaques; gilt-bronze mounts; marble shelves; moiré silk",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Desk",
+      "object_status": "accessioned",
+      "object_type": "Desk",
+      "physical_description": "43 3/8 x 40 1/2 x 12 7/8 in. (110.1 x 102.9 x 32.7cm)",
+      "responsible_department": "European Sculpture and Decorative Arts",
+      "style_period": null,
+      "subjects": null
+    },
+    "object_number": "MET-206499",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Drop-front desk (secrétaire à abattant or secrétaire en cabinet)",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Two wall sconces (Bras de cheminée) by Jean-Claude Duplessis",
+      "copyright_status": "public_domain",
+      "creator": "Jean-Claude Duplessis",
+      "credit": "Gift of R. Thornton Wilson, in memory of Florence Ellsworth Wilson, 1954",
+      "file_size": 91908,
+      "height": 949,
+      "image_url": "https://images.metmuseum.org/CRDImages/es/original/DP155617.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/208898.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 4616,
+      "thumbnail_height": 158,
+      "thumbnail_s3_key": "sandbox-fixtures/met/208898_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Two wall sconces (Bras de cheminée)",
+      "width": 1200
+    },
+    "met_id": "208898",
+    "object_fields": {
+      "brief_description": "Wall light sconces",
+      "creation_date_display": "ca. 1761",
+      "creation_date_earliest": "1756-01-01",
+      "creation_date_latest": "1766-12-31",
+      "creation_place": "French",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Jean-Claude Duplessis",
+          "role": "Modeler",
+          "ulan_id": "500055285"
+        }
+      ],
+      "credit_line": "Gift of R. Thornton Wilson, in memory of Florence Ellsworth Wilson, 1954",
+      "materials": [
+        {
+          "name": "Soft-paste porcelain decorated in polychrome enamel, gold, gilt bronze",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Wall light sconces",
+      "object_status": "accessioned",
+      "object_type": "Wall light sconces",
+      "physical_description": "Overall (confirmed): 17 3/8 × 11 × 7 1/4 in. (44.1 × 27.9 × 18.4 cm)",
+      "responsible_department": "European Sculpture and Decorative Arts",
+      "style_period": null,
+      "subjects": null
+    },
+    "object_number": "MET-208898",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Two wall sconces (Bras de cheminée)",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Pair of vases by Sèvres Manufactory",
+      "copyright_status": "public_domain",
+      "creator": "Sèvres Manufactory",
+      "credit": "Wrightsman Fund, in honor of Edith de Montebello, 2008",
+      "file_size": 112980,
+      "height": 934,
+      "image_url": "https://images.metmuseum.org/CRDImages/es/original/DP168510.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/236178.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 6084,
+      "thumbnail_height": 155,
+      "thumbnail_s3_key": "sandbox-fixtures/met/236178_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Pair of vases",
+      "width": 1200
+    },
+    "met_id": "236178",
+    "object_fields": {
+      "brief_description": "Vases",
+      "creation_date_display": "1789",
+      "creation_date_earliest": "1789-01-01",
+      "creation_date_latest": "1789-12-31",
+      "creation_place": "French",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Sèvres Manufactory",
+          "role": "Manufactory",
+          "ulan_id": "500054661"
+        }
+      ],
+      "credit_line": "Wrightsman Fund, in honor of Edith de Montebello, 2008",
+      "materials": [
+        {
+          "name": "Hard-paste porcelain; gilt bronze, marble",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Vases",
+      "object_status": "accessioned",
+      "object_type": "Vases",
+      "physical_description": "Height (each): 9 1/16 in. (23 cm)",
+      "responsible_department": "European Sculpture and Decorative Arts",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Flowers",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-236178",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Pair of vases",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Terracotta krater by Hirschfeld Workshop",
+      "copyright_status": "public_domain",
+      "creator": "Hirschfeld Workshop",
+      "credit": "Rogers Fund, 1914",
+      "file_size": 213136,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/gr/original/DP-42350-001.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/248904.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 7447,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/248904_thumb.jpg",
+      "thumbnail_width": 161,
+      "title": "Terracotta krater",
+      "width": 970
+    },
+    "met_id": "248904",
+    "object_fields": {
+      "brief_description": "Krater",
+      "creation_date_display": "ca. 750–735 BCE",
+      "creation_date_earliest": "0001-01-01",
+      "creation_date_latest": "0001-12-31",
+      "creation_place": "Greek, Attic",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Hirschfeld Workshop",
+          "role": "Artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Rogers Fund, 1914",
+      "materials": [
+        {
+          "name": "Terracotta",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Krater",
+      "object_status": "accessioned",
+      "object_type": "Krater",
+      "physical_description": "H. 42 5/8 in. (108.3 cm)\r\ndiameter  28 1/2 in. (72.4 cm)",
+      "responsible_department": "Greek and Roman Art",
+      "style_period": "Late Geometric I",
+      "subjects": [
+        {
+          "term": "Men",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Horses",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Chariots",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-248904",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Terracotta krater",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "[Landscape with Cottage] by Marie-Charles-Isidore Choiselat",
+      "copyright_status": "public_domain",
+      "creator": "Marie-Charles-Isidore Choiselat",
+      "credit": "Louis V. Bell Fund, 1994",
+      "file_size": 250027,
+      "height": 909,
+      "image_url": "https://images.metmuseum.org/CRDImages/ph/original/DT1150.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/267087.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 9025,
+      "thumbnail_height": 151,
+      "thumbnail_s3_key": "sandbox-fixtures/met/267087_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "[Landscape with Cottage]",
+      "width": 1200
+    },
+    "met_id": "267087",
+    "object_fields": {
+      "brief_description": "Photograph",
+      "creation_date_display": "1844",
+      "creation_date_earliest": "1844-01-01",
+      "creation_date_latest": "1844-12-31",
+      "creation_place": "French",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Marie-Charles-Isidore Choiselat",
+          "role": "Artist",
+          "ulan_id": "500334036"
+        }
+      ],
+      "credit_line": "Louis V. Bell Fund, 1994",
+      "materials": [
+        {
+          "name": "Daguerreotype",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Photograph",
+      "object_status": "accessioned",
+      "object_type": "Photograph",
+      "physical_description": "16.4 x 21.7 cm (6 7/16 x 8 9/16 in.)",
+      "responsible_department": "Photographs",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Houses",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Ponds",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Landscapes",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-267087",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "[Landscape with Cottage]",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Ruins of Gallego Flour Mills, Richmond by Alexander Gardner",
+      "copyright_status": "public_domain",
+      "creator": "Alexander Gardner",
+      "credit": "Harris Brisbane Dick Fund, 1933",
+      "file_size": 74696,
+      "height": 542,
+      "image_url": "https://images.metmuseum.org/CRDImages/ph/original/DT1172.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/267891.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 4663,
+      "thumbnail_height": 90,
+      "thumbnail_s3_key": "sandbox-fixtures/met/267891_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Ruins of Gallego Flour Mills, Richmond",
+      "width": 1200
+    },
+    "met_id": "267891",
+    "object_fields": {
+      "brief_description": "Panorama",
+      "creation_date_display": "1865",
+      "creation_date_earliest": "1865-01-01",
+      "creation_date_latest": "1865-12-31",
+      "creation_place": "American, Scottish",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Alexander Gardner",
+          "role": "Artist",
+          "ulan_id": "500115196"
+        }
+      ],
+      "credit_line": "Harris Brisbane Dick Fund, 1933",
+      "materials": [
+        {
+          "name": "Albumen silver prints from glass negatives",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Panorama",
+      "object_status": "accessioned",
+      "object_type": "Panorama",
+      "physical_description": "16.3 x 36.9 cm (6 7/16 x 14 1/2 in.)",
+      "responsible_department": "Photographs",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Buildings",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "American Civil War",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-267891",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Ruins of Gallego Flour Mills, Richmond",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "[Self-Portrait with Christine and Yvonne Lerolle] by Edgar Degas",
+      "copyright_status": "public_domain",
+      "creator": "Edgar Degas",
+      "credit": "Purchase, The Horace W. Goldsmith Foundation Gift, through Joyce and Robert Menschel and Rogers Fund, 2004",
+      "file_size": 139109,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ph/original/DP117520.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/285444.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 6357,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/285444_thumb.jpg",
+      "thumbnail_width": 143,
+      "title": "[Self-Portrait with Christine and Yvonne Lerolle]",
+      "width": 859
+    },
+    "met_id": "285444",
+    "object_fields": {
+      "brief_description": "Photograph",
+      "creation_date_display": "probably 1895–96",
+      "creation_date_earliest": "1895-01-01",
+      "creation_date_latest": "1896-12-31",
+      "creation_place": "French",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Edgar Degas",
+          "role": "Artist",
+          "ulan_id": "500115194"
+        }
+      ],
+      "credit_line": "Purchase, The Horace W. Goldsmith Foundation Gift, through Joyce and Robert Menschel and Rogers Fund, 2004",
+      "materials": [
+        {
+          "name": "Gelatin silver print",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Photograph",
+      "object_status": "accessioned",
+      "object_type": "Photograph",
+      "physical_description": "Image: 37.1 x 29.3 cm (14 5/8 x 11 9/16 in.)\r\nMount: 55.4 x 45.5 cm (21 13/16 x 17 15/16 in.)",
+      "responsible_department": "Photographs",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Men",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Self-portraits",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Women",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-285444",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "[Self-Portrait with Christine and Yvonne Lerolle]",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Self-Portrait by Louis-Adolphe Humbert de Molard",
+      "copyright_status": "public_domain",
+      "creator": "Louis-Adolphe Humbert de Molard",
+      "credit": "Gilman Collection, Purchase, Joseph M. Cohen Gift, 2005",
+      "file_size": 133849,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ph/original/DP164266.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/286022.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 6632,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/286022_thumb.jpg",
+      "thumbnail_width": 159,
+      "title": "Self-Portrait",
+      "width": 956
+    },
+    "met_id": "286022",
+    "object_fields": {
+      "brief_description": "Photograph",
+      "creation_date_display": "1846–47",
+      "creation_date_earliest": "1846-01-01",
+      "creation_date_latest": "1847-12-31",
+      "creation_place": "French",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Louis-Adolphe Humbert de Molard",
+          "role": "Artist",
+          "ulan_id": "500470343"
+        }
+      ],
+      "credit_line": "Gilman Collection, Purchase, Joseph M. Cohen Gift, 2005",
+      "materials": [
+        {
+          "name": "Daguerreotype",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Photograph",
+      "object_status": "accessioned",
+      "object_type": "Photograph",
+      "physical_description": "Image: 13.3 x 10.3 cm (5 1/4 x 4 1/16 in.)",
+      "responsible_department": "Photographs",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Men",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Self-portraits",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-286022",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Self-Portrait",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "[Young Woman with Beckers Tabletop Stereoscope] by Porter Photograph Parlors",
+      "copyright_status": "public_domain",
+      "creator": "Porter Photograph Parlors",
+      "credit": "Purchase, Alfred Stieglitz Society Gifts, 2013",
+      "file_size": 172961,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ph/original/DP265112.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/302000.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 7066,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/302000_thumb.jpg",
+      "thumbnail_width": 123,
+      "title": "[Young Woman with Beckers Tabletop Stereoscope]",
+      "width": 738
+    },
+    "met_id": "302000",
+    "object_fields": {
+      "brief_description": "Carte-de-visite",
+      "creation_date_display": "1864–66",
+      "creation_date_earliest": "1864-01-01",
+      "creation_date_latest": "1866-12-31",
+      "creation_place": "American",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Porter Photograph Parlors",
+          "role": "Photography Studio",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Purchase, Alfred Stieglitz Society Gifts, 2013",
+      "materials": [
+        {
+          "name": "Albumen silver print from glass negative",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Carte-de-visite",
+      "object_status": "accessioned",
+      "object_type": "Carte-de-visite",
+      "physical_description": "Image: 9.1 x 5.2 cm (3 9/16 x 2 1/16 in.)",
+      "responsible_department": "Photographs",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Portraits",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Women",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-302000",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "[Young Woman with Beckers Tabletop Stereoscope]",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Funerary mask by Lambayeque (Sicán) artist(s)",
+      "copyright_status": "public_domain",
+      "creator": "Lambayeque (Sicán) artist(s)",
+      "credit": "Gift and Bequest of Alice K. Bache, 1974, 1977",
+      "file_size": 138013,
+      "height": 794,
+      "image_url": "https://images.metmuseum.org/CRDImages/ao/original/DP-42545-001.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/309959.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 7267,
+      "thumbnail_height": 132,
+      "thumbnail_s3_key": "sandbox-fixtures/met/309959_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Funerary mask",
+      "width": 1200
+    },
+    "met_id": "309959",
+    "object_fields": {
+      "brief_description": "Mask",
+      "creation_date_display": "900–1100 CE",
+      "creation_date_earliest": "0900-01-01",
+      "creation_date_latest": "1100-12-31",
+      "creation_place": "Lambayeque (Sicán)",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Lambayeque (Sicán) artist(s)",
+          "role": "Artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Gift and Bequest of Alice K. Bache, 1974, 1977",
+      "materials": [
+        {
+          "name": "Gold, silver-copper alloy, cinnabar",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Mask",
+      "object_status": "accessioned",
+      "object_type": "Mask",
+      "physical_description": "H. 11 1/2 in. × W. 19 1/2 in. × D. 4 in. (29.2 × 49.5 × 10.2 cm)",
+      "responsible_department": "The Michael C. Rockefeller Wing",
+      "style_period": null,
+      "subjects": null
+    },
+    "object_number": "MET-309959",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Funerary mask",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Eagle pendant by Chiriquí artist(s)",
+      "copyright_status": "public_domain",
+      "creator": "Chiriquí artist(s)",
+      "credit": "Bequest of Alice K. Bache, 1977",
+      "file_size": 85247,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ao/original/DT5062.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/310268.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 4577,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/310268_thumb.jpg",
+      "thumbnail_width": 159,
+      "title": "Eagle pendant",
+      "width": 959
+    },
+    "met_id": "310268",
+    "object_fields": {
+      "brief_description": "Pendant",
+      "creation_date_display": "800–1519 CE",
+      "creation_date_earliest": "0800-01-01",
+      "creation_date_latest": "1519-12-31",
+      "creation_place": "Chiriquí",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Chiriquí artist(s)",
+          "role": "Artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Bequest of Alice K. Bache, 1977",
+      "materials": [
+        {
+          "name": "Gold",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Pendant",
+      "object_status": "accessioned",
+      "object_type": "Pendant",
+      "physical_description": "H. 4 1/2 × W. 4 7/16 × D. 1 3/8 in. (11.4 × 11.2 × 3.5 cm)",
+      "responsible_department": "The Michael C. Rockefeller Wing",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Eagles",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-310268",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Eagle pendant",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Seated couple by \"Barnes Foundation Master\"",
+      "copyright_status": "public_domain",
+      "creator": "\"Barnes Foundation Master\"",
+      "credit": "Gift of Lester Wunderman, 1977",
+      "file_size": 101552,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ao/original/DT1217.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/310325.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 5488,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/310325_thumb.jpg",
+      "thumbnail_width": 160,
+      "title": "Seated couple",
+      "width": 960
+    },
+    "met_id": "310325",
+    "object_fields": {
+      "brief_description": "Couple figure",
+      "creation_date_display": "18th–early 19th century",
+      "creation_date_earliest": "1720-01-01",
+      "creation_date_latest": "1820-12-31",
+      "creation_place": "Dogon peoples",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "\"Barnes Foundation Master\"",
+          "role": "Artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Gift of Lester Wunderman, 1977",
+      "materials": [
+        {
+          "name": "Wood, copper and iron alloy, applied organic materials",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Couple figure",
+      "object_status": "accessioned",
+      "object_type": "Couple figure",
+      "physical_description": "H. 28 3/4 × W. 8 5/8 × D. 8 in. (73 × 21.9 × 20.3 cm)",
+      "responsible_department": "The Michael C. Rockefeller Wing",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Couples",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Men",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Male Nudes",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Women",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Female Nudes",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-310325",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Seated couple",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Stirrup-spout bottle with palace scene by Chimú artist(s)",
+      "copyright_status": "public_domain",
+      "creator": "Chimú artist(s)",
+      "credit": "The Michael C. Rockefeller Memorial Collection, Gift of Nelson A. Rockefeller, 1969",
+      "file_size": 69489,
+      "height": 900,
+      "image_url": "https://images.metmuseum.org/CRDImages/ao/original/DP338094.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/310619.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 3834,
+      "thumbnail_height": 150,
+      "thumbnail_s3_key": "sandbox-fixtures/met/310619_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Stirrup-spout bottle with palace scene",
+      "width": 1200
+    },
+    "met_id": "310619",
+    "object_fields": {
+      "brief_description": "Vessel",
+      "creation_date_display": "1000–1470 CE",
+      "creation_date_earliest": "1000-01-01",
+      "creation_date_latest": "1470-12-31",
+      "creation_place": "Chimú",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Chimú artist(s)",
+          "role": "Artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "The Michael C. Rockefeller Memorial Collection, Gift of Nelson A. Rockefeller, 1969",
+      "materials": [
+        {
+          "name": "Silver",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Vessel",
+      "object_status": "accessioned",
+      "object_type": "Vessel",
+      "physical_description": "H. 9 1/4 x W. 4 3/8 x D. 6 1/2 in. (23.5 x 11.1 x 16.5 cm)",
+      "responsible_department": "The Michael C. Rockefeller Wing",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Human Figures",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-310619",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Stirrup-spout bottle with palace scene",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Plaque with equestrian ọ́bà (king) and attendants by Ìgùn Ẹ́rọ̀nwwọ̀n (brass-casting guild) artists",
+      "copyright_status": "public_domain",
+      "creator": "Ìgùn Ẹ́rọ̀nwwọ̀n (brass-casting guild) artists",
+      "credit": "The Michael C. Rockefeller Memorial Collection, Gift of Nelson A. Rockefeller, 1965",
+      "file_size": 213728,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ao/original/DP295360.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/310752.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 8385,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/310752_thumb.jpg",
+      "thumbnail_width": 161,
+      "title": "Plaque with equestrian ọ́bà (king) and attendants",
+      "width": 968
+    },
+    "met_id": "310752",
+    "object_fields": {
+      "brief_description": "Plaque",
+      "creation_date_display": "ca. 1540–70",
+      "creation_date_earliest": "1540-01-01",
+      "creation_date_latest": "1570-12-31",
+      "creation_place": "Edo peoples",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Ìgùn Ẹ́rọ̀nwwọ̀n (brass-casting guild) artists",
+          "role": "Artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "The Michael C. Rockefeller Memorial Collection, Gift of Nelson A. Rockefeller, 1965",
+      "materials": [
+        {
+          "name": "Brass",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Plaque",
+      "object_status": "accessioned",
+      "object_type": "Plaque",
+      "physical_description": "H. 19 7/16  x  W. 16 1/2  x  D. 4 1/2 in. (49.5 x 41.9 x 11.4 cm)",
+      "responsible_department": "The Michael C. Rockefeller Wing",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Kings",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Men",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Horses",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-310752",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Plaque with equestrian ọ́bà (king) and attendants",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Nose Ornament with Shrimp",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "The Michael C. Rockefeller Memorial Collection, Bequest of Nelson A. Rockefeller, 1979",
+      "file_size": 87804,
+      "height": 961,
+      "image_url": "https://images.metmuseum.org/CRDImages/ao/original/DT9425.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/313411.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 4875,
+      "thumbnail_height": 160,
+      "thumbnail_s3_key": "sandbox-fixtures/met/313411_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Nose Ornament with Shrimp",
+      "width": 1200
+    },
+    "met_id": "313411",
+    "object_fields": {
+      "brief_description": "Nose ornament",
+      "creation_date_display": "500-800 CE",
+      "creation_date_earliest": "0500-01-01",
+      "creation_date_latest": "0800-12-31",
+      "creation_place": "Moche artist",
+      "creators": null,
+      "credit_line": "The Michael C. Rockefeller Memorial Collection, Bequest of Nelson A. Rockefeller, 1979",
+      "materials": [
+        {
+          "name": "Gold, silver, stone",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Nose ornament",
+      "object_status": "accessioned",
+      "object_type": "Nose ornament",
+      "physical_description": "H. 4 7/8 x W. 7 1/2 x D. 1/8 in. (12.4 x 19.1 x 0.3 cm)",
+      "responsible_department": "The Michael C. Rockefeller Wing",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Animals",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-313411",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Nose Ornament with Shrimp",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "'Otua fefine (deity figure) by Ha'apai Islands artist",
+      "copyright_status": "public_domain",
+      "creator": "Ha'apai Islands artist",
+      "credit": "The Michael C. Rockefeller Memorial Collection, Bequest of Nelson A. Rockefeller, 1979",
+      "file_size": 57785,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ao/original/DP-16434-001.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/313658.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 4112,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/313658_thumb.jpg",
+      "thumbnail_width": 148,
+      "title": "'Otua fefine (deity figure)",
+      "width": 889
+    },
+    "met_id": "313658",
+    "object_fields": {
+      "brief_description": "Figure",
+      "creation_date_display": "Early 19th century",
+      "creation_date_earliest": "1800-01-01",
+      "creation_date_latest": "1840-12-31",
+      "creation_place": "Ha'apai Islands",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Ha'apai Islands artist",
+          "role": "Artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "The Michael C. Rockefeller Memorial Collection, Bequest of Nelson A. Rockefeller, 1979",
+      "materials": [
+        {
+          "name": "Whale ivory",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Figure",
+      "object_status": "accessioned",
+      "object_type": "Figure",
+      "physical_description": "H. 5 1/4 in. × W. 2 in. × D. 1 1/2 in. (13.3 × 5.1 × 3.8 cm)",
+      "responsible_department": "The Michael C. Rockefeller Wing",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Female Nudes",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-313658",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "'Otua fefine (deity figure)",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "To'o (ritual image) by Mā'ohi artist",
+      "copyright_status": "public_domain",
+      "creator": "Mā'ohi artist",
+      "credit": "The Michael C. Rockefeller Memorial Collection, Bequest of Nelson A. Rockefeller, 1979",
+      "file_size": 90146,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ao/original/DP140634.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/313669.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 3805,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/313669_thumb.jpg",
+      "thumbnail_width": 150,
+      "title": "To'o (ritual image)",
+      "width": 900
+    },
+    "met_id": "313669",
+    "object_fields": {
+      "brief_description": "Figure",
+      "creation_date_display": "18th century",
+      "creation_date_earliest": "1700-01-01",
+      "creation_date_latest": "1900-12-31",
+      "creation_place": "Mā'ohi people",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Mā'ohi artist",
+          "role": "Artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "The Michael C. Rockefeller Memorial Collection, Bequest of Nelson A. Rockefeller, 1979",
+      "materials": [
+        {
+          "name": "Wood, coconut fiber, feathers",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Figure",
+      "object_status": "accessioned",
+      "object_type": "Figure",
+      "physical_description": "H. 18 × W. 3 3/4 × D. 2 3/4 in. (45.7 × 9.5 × 7 cm)",
+      "responsible_department": "The Michael C. Rockefeller Wing",
+      "style_period": null,
+      "subjects": null
+    },
+    "object_number": "MET-313669",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "To'o (ritual image)",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Pair of earflare frontals by Maya artist(s)",
+      "copyright_status": "public_domain",
+      "creator": "Maya artist(s)",
+      "credit": "Gift of Arthur M. Bullowa, 1989",
+      "file_size": 68068,
+      "height": 862,
+      "image_url": "https://images.metmuseum.org/CRDImages/ao/original/DP-14786-043.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/316299.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 4046,
+      "thumbnail_height": 143,
+      "thumbnail_s3_key": "sandbox-fixtures/met/316299_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Pair of earflare frontals",
+      "width": 1200
+    },
+    "met_id": "316299",
+    "object_fields": {
+      "brief_description": "Earflare frontals",
+      "creation_date_display": "200–600 CE",
+      "creation_date_earliest": "0200-01-01",
+      "creation_date_latest": "0600-12-31",
+      "creation_place": "Maya",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Maya artist(s)",
+          "role": "Artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Gift of Arthur M. Bullowa, 1989",
+      "materials": [
+        {
+          "name": "Jade (jadeite)",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Earflare frontals",
+      "object_status": "accessioned",
+      "object_type": "Earflare frontals",
+      "physical_description": "a: H. 1 7/8 × W. 1 7/8 × D. 5/8 in. (4.8 × 4.8 × 1.6 cm)\r\nb: H. 1 7/8 x W. 1 7/8 x D. 3/8 in. (4.8 x 4.8 x 1.5 cm)",
+      "responsible_department": "The Michael C. Rockefeller Wing",
+      "style_period": null,
+      "subjects": null
+    },
+    "object_number": "MET-316299",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Pair of earflare frontals",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Plaque with Warrior and Attendants by Ìgùn Ẹ́rọ̀nwwọ̀n (brass-casting guild) artists",
+      "copyright_status": "public_domain",
+      "creator": "Ìgùn Ẹ́rọ̀nwwọ̀n (brass-casting guild) artists",
+      "credit": "Gift of Mr. and Mrs. Klaus G. Perls, 1990",
+      "file_size": 228476,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ao/original/DT1231.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/316393.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 8283,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/316393_thumb.jpg",
+      "thumbnail_width": 160,
+      "title": "Plaque with Warrior and Attendants",
+      "width": 960
+    },
+    "met_id": "316393",
+    "object_fields": {
+      "brief_description": "Plaque",
+      "creation_date_display": "ca. 1540–70",
+      "creation_date_earliest": "1540-01-01",
+      "creation_date_latest": "1570-12-31",
+      "creation_place": "Edo peoples",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Ìgùn Ẹ́rọ̀nwwọ̀n (brass-casting guild) artists",
+          "role": "Artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Gift of Mr. and Mrs. Klaus G. Perls, 1990",
+      "materials": [
+        {
+          "name": "Brass",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Plaque",
+      "object_status": "accessioned",
+      "object_type": "Plaque",
+      "physical_description": "H. 18 3/4 × W. 15 × D. 4 1/4 in. (47.6 × 38.1 × 10.8 cm)",
+      "responsible_department": "The Michael C. Rockefeller Wing",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Shields",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Spears",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Men",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Warriors",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-316393",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Plaque with Warrior and Attendants",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Lidded saltcellar by Temne or Bullom artist(s)",
+      "copyright_status": "public_domain",
+      "creator": "Temne or Bullom artist(s)",
+      "credit": "Gift of Paul and Ruth W. Tishman, 1991",
+      "file_size": 77796,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ao/original/DP-40021-001.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/316442.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 4075,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/316442_thumb.jpg",
+      "thumbnail_width": 131,
+      "title": "Lidded saltcellar",
+      "width": 787
+    },
+    "met_id": "316442",
+    "object_fields": {
+      "brief_description": "Saltcellar",
+      "creation_date_display": "ca. 1490–1530",
+      "creation_date_earliest": "1485-01-01",
+      "creation_date_latest": "1535-12-31",
+      "creation_place": "Temne or Bullom peoples",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Temne or Bullom artist(s)",
+          "role": "Artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Gift of Paul and Ruth W. Tishman, 1991",
+      "materials": [
+        {
+          "name": "Ivory",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Saltcellar",
+      "object_status": "accessioned",
+      "object_type": "Saltcellar",
+      "physical_description": "H. 11 3/4 x Diam. 4 1/4 in. (29.8 x 10.8 cm)",
+      "responsible_department": "The Michael C. Rockefeller Wing",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Men",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Women",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Dogs",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Snakes",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-316442",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Lidded saltcellar",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Pendant mask of Ìyọ́bà Idià by Ìgbèsànmwà (ivory- and wood- carving guild) artists",
+      "copyright_status": "public_domain",
+      "creator": "Ìgbèsànmwà (ivory- and wood- carving guild) artists",
+      "credit": "The Michael C. Rockefeller Memorial Collection, Gift of Nelson A. Rockefeller, 1972",
+      "file_size": 122433,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ao/original/DP231460.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/318622.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 5757,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/318622_thumb.jpg",
+      "thumbnail_width": 148,
+      "title": "Pendant mask of Ìyọ́bà Idià",
+      "width": 890
+    },
+    "met_id": "318622",
+    "object_fields": {
+      "brief_description": "Pendant mask",
+      "creation_date_display": "16th century",
+      "creation_date_earliest": "1500-01-01",
+      "creation_date_latest": "1600-12-31",
+      "creation_place": "Edo peoples",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Ìgbèsànmwà (ivory- and wood- carving guild) artists",
+          "role": "Artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "The Michael C. Rockefeller Memorial Collection, Gift of Nelson A. Rockefeller, 1972",
+      "materials": [
+        {
+          "name": "Ivory, iron, brass, coal, traces of iron oxides",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Pendant mask",
+      "object_status": "accessioned",
+      "object_type": "Pendant mask",
+      "physical_description": "H. 9 3/8 x W. 5 x D. 2 1/2 in. (23.8 x 12.7 x 6.4 cm)",
+      "responsible_department": "The Michael C. Rockefeller Wing",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Portraits",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Women",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-318622",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Pendant mask of Ìyọ́bà Idià",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Relief fragment: cavalrymen along a stream in mountainous terrain",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Gift of John D. Rockefeller Jr., 1932",
+      "file_size": 239160,
+      "height": 765,
+      "image_url": "https://images.metmuseum.org/CRDImages/an/original/DP-441-001.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/322623.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 8361,
+      "thumbnail_height": 127,
+      "thumbnail_s3_key": "sandbox-fixtures/met/322623_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Relief fragment: cavalrymen along a stream in mountainous terrain",
+      "width": 1200
+    },
+    "met_id": "322623",
+    "object_fields": {
+      "brief_description": "Relief",
+      "creation_date_display": "ca. 704–681 BCE",
+      "creation_date_earliest": "0001-01-01",
+      "creation_date_latest": "0001-12-31",
+      "creation_place": "Assyrian",
+      "creators": null,
+      "credit_line": "Gift of John D. Rockefeller Jr., 1932",
+      "materials": [
+        {
+          "name": "Gypsum alabaster",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Relief",
+      "object_status": "accessioned",
+      "object_type": "Relief",
+      "physical_description": "21 7/16 × 34 9/16 × 5 1/16 in. (54.5 × 87.8 × 12.8 cm)",
+      "responsible_department": "Ancient West Asian Art",
+      "style_period": "Neo-Assyrian",
+      "subjects": [
+        {
+          "term": "Men",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Horses",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-322623",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Relief fragment: cavalrymen along a stream in mountainous terrain",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Joan of Arc by Jules Bastien-Lepage",
+      "copyright_status": "public_domain",
+      "creator": "Jules Bastien-Lepage",
+      "credit": "Gift of Erwin Davis, 1889",
+      "file_size": 294226,
+      "height": 1087,
+      "image_url": "https://images.metmuseum.org/CRDImages/ep/original/DP-14201-049.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/435621.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 10576,
+      "thumbnail_height": 181,
+      "thumbnail_s3_key": "sandbox-fixtures/met/435621_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Joan of Arc",
+      "width": 1200
+    },
+    "met_id": "435621",
+    "object_fields": {
+      "brief_description": "Painting",
+      "creation_date_display": "1879",
+      "creation_date_earliest": "1879-01-01",
+      "creation_date_latest": "1879-12-31",
+      "creation_place": "French",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Jules Bastien-Lepage",
+          "role": "Artist",
+          "ulan_id": "500015744"
+        }
+      ],
+      "credit_line": "Gift of Erwin Davis, 1889",
+      "materials": [
+        {
+          "name": "Oil on canvas",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Painting",
+      "object_status": "accessioned",
+      "object_type": "Painting",
+      "physical_description": "100 x 110 in. (254 x 279.4 cm)",
+      "responsible_department": "European Paintings",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Gardens",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Joan of Arc",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-435621",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Joan of Arc",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "The Harvesters by Pieter Bruegel the Elder",
+      "copyright_status": "public_domain",
+      "creator": "Pieter Bruegel the Elder",
+      "credit": "Rogers Fund, 1919",
+      "file_size": 273216,
+      "height": 884,
+      "image_url": "https://images.metmuseum.org/CRDImages/ep/original/DP119115.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/435809.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 10181,
+      "thumbnail_height": 147,
+      "thumbnail_s3_key": "sandbox-fixtures/met/435809_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "The Harvesters",
+      "width": 1200
+    },
+    "met_id": "435809",
+    "object_fields": {
+      "brief_description": "Painting",
+      "creation_date_display": "1565",
+      "creation_date_earliest": "1565-01-01",
+      "creation_date_latest": "1565-12-31",
+      "creation_place": "Netherlandish",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Pieter Bruegel the Elder",
+          "role": "Artist",
+          "ulan_id": "500013247"
+        }
+      ],
+      "credit_line": "Rogers Fund, 1919",
+      "materials": [
+        {
+          "name": "Oil on wood",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Painting",
+      "object_status": "accessioned",
+      "object_type": "Painting",
+      "physical_description": "Overall, including added strips at top, bottom, and right, 46 7/8 x 63 3/4 in. (119 x 162 cm); original painted surface 45 7/8 x 62 7/8 in. (116.5 x 159.5 cm)",
+      "responsible_department": "European Paintings",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Food",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Men",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Women",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Landscapes",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Working",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Eating",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-435809",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "The Harvesters",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "The Death of Socrates by Jacques Louis David",
+      "copyright_status": "public_domain",
+      "creator": "Jacques Louis David",
+      "credit": "Catharine Lorillard Wolfe Collection, Wolfe Fund, 1931",
+      "file_size": 102711,
+      "height": 799,
+      "image_url": "https://images.metmuseum.org/CRDImages/ep/original/DP-13139-001.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/436105.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 5752,
+      "thumbnail_height": 133,
+      "thumbnail_s3_key": "sandbox-fixtures/met/436105_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "The Death of Socrates",
+      "width": 1200
+    },
+    "met_id": "436105",
+    "object_fields": {
+      "brief_description": "Painting",
+      "creation_date_display": "1787",
+      "creation_date_earliest": "1787-01-01",
+      "creation_date_latest": "1787-12-31",
+      "creation_place": "French",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Jacques Louis David",
+          "role": "Artist",
+          "ulan_id": "500115221"
+        }
+      ],
+      "credit_line": "Catharine Lorillard Wolfe Collection, Wolfe Fund, 1931",
+      "materials": [
+        {
+          "name": "Oil on canvas",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Painting",
+      "object_status": "accessioned",
+      "object_type": "Painting",
+      "physical_description": "51 x 77 1/4 in. (129.5 x 196.2 cm)",
+      "responsible_department": "European Paintings",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Socrates",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Men",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Lyres",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-436105",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "The Death of Socrates",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "The Siesta by Paul Gauguin",
+      "copyright_status": "public_domain",
+      "creator": "Paul Gauguin",
+      "credit": "The Walter H. and Leonore Annenberg Collection, Gift of Walter H. and Leonore Annenberg, 1993, Bequest of Walter H. Annenberg, 2002",
+      "file_size": 250829,
+      "height": 920,
+      "image_url": "https://images.metmuseum.org/CRDImages/ep/original/DT1952.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/436449.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 10818,
+      "thumbnail_height": 153,
+      "thumbnail_s3_key": "sandbox-fixtures/met/436449_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "The Siesta",
+      "width": 1200
+    },
+    "met_id": "436449",
+    "object_fields": {
+      "brief_description": "Painting",
+      "creation_date_display": "ca. 1892–94",
+      "creation_date_earliest": "1892-01-01",
+      "creation_date_latest": "1894-12-31",
+      "creation_place": "French",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Paul Gauguin",
+          "role": "Artist",
+          "ulan_id": "500011421"
+        }
+      ],
+      "credit_line": "The Walter H. and Leonore Annenberg Collection, Gift of Walter H. and Leonore Annenberg, 1993, Bequest of Walter H. Annenberg, 2002",
+      "materials": [
+        {
+          "name": "Oil on canvas",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Painting",
+      "object_status": "accessioned",
+      "object_type": "Painting",
+      "physical_description": "35 x 45 3/4 in. (88.9 x 116.2 cm)",
+      "responsible_department": "European Paintings",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Women",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Baskets",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Irons",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-436449",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "The Siesta",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Irises by Vincent van Gogh",
+      "copyright_status": "public_domain",
+      "creator": "Vincent van Gogh",
+      "credit": "Gift of Adele R. Levy, 1958",
+      "file_size": 321677,
+      "height": 952,
+      "image_url": "https://images.metmuseum.org/CRDImages/ep/original/DP346474.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/436528.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 10744,
+      "thumbnail_height": 158,
+      "thumbnail_s3_key": "sandbox-fixtures/met/436528_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Irises",
+      "width": 1200
+    },
+    "met_id": "436528",
+    "object_fields": {
+      "brief_description": "Painting",
+      "creation_date_display": "1890",
+      "creation_date_earliest": "1890-01-01",
+      "creation_date_latest": "1890-12-31",
+      "creation_place": "Dutch",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Vincent van Gogh",
+          "role": "Artist",
+          "ulan_id": "500115588"
+        }
+      ],
+      "credit_line": "Gift of Adele R. Levy, 1958",
+      "materials": [
+        {
+          "name": "Oil on canvas",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Painting",
+      "object_status": "accessioned",
+      "object_type": "Painting",
+      "physical_description": "29 x 36 1/4 in. (73.7 x 92.1 cm)",
+      "responsible_department": "European Paintings",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Flowers",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Still Life",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-436528",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Irises",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Self-Portrait with a Straw Hat (obverse: The Potato Peeler) by Vincent van Gogh",
+      "copyright_status": "public_domain",
+      "creator": "Vincent van Gogh",
+      "credit": "Bequest of Miss Adelaide Milton de Groot (1876-1967), 1967",
+      "file_size": 405298,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ep/original/DT1502_cropped2.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/436532.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 11624,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/436532_thumb.jpg",
+      "thumbnail_width": 160,
+      "title": "Self-Portrait with a Straw Hat (obverse: The Potato Peeler)",
+      "width": 964
+    },
+    "met_id": "436532",
+    "object_fields": {
+      "brief_description": "Painting",
+      "creation_date_display": "1887",
+      "creation_date_earliest": "1887-01-01",
+      "creation_date_latest": "1887-12-31",
+      "creation_place": "Dutch",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Vincent van Gogh",
+          "role": "Artist",
+          "ulan_id": "500115588"
+        }
+      ],
+      "credit_line": "Bequest of Miss Adelaide Milton de Groot (1876-1967), 1967",
+      "materials": [
+        {
+          "name": "Oil on canvas",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Painting",
+      "object_status": "accessioned",
+      "object_type": "Painting",
+      "physical_description": "16 x 12 1/2 in. (40.6 x 31.8 cm)",
+      "responsible_department": "European Paintings",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Men",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Self-portraits",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-436532",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Self-Portrait with a Straw Hat (obverse: The Potato Peeler)",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Wheat Field with Cypresses by Vincent van Gogh",
+      "copyright_status": "public_domain",
+      "creator": "Vincent van Gogh",
+      "credit": "Purchase, The Annenberg Foundation Gift, 1993",
+      "file_size": 356762,
+      "height": 955,
+      "image_url": "https://images.metmuseum.org/CRDImages/ep/original/DP-42549-001.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/436535.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 10501,
+      "thumbnail_height": 159,
+      "thumbnail_s3_key": "sandbox-fixtures/met/436535_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Wheat Field with Cypresses",
+      "width": 1200
+    },
+    "met_id": "436535",
+    "object_fields": {
+      "brief_description": "Painting",
+      "creation_date_display": "1889",
+      "creation_date_earliest": "1889-01-01",
+      "creation_date_latest": "1889-12-31",
+      "creation_place": "Dutch",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Vincent van Gogh",
+          "role": "Artist",
+          "ulan_id": "500115588"
+        }
+      ],
+      "credit_line": "Purchase, The Annenberg Foundation Gift, 1993",
+      "materials": [
+        {
+          "name": "Oil on canvas",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Painting",
+      "object_status": "accessioned",
+      "object_type": "Painting",
+      "physical_description": "28 13/16 × 36 3/4 in. (73.2 × 93.4 cm)",
+      "responsible_department": "European Paintings",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Landscapes",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Cypresses",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Summer",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-436535",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Wheat Field with Cypresses",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "View of Toledo by El Greco (Domenikos Theotokopoulos)",
+      "copyright_status": "public_domain",
+      "creator": "El Greco (Domenikos Theotokopoulos)",
+      "credit": "H. O. Havemeyer Collection, Bequest of Mrs. H. O. Havemeyer, 1929",
+      "file_size": 178271,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ep/original/DP349564.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/436575.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 8515,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/436575_thumb.jpg",
+      "thumbnail_width": 177,
+      "title": "View of Toledo",
+      "width": 1066
+    },
+    "met_id": "436575",
+    "object_fields": {
+      "brief_description": "Painting",
+      "creation_date_display": "ca. 1599–1600",
+      "creation_date_earliest": "1599-01-01",
+      "creation_date_latest": "1600-12-31",
+      "creation_place": "Greek",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "El Greco (Domenikos Theotokopoulos)",
+          "role": "Artist",
+          "ulan_id": "500010916"
+        }
+      ],
+      "credit_line": "H. O. Havemeyer Collection, Bequest of Mrs. H. O. Havemeyer, 1929",
+      "materials": [
+        {
+          "name": "Oil on canvas",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Painting",
+      "object_status": "accessioned",
+      "object_type": "Painting",
+      "physical_description": "47 3/4 x 42 3/4 in. (121.3 x 108.6 cm)",
+      "responsible_department": "European Paintings",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Buildings",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Cities",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-436575",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "View of Toledo",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Self-Portrait by Rembrandt (Rembrandt van Rijn)",
+      "copyright_status": "public_domain",
+      "creator": "Rembrandt (Rembrandt van Rijn)",
+      "credit": "Bequest of Benjamin Altman, 1913",
+      "file_size": 143913,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ep/original/DP-16323-001.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/437397.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 6195,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/437397_thumb.jpg",
+      "thumbnail_width": 164,
+      "title": "Self-Portrait",
+      "width": 989
+    },
+    "met_id": "437397",
+    "object_fields": {
+      "brief_description": "Painting",
+      "creation_date_display": "1660",
+      "creation_date_earliest": "1660-01-01",
+      "creation_date_latest": "1660-12-31",
+      "creation_place": "Dutch",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Rembrandt (Rembrandt van Rijn)",
+          "role": "Artist",
+          "ulan_id": "500011051"
+        }
+      ],
+      "credit_line": "Bequest of Benjamin Altman, 1913",
+      "materials": [
+        {
+          "name": "Oil on canvas",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Painting",
+      "object_status": "accessioned",
+      "object_type": "Painting",
+      "physical_description": "31 5/8 x 26 1/2 in. (80.3 x 67.3 cm)",
+      "responsible_department": "European Paintings",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Men",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Self-portraits",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-437397",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Self-Portrait",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Young Woman with a Water Pitcher by Johannes Vermeer",
+      "copyright_status": "public_domain",
+      "creator": "Johannes Vermeer",
+      "credit": "Marquand Collection, Gift of Henry G. Marquand, 1889",
+      "file_size": 187142,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ep/original/DP353257.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/437881.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 8364,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/437881_thumb.jpg",
+      "thumbnail_width": 177,
+      "title": "Young Woman with a Water Pitcher",
+      "width": 1067
+    },
+    "met_id": "437881",
+    "object_fields": {
+      "brief_description": "Painting",
+      "creation_date_display": "ca. 1662",
+      "creation_date_earliest": "1657-01-01",
+      "creation_date_latest": "1667-12-31",
+      "creation_place": "Dutch",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Johannes Vermeer",
+          "role": "Artist",
+          "ulan_id": "500032927"
+        }
+      ],
+      "credit_line": "Marquand Collection, Gift of Henry G. Marquand, 1889",
+      "materials": [
+        {
+          "name": "Oil on canvas",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Painting",
+      "object_status": "accessioned",
+      "object_type": "Painting",
+      "physical_description": "18 x 16 in. (45.7 x 40.6 cm)",
+      "responsible_department": "European Paintings",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Interiors",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Women",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Maps",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Pitchers",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-437881",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Young Woman with a Water Pitcher",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Cypresses by Vincent van Gogh",
+      "copyright_status": "public_domain",
+      "creator": "Vincent van Gogh",
+      "credit": "Rogers Fund, 1949",
+      "file_size": 394174,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ep/original/DP130999.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/437980.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 12361,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/437980_thumb.jpg",
+      "thumbnail_width": 158,
+      "title": "Cypresses",
+      "width": 952
+    },
+    "met_id": "437980",
+    "object_fields": {
+      "brief_description": "Painting",
+      "creation_date_display": "1889",
+      "creation_date_earliest": "1889-01-01",
+      "creation_date_latest": "1889-12-31",
+      "creation_place": "Dutch",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Vincent van Gogh",
+          "role": "Artist",
+          "ulan_id": "500115588"
+        }
+      ],
+      "credit_line": "Rogers Fund, 1949",
+      "materials": [
+        {
+          "name": "Oil on canvas",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Painting",
+      "object_status": "accessioned",
+      "object_type": "Painting",
+      "physical_description": "36 3/4 x 29 1/8 in. (93.4 x 74 cm)",
+      "responsible_department": "European Paintings",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Landscapes",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Cypresses",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-437980",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Cypresses",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "The Dance Class by Edgar Degas",
+      "copyright_status": "public_domain",
+      "creator": "Edgar Degas",
+      "credit": "Bequest of Mrs. Harry Payne Bingham, 1986",
+      "file_size": 193259,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ep/original/DP-20101-001.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/438817.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 9322,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/438817_thumb.jpg",
+      "thumbnail_width": 185,
+      "title": "The Dance Class",
+      "width": 1113
+    },
+    "met_id": "438817",
+    "object_fields": {
+      "brief_description": "Painting",
+      "creation_date_display": "1874",
+      "creation_date_earliest": "1874-01-01",
+      "creation_date_latest": "1874-12-31",
+      "creation_place": "French",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Edgar Degas",
+          "role": "Artist",
+          "ulan_id": "500115194"
+        }
+      ],
+      "credit_line": "Bequest of Mrs. Harry Payne Bingham, 1986",
+      "materials": [
+        {
+          "name": "Oil on canvas",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Painting",
+      "object_status": "accessioned",
+      "object_type": "Painting",
+      "physical_description": "32 7/8 x 30 3/8 in. (83.5 x 77.2 cm)",
+      "responsible_department": "European Paintings",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Girls",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Men",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Women",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Students",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Dancers",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Ballet",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-438817",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "The Dance Class",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Mosque Lamp of Sultan Barquq",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Gift of J. Pierpont Morgan, 1917",
+      "file_size": 155081,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/is/original/DP123180.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/447004.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 6500,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/447004_thumb.jpg",
+      "thumbnail_width": 164,
+      "title": "Mosque Lamp of Sultan Barquq",
+      "width": 988
+    },
+    "met_id": "447004",
+    "object_fields": {
+      "brief_description": "Mosque lamp",
+      "creation_date_display": "ca. 1382–99",
+      "creation_date_earliest": "1357-01-01",
+      "creation_date_latest": "1424-12-31",
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Gift of J. Pierpont Morgan, 1917",
+      "materials": [
+        {
+          "name": "Glass; blown, applied blown foot and handles, enameled, and gilded",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Mosque lamp",
+      "object_status": "accessioned",
+      "object_type": "Mosque lamp",
+      "physical_description": "H. 14 5/8 in. (37.1 cm)\r\nMax. diam. 9 5/8 in. (24.4 cm)\r\nDiam. with handles: 10 1/16 in. (25.6 cm)",
+      "responsible_department": "Islamic Art",
+      "style_period": null,
+      "subjects": null
+    },
+    "object_number": "MET-447004",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Mosque Lamp of Sultan Barquq",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Mihrab (Prayer Niche)",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Harris Brisbane Dick Fund, 1939",
+      "file_size": 388208,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/is/original/DP235035.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/449537.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 11810,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/449537_thumb.jpg",
+      "thumbnail_width": 134,
+      "title": "Mihrab (Prayer Niche)",
+      "width": 810
+    },
+    "met_id": "449537",
+    "object_fields": {
+      "brief_description": "Mihrab",
+      "creation_date_display": "dated 755 AH/1354–55 CE",
+      "creation_date_earliest": "1354-01-01",
+      "creation_date_latest": "1355-12-31",
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Harris Brisbane Dick Fund, 1939",
+      "materials": [
+        {
+          "name": "Mosaic of polychrome-glazed cut tiles on stonepaste body; set into mortar",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Mihrab",
+      "object_status": "accessioned",
+      "object_type": "Mihrab",
+      "physical_description": "Mihrab\r\n            H. 135 1/16 in. (343.1 cm)\r\n            W. 113 11/16in. (288.7cm)\r\n            Wt. 4,500 lbs. (2041.2 kg)\r\nStorage box:  \r\n             W. 99 in. (251.5 cm)\r\n             D. 41 1/2 in. (105.4 cm)",
+      "responsible_department": "Islamic Art",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Arabic",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-449537",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Mihrab (Prayer Niche)",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Ewer",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rogers Fund, 1944",
+      "file_size": 124105,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/is/original/DP241076.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/450513.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 5335,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/450513_thumb.jpg",
+      "thumbnail_width": 149,
+      "title": "Ewer",
+      "width": 900
+    },
+    "met_id": "450513",
+    "object_fields": {
+      "brief_description": "Ewer",
+      "creation_date_display": "ca. 1180–1210",
+      "creation_date_earliest": "1155-01-01",
+      "creation_date_latest": "1235-12-31",
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rogers Fund, 1944",
+      "materials": [
+        {
+          "name": "Brass; raised, repoussé, inlaid with silver and a black compound",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Ewer",
+      "object_status": "accessioned",
+      "object_type": "Ewer",
+      "physical_description": "H. 15 3/4 in. (40 cm)\r\nDiam. 7 1/2 in. (19.1 cm)",
+      "responsible_department": "Islamic Art",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Zodiac",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-450513",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Ewer",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Five Medallion Carpet",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Fletcher Fund, 1970",
+      "file_size": 126551,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/is/original/DP219415.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/452100.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 3901,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/452100_thumb.jpg",
+      "thumbnail_width": 57,
+      "title": "Five Medallion Carpet",
+      "width": 344
+    },
+    "met_id": "452100",
+    "object_fields": {
+      "brief_description": "Carpet",
+      "creation_date_display": "ca. 1500",
+      "creation_date_earliest": "1475-01-01",
+      "creation_date_latest": "1525-12-31",
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Fletcher Fund, 1970",
+      "materials": [
+        {
+          "name": "Wool (warp, weft, and pile); asymmetrically knotted pile",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Carpet",
+      "object_status": "accessioned",
+      "object_type": "Carpet",
+      "physical_description": "Rug: \r\n         L. 353 in. (896.6 cm)\r\n         W. 94 in. (238.8 cm)\r\nTube: \r\n           H. 106 in. (269.2 cm)\r\n           Diam. 10 in. (25.4 cm)",
+      "responsible_department": "Islamic Art",
+      "style_period": null,
+      "subjects": null
+    },
+    "object_number": "MET-452100",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Five Medallion Carpet",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "\"The Angel Gabriel meets 'Amr ibn Zaid (the Shepherd)\", Folio from a Siyer-i Nebi (the Life of the Prophet) by Mustafa ibn Vali",
+      "copyright_status": "public_domain",
+      "creator": "Mustafa ibn Vali",
+      "credit": "Purchase, Lila Acheson Wallace Gift, 1994",
+      "file_size": 213899,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/is/original/DP234015.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/453351.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 8358,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/453351_thumb.jpg",
+      "thumbnail_width": 141,
+      "title": "\"The Angel Gabriel meets 'Amr ibn Zaid (the Shepherd)\", Folio from a Siyer-i Nebi (the Life of the Prophet)",
+      "width": 848
+    },
+    "met_id": "453351",
+    "object_fields": {
+      "brief_description": "Folio from an illustrated manuscript",
+      "creation_date_display": "ca. 1595",
+      "creation_date_earliest": "1570-01-01",
+      "creation_date_latest": "1620-12-31",
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Mustafa ibn Vali",
+          "role": "Artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Purchase, Lila Acheson Wallace Gift, 1994",
+      "materials": [
+        {
+          "name": "Ink, opaque watercolor, and gold on paper",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Folio from an illustrated manuscript",
+      "object_status": "accessioned",
+      "object_type": "Folio from an illustrated manuscript",
+      "physical_description": "H. 14 9/16 in. (37 cm)\r\nW. 10 1/4 in. (26 cm)",
+      "responsible_department": "Islamic Art",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Men",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Camels",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Horses",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Archangel Gabriel",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-453351",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "\"The Angel Gabriel meets 'Amr ibn Zaid (the Shepherd)\", Folio from a Siyer-i Nebi (the Life of the Prophet)",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Tile",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Purchase, Friends of Islamic Art Gifts, 1998",
+      "file_size": 149222,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/is/original/DP217234.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/453563.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 6571,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/453563_thumb.jpg",
+      "thumbnail_width": 149,
+      "title": "Tile",
+      "width": 899
+    },
+    "met_id": "453563",
+    "object_fields": {
+      "brief_description": "Tile",
+      "creation_date_display": "dated 824 AH/1421 CE",
+      "creation_date_earliest": "1420-01-01",
+      "creation_date_latest": "1422-12-31",
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Purchase, Friends of Islamic Art Gifts, 1998",
+      "materials": [
+        {
+          "name": "Tempered earthenware; molded; polychrome glazed within black wax resist outlines (cuerda seca technique); gilded",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Tile",
+      "object_status": "accessioned",
+      "object_type": "Tile",
+      "physical_description": "H. 11 1/2 in. (29 cm)\r\nW. 6 3/4 in. (17.2 cm)\r\nD. 1 1/2 in. (3.8 cm)",
+      "responsible_department": "Islamic Art",
+      "style_period": null,
+      "subjects": null
+    },
+    "object_number": "MET-453563",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Tile",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "The Hunters Enter the Woods (from the Unicorn Tapestries)",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Gift of John D. Rockefeller Jr., 1937",
+      "file_size": 378203,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/cl/original/DP118981.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/467637.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 12252,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/467637_thumb.jpg",
+      "thumbnail_width": 176,
+      "title": "The Hunters Enter the Woods (from the Unicorn Tapestries)",
+      "width": 1059
+    },
+    "met_id": "467637",
+    "object_fields": {
+      "brief_description": "Tapestry",
+      "creation_date_display": "1495–1505",
+      "creation_date_earliest": "1495-01-01",
+      "creation_date_latest": "1505-12-31",
+      "creation_place": "French (cartoon)/South Netherlandish (woven)",
+      "creators": null,
+      "credit_line": "Gift of John D. Rockefeller Jr., 1937",
+      "materials": [
+        {
+          "name": "Wool warp, wool, silk, silver, and gilt wefts",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Tapestry",
+      "object_status": "accessioned",
+      "object_type": "Tapestry",
+      "physical_description": "Overall: 145 x 124in. (368.3 x 315cm)",
+      "responsible_department": "The Cloisters",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Spears",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Men",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Hunting",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Dogs",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Flowers",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Trees",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-467637",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "The Hunters Enter the Woods (from the Unicorn Tapestries)",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "The Unicorn Rests in a Garden (from the Unicorn Tapestries)",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Gift of John D. Rockefeller Jr., 1937",
+      "file_size": 410133,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/cl/original/DP118991.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/467642.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 12827,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/467642_thumb.jpg",
+      "thumbnail_width": 141,
+      "title": "The Unicorn Rests in a Garden (from the Unicorn Tapestries)",
+      "width": 847
+    },
+    "met_id": "467642",
+    "object_fields": {
+      "brief_description": "Tapestry",
+      "creation_date_display": "1495–1505",
+      "creation_date_earliest": "1495-01-01",
+      "creation_date_latest": "1505-12-31",
+      "creation_place": "French (cartoon)/South Netherlandish (woven)",
+      "creators": null,
+      "credit_line": "Gift of John D. Rockefeller Jr., 1937",
+      "materials": [
+        {
+          "name": "Wool warp with wool, silk, silver, and gilt wefts",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Tapestry",
+      "object_status": "accessioned",
+      "object_type": "Tapestry",
+      "physical_description": "12 ft. 7/8 in. × 8 ft. 3 in. (368 × 251.5 cm)",
+      "responsible_department": "The Cloisters",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Unicorns",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Flowers",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Plants",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Trees",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-467642",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "The Unicorn Rests in a Garden (from the Unicorn Tapestries)",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Unique Forms of Continuity in Space by Umberto Boccioni",
+      "copyright_status": "public_domain",
+      "creator": "Umberto Boccioni",
+      "credit": "Bequest of Lydia Winston Malbin, 1989",
+      "file_size": 109603,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ma/original/DT6411.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/485540.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 5463,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/485540_thumb.jpg",
+      "thumbnail_width": 160,
+      "title": "Unique Forms of Continuity in Space",
+      "width": 960
+    },
+    "met_id": "485540",
+    "object_fields": {
+      "brief_description": "Sculpture",
+      "creation_date_display": "1913, cast 1950",
+      "creation_date_earliest": "1913-01-01",
+      "creation_date_latest": "1913-12-31",
+      "creation_place": "Italian",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Umberto Boccioni",
+          "role": "Artist",
+          "ulan_id": "500012624"
+        }
+      ],
+      "credit_line": "Bequest of Lydia Winston Malbin, 1989",
+      "materials": [
+        {
+          "name": "Bronze",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Sculpture",
+      "object_status": "accessioned",
+      "object_type": "Sculpture",
+      "physical_description": "47 3/4 × 35 × 15 3/4 in., 200 lb. (121.3 × 88.9 × 40 cm, 90.7 kg)",
+      "responsible_department": "Modern and Contemporary Art",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Human Figures",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-485540",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Unique Forms of Continuity in Space",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Gustav Mahler by Auguste Rodin",
+      "copyright_status": "public_domain",
+      "creator": "Auguste Rodin",
+      "credit": "Jacques and Natasha Gelman Collection, 1998",
+      "file_size": 264834,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ma/original/1999.363.73.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/490027.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 6503,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/490027_thumb.jpg",
+      "thumbnail_width": 152,
+      "title": "Gustav Mahler",
+      "width": 917
+    },
+    "met_id": "490027",
+    "object_fields": {
+      "brief_description": "Sculpture",
+      "creation_date_display": "1909",
+      "creation_date_earliest": "1909-01-01",
+      "creation_date_latest": "1909-12-31",
+      "creation_place": "French",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Auguste Rodin",
+          "role": "Artist",
+          "ulan_id": "500016619"
+        }
+      ],
+      "credit_line": "Jacques and Natasha Gelman Collection, 1998",
+      "materials": [
+        {
+          "name": "Bronze",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Sculpture",
+      "object_status": "accessioned",
+      "object_type": "Sculpture",
+      "physical_description": "14 × 9 3/4 × 9 1/2 in., 15.5 lb. (35.6 × 24.8 × 24.1 cm, 7 kg)",
+      "responsible_department": "Modern and Contemporary Art",
+      "style_period": null,
+      "subjects": [
+        {
+          "term": "Heads",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Men",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Portraits",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-490027",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Gustav Mahler",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Grand Piano by Bartolomeo Cristofori",
+      "copyright_status": "public_domain",
+      "creator": "Bartolomeo Cristofori",
+      "credit": "The Crosby Brown Collection of Musical Instruments, 1889",
+      "file_size": 69001,
+      "height": 900,
+      "image_url": "https://images.metmuseum.org/CRDImages/mi/original/DP300941.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/501788.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 4974,
+      "thumbnail_height": 150,
+      "thumbnail_s3_key": "sandbox-fixtures/met/501788_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Grand Piano",
+      "width": 1200
+    },
+    "met_id": "501788",
+    "object_fields": {
+      "brief_description": "Grand Piano",
+      "creation_date_display": "1720",
+      "creation_date_earliest": "1720-01-01",
+      "creation_date_latest": "1720-12-31",
+      "creation_place": "Italian (Florence)",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Bartolomeo Cristofori",
+          "role": "Maker",
+          "ulan_id": "500329977"
+        }
+      ],
+      "credit_line": "The Crosby Brown Collection of Musical Instruments, 1889",
+      "materials": [
+        {
+          "name": "Cypress, boxwood, paint, leather, fir",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Grand Piano",
+      "object_status": "accessioned",
+      "object_type": "Grand Piano",
+      "physical_description": "Height (Total): 34 1/16 (86.5 cm)\r\nWidth (Parallel to keyboard): 37 5/8 (95.6 cm)\r\nDepth (Case length, perpendicular to keyboard): 90 in. (228.6 cm)",
+      "responsible_department": "Musical Instruments",
+      "style_period": null,
+      "subjects": null
+    },
+    "object_number": "MET-501788",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Grand Piano",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "\"Antonius\" Violin by Antonio Stradivari",
+      "copyright_status": "public_domain",
+      "creator": "Antonio Stradivari",
+      "credit": "Bequest of Annie Bolton Matthews Bryant, 1933",
+      "file_size": 76082,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/mi/original/DP105130.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/503008.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 4130,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/503008_thumb.jpg",
+      "thumbnail_width": 171,
+      "title": "\"Antonius\" Violin",
+      "width": 1027
+    },
+    "met_id": "503008",
+    "object_fields": {
+      "brief_description": "Violin",
+      "creation_date_display": "1711",
+      "creation_date_earliest": "1711-01-01",
+      "creation_date_latest": "1711-12-31",
+      "creation_place": "Italian (Cremona)",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Antonio Stradivari",
+          "role": "Maker",
+          "ulan_id": "500079466"
+        }
+      ],
+      "credit_line": "Bequest of Annie Bolton Matthews Bryant, 1933",
+      "materials": [
+        {
+          "name": "Maple, spruce, ebony",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Violin",
+      "object_status": "accessioned",
+      "object_type": "Violin",
+      "physical_description": "Height: 23 in. (58.4 cm)\r\nWidth: 8 in. (20.3 cm)",
+      "responsible_department": "Musical Instruments",
+      "style_period": null,
+      "subjects": null
+    },
+    "object_number": "MET-503008",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "\"Antonius\" Violin",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Guqin (古琴 ) by Prince Lu",
+      "copyright_status": "public_domain",
+      "creator": "Prince Lu",
+      "credit": "Purchase, Clara Mertens Bequest, in memory of André Mertens, Seymour Fund, The Boston Foundation Gift, Gift of Elizabeth M. Riley, by exchange, and funds from various donors, 1999",
+      "file_size": 42174,
+      "height": 557,
+      "image_url": "https://images.metmuseum.org/CRDImages/mi/original/DP302703.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/503523.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 2584,
+      "thumbnail_height": 92,
+      "thumbnail_s3_key": "sandbox-fixtures/met/503523_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Guqin (古琴 )",
+      "width": 1200
+    },
+    "met_id": "503523",
+    "object_fields": {
+      "brief_description": "Guqin (古琴 )",
+      "creation_date_display": "1634",
+      "creation_date_earliest": "1634-01-01",
+      "creation_date_latest": "1634-12-31",
+      "creation_place": "Chinese",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Prince Lu",
+          "role": "Maker",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Purchase, Clara Mertens Bequest, in memory of André Mertens, Seymour Fund, The Boston Foundation Gift, Gift of Elizabeth M. Riley, by exchange, and funds from various donors, 1999",
+      "materials": [
+        {
+          "name": "Wood (wutong and zi), silk, jade, lacquer, mother-of-pearl",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Guqin (古琴 )",
+      "object_status": "accessioned",
+      "object_type": "Guqin (古琴 )",
+      "physical_description": "47 × 8 × 3 3/4 in. (119.4 × 20.3 × 9.5 cm)",
+      "responsible_department": "Musical Instruments",
+      "style_period": "Ming Dynasty",
+      "subjects": null
+    },
+    "object_number": "MET-503523",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Guqin (古琴 )",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Folding Harpsichord",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Gift of The Chicago Historical Society, 1979",
+      "file_size": 115459,
+      "height": 546,
+      "image_url": "https://images.metmuseum.org/CRDImages/mi/original/217480.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/504622.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 3864,
+      "thumbnail_height": 91,
+      "thumbnail_s3_key": "sandbox-fixtures/met/504622_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Folding Harpsichord",
+      "width": 1200
+    },
+    "met_id": "504622",
+    "object_fields": {
+      "brief_description": "Folding Harpsichord",
+      "creation_date_display": "mid-18th century",
+      "creation_date_earliest": "1725-01-01",
+      "creation_date_latest": "1775-12-31",
+      "creation_place": "Italian",
+      "creators": null,
+      "credit_line": "Gift of The Chicago Historical Society, 1979",
+      "materials": [
+        {
+          "name": "Cypress, iron, and various materials",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Folding Harpsichord",
+      "object_status": "accessioned",
+      "object_type": "Folding Harpsichord",
+      "physical_description": "L.: 75.4 cm (29-3/4 in.); W.: 62.8 cm (24-3/4 in.)",
+      "responsible_department": "Musical Instruments",
+      "style_period": null,
+      "subjects": null
+    },
+    "object_number": "MET-504622",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Folding Harpsichord",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Hippopotamus (\"William\")",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Gift of Edward S. Harkness, 1917",
+      "file_size": 85637,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/eg/original/DP248993.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/544227.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 4718,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/544227_thumb.jpg",
+      "thumbnail_width": 149,
+      "title": "Hippopotamus (\"William\")",
+      "width": 899
+    },
+    "met_id": "544227",
+    "object_fields": {
+      "brief_description": "Figurine, Hippopotamus (\"William\"); Dendur-decoded",
+      "creation_date_display": "ca. 1961–1878 B.C.",
+      "creation_date_earliest": "0001-01-01",
+      "creation_date_latest": "0001-12-31",
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Gift of Edward S. Harkness, 1917",
+      "materials": [
+        {
+          "name": "Faience",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Figurine, Hippopotamus (\"William\"); Dendur-decoded",
+      "object_status": "accessioned",
+      "object_type": "Figurine, Hippopotamus (\"William\"); Dendur-decoded",
+      "physical_description": "L. 20 cm (7 7/8 in.); W. 7.5 cm (2 15/16 in.); H. 11.2 cm (4 7/16 in.)",
+      "responsible_department": "Egyptian Art",
+      "style_period": "Middle Kingdom",
+      "subjects": [
+        {
+          "term": "Hippos",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "MET-544227",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Hippopotamus (\"William\")",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "The Temple of Dendur",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Given to the United States by Egypt in 1965 and awarded to The Metropolitan Museum of Art in 1967.",
+      "file_size": 205596,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/eg/original/DP240337.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/547802.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 7982,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/547802_thumb.jpg",
+      "thumbnail_width": 149,
+      "title": "The Temple of Dendur",
+      "width": 899
+    },
+    "met_id": "547802",
+    "object_fields": {
+      "brief_description": "Temple, Dendur",
+      "creation_date_display": "completed by 10 B.C.",
+      "creation_date_earliest": "0001-01-01",
+      "creation_date_latest": "0001-12-31",
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Given to the United States by Egypt in 1965 and awarded to The Metropolitan Museum of Art in 1967.",
+      "materials": [
+        {
+          "name": "Aeolian sandstone",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Temple, Dendur",
+      "object_status": "accessioned",
+      "object_type": "Temple, Dendur",
+      "physical_description": "Temple proper: H. 6.40 m (21 ft.); W. 6.40 m (21 ft.); L. 12.50 m (41 ft.); Gate: H. 8.08 m (26.5 ft.); W. × 3.66 m (12 ft.); D. 3.35 m (11 ft.)",
+      "responsible_department": "Egyptian Art",
+      "style_period": "Roman Period",
+      "subjects": null
+    },
+    "object_number": "MET-547802",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "The Temple of Dendur",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Spider monkey wearing wind god regalia by Mexica artist(s)",
+      "copyright_status": "public_domain",
+      "creator": "Mexica artist(s)",
+      "credit": "Gift of Brian and Florence Mahony, in celebration of the Museum's 150th Anniversary, 2017",
+      "file_size": 134504,
+      "height": 1200,
+      "image_url": "https://images.metmuseum.org/CRDImages/ao/original/DP-15497-007.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/met/765334.jpg",
+      "source": "The Metropolitan Museum of Art, Open Access",
+      "thumbnail_file_size": 5755,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/met/765334_thumb.jpg",
+      "thumbnail_width": 149,
+      "title": "Spider monkey wearing wind god regalia",
+      "width": 898
+    },
+    "met_id": "765334",
+    "object_fields": {
+      "brief_description": "Figure",
+      "creation_date_display": "1325–1521 CE",
+      "creation_date_earliest": "1325-01-01",
+      "creation_date_latest": "1521-12-31",
+      "creation_place": "Mexica (Aztec)",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Mexica artist(s)",
+          "role": "Artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Gift of Brian and Florence Mahony, in celebration of the Museum's 150th Anniversary, 2017",
+      "materials": [
+        {
+          "name": "Stone",
+          "part": null,
+          "vocabulary_term_id": null
+        }
+      ],
+      "object_name": "Figure",
+      "object_status": "accessioned",
+      "object_type": "Figure",
+      "physical_description": "H. 15 9/16 × W. 9 1/2 × D. 10 in. (39.5 × 24.1 × 25.4 cm)",
+      "responsible_department": "The Michael C. Rockefeller Wing",
+      "style_period": null,
+      "subjects": null
+    },
+    "object_number": "MET-765334",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Spider monkey wearing wind god regalia",
+        "title_type": "primary"
+      }
+    ]
+  }
+]

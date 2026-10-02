@@ -1,0 +1,88 @@
+[project]
+name = "madrona"
+version = "1.0.0"
+description = "Madrona data integration platform backend"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+
+# Runtime dependencies live in requirements.txt, which is what the Dockerfile
+# and CI install. This list had drifted to the Flask era — flask,
+# flask-sqlalchemy and flask-cors for an application that has been FastAPI for
+# some time — so `pip install -e .` produced a wrong and unnecessarily heavy
+# environment (pyodbc and oracledb both need system libraries). Kept empty
+# rather than duplicated, so the two cannot disagree again.
+#
+#   pip install -r requirements.txt              # runtime
+#   pip install -r requirements-copyleft.txt     # optional, GPL — see the file
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-timeout>=2.4.0",
+    "black>=23.12.0",
+    "ruff>=0.1.0",
+    "mypy>=1.7.0",
+    "fakeredis>=2.20.0",
+]
+
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"  # build_backend is not a real module
+
+[tool.setuptools]
+packages = ["app"]
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# 120s default per-test timeout. Without any timeout a single hung test can
+# lock up the whole suite (this happened around test_api_crm_coverage.py and
+# silently stalled coverage runs), so the guard stays — but 30s was calibrated
+# on a developer machine and is too tight for a 2-core hosted runner that is
+# also hosting Postgres.
+#
+# Two tests that finish in well under a second locally were blowing 30s there:
+# test_policy_exists_for_every_org_descendant_table (catalog introspection over
+# every org-descendant table) and the tus webhook tests. When pytest-timeout
+# fired it sometimes reported a clean failure and sometimes left the xdist
+# worker wedged, in which case the CI job hung until the runner was reclaimed
+# and discarded its logs — which is what made this so tedious to diagnose.
+#
+# 120s still catches a genuinely hung test; it just stops timing out slow ones.
+# The cost is that a real hang now takes two minutes to surface.
+timeout = 120
+markers = [
+    "real_provider: exercise real auth-provider resolution (no local-provider patch)",
+    "unit: Unit tests using SQLite (default)",
+    "postgres: Tests requiring PostgreSQL-specific features",
+    "integration: Integration tests requiring PostgreSQL with RLS (TEST_DATABASE_URL)",
+    # Wall-clock latency benchmarks. Opt-in, and deselected in CI with
+    # -m "not performance" — see .github/workflows/backend-tests.yml. They
+    # assert things like `elapsed < 2.0`, which on a shared 2-core runner
+    # measures the runner rather than the code. The module already declared
+    # this marker and documented "run with pytest -m performance"; it was
+    # simply never registered here, and CI never honoured it.
+    "performance: wall-clock latency benchmarks (opt-in; excluded from CI)",
+]
+
+[tool.coverage.report]
+# Measured 66% on a full serial run. Set one point below so ordinary
+# run-to-run variation does not fail on the boundary — this is a ratchet
+# against erosion, not a target. Raise it when coverage rises; never lower it
+# to make a red build green.
+fail_under = 65

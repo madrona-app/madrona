@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+# Run from git root so staged paths outside frontend/ (e.g. shared/) are visible
+# to lint-staged and the nav-catalog drift check.
+ROOT="$(git rev-parse --show-toplevel)" || exit 1
+cd "$ROOT" || exit 1
+# lint-staged runs with CWD=git root so globs match repo-relative paths.
+# --config points at the root config explicitly because pnpm --dir changes
+# the working directory for the lint-staged process itself.
+"$ROOT/frontend/node_modules/.bin/lint-staged" --config "$ROOT/.lintstagedrc.mjs" --cwd "$ROOT"

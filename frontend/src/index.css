@@ -1,0 +1,2041 @@
+/* MapLibre GL CSS - imported by map components */
+@import 'maplibre-gl/dist/maplibre-gl.css';
+
+/* Guide Studio brand fonts (self-hosted via @fontsource).
+   Cormorant Garamond carries the wordmark/avatar (roman = Studio/production,
+   italic = Guide/voice); IBM Plex Mono carries technical metadata (agent
+   counts, draft IDs). Scoped to Studio brand elements via font-display/font-mono
+   — the rest of the app keeps Inter/Georgia. */
+@import '@fontsource/cormorant-garamond/500.css';
+@import '@fontsource/cormorant-garamond/500-italic.css';
+@import '@fontsource/cormorant-garamond/600.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  /* Hide scrollbar for horizontal scroll containers */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Standard focus ring — use on interactive elements for design system compliance */
+  .focus-ring {
+    @apply focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2;
+  }
+
+  /* WCAG 2.5.5 minimum target size (44x44). Use on bare icon buttons
+   * (close, ellipsis menus, expand/collapse, media transport) where the
+   * visual chrome is smaller than the recommended tap area. */
+  .tap-target {
+    @apply inline-flex items-center justify-center;
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Opt-in hover-reveal that also works on touch. Use INSTEAD of
+   * `opacity-0 group-hover:opacity-100` when the element is an action
+   * affordance (chevron, trash, menu trigger) that must remain reachable
+   * on touch devices. Do NOT use for full-card overlays — those should
+   * stay hover-only so touch devices don't see every card dimmed. */
+  .reveal-on-hover {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .group:hover .reveal-on-hover,
+  .group:focus-within .reveal-on-hover {
+    opacity: 1;
+  }
+  @media (hover: none) and (pointer: coarse) {
+    .reveal-on-hover {
+      opacity: 1;
+    }
+  }
+}
+
+/**
+ * Madrona Design System
+ * 
+ * An institutional color palette for long-lived cultural heritage infrastructure.
+ * Inspired by the Madroña tree (Arbutus menziesii) native to the Pacific Northwest.
+ * 
+ * Design Principles:
+ * - Warm neutrals, never bright or saturated
+ * - Durable, archival aesthetic
+ * - Legible and printable
+ * - Credible in 10-20 years
+ */
+
+/* Madrona checkbox overrides — outside @layer to beat @tailwindcss/forms specificity */
+[type='checkbox'].form-checkbox:focus {
+  --tw-ring-color: rgb(var(--color-bark) / 0.3);
+  --tw-ring-offset-color: rgb(var(--color-parchment));
+  outline: none;
+  border-color: rgb(var(--color-bark));
+}
+[type='checkbox'].form-checkbox:checked {
+  background-color: rgb(var(--color-bark));
+  border-color: rgb(var(--color-bark));
+}
+[type='checkbox'].form-checkbox:checked:hover {
+  background-color: rgb(var(--color-copper));
+  border-color: rgb(var(--color-copper));
+}
+
+@layer base {
+  :root {
+    /*
+     * SINGLE SOURCE OF TRUTH for the Madrona palette ("modern gallery").
+     * Values are space-separated sRGB channels so Tailwind can apply opacity
+     * modifiers (e.g. bg-semantic-error/10) via rgb(var(--x) / <alpha-value>).
+     * Change a color HERE and nowhere else — tailwind.config.js references
+     * these vars; never hardcode a hex in a component.
+     */
+
+    /* Neutrals - 70% of UI */
+    --color-ink: 28 28 26;             /* #1C1C1A */
+    --color-parchment: 247 244 237;    /* #F7F4ED  paper / primary bg (warm, not cool) */
+    --color-parchment-warm: 252 250 244; /* #FCFAF4  card */
+    --color-lichen: 230 228 223;       /* #E6E4DF  borders / panels */
+    --color-stone: 217 214 206;        /* #D9D6CE  secondary surface */
+    --color-archive: 99 100 94;        /* #63645E  muted text — AA on parchment (5.44:1) & lichen panels (4.70:1) */
+    --color-accessible-gray: 84 84 82; /* #545452  high-contrast text (≥7:1) */
+
+    /* Structural */
+    --color-forest: 43 58 52;          /* #2B3A34  charcoal-green structure */
+
+    /* Sidebar — derived from the palette vars */
+    --sidebar-bg: rgb(var(--color-forest));
+    --sidebar-text: rgb(var(--color-parchment) / 0.65);
+    --sidebar-text-bright: rgb(var(--color-parchment));
+    --sidebar-hover: rgb(var(--color-parchment) / 0.06);
+    --sidebar-active-bg: rgb(var(--color-parchment) / 0.12);
+    --sidebar-active-indicator: rgb(var(--color-copper));
+
+    /* Primary Emphasis */
+    --color-bark: 176 83 58;           /* #B0533A  terracotta accent / CTA */
+
+    /* Cool accent (#14) — slate-blue "azurite" for informational / selected / active
+       states. Text-capable on parchment (6.4:1 AA), unlike bark. */
+    --color-azurite: 62 92 118;        /* #3E5C76 */
+    --color-azurite-deep: 46 72 96;    /* #2E4860  hover */
+
+    /* App canvas: parchment deepened toward stone so bg-parchment cards detach (#12).
+       Single source for both the main shell and the admin shell. */
+    --app-canvas: color-mix(in srgb, rgb(var(--color-stone)) 22%, rgb(var(--color-parchment)));
+
+    /* AI / "Guide Studio" layer accent — ON THE FOREST SIDEBAR ONLY.
+       Light warm copper so it reads on dark green (5.09:1 on forest).
+       Do NOT use as text on parchment — it is a dark-bg accent. */
+    --color-studio: 221 154 114;       /* #DD9A72 */
+
+    /* Warm Accent - ≤5% usage (hover) */
+    --color-copper: 176 90 55;         /* #B05A37 */
+    --color-copper-light: 211 138 102; /* #D38A66 */
+    --color-copper-dark: 138 67 41;    /* #8A4329 */
+
+    /* Distinct muted green (severity stripes / high-density) */
+    --color-moss: 72 114 82;           /* #487252  AA on parchment (5.03:1) */
+
+    /* Semantic */
+    --color-success: 55 112 70;        /* #377046  AA as text on parchment (5.36:1) & on success/10 (4.70:1) */
+    --color-warning: 126 94 40;        /* #7E5E28  ochre — AA as text on parchment (5.43:1) & on warning/10 (4.76:1) */
+    --color-error: 158 53 53;          /* #9E3535  crimson — distinct from bark terracotta; AA on error/10 (5.45:1) */
+    --color-info: 78 106 134;          /* #4E6A86 */
+
+    /* Visualization (charts) — 1/2/4 reuse info/success/warning */
+    --color-viz-3: 107 90 126;         /* #6B5A7E */
+    --color-viz-5: 90 107 107;         /* #5A6B6B */
+    --color-viz-6: 126 90 107;         /* #7E5A6B */
+  }
+  
+  html, body {
+    @apply h-full overflow-hidden;
+  }
+
+  body {
+    @apply bg-parchment text-ink font-sans antialiased;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  #root {
+    @apply h-full;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-forest;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  /* Serif is the DISPLAY tier only: page titles (h1) + anything that opts in
+     with `font-serif` (wordmark, hero, public editorial). Section/card headers
+     (h2–h6) render in sans for a tighter, instrument-grade hierarchy. */
+  h1 { @apply font-serif text-3xl; }
+  h2 { @apply text-2xl; }
+  h3 { @apply text-xl; }
+  h4 { @apply text-lg; }
+  
+  /* Links */
+  a {
+    @apply text-bark underline decoration-1 underline-offset-2;
+    transition: color 0.15s ease;
+  }
+
+  a:hover {
+    @apply text-copper-dark;
+  }
+  
+  /* Buttons - Institutional style */
+  button, .btn {
+    @apply font-sans text-sm font-medium;
+    transition: all 0.15s ease;
+  }
+  
+  /* Focus states - visible but restrained */
+  :focus-visible {
+    outline: 2px solid rgb(var(--color-bark));
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Accessible text colors - WCAG AA compliant (4.5:1 contrast on parchment) */
+  .text-accessible-gray {
+    color: rgb(var(--color-accessible-gray)); /* 7.0:1 contrast on #F3ECDD */
+  }
+
+  .text-accessible-secondary {
+    color: #6B6B6B; /* 5.3:1 contrast on #F3ECDD */
+  }
+
+  .text-accessible-muted {
+    color: #767676; /* 4.5:1 contrast on #F3ECDD - minimum AA */
+  }
+
+  /* Primary Button - Bark Red */
+  .btn-primary {
+    @apply bg-bark text-parchment px-4 py-2 rounded-institutional no-underline;
+    border: 1px solid rgb(var(--color-bark));
+  }
+  
+  .btn-primary:hover:not(:disabled) {
+    @apply bg-copper-dark text-parchment;
+    border-color: rgb(var(--color-copper-dark));
+  }
+  
+  .btn-primary:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+  
+  /* Secondary Button - Forest outline */
+  .btn-secondary {
+    @apply bg-transparent text-forest px-4 py-2 rounded-institutional no-underline;
+    border: 1px solid rgb(var(--color-forest));
+  }
+  
+  .btn-secondary:hover:not(:disabled) {
+    @apply bg-forest text-parchment;
+  }
+  
+  /* Tertiary Button - Minimal */
+  .btn-tertiary {
+    @apply bg-transparent text-ink px-4 py-2 rounded-institutional no-underline;
+    border: 1px solid rgb(var(--color-lichen));
+  }
+  
+  .btn-tertiary:hover:not(:disabled) {
+    @apply border-archive bg-stone;
+  }
+  
+  /* Card / Panel */
+  .card {
+    @apply bg-parchment rounded-institutional shadow-archival;
+    border: 1px solid rgb(var(--color-lichen));
+  }
+  
+  /* Input fields */
+  .input {
+    @apply bg-parchment text-ink px-3 py-2 rounded-institutional;
+    border: 1px solid rgb(var(--color-lichen));
+    transition: border-color 0.15s ease;
+  }
+
+  input.input, select.input {
+    @apply h-10;
+  }
+  
+  .input:focus-visible {
+    border-color: rgb(var(--color-forest));
+    outline: none;
+    @apply ring-2 ring-bark/30 ring-offset-2;
+  }
+  
+  /* Table - Archival style */
+  .table {
+    @apply w-full border-collapse;
+  }
+  
+  .table thead {
+    @apply bg-forest text-parchment;
+  }
+  
+  .table th {
+    @apply px-4 py-2 text-left text-sm font-medium;
+    border-bottom: 2px solid rgb(var(--color-forest));
+  }
+  
+  .table td {
+    @apply px-4 py-2 text-sm;
+    border-bottom: 1px solid rgb(var(--color-lichen));
+  }
+  
+  .table tbody tr:hover {
+    @apply bg-stone;
+  }
+  
+  /* Badge / Tag */
+  .badge {
+    @apply inline-flex items-center px-2 py-1 text-xs rounded-institutional;
+    border: 1px solid rgb(var(--color-lichen));
+    background: rgb(var(--color-stone));
+  }
+  
+  .badge-success {
+    @apply bg-semantic-success text-parchment border-semantic-success;
+  }
+  
+  .badge-warning {
+    @apply bg-semantic-warning text-parchment border-semantic-warning;
+  }
+  
+  .badge-error {
+    @apply bg-semantic-error text-parchment border-semantic-error;
+  }
+
+  /* Subtle badge variants - light background with colored text */
+  .badge-success-subtle {
+    @apply bg-semantic-success/10 text-semantic-success border border-semantic-success/20 px-2 py-1 text-xs rounded-institutional;
+  }
+
+  .badge-warning-subtle {
+    @apply bg-semantic-warning/10 text-semantic-warning border border-semantic-warning/20 px-2 py-1 text-xs rounded-institutional;
+  }
+
+  .badge-error-subtle {
+    @apply bg-semantic-error/10 text-semantic-error border border-semantic-error/20 px-2 py-1 text-xs rounded-institutional;
+  }
+
+  .badge-info-subtle {
+    @apply bg-semantic-info/10 text-semantic-info border border-semantic-info/20 px-2 py-1 text-xs rounded-institutional;
+  }
+
+  .badge-neutral {
+    @apply bg-stone text-ink border border-lichen px-2 py-1 text-xs rounded-institutional;
+  }
+
+  /* In-context links (tables, lists) - no underline by default, underline on hover */
+  .link-subtle {
+    @apply text-ink no-underline;
+    transition: color 0.15s ease;
+  }
+
+  .link-subtle:hover {
+    @apply text-bark underline decoration-1 underline-offset-2;
+  }
+
+  /* Danger button */
+  .btn-danger {
+    @apply bg-semantic-error text-parchment px-4 py-2 rounded-institutional no-underline;
+    border: 1px solid rgb(var(--color-error));
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background-color: color-mix(in srgb, rgb(var(--color-error)) 85%, black);
+    border-color: color-mix(in srgb, rgb(var(--color-error)) 85%, black);
+  }
+
+  .btn-danger:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  /* Divider */
+  .divider {
+    @apply border-t border-lichen my-4;
+  }
+  
+  /* Navigation */
+  .nav {
+    @apply bg-forest text-parchment;
+    border-bottom: 1px solid rgb(var(--color-archive)); /* Archive gray - quieter structure */
+  }
+  
+  .nav-link {
+    @apply text-parchment no-underline px-4 py-2 inline-block;
+    transition: all 0.15s ease;
+    font-weight: 500;
+  }
+  
+  .nav-link-secondary {
+    opacity: 0.85;
+    font-weight: 400;
+  }
+  
+  .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: rgb(var(--color-parchment)) !important;
+  }
+  
+  .nav-link.active {
+    background-color: var(--sidebar-active-bg);
+    color: var(--sidebar-text-bright);
+    border-left: 3px solid var(--sidebar-active-indicator);
+  }
+
+  /* Navigation with icons */
+  .nav-link-with-icon {
+    @apply flex items-center gap-2 text-parchment no-underline px-3 py-2 rounded;
+    transition: all 0.15s ease;
+    font-weight: 500;
+  }
+
+  .nav-link-with-icon:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: rgb(var(--color-parchment)) !important;
+  }
+
+  .nav-link-with-icon.nav-link-secondary {
+    opacity: 0.85;
+    font-weight: 400;
+  }
+
+  .nav-link-with-icon .nav-icon {
+    opacity: 0.7;
+    flex-shrink: 0;
+  }
+
+  .nav-link-with-icon:hover .nav-icon {
+    opacity: 1;
+  }
+
+  /* Admin dropdown */
+  .nav-dropdown {
+    @apply absolute right-0 mt-1 w-48 bg-parchment rounded shadow-lg z-50;
+    border: 1px solid rgb(var(--color-lichen));
+  }
+
+  .nav-dropdown-item {
+    @apply flex items-center gap-3 px-4 py-2.5 text-sm text-ink no-underline;
+    transition: background-color 0.15s ease;
+  }
+
+  .nav-dropdown-item:hover {
+    @apply bg-stone;
+  }
+
+  .nav-dropdown-item:first-child {
+    @apply rounded-t;
+  }
+
+  .nav-dropdown-item:last-child {
+    @apply rounded-b;
+  }
+
+  /* Mobile menu toggle */
+  .nav-mobile-toggle {
+    @apply p-2 text-parchment rounded;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  .nav-mobile-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+  }
+
+  /* Mobile menu panel */
+  .nav-mobile-panel {
+    @apply absolute left-0 right-0 bg-forest z-50;
+    top: 64px;
+    border-bottom: 1px solid rgb(var(--color-archive));
+    animation: slideDown 0.15s ease-out;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .nav-mobile-item {
+    @apply flex items-center gap-3 px-6 py-3 text-parchment no-underline;
+    border-bottom: 1px solid rgba(107, 122, 126, 0.3);
+    transition: background-color 0.15s ease;
+  }
+
+  .nav-mobile-item:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: rgb(var(--color-parchment)) !important;
+  }
+
+  .nav-mobile-section {
+    @apply px-6 py-2 text-xs font-semibold uppercase tracking-wider;
+    color: rgba(243, 236, 221, 0.5);
+    border-bottom: 1px solid rgba(107, 122, 126, 0.3);
+  }
+
+  /* Status indicators - use color sparingly */
+  .status-active::before {
+    content: '';
+    @apply inline-block w-2 h-2 rounded-full mr-2 bg-semantic-success;
+  }
+  
+  .status-pending::before {
+    content: '';
+    @apply inline-block w-2 h-2 rounded-full mr-2 bg-semantic-warning;
+  }
+  
+  .status-error::before {
+    content: '';
+    @apply inline-block w-2 h-2 rounded-full mr-2 bg-semantic-error;
+  }
+  
+  /* Run animation for edges and nodes */
+  .edge--active path {
+    stroke-dasharray: 8 4;
+    animation: edge-flow 1.6s linear infinite;
+  }
+  
+  .edge--inactive path {
+    stroke-dasharray: none;
+    opacity: 0.5; /* Reduce contrast by 50% for clearer active path visibility */
+  }
+  
+  @keyframes edge-flow {
+    0% {
+      stroke-dashoffset: 12;
+    }
+    100% {
+      stroke-dashoffset: 0;
+    }
+  }
+  
+  .node--active > div {
+    border-color: rgb(var(--color-success)) !important;
+    border-width: 2px !important; /* Uniform thickness across all active nodes */
+  }
+  
+  .node--inactive {
+    /* Default state */
+  }
+  
+  /* Soften Madrona container border when datasets are active */
+  .madrona-container--active > div {
+    border-color: #D8D2C8 !important; /* Lighter than default #C5BFB5 */
+    border-style: dashed !important;
+    opacity: 0.8;
+  }
+  
+  /* Respect user motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .edge--active path {
+      animation: none;
+      stroke-dasharray: 4 2; /* Static dashed pattern */
+    }
+  }
+
+  /* ========================================
+   * Sidebar Navigation
+   * ======================================== */
+
+  /* Sidebar container */
+  .sidebar {
+    @apply text-parchment flex flex-col h-full relative;
+    background-color: var(--sidebar-bg);
+    z-index: 40;
+  }
+
+  .sidebar--expanded {
+    width: 256px;
+  }
+
+  .sidebar--collapsed {
+    width: 64px;
+  }
+
+  /* Expand button - sits at right edge of collapsed sidebar with clear separator */
+  .sidebar-expand-button {
+    @apply absolute flex items-center justify-center cursor-pointer;
+    top: 50%;
+    right: -12px;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 48px;
+    background-color: inherit;
+    color: rgba(243, 236, 221, 0.6);
+    border: none;
+    border-radius: 0 6px 6px 0;
+    border-left: 1px solid rgba(107, 122, 126, 0.4);
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.15s ease;
+    z-index: 10;
+  }
+
+  .sidebar-expand-button:hover {
+    color: rgb(var(--color-parchment));
+    filter: brightness(1.15);
+    right: -14px;
+    width: 28px;
+  }
+
+  /* Sidebar header with logo */
+  .sidebar-header {
+    @apply flex items-center h-16 px-4 border-b;
+    border-color: rgba(107, 122, 126, 0.3);
+  }
+
+  .sidebar-logo {
+    @apply text-xl font-serif font-semibold text-parchment whitespace-nowrap;
+  }
+
+  .sidebar--collapsed .sidebar-header {
+    @apply justify-center px-2;
+  }
+
+  .sidebar--collapsed .sidebar-logo {
+    @apply justify-center;
+  }
+
+  /* Sidebar content area */
+  .sidebar-content {
+    @apply flex-1 overflow-y-auto overflow-x-hidden py-4;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+    overscroll-behavior: contain; /* Prevent scroll chaining to main content */
+  }
+
+  .sidebar-content::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .sidebar-content::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .sidebar-content::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+  }
+
+  .sidebar-content::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.35);
+  }
+
+  /* Hide scrollbar when not hovering */
+  .sidebar-content:not(:hover)::-webkit-scrollbar-thumb {
+    background-color: transparent;
+  }
+
+  /* Product section */
+  .sidebar-product {
+    @apply mb-2;
+  }
+
+  /* Product-scoped navigation (when sidebar shows only active product) */
+  .sidebar-product-scoped {
+    @apply mt-2;
+  }
+
+  .sidebar-product-header {
+    @apply flex items-center justify-between px-4 py-2 cursor-pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  .sidebar-product-header:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .sidebar-product-label {
+    @apply text-sm font-semibold tracking-wide;
+    color: rgba(243, 236, 221, 0.9);
+  }
+
+  .sidebar-product-chevron {
+    @apply transition-transform;
+    color: rgba(243, 236, 221, 0.7);
+  }
+
+  .sidebar-product-chevron--expanded {
+    transform: rotate(180deg);
+  }
+
+  /* Collapsed product section - just nav items with subtle separator */
+  .sidebar-product-collapsed {
+    @apply mb-1;
+  }
+
+  .sidebar-product-collapsed:not(:first-child) {
+    @apply mt-3 pt-3;
+    border-top: 1px solid rgba(107, 122, 126, 0.2);
+  }
+
+  .sidebar-product-indicator {
+    @apply flex justify-center py-1;
+  }
+
+  .sidebar-product-indicator-dot {
+    @apply w-1 h-1 rounded-full;
+    background-color: rgba(243, 236, 221, 0.3);
+  }
+
+  /* Nav items */
+  .sidebar-nav-item {
+    @apply flex items-center gap-2.5 px-4 py-1.5 mx-2 rounded text-xs font-normal no-underline;
+    color: rgba(243, 236, 221, 0.65);
+    transition: all 0.15s ease;
+  }
+
+  .sidebar-nav-item:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: rgb(var(--color-parchment));
+  }
+
+  .sidebar-nav-item--active {
+    background-color: var(--sidebar-active-bg);
+    color: var(--sidebar-text-bright);
+    font-weight: 500;
+    border-left: 3px solid var(--sidebar-active-indicator);
+    padding-left: calc(1rem - 3px);
+  }
+
+  .sidebar-nav-item--active:hover {
+    background-color: var(--sidebar-active-bg);
+  }
+
+  /* Sidebar focus ring: copper instead of global bark outline */
+  .sidebar-nav-item:focus-visible {
+    outline: 2px solid var(--sidebar-active-indicator);
+    outline-offset: -2px;
+  }
+
+  .sidebar-nav-item-icon {
+    @apply flex-shrink-0 w-4 h-4;
+    opacity: 0.6;
+    transition: opacity 0.15s ease;
+  }
+
+  .sidebar-nav-item:hover .sidebar-nav-item-icon,
+  .sidebar-nav-item--active .sidebar-nav-item-icon {
+    opacity: 1;
+  }
+
+  .sidebar-nav-item-label {
+    @apply truncate;
+    transition: opacity 0.15s ease;
+  }
+
+  /* Collapsed state - icon only, smaller icons */
+  .sidebar--collapsed .sidebar-nav-item {
+    @apply justify-center mx-auto px-2;
+    width: 48px;
+  }
+
+  /* Collapsed active: left-bar doesn't work for 48px icons; use bg + bottom accent */
+  .sidebar--collapsed .sidebar-nav-item--active {
+    border-left: none;
+    padding-left: 0.5rem;
+    border-radius: 4px 4px 0 0;
+    box-shadow: inset 0 -2px 0 var(--sidebar-active-indicator);
+  }
+
+  .sidebar--collapsed .sidebar-nav-item-label {
+    @apply sr-only;
+  }
+
+
+  .sidebar--collapsed .sidebar-product-header {
+    @apply justify-center px-2;
+  }
+
+  .sidebar--collapsed .sidebar-product-label,
+  .sidebar--collapsed .sidebar-product-chevron {
+    @apply sr-only;
+  }
+
+  /* Section divider */
+  .sidebar-divider {
+    @apply my-4 mx-4;
+    border-top: 1px solid rgba(107, 122, 126, 0.3);
+  }
+
+  /* Sidebar footer */
+  .sidebar-footer {
+    @apply mt-auto border-t py-4;
+    border-color: rgba(107, 122, 126, 0.3);
+  }
+
+  /* Collapse toggle button */
+  .sidebar-collapse-toggle {
+    @apply flex items-center justify-center w-8 h-8 rounded cursor-pointer;
+    color: rgba(243, 236, 221, 0.5);
+    background: transparent;
+    border: none;
+    transition: all 0.15s ease;
+  }
+
+  .sidebar-collapse-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: rgb(var(--color-parchment));
+  }
+
+  /* Coming soon badge */
+  .sidebar-badge-coming-soon {
+    @apply text-xs px-1.5 py-0.5 rounded;
+    background-color: rgba(107, 122, 126, 0.3);
+    color: rgba(243, 236, 221, 0.6);
+    font-size: 10px;
+  }
+
+  /* Tooltip for collapsed state */
+  .sidebar-tooltip {
+    @apply absolute left-full ml-2 px-2 py-1 text-sm rounded whitespace-nowrap;
+    z-index: 9999;
+    background-color: rgb(var(--color-ink));
+    color: rgb(var(--color-parchment));
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .sidebar-nav-item:hover .sidebar-tooltip,
+  .sidebar-product-header:hover .sidebar-tooltip {
+    opacity: 1;
+  }
+
+  .sidebar--expanded .sidebar-tooltip {
+    @apply hidden;
+  }
+
+  /* Top-level nav group spacing — creates visual clusters between groups/items */
+  .sidebar-product-scoped > nav > .sidebar-nav-group + .sidebar-nav-group,
+  .sidebar-product-scoped > nav > .sidebar-nav-item + .sidebar-nav-group,
+  .sidebar-product-scoped > nav > .sidebar-nav-group + .sidebar-nav-item {
+    margin-top: 10px;
+  }
+
+  /* Nested navigation groups */
+  .sidebar-nav-group {
+    @apply flex flex-col;
+  }
+
+  .sidebar-nav-item-wrapper {
+    @apply flex items-center;
+  }
+
+  .sidebar-nav-item-wrapper .sidebar-nav-item {
+    @apply flex-1;
+  }
+
+  .sidebar-nav-item--parent {
+    @apply pr-1;
+  }
+
+  .sidebar-nav-expand-btn {
+    @apply flex items-center justify-center w-6 h-6 rounded;
+    color: rgba(243, 236, 221, 0.5);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .sidebar-nav-expand-btn:hover {
+    color: rgb(var(--color-parchment));
+    background-color: rgba(255, 255, 255, 0.06);
+  }
+
+  /* Group headers ("Care & Risk", "Rights & Reproduction", …) read as
+     category eyebrows — uppercase/tracked/smaller/semibold — so parents
+     clearly out-rank their children instead of reading as siblings. */
+  .sidebar-nav-item--section {
+    @apply w-full text-left border-none cursor-pointer uppercase;
+    background: transparent;
+    font-size: 0.6875rem;         /* 11px — below the 12px item size */
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: rgba(243, 236, 221, 0.6);   /* 4.78:1 on forest — AA */
+  }
+
+  .sidebar-nav-item--section:hover {
+    color: rgb(var(--color-parchment));
+  }
+
+
+  .sidebar-nav-expand-icon {
+    @apply ml-auto;
+    color: rgba(243, 236, 221, 0.5);
+  }
+
+  .sidebar-nav-children {
+    @apply flex flex-col ml-4 border-l border-parchment/10 relative;
+  }
+
+  .sidebar-nav-children .sidebar-nav-item {
+    @apply pl-4 text-xs relative;
+    font-size: 0.7rem;
+  }
+
+  /* Section headers inside children should align with siblings */
+  .sidebar-nav-children .sidebar-nav-group {
+    @apply -ml-4;
+  }
+
+  .sidebar-nav-children .sidebar-nav-item-icon {
+    @apply w-3.5 h-3.5;
+  }
+
+  /* ========================================
+   * Sidebar User Menu
+   * ======================================== */
+
+  .sidebar-user-menu {
+    @apply relative mx-2;
+  }
+
+  .sidebar-user-menu-trigger {
+    @apply flex items-center gap-3 w-full px-2 py-2 rounded cursor-pointer;
+    background: transparent;
+    border: none;
+    color: rgba(243, 236, 221, 0.85);
+    transition: all 0.15s ease;
+  }
+
+  .sidebar-user-menu-trigger:hover,
+  .sidebar-user-menu-trigger--active {
+    background-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .sidebar-user-avatar {
+    @apply flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0;
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .sidebar-user-info {
+    @apply flex flex-col items-start flex-1 min-w-0;
+  }
+
+  .sidebar-user-name {
+    @apply text-sm font-medium truncate w-full text-left;
+    color: rgb(var(--color-parchment));
+  }
+
+  .sidebar-user-org {
+    @apply text-xs truncate w-full text-left;
+    color: rgba(243, 236, 221, 0.5);
+  }
+
+  .sidebar-user-chevron {
+    @apply flex-shrink-0 transition-transform;
+    color: rgba(243, 236, 221, 0.5);
+  }
+
+  .sidebar-user-chevron--open {
+    transform: rotate(180deg);
+  }
+
+  /* Collapsed state */
+  .sidebar--collapsed .sidebar-user-menu-trigger {
+    @apply justify-center px-2;
+  }
+
+  .sidebar--collapsed .sidebar-user-info,
+  .sidebar--collapsed .sidebar-user-chevron {
+    @apply hidden;
+  }
+
+  .sidebar-user-menu-trigger:hover .sidebar-tooltip {
+    opacity: 1;
+  }
+
+  /* Dropdown menu - opens upward */
+  .sidebar-user-dropdown {
+    @apply absolute left-0 right-0 bg-parchment rounded-lg shadow-archival-md border border-lichen py-1 z-50;
+    bottom: calc(100% + 8px);
+    width: 272px;
+  }
+
+  .sidebar--collapsed .sidebar-user-dropdown {
+    left: calc(100% + 8px);
+    bottom: 0;
+    width: 272px;
+  }
+
+  /* ========================================
+   * Sidebar-Aware Fullscreen Modals
+   * Full-screen modals that account for sidebar position
+   * Used by: IIIFViewer, ImageModal
+   * ======================================== */
+
+  .sidebar-aware-modal {
+    /* Default: full screen on mobile */
+    left: 0;
+  }
+
+  /* Desktop: account for sidebar using :has() for modern browsers */
+  @media (min-width: 640px) {
+    /* Default to collapsed sidebar width */
+    .sidebar-aware-modal {
+      left: 64px;
+    }
+
+    /* When sidebar is expanded */
+    body:has(.sidebar--expanded) .sidebar-aware-modal {
+      left: 256px;
+    }
+  }
+
+  /* ========================================
+   * Minimal Top Bar (Mobile only)
+   * ======================================== */
+
+  .topbar-minimal {
+    @apply items-center h-14 px-4;
+    border-bottom: 1px solid rgb(var(--color-lichen));
+    display: flex;
+  }
+
+  /* Mobile: forest background with hamburger */
+  @media (max-width: 639px) {
+    .topbar-minimal {
+      @apply bg-forest text-parchment;
+      border-bottom: 1px solid rgba(107, 122, 126, 0.3);
+    }
+  }
+
+  /* Desktop: subtle background, product switcher on left */
+  @media (min-width: 640px) {
+    .topbar-minimal {
+      @apply bg-parchment;
+      justify-content: space-between;
+    }
+  }
+
+  /* ========================================
+   * Product Switcher (Header)
+   * Application context switcher - not page navigation
+   * ======================================== */
+
+  .product-switcher {
+    @apply relative;
+  }
+
+  /* Trigger: soft pill with subtle left accent on open */
+  .product-switcher-trigger {
+    @apply flex items-center gap-2 px-3 py-1.5 rounded-full cursor-pointer;
+    background: transparent;
+    border: 1px solid transparent;
+    transition: background-color 0.12s ease, border-color 0.12s ease;
+  }
+
+  .product-switcher-trigger:hover {
+    @apply bg-stone/50;
+  }
+
+  .product-switcher-trigger--open {
+    @apply bg-stone/60;
+    border-color: rgb(var(--color-lichen));
+  }
+
+  .product-switcher-trigger:focus-visible {
+    @apply outline-none ring-2 ring-bark/30 ring-offset-1 ring-offset-parchment;
+  }
+
+  .product-switcher-icon {
+    @apply text-bark flex-shrink-0;
+  }
+
+  .product-switcher-product {
+    @apply text-forest font-serif font-semibold text-lg leading-none;
+  }
+
+  .product-switcher-chevron {
+    @apply text-archive/60 transition-transform duration-150;
+  }
+
+  .product-switcher-chevron--open {
+    transform: rotate(180deg);
+  }
+
+  /* Dropdown container */
+  .product-switcher-dropdown {
+    @apply absolute top-full left-0 mt-1 bg-parchment rounded-lg shadow-archival-md z-50;
+    border: 1px solid rgb(var(--color-lichen));
+    min-width: 232px;
+  }
+
+  /* Dropdown header */
+  .product-switcher-header {
+    @apply px-3 pt-2.5 pb-1.5;
+    border-bottom: 1px solid rgb(var(--color-lichen));
+  }
+
+  .product-switcher-header-label {
+    @apply text-xs font-semibold uppercase text-archive/80;
+    letter-spacing: 0.04em;
+  }
+
+  /* Product list */
+  .product-switcher-list {
+    @apply py-1;
+  }
+
+  /* Product row */
+  .product-switcher-option {
+    @apply flex items-start gap-2.5 px-3 py-1.5 w-full text-left border-0 bg-transparent cursor-pointer;
+    color: rgb(var(--color-ink));
+    transition: background-color 0.1s ease;
+  }
+
+  .product-switcher-option:hover {
+    @apply bg-stone/50;
+  }
+
+  .product-switcher-option:focus-visible {
+    @apply outline-none bg-stone/50;
+  }
+
+  /* Active product row: subtle left accent */
+  .product-switcher-option--active {
+    @apply bg-bark/10;
+    box-shadow: inset 2px 0 0 rgb(var(--color-bark));
+  }
+
+  .product-switcher-option--active:hover {
+    @apply bg-bark/15;
+  }
+
+  /* Disabled/unlicensed product */
+  .product-switcher-option--disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  .product-switcher-option--disabled:hover {
+    @apply bg-transparent;
+  }
+
+  /* Icon: normalized via opacity */
+  .product-switcher-option-icon {
+    @apply flex-shrink-0 text-ink;
+    opacity: 0.6;
+    margin-top: 2px;
+  }
+
+  .product-switcher-option--active .product-switcher-option-icon {
+    @apply text-bark;
+    opacity: 1;
+  }
+
+  /* Content: label + descriptor */
+  .product-switcher-option-content {
+    @apply flex-1 flex flex-col min-w-0;
+    gap: 1px;
+  }
+
+  .product-switcher-option-label {
+    @apply text-sm font-medium leading-tight;
+  }
+
+  .product-switcher-option--active .product-switcher-option-label {
+    @apply text-bark;
+  }
+
+  .product-switcher-option-descriptor {
+    @apply text-xs leading-tight text-archive/75;
+  }
+
+  .product-switcher-option--active .product-switcher-option-descriptor {
+    @apply text-bark/55;
+  }
+
+  /* Checkmark */
+  .product-switcher-option-check {
+    @apply flex-shrink-0 text-bark;
+    margin-top: 2px;
+  }
+
+  /* Upgrade indicator */
+  .product-switcher-upgrade {
+    @apply text-xs text-bark font-medium;
+    margin-top: 2px;
+  }
+
+  .product-switcher-badge {
+    @apply text-xs px-1.5 py-0.5 rounded bg-stone text-archive;
+    font-size: 10px;
+  }
+
+  .topbar-hamburger {
+    @apply inline-flex items-center justify-center rounded cursor-pointer;
+    min-height: 44px;
+    min-width: 44px;
+    color: rgb(var(--color-parchment));
+    background: transparent;
+    border: none;
+    transition: background-color 0.15s ease;
+  }
+
+  .topbar-hamburger:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .topbar-hamburger:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(243, 236, 221, 0.4);
+  }
+
+  /* ========================================
+   * Mobile Navigation Drawer
+   * ======================================== */
+
+  .mobile-drawer-overlay {
+    @apply fixed inset-0 bg-black/50 z-40;
+    animation: fadeIn 0.15s ease-out;
+  }
+
+  .mobile-drawer {
+    @apply fixed top-0 left-0 bottom-0 w-72 z-50 flex flex-col;
+    background-color: var(--sidebar-bg);
+    animation: slideInLeft 0.2s ease-out;
+  }
+
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideInLeft {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+  }
+
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideInUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideInUp 0.25s ease-out;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out both;
+  }
+
+  /* ========================================
+   * App Shell Layout
+   * ======================================== */
+
+  .app-shell {
+    @apply flex h-dvh bg-parchment;
+  }
+
+  .app-shell-main {
+    @apply flex-1 flex flex-col min-w-0 relative;
+    z-index: 1;
+  }
+
+  .app-shell-content {
+    @apply flex-1 overflow-auto;
+    /* Deeper tint so bg-parchment cards visibly detach from the canvas (#12) */
+    background: var(--app-canvas);
+  }
+
+  /* Same deepened canvas for the admin shell's <main> (#12) */
+  .app-canvas-bg {
+    background: var(--app-canvas);
+  }
+
+  /* ========================================
+   * Collections Gallery Styles
+   * ======================================== */
+
+  /* Gallery card hover effects */
+  .gallery-card {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .gallery-card:hover {
+    @apply shadow-archival-md -translate-y-1;
+  }
+
+  /* Image zoom on hover */
+  .gallery-card-image {
+    @apply transition-transform duration-500 ease-out;
+  }
+
+  .gallery-card:hover .gallery-card-image {
+    @apply scale-105;
+  }
+
+  /* Movement timeline horizontal scroll */
+  .movement-timeline {
+    @apply overflow-x-auto pb-4;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--color-lichen)) transparent;
+  }
+
+  .movement-timeline::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .movement-timeline::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .movement-timeline::-webkit-scrollbar-thumb {
+    background-color: rgb(var(--color-lichen));
+    border-radius: 3px;
+  }
+
+  .movement-timeline::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(var(--color-archive));
+  }
+
+  /* Hero image container */
+  .hero-image-container {
+    @apply relative bg-ink rounded-institutional overflow-hidden;
+  }
+
+  .hero-image-container img {
+    @apply w-full max-h-[70vh] object-contain mx-auto;
+  }
+
+  /* Object type color accent */
+  .object-type-accent {
+    @apply absolute bottom-0 left-0 right-0 h-1 opacity-80;
+  }
+
+  /* React Query Builder Customizations */
+  .report-query-builder .queryBuilder {
+    @apply font-sans text-sm;
+  }
+
+  .report-query-builder .ruleGroup {
+    @apply bg-parchment border border-lichen rounded-lg p-3 mt-2;
+  }
+
+  .report-query-builder .ruleGroup-header {
+    @apply flex items-center gap-2 mb-2;
+  }
+
+  .report-query-builder .ruleGroup-combinators {
+    @apply px-2 py-1 border border-lichen rounded text-sm bg-parchment;
+  }
+
+  .report-query-builder .ruleGroup-addRule {
+    @apply px-3 py-1 text-sm text-forest border border-forest rounded hover:bg-forest/5;
+  }
+
+  .report-query-builder .ruleGroup-addGroup {
+    @apply px-3 py-1 text-sm text-accessible-gray border border-lichen rounded hover:bg-stone/30;
+  }
+
+  .report-query-builder .ruleGroup-remove {
+    @apply px-2 py-1 text-semantic-error hover:text-semantic-error;
+  }
+
+  .report-query-builder .rule {
+    @apply flex items-center gap-2 mt-2 p-2 bg-parchment border border-lichen rounded;
+  }
+
+  .report-query-builder .rule-fields,
+  .report-query-builder .rule-operators {
+    @apply px-2 py-1 border border-lichen rounded text-sm bg-parchment min-w-[120px];
+  }
+
+  .report-query-builder .rule-value {
+    @apply px-2 py-1 border border-lichen rounded text-sm flex-1;
+  }
+
+  .report-query-builder .rule-remove {
+    @apply px-2 py-1 text-semantic-error hover:text-semantic-error;
+  }
+
+  .report-query-builder .ruleGroup-notToggle {
+    @apply flex items-center gap-1 text-sm;
+  }
+
+  .report-query-builder .ruleGroup-notToggle input[type="checkbox"] {
+    @apply rounded border-lichen text-forest focus-visible:ring-bark/30;
+  }
+
+  /* ========================================
+   * Record Detail Page Layout
+   * Three-column layout with sticky rails
+   * @see /docs/record-detail-page-redesign.md
+   * ======================================== */
+
+  /* CSS Custom Properties for layout */
+  .record-detail-layout {
+    --app-header-height: 56px;
+    --record-header-height: 72px;
+    --page-chrome-gap: 16px;
+    /* Sticky offset: 16px breathing room since header is outside scroll container */
+    --record-sticky-top: 16px;
+    --section-nav-width: 200px;
+    --section-nav-collapsed: 48px;
+    --right-rail-width: 320px;
+    --content-max-width: 760px;
+    --layout-gap: 24px;
+    --layout-padding: 24px;
+  }
+
+  /* Override AppShell wrapper styles when record-detail-layout is present
+   * Uses body class instead of :has() for better browser compatibility
+   *
+   * display: contents makes these wrapper divs "invisible" to layout,
+   * effectively making the grid a direct child of the scroll container.
+   * This is required for sticky positioning to work correctly. */
+  body.has-record-detail-layout .app-shell-content > div,
+  body.has-record-detail-layout .app-shell-content > div > div {
+    display: contents;
+  }
+
+  /* Ensure the scroll container has proper dimensions for sticky to work */
+  body.has-record-detail-layout .app-shell-content {
+    /* The scroll container needs to be the viewport minus header.
+     * Use dvh (dynamic viewport height) so iOS Safari's collapsing URL bar
+     * doesn't leave dead space below the fold. */
+    height: calc(100dvh - var(--topbar-height, 56px)) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Compact mode spacing overrides */
+  .record-detail-layout--compact {
+    --layout-gap: 12px;
+    --layout-padding: 16px;
+  }
+
+  /* Header area - spans full width above grid */
+  .record-detail-header-area {
+    grid-column: 1 / -1;
+    padding: var(--layout-padding);
+    padding-bottom: 0;
+  }
+
+  /* Main layout grid - three columns */
+  .record-detail-layout {
+    display: grid;
+    grid-template-columns:
+      minmax(var(--section-nav-collapsed), var(--section-nav-width))
+      minmax(0, 1fr)
+      minmax(0, var(--right-rail-width));
+    grid-template-rows: auto 1fr;
+    gap: var(--layout-gap);
+    padding: var(--layout-padding);
+    /* Center the grid within the scroll container */
+    max-width: 1400px;
+    margin: 0 auto;
+    /* Use clip instead of hidden - clips content but doesn't create a scroll container,
+       which is required for sticky positioning to work relative to the parent scroll container */
+    overflow-x: clip;
+    /* Ensure grid takes full height for sticky to work */
+    min-height: max-content;
+  }
+
+  /* Section navigation - sticky left column */
+  .record-detail-section-nav {
+    grid-row: 2;
+    position: sticky;
+    top: var(--record-sticky-top);
+    align-self: start;
+    height: fit-content;
+    max-height: calc(100dvh - var(--app-header-height) - var(--record-sticky-top) - var(--layout-padding));
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    padding-right: 8px;
+    /* Elegant hidden scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+
+  .record-detail-section-nav::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .record-detail-section-nav::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .record-detail-section-nav::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 3px;
+  }
+
+  /* Show subtle scrollbar on hover */
+  .record-detail-section-nav:hover {
+    scrollbar-color: rgb(var(--color-lichen)) transparent;
+  }
+
+  .record-detail-section-nav:hover::-webkit-scrollbar-thumb {
+    background: rgb(var(--color-lichen));
+  }
+
+  /* Main content area - center column */
+  .record-detail-main {
+    grid-row: 2;
+    min-width: 0; /* Prevent overflow */
+  }
+
+  /* Right rail - sticky right column */
+  .record-detail-rail {
+    grid-row: 2;
+    position: sticky;
+    top: var(--record-sticky-top);
+    align-self: start;
+    height: fit-content;
+    max-height: calc(100dvh - var(--app-header-height) - var(--record-sticky-top) - var(--layout-padding));
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    /* Elegant hidden scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+
+  .record-detail-rail::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .record-detail-rail::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .record-detail-rail::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 3px;
+  }
+
+  /* Show subtle scrollbar on hover */
+  .record-detail-rail:hover {
+    scrollbar-color: rgb(var(--color-lichen)) transparent;
+  }
+
+  .record-detail-rail:hover::-webkit-scrollbar-thumb {
+    background: rgb(var(--color-lichen));
+  }
+
+  /* ----------------------------------------
+   * Responsive breakpoints
+   *
+   * These use viewport width, but the record detail layout sits inside
+   * the app sidebar (256px). Breakpoints are set higher to account for
+   * the sidebar eating into available width.
+   * ---------------------------------------- */
+
+  /* ≤1536px: Hide section nav, two-column layout (content + rail)
+   * At 1536px viewport with 256px sidebar = 1280px content area */
+  @media (max-width: 1536px) {
+    .record-detail-layout {
+      grid-template-columns: 1fr 280px;
+      grid-template-rows: auto 1fr;
+      --right-rail-width: 280px;
+    }
+
+    .record-detail-section-nav {
+      display: none;
+    }
+
+    .record-detail-header-area {
+      grid-column: 1 / -1;
+    }
+
+    .record-detail-main {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .record-detail-rail {
+      grid-column: 2;
+      grid-row: 2;
+    }
+  }
+
+  /* ≤1280px: Narrower rail
+   * At 1280px viewport with 256px sidebar = 1024px content area */
+  @media (max-width: 1280px) {
+    .record-detail-layout {
+      grid-template-columns: 1fr 240px;
+      --right-rail-width: 240px;
+    }
+  }
+
+  /* ≤1024px: Single column, rail moves below content
+   * At 1024px viewport with 256px sidebar = 768px content area */
+  @media (max-width: 1024px) {
+    .record-detail-layout {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto;
+      padding: 16px;
+      gap: 16px;
+    }
+
+    .record-detail-header-area {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .record-detail-main {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .record-detail-rail {
+      grid-column: 1;
+      grid-row: 3;
+      position: static;
+      max-height: none;
+    }
+  }
+
+  /* ----------------------------------------
+   * Collapsed states
+   * ---------------------------------------- */
+
+  /* Nav collapsed (icon-only mode) */
+  .record-detail-layout--nav-collapsed .record-detail-section-nav {
+    width: var(--section-nav-collapsed);
+  }
+
+  /* Rail collapsed/hidden */
+  .record-detail-layout--rail-collapsed .record-detail-rail {
+    display: none;
+  }
+
+  .record-detail-layout--rail-collapsed {
+    grid-template-columns:
+      minmax(var(--section-nav-collapsed), var(--section-nav-width))
+      minmax(0, 1fr);
+  }
+
+  /* Rail-collapsed at narrow viewports: just content */
+  @media (max-width: 1536px) {
+    .record-detail-layout--rail-collapsed {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .record-detail-layout,
+    .record-detail-layout * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ========================================
+ * Record Set Strip (bottom filmstrip)
+ * ======================================== */
+
+.record-set-strip {
+  position: fixed;
+  bottom: 0;
+  /* Mobile-first: full-bleed. The sidebar is hidden below 640px, so the strip
+   * must span edge-to-edge. Sidebar offsets are added at sm+ only.
+   * Previous bug: a `body:has(.sidebar--expanded)` rule forced left:256px
+   * at all viewports (higher specificity than the max-width media override),
+   * leaving a 256px dead gutter on phones. */
+  left: 0;
+  right: 0;
+  z-index: 30;
+  /* Stone tray: the palette's "secondary bg" token. Parchment cards sit
+   * on it for a clear "items on a desk" reading — cards pop instead of
+   * blending into the page. */
+  background: rgb(var(--color-stone));
+  border-top: 1px solid color-mix(in srgb, rgb(var(--color-ink)) 12%, rgb(var(--color-stone)));
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+  padding-bottom: env(safe-area-inset-bottom);
+  transition: left 0.2s ease;
+}
+
+/* Sidebar visible at sm+: offset strip so it doesn't sit under the sidebar. */
+@media (min-width: 640px) {
+  .record-set-strip {
+    left: 64px;
+  }
+
+  body:has(.sidebar--expanded) .record-set-strip {
+    left: 256px;
+  }
+}
+
+.record-set-strip__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  /* Subtle shadow-toned divider reads against the stone tray bg. */
+  border-bottom: 1px solid color-mix(in srgb, rgb(var(--color-ink)) 10%, rgb(var(--color-stone)));
+  min-height: 28px;
+}
+
+.record-set-strip--collapsed .record-set-strip__header {
+  border-bottom: none;
+}
+
+.record-set-strip__body {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 4px;
+}
+
+.record-set-strip__scroll-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 64px;
+  border-radius: 4px;
+  color: rgb(var(--color-archive));
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.record-set-strip__scroll-btn:hover {
+  background: rgb(var(--color-parchment));
+  color: rgb(var(--color-ink));
+}
+
+.record-set-strip__cards {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex: 1;
+  padding: 2px 0;
+  scroll-behavior: smooth;
+  /* Snap scroll for comfortable touch swiping on mobile. */
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  /* Hide scrollbar */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.record-set-strip__card {
+  scroll-snap-align: start;
+}
+
+.record-set-strip__cards::-webkit-scrollbar {
+  display: none;
+}
+
+.record-set-strip__card {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 88px;
+  border-radius: 6px;
+  padding: 4px;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.15s, box-shadow 0.15s;
+  text-decoration: none;
+  border: 1.5px solid transparent;
+}
+
+.record-set-strip__card:hover {
+  background: rgb(var(--color-parchment));
+  text-decoration: none;
+}
+
+.record-set-strip__card--active {
+  background: rgba(181, 72, 31, 0.08);
+  border-color: rgb(var(--color-bark));
+}
+
+.record-set-strip__card--active:hover {
+  background: rgba(181, 72, 31, 0.12);
+}
+
+.record-set-strip__thumb {
+  width: 76px;
+  height: 57px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgb(var(--color-lichen));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.record-set-strip__label {
+  width: 100%;
+  text-align: center;
+  margin-top: 2px;
+  line-height: 1.2;
+  overflow: hidden;
+}
+
+.record-set-strip__card--more {
+  cursor: default;
+  border-style: dashed;
+  border-color: rgb(var(--color-lichen));
+}
+
+.record-set-strip__card--more .record-set-strip__thumb {
+  background: transparent;
+  border: 1px dashed rgb(var(--color-lichen));
+}
+
+.record-set-strip__active-dot {
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgb(var(--color-bark));
+}
+
+/* Adjust main scroll area when strip is visible to prevent content being hidden behind it */
+body.has-record-set-strip .app-shell-content {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 120px);
+}
+
+body.has-record-set-strip.record-set-collapsed .app-shell-content {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 32px);
+}
+
+/* Ask Guide FAB — sit above the record set strip */
+.ask-guide-fab {
+  bottom: calc(env(safe-area-inset-bottom) + 1.5rem); /* 24px default */
+}
+
+body.has-record-set-strip .ask-guide-fab {
+  bottom: calc(env(safe-area-inset-bottom) + 148px); /* above expanded strip */
+}
+
+body.has-record-set-strip.record-set-collapsed .ask-guide-fab {
+  bottom: calc(env(safe-area-inset-bottom) + 44px); /* above collapsed strip header */
+}
+
+/* Smaller cards on phones — sidebar hidden, less horizontal room. */
+@media (max-width: 639px) {
+  .record-set-strip__card {
+    width: 72px;
+  }
+
+  .record-set-strip__thumb {
+    width: 60px;
+    height: 45px;
+  }
+}
+
+/* ========================================
+ * Field Highlight for Compliance Validation
+ * ======================================== */
+
+.field-highlight-missing {
+  animation: fieldHighlightPulse 0.5s ease-in-out 3;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.5) !important;
+  border-color: rgb(245, 158, 11) !important;
+}
+
+@keyframes fieldHighlightPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.3);
+  }
+}
+
+/* ========================================
+ * Workspace Sections
+ * ======================================== */
+
+/* Workspace sections are flex items */
+.workspace-section {
+  /* Explicitly set flex-shrink to preserve natural sizing */
+  flex-shrink: 0;
+}
+
+/* ========================================
+ * Section Raise Effect for Click-to-Edit
+ * Active section "raises" like a modal overlay
+ * ======================================== */
+
+/* Raised state - active section being edited */
+.section-raised {
+  position: relative;
+  z-index: 10;
+  transform: translateY(-8px) scale(1.01);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.12),
+    0 8px 16px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(181, 72, 31, 0.2);
+  border-color: rgb(var(--color-bark)) !important;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.3s ease-out,
+              border-color 0.3s ease-out;
+}
+
+/* Entry animation when becoming raised */
+.section-raise-enter {
+  animation: sectionRaiseIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes sectionRaiseIn {
+  0% {
+    transform: translateY(0) scale(1);
+    box-shadow: none;
+  }
+  100% {
+    transform: translateY(-8px) scale(1.01);
+    box-shadow:
+      0 20px 40px rgba(0, 0, 0, 0.12),
+      0 8px 16px rgba(0, 0, 0, 0.08),
+      0 0 0 1px rgba(181, 72, 31, 0.2);
+  }
+}
+
+/* Exit animation when lowering back */
+.section-raise-exit {
+  animation: sectionRaiseOut 0.25s ease-in forwards;
+}
+
+@keyframes sectionRaiseOut {
+  0% {
+    transform: translateY(-8px) scale(1.01);
+    box-shadow:
+      0 20px 40px rgba(0, 0, 0, 0.12),
+      0 8px 16px rgba(0, 0, 0, 0.08),
+      0 0 0 1px rgba(181, 72, 31, 0.2);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow: none;
+  }
+}
+
+/* ========================================
+ * Madrona Loader Animations
+ * ======================================== */
+
+@keyframes madronaSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes madronaPulse {
+  0%, 80%, 100% { opacity: 0.25; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+.animate-madrona-spin {
+  animation: madronaSpin 1.2s cubic-bezier(0.5, 0.15, 0.35, 0.85) infinite;
+}
+
+.animate-madrona-pulse {
+  animation: madronaPulse 1.4s ease-in-out infinite;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .section-raised,
+  .section-raise-enter,
+  .section-raise-exit {
+    animation: none;
+    transform: none;
+  }
+
+  .section-raised {
+    box-shadow: 0 0 0 3px rgb(var(--color-bark));
+  }
+
+  .animate-madrona-spin {
+    animation: none;
+  }
+
+  .animate-madrona-pulse {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+/* ========================================
+ * View Transitions
+ * Used by react-router's `viewTransition: true` navigation option
+ * to smooth page swaps. Currently wired on home → Guide chat.
+ * ======================================== */
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 260ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+::view-transition-old(root) {
+  animation-name: madrona-vt-fade-out;
+}
+
+::view-transition-new(root) {
+  animation-name: madrona-vt-fade-in;
+}
+
+@keyframes madrona-vt-fade-out {
+  to { opacity: 0; }
+}
+
+@keyframes madrona-vt-fade-in {
+  from { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}

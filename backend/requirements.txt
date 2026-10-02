@@ -1,0 +1,120 @@
+# Direct dependencies. Pins live here; there is no separate lockfile.
+sqlalchemy>=2.0.0
+alembic>=1.13.0
+psycopg[binary]>=3.1.0
+pydantic[email]>=2.5.0
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.0
+jsonschema>=4.20.0
+fastapi>=0.115.0
+python-multipart>=0.0.9
+uvicorn[standard]>=0.32.0
+httpx>=0.27.0
+requests>=2.31.0
+google-auth>=2.25.0
+bcrypt>=4.1.0
+argon2-cffi>=23.1.0  # For MFA recovery code hashing
+pyjwt>=2.8.0
+anthropic>=0.39.0
+mcp>=1.9.0,<2.0.0  # MCP server for AI client access. Upper bound is REQUIRED: 2.0.0 removed `mcp.server.fastmcp` (moved to `mcp.server.mcpserver`), which app/fastapi_app/routers/mcp_server.py imports. Unpinned, CI/rebuilds resolve to 2.0.0 and the API fails to boot. Lift only alongside a port to the new API.
+
+# Background task processing
+celery>=5.3.4
+redis>=5.0.1
+
+# OpenSearch for entity search
+opensearch-py>=2.4.0
+
+# WebSocket support
+python-socketio[client]>=5.10.0
+gevent>=24.2.1
+gevent-websocket>=0.10.1
+
+# Email sending
+boto3>=1.34.0
+cryptography>=41.0.0  # For SNS signature verification
+
+# QR code generation (visitor labels, ticketing)
+segno>=1.6.0
+
+# PDF generation (Exhibitions)
+reportlab>=4.0.0
+
+# HTML-to-PDF document reports (WeasyPrint spike)
+weasyprint>=62.0
+htmldocx>=0.0.6
+
+# Image processing (Media)
+Pillow>=11.0.0
+lxml>=4.9.0  # XMP metadata packet building for image embedding
+
+# PDF processing (Document thumbnails and metadata)
+pypdfium2>=4.30.0  # PDF rendering, metadata and text extraction (PDFium).
+                   # Replaced PyMuPDF, which is AGPL-3.0 without an Artifex
+                   # commercial license: §13 would oblige every operator of a
+                   # network-served build to publish the whole combined work.
+
+# Audio metadata extraction
+jinja2>=3.1.0  # Sandboxed templating for report document rendering
+
+# Database connector drivers
+pymysql>=1.2.0                 # For MySQL/MariaDB connections. Replaced
+                               # mysql-connector-python, which is GPLv2 with
+                               # Oracle's FOSS exception; PyMySQL is MIT, so
+                               # nothing turns on reading an exception schedule.
+pyodbc>=5.0.0                  # For SQL Server connections
+oracledb>=2.0.0                # For Oracle Database connections
+pymongo>=4.6.0                 # For MongoDB connections
+
+# SQL parsing and validation (SQL Explorer)
+sqlparse>=0.5.0
+
+# GIS support (PostGIS spatial queries)
+geoalchemy2>=0.14.0
+shapely>=2.0.0
+
+# Structured logging and observability
+structlog>=24.1.0
+prometheus-client>=0.19.0
+sentry-sdk[fastapi,celery]>=2.0.0
+
+# DAM AI Features — CLIP Visual Search and Whisper Transcription live in
+# requirements-ml.txt. They pull torch and (on Linux) the NVIDIA CUDA
+# runtime — several GB — and both are OFF by default (CLIP_ENABLED and
+# WHISPER_ENABLED default to false). Their services import lazily and only
+# after checking the flag, so the app runs without them installed.
+#   pip install -r requirements-ml.txt
+# or build with:  docker build --build-arg INSTALL_ML=true .
+
+# DAM AI Features — OCR
+pytesseract>=0.3.10
+
+# DAM — pgvector embeddings
+pgvector>=0.2.0
+
+# DAM — Color extraction
+scikit-learn>=1.3.0
+
+# DAM — Face search (disabled — service exists but is not wired into
+# any router or task. Uncomment when face search is built end-to-end.)
+# insightface>=0.7.3
+# onnxruntime>=1.16.0
+
+# DAM — ExifTool metadata
+pyexiftool>=0.5.0
+
+# DAM — Full-text extraction
+python-docx>=1.1.0
+odfpy>=1.4.1
+beautifulsoup4>=4.12.0
+striprtf>=0.0.26
+chardet>=5.2.0
+
+# DAM — Social publishing (optional)
+# PyVimeo>=1.1.0
+# flickrapi>=2.4.0
+
+# Optional: BYOB storage backends (install as needed)
+# azure-storage-blob>=12.19.0  # For Azure Blob Storage BYOB
+# azure-identity>=1.15.0       # For Azure managed identity auth
+# google-cloud-storage>=2.14.0 # For Google Cloud Storage BYOB

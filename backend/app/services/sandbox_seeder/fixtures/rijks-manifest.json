@@ -1,0 +1,2018 @@
+[
+  {
+    "media": {
+      "alt_text": "Before, Behind, Between, Above, Below by Nicolaas Wijnberg (eigenhandig gesigneerd)",
+      "copyright_status": "public_domain",
+      "creator": "Nicolaas Wijnberg (eigenhandig gesigneerd)",
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 166071,
+      "height": 833,
+      "image_url": "https://iiif.micr.io/KMFvF/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/2001.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 6676,
+      "thumbnail_height": 138,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/2001_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Before, Behind, Between, Above, Below",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1973",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Nicolaas Wijnberg (eigenhandig gesigneerd)",
+          "role": null,
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Before, Behind, Between, Above, Below",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-2001",
+    "source_id": "2001",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Before, Behind, Between, Above, Below",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Badende jongens by Nicolaas Wijnberg (eigenhandig gesigneerd)",
+      "copyright_status": "public_domain",
+      "creator": "Nicolaas Wijnberg (eigenhandig gesigneerd)",
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 191813,
+      "height": 922,
+      "image_url": "https://iiif.micr.io/wgIZp/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/20010.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 7127,
+      "thumbnail_height": 153,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/20010_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Badende jongens",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1947",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Nicolaas Wijnberg (eigenhandig gesigneerd)",
+          "role": null,
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Badende jongens",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-20010",
+    "source_id": "20010",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Badende jongens",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Portret van Dirk I, graaf van Holland by Adriaen Matham (mentioned on object)",
+      "copyright_status": "public_domain",
+      "creator": "Adriaen Matham (mentioned on object)",
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 279648,
+      "height": 1200,
+      "image_url": "https://iiif.micr.io/owHmZ/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/20010000.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 8389,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/20010000_thumb.jpg",
+      "thumbnail_width": 121,
+      "title": "Portret van Dirk I, graaf van Holland",
+      "width": 727
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1620",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Adriaen Matham (mentioned on object)",
+          "role": null,
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Portret van Dirk I, graaf van Holland",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-20010000",
+    "source_id": "20010000",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Portret van Dirk I, graaf van Holland",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Peso of acht reaal uit de republiek Mexico, 1863, geslagen te Real de Catorce, waarbij in China op de voorzijde vijf - en op de keerzijde zes sinogrammen zijn ingestempeld",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 84814,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/NVgFC/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100000.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 3986,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100000_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Peso of acht reaal uit de republiek Mexico, 1863, geslagen te Real de Catorce, waarbij in China op de voorzijde vijf - en op de keerzijde zes sinogrammen zijn ingestempeld",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1863 - 1900",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Peso of acht reaal uit de republiek Mexico, 1863, geslagen te Real de Catorce, waarbij in China op de voorzijde vijf - en op de keerzijde zes sinogrammen zijn ingestempeld",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100000",
+    "source_id": "200100000",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Peso of acht reaal uit de republiek Mexico, 1863, geslagen te Real de Catorce, waarbij in China op de voorzijde vijf - en op de keerzijde zes sinogrammen zijn ingestempeld",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Wilhelmina Koningin der Nederlanden by Wolfgang Lauer",
+      "copyright_status": "public_domain",
+      "creator": "Wolfgang Lauer",
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 38959,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/PPxWZ/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100001.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 2445,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100001_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Wilhelmina Koningin der Nederlanden",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1890 - 1898",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Wolfgang Lauer",
+          "role": null,
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Wilhelmina Koningin der Nederlanden",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100001",
+    "source_id": "200100001",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Wilhelmina Koningin der Nederlanden",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "De Kroonprins van Oranje in de Slag bij Waterloo 1815",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 61480,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/BzUUr/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100002.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 3127,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100002_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "De Kroonprins van Oranje in de Slag bij Waterloo 1815",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1815",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "De Kroonprins van Oranje in de Slag bij Waterloo 1815",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100002",
+    "source_id": "200100002",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "De Kroonprins van Oranje in de Slag bij Waterloo 1815",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "2 chon uit het koninkrijk Korea",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 58151,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/vcKZh/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100003.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 3138,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100003_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "2 chon uit het koninkrijk Korea",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1882 - 1883",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "2 chon uit het koninkrijk Korea",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100003",
+    "source_id": "200100003",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "2 chon uit het koninkrijk Korea",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Vijfentwintigjarig regeringsjubileum van Koning Willem III 1874",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 44423,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/eRuhe/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100004.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 2703,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100004_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Vijfentwintigjarig regeringsjubileum van Koning Willem III 1874",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1874",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Vijfentwintigjarig regeringsjubileum van Koning Willem III 1874",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100004",
+    "source_id": "200100004",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Vijfentwintigjarig regeringsjubileum van Koning Willem III 1874",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Koning Willem III in de Frans-Duitse Oorlog 1870 by Salomon de Vries",
+      "copyright_status": "public_domain",
+      "creator": "Salomon de Vries",
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 60495,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/HFQqR/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100005.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 3193,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100005_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Koning Willem III in de Frans-Duitse Oorlog 1870",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1870 - 1871",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Salomon de Vries",
+          "role": null,
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Koning Willem III in de Frans-Duitse Oorlog 1870",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100005",
+    "source_id": "200100005",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Koning Willem III in de Frans-Duitse Oorlog 1870",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Wilhelmina Koningin der Nederlanden by Wolfgang Lauer",
+      "copyright_status": "public_domain",
+      "creator": "Wolfgang Lauer",
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 39771,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/xswee/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100006.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 2543,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100006_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Wilhelmina Koningin der Nederlanden",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1890 - 1898",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Wolfgang Lauer",
+          "role": null,
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Wilhelmina Koningin der Nederlanden",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100006",
+    "source_id": "200100006",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Wilhelmina Koningin der Nederlanden",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Duits liefdespenninkje",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 41430,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/rARok/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100007.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 2549,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100007_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Duits liefdespenninkje",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "ca. 1800 - ca. 1850",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Duits liefdespenninkje",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100007",
+    "source_id": "200100007",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Duits liefdespenninkje",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Chon uit het koninkrijk Korea",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 47288,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/wsDKt/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100008.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 2699,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100008_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Chon uit het koninkrijk Korea",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1882 - 1883",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Chon uit het koninkrijk Korea",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100008",
+    "source_id": "200100008",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Chon uit het koninkrijk Korea",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Vijfentwintigjarig regeringsjubileum van Koning Willem III 1874",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 49942,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/vONqu/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100009.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 2701,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100009_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Vijfentwintigjarig regeringsjubileum van Koning Willem III 1874",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1874",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Vijfentwintigjarig regeringsjubileum van Koning Willem III 1874",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100009",
+    "source_id": "200100009",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Vijfentwintigjarig regeringsjubileum van Koning Willem III 1874",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Portret van Dirk II, graaf van Holland by Adriaen Matham",
+      "copyright_status": "public_domain",
+      "creator": "Adriaen Matham",
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 302360,
+      "height": 1200,
+      "image_url": "https://iiif.micr.io/uXJlQ/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/20010001.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 8690,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/20010001_thumb.jpg",
+      "thumbnail_width": 121,
+      "title": "Portret van Dirk II, graaf van Holland",
+      "width": 732
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1620",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Adriaen Matham",
+          "role": null,
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Portret van Dirk II, graaf van Holland",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-20010001",
+    "source_id": "20010001",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Portret van Dirk II, graaf van Holland",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Internationale Koloniale en Uitvoerhandel-Tentoonstelling te Amsterdam 1883",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 61403,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/PFlhj/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100010.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 2951,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100010_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Internationale Koloniale en Uitvoerhandel-Tentoonstelling te Amsterdam 1883",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1883",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Internationale Koloniale en Uitvoerhandel-Tentoonstelling te Amsterdam 1883",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100010",
+    "source_id": "200100010",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Internationale Koloniale en Uitvoerhandel-Tentoonstelling te Amsterdam 1883",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Grensafbakening in Yperen 1777 by Theodorus Victor van Berckel",
+      "copyright_status": "public_domain",
+      "creator": "Theodorus Victor van Berckel",
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 66001,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/MlrCi/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100011.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 3457,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100011_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Grensafbakening in Yperen 1777",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1777",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Theodorus Victor van Berckel",
+          "role": null,
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Grensafbakening in Yperen 1777",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100011",
+    "source_id": "200100011",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Grensafbakening in Yperen 1777",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Overwinning van Frederik van Pruissen in de slag van Rosbach en Lissa 1757",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 106162,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/PaYBY/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100012.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 4918,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100012_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Overwinning van Frederik van Pruissen in de slag van Rosbach en Lissa 1757",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1757",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Overwinning van Frederik van Pruissen in de slag van Rosbach en Lissa 1757",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100012",
+    "source_id": "200100012",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Overwinning van Frederik van Pruissen in de slag van Rosbach en Lissa 1757",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Brandspuitpenning van Amsterdam, wijk 7 nummer D4 by anonymous",
+      "copyright_status": "public_domain",
+      "creator": "anonymous",
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 89985,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/DYgkP/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100013.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 4225,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100013_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Brandspuitpenning van Amsterdam, wijk 7 nummer D4",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "ca. 1675 - ca. 1800",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "anonymous",
+          "role": null,
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Brandspuitpenning van Amsterdam, wijk 7 nummer D4",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100013",
+    "source_id": "200100013",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Brandspuitpenning van Amsterdam, wijk 7 nummer D4",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Armenpenning van de Diaconie te Alkmaar, klein model",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 57914,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/FoXFm/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100014.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 2928,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100014_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Armenpenning van de Diaconie te Alkmaar, klein model",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1500 - 1800",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Armenpenning van de Diaconie te Alkmaar, klein model",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100014",
+    "source_id": "200100014",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Armenpenning van de Diaconie te Alkmaar, klein model",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Kroning van Koningin Carolina van Engeland 1727",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 64400,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/icYnn/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100015.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 3250,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100015_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Kroning van Koningin Carolina van Engeland 1727",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1727",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Kroning van Koningin Carolina van Engeland 1727",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100015",
+    "source_id": "200100015",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Kroning van Koningin Carolina van Engeland 1727",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Franse button voor juryleden bij onbekende gelegenheid, 1900 by Christofle",
+      "copyright_status": "public_domain",
+      "creator": "Christofle",
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 63564,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/zxvEg/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100016.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 3635,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100016_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Franse button voor juryleden bij onbekende gelegenheid, 1900",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1900",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Christofle",
+          "role": null,
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Franse button voor juryleden bij onbekende gelegenheid, 1900",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100016",
+    "source_id": "200100016",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Franse button voor juryleden bij onbekende gelegenheid, 1900",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Draagteken van de Illustere Lieve Vrouwen Broederschap te 's Hertogenbosch",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 78200,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/eMakx/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100017.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 4097,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100017_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Draagteken van de Illustere Lieve Vrouwen Broederschap te 's Hertogenbosch",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "ca. 1700 - ca. 1800",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Draagteken van de Illustere Lieve Vrouwen Broederschap te 's Hertogenbosch",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100017",
+    "source_id": "200100017",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Draagteken van de Illustere Lieve Vrouwen Broederschap te 's Hertogenbosch",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Vrede van Aken 1668 by Jean Mauger",
+      "copyright_status": "public_domain",
+      "creator": "Jean Mauger",
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 78316,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/uGgyY/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100018.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 3868,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100018_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Vrede van Aken 1668",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1668",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Jean Mauger",
+          "role": null,
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Vrede van Aken 1668",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100018",
+    "source_id": "200100018",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Vrede van Aken 1668",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Koninkrijk Korea, 10 mun",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 63823,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/Iiekx/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100019.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 3317,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100019_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Koninkrijk Korea, 10 mun",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1888",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Koninkrijk Korea, 10 mun",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100019",
+    "source_id": "200100019",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Koninkrijk Korea, 10 mun",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Portret van Arnulf, graaf van Holland by Adriaen Matham",
+      "copyright_status": "public_domain",
+      "creator": "Adriaen Matham",
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 266330,
+      "height": 1200,
+      "image_url": "https://iiif.micr.io/IFjeF/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/20010002.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 7742,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/20010002_thumb.jpg",
+      "thumbnail_width": 117,
+      "title": "Portret van Arnulf, graaf van Holland",
+      "width": 705
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1620",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Adriaen Matham",
+          "role": null,
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Portret van Arnulf, graaf van Holland",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-20010002",
+    "source_id": "20010002",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Portret van Arnulf, graaf van Holland",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Engelse penning op het huwelijk van de Prince of Wales met Alexandra van Denemarken 1863 by John Ottley",
+      "copyright_status": "public_domain",
+      "creator": "John Ottley",
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 83943,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/TTTrn/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100020.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 3933,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100020_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Engelse penning op het huwelijk van de Prince of Wales met Alexandra van Denemarken 1863",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1863",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "John Ottley",
+          "role": null,
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Engelse penning op het huwelijk van de Prince of Wales met Alexandra van Denemarken 1863",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100020",
+    "source_id": "200100020",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Engelse penning op het huwelijk van de Prince of Wales met Alexandra van Denemarken 1863",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Verheffing van Willem Karel Hendrik Friso van Oranje tot stadhouder 1747",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 82983,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/HemRG/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100021.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 4081,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100021_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Verheffing van Willem Karel Hendrik Friso van Oranje tot stadhouder 1747",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1747",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Verheffing van Willem Karel Hendrik Friso van Oranje tot stadhouder 1747",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100021",
+    "source_id": "200100021",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Verheffing van Willem Karel Hendrik Friso van Oranje tot stadhouder 1747",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Sen van 1 mon uit het keizerrijk Japan",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 46161,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/dgkqN/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100022.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 2919,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100022_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Sen van 1 mon uit het keizerrijk Japan",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1739 - 1868",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Sen van 1 mon uit het keizerrijk Japan",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100022",
+    "source_id": "200100022",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Sen van 1 mon uit het keizerrijk Japan",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Keizerrijk Japan, kan'ei-tsūho (oude beschrijving: sen van 1 mon)",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 55411,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/TOLcS/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100023.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 3291,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100023_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Keizerrijk Japan, kan'ei-tsūho (oude beschrijving: sen van 1 mon)",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1626 - 1739",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Keizerrijk Japan, kan'ei-tsūho (oude beschrijving: sen van 1 mon)",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100023",
+    "source_id": "200100023",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Keizerrijk Japan, kan'ei-tsūho (oude beschrijving: sen van 1 mon)",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Sen van 1 mon uit het keizerrijk Japan",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 46082,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/hwgMv/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100024.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 2897,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100024_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Sen van 1 mon uit het keizerrijk Japan",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1739 - 1868",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Sen van 1 mon uit het keizerrijk Japan",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100024",
+    "source_id": "200100024",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Sen van 1 mon uit het keizerrijk Japan",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Sen van 1 mon uit het keizerrijk Japan",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 45763,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/LGOMr/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100025.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 2842,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100025_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Sen van 1 mon uit het keizerrijk Japan",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1739 - 1868",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Sen van 1 mon uit het keizerrijk Japan",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100025",
+    "source_id": "200100025",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Sen van 1 mon uit het keizerrijk Japan",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Bun sen van 1 mon uit het keizerrijk Japan",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 43592,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/lCtiP/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100026.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 2949,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100026_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Bun sen van 1 mon uit het keizerrijk Japan",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1662 - 1672",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Bun sen van 1 mon uit het keizerrijk Japan",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100026",
+    "source_id": "200100026",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Bun sen van 1 mon uit het keizerrijk Japan",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Keizerrijk Japan, bun sen van 1 mon",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 47443,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/zKwYX/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100027.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 3003,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100027_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Keizerrijk Japan, bun sen van 1 mon",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1662 - 1672",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Keizerrijk Japan, bun sen van 1 mon",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100027",
+    "source_id": "200100027",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Keizerrijk Japan, bun sen van 1 mon",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Penning op Prins Willem Frederik by copy after Simon",
+      "copyright_status": "public_domain",
+      "creator": "copy after Simon",
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 83183,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/gsUfQ/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100028.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 3961,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100028_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Penning op Prins Willem Frederik",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1816 - 1834",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "copy after Simon",
+          "role": null,
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Penning op Prins Willem Frederik",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100028",
+    "source_id": "200100028",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Penning op Prins Willem Frederik",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Kalenderpenning op naam van Stadhouder Wiillem V 1767 by Visser",
+      "copyright_status": "public_domain",
+      "creator": "Visser",
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 71926,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/DmlTC/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100029.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 3763,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100029_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Kalenderpenning op naam van Stadhouder Wiillem V 1767",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1767",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Visser",
+          "role": null,
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Kalenderpenning op naam van Stadhouder Wiillem V 1767",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100029",
+    "source_id": "200100029",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Kalenderpenning op naam van Stadhouder Wiillem V 1767",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Portret van Dirk III, graaf van Holland by Adriaen Matham",
+      "copyright_status": "public_domain",
+      "creator": "Adriaen Matham",
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 277970,
+      "height": 1200,
+      "image_url": "https://iiif.micr.io/DFbXB/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/20010003.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 8132,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/20010003_thumb.jpg",
+      "thumbnail_width": 121,
+      "title": "Portret van Dirk III, graaf van Holland",
+      "width": 727
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1620",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Adriaen Matham",
+          "role": null,
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Portret van Dirk III, graaf van Holland",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-20010003",
+    "source_id": "20010003",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Portret van Dirk III, graaf van Holland",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Verheffing van Willem Karel Hendrik Friso tot stadhouder, 1747",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 94219,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/KOTMA/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100030.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 4350,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100030_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Verheffing van Willem Karel Hendrik Friso tot stadhouder, 1747",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1747",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Verheffing van Willem Karel Hendrik Friso tot stadhouder, 1747",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100030",
+    "source_id": "200100030",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Verheffing van Willem Karel Hendrik Friso tot stadhouder, 1747",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Nan rio gin uit het keizerrijk Japan van keizer Nin-kau  uit het Bunsei tijdperk",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 45542,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/CWCfG/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100031.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 2480,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100031_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Nan rio gin uit het keizerrijk Japan van keizer Nin-kau  uit het Bunsei tijdperk",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1824",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Nan rio gin uit het keizerrijk Japan van keizer Nin-kau  uit het Bunsei tijdperk",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100031",
+    "source_id": "200100031",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Nan rio gin uit het keizerrijk Japan van keizer Nin-kau  uit het Bunsei tijdperk",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Verheffing van Willem Karel Hendrik Friso tot stadhouder, 1747",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 82495,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/YsCnl/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100032.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 3961,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100032_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Verheffing van Willem Karel Hendrik Friso tot stadhouder, 1747",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1747",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": null,
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Verheffing van Willem Karel Hendrik Friso tot stadhouder, 1747",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100032",
+    "source_id": "200100032",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Verheffing van Willem Karel Hendrik Friso tot stadhouder, 1747",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Inhuldiging van stadhouder Willem V 1747 by Johan George Holtzhey",
+      "copyright_status": "public_domain",
+      "creator": "Johan George Holtzhey",
+      "credit": "Rijksmuseum Amsterdam",
+      "file_size": 112467,
+      "height": 596,
+      "image_url": "https://iiif.micr.io/dAmxy/full/max/0/default.jpg",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/rijks/200100033.jpg",
+      "source": "Rijksmuseum",
+      "thumbnail_file_size": 4837,
+      "thumbnail_height": 99,
+      "thumbnail_s3_key": "sandbox-fixtures/rijks/200100033_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Inhuldiging van stadhouder Willem V 1747",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1766",
+      "creation_date_earliest": null,
+      "creation_date_latest": null,
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Johan George Holtzhey",
+          "role": null,
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Rijksmuseum Amsterdam",
+      "materials": null,
+      "object_name": "Inhuldiging van stadhouder Willem V 1747",
+      "object_status": "accessioned",
+      "object_type": null,
+      "physical_description": null,
+      "responsible_department": "Rijksmuseum",
+      "subjects": null
+    },
+    "object_number": "RIJKS-200100033",
+    "source_id": "200100033",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Inhuldiging van stadhouder Willem V 1747",
+        "title_type": "primary"
+      }
+    ]
+  }
+]

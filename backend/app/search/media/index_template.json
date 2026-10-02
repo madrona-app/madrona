@@ -1,0 +1,438 @@
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "analysis": {
+      "analyzer": {
+        "media_text_analyzer": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "asciifolding",
+            "english_stemmer"
+          ]
+        },
+        "filename_analyzer": {
+          "type": "custom",
+          "tokenizer": "filename_tokenizer",
+          "filter": [
+            "lowercase",
+            "asciifolding"
+          ]
+        },
+        "tag_analyzer": {
+          "type": "custom",
+          "tokenizer": "keyword",
+          "filter": [
+            "lowercase"
+          ]
+        }
+      },
+      "tokenizer": {
+        "filename_tokenizer": {
+          "type": "pattern",
+          "pattern": "[\\s\\-_\\.]+",
+          "lowercase": true
+        }
+      },
+      "filter": {
+        "english_stemmer": {
+          "type": "stemmer",
+          "language": "english"
+        },
+        "autocomplete_filter": {
+          "type": "edge_ngram",
+          "min_gram": 2,
+          "max_gram": 20
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "media_id": {
+        "type": "keyword"
+      },
+      "organization_id": {
+        "type": "keyword"
+      },
+      "filename": {
+        "type": "text",
+        "analyzer": "filename_analyzer",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "title": {
+        "type": "text",
+        "analyzer": "media_text_analyzer",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "description": {
+        "type": "text",
+        "analyzer": "media_text_analyzer"
+      },
+      "alt_text": {
+        "type": "text",
+        "analyzer": "media_text_analyzer"
+      },
+      "media_type": {
+        "type": "keyword"
+      },
+      "mime_type": {
+        "type": "keyword"
+      },
+      "file_size": {
+        "type": "long"
+      },
+      "width": {
+        "type": "integer"
+      },
+      "height": {
+        "type": "integer"
+      },
+      "duration_seconds": {
+        "type": "integer"
+      },
+      "creator": {
+        "type": "text",
+        "analyzer": "media_text_analyzer",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "credit": {
+        "type": "text",
+        "analyzer": "media_text_analyzer"
+      },
+      "source": {
+        "type": "text",
+        "analyzer": "media_text_analyzer"
+      },
+      "copyright_status": {
+        "type": "keyword"
+      },
+      "license": {
+        "type": "keyword"
+      },
+      "rights_statement": {
+        "type": "text"
+      },
+      "folder": {
+        "type": "keyword"
+      },
+      "structured_tags": {
+        "type": "nested",
+        "properties": {
+          "key": {
+            "type": "keyword"
+          },
+          "value": {
+            "type": "keyword"
+          },
+          "value_text": {
+            "type": "text",
+            "analyzer": "media_text_analyzer"
+          }
+        }
+      },
+      "processing_status": {
+        "type": "keyword"
+      },
+      "ai_processing_status": {
+        "type": "keyword"
+      },
+      "is_published": {
+        "type": "boolean"
+      },
+      "published_at": {
+        "type": "date"
+      },
+      "date_created": {
+        "type": "date"
+      },
+      "created_at": {
+        "type": "date"
+      },
+      "updated_at": {
+        "type": "date"
+      },
+      "technical_metadata": {
+        "type": "object",
+        "enabled": true,
+        "properties": {
+          "camera_make": {
+            "type": "keyword"
+          },
+          "camera_model": {
+            "type": "keyword"
+          },
+          "iso": {
+            "type": "integer"
+          },
+          "aperture": {
+            "type": "keyword"
+          },
+          "focal_length": {
+            "type": "keyword"
+          },
+          "orientation": {
+            "type": "keyword"
+          }
+        }
+      },
+      "iptc_metadata": {
+        "type": "object",
+        "enabled": true,
+        "properties": {
+          "headline": {
+            "type": "text",
+            "analyzer": "media_text_analyzer"
+          },
+          "caption": {
+            "type": "text",
+            "analyzer": "media_text_analyzer"
+          },
+          "keywords": {
+            "type": "keyword"
+          },
+          "city": {
+            "type": "keyword"
+          },
+          "country": {
+            "type": "keyword"
+          },
+          "copyright_notice": {
+            "type": "text"
+          }
+        }
+      },
+      "dublin_core": {
+        "type": "object",
+        "enabled": true,
+        "properties": {
+          "dc_title": {
+            "type": "text",
+            "analyzer": "media_text_analyzer"
+          },
+          "dc_creator": {
+            "type": "keyword"
+          },
+          "dc_subject": {
+            "type": "keyword"
+          },
+          "dc_description": {
+            "type": "text",
+            "analyzer": "media_text_analyzer"
+          },
+          "dc_rights": {
+            "type": "text"
+          },
+          "dc_type": {
+            "type": "keyword"
+          },
+          "dc_format": {
+            "type": "keyword"
+          }
+        }
+      },
+      "has_derivatives": {
+        "type": "boolean"
+      },
+      "derivative_count": {
+        "type": "integer"
+      },
+      "indexed_at": {
+        "type": "date"
+      },
+      "linked_objects": {
+        "type": "nested",
+        "properties": {
+          "object_id": {
+            "type": "keyword"
+          },
+          "object_number": {
+            "type": "text",
+            "analyzer": "media_text_analyzer",
+            "fields": {
+              "keyword": {
+                "type": "keyword"
+              }
+            }
+          },
+          "title": {
+            "type": "text",
+            "analyzer": "media_text_analyzer"
+          },
+          "creator": {
+            "type": "text",
+            "analyzer": "media_text_analyzer"
+          },
+          "creation_date": {
+            "type": "text"
+          },
+          "copyright_status": {
+            "type": "keyword"
+          },
+          "credit_line": {
+            "type": "text",
+            "analyzer": "media_text_analyzer"
+          }
+        }
+      },
+      "linked_object_numbers": {
+        "type": "text",
+        "analyzer": "media_text_analyzer",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "linked_object_titles": {
+        "type": "text",
+        "analyzer": "media_text_analyzer"
+      },
+      "linked_object_creators": {
+        "type": "text",
+        "analyzer": "media_text_analyzer"
+      },
+      "linked_object_types": {
+        "type": "text",
+        "analyzer": "media_text_analyzer"
+      },
+      "linked_object_media": {
+        "type": "text",
+        "analyzer": "media_text_analyzer"
+      },
+      "inherited_metadata": {
+        "type": "object",
+        "enabled": true,
+        "properties": {
+          "linked_objects": {
+            "type": "nested",
+            "properties": {
+              "object": {
+                "type": "object",
+                "properties": {
+                  "object_id": {"type": "keyword"},
+                  "object_number": {"type": "keyword"},
+                  "primary_title": {"type": "text", "analyzer": "media_text_analyzer"},
+                  "object_type": {"type": "keyword"},
+                  "brief_description": {"type": "text", "analyzer": "media_text_analyzer"}
+                }
+              },
+              "creators": {
+                "type": "nested",
+                "properties": {
+                  "name": {"type": "text", "analyzer": "media_text_analyzer"},
+                  "display_name": {"type": "text", "analyzer": "media_text_analyzer"},
+                  "role": {"type": "keyword"},
+                  "ulan_id": {"type": "keyword"},
+                  "viaf_id": {"type": "keyword"},
+                  "wikidata_id": {"type": "keyword"}
+                }
+              },
+              "dates": {
+                "type": "object",
+                "properties": {
+                  "display": {"type": "text"},
+                  "earliest": {"type": "date"},
+                  "latest": {"type": "date"},
+                  "creation_place": {"type": "text", "analyzer": "media_text_analyzer"}
+                }
+              },
+              "subjects": {
+                "type": "object",
+                "properties": {
+                  "terms": {"type": "keyword"},
+                  "style_period": {"type": "keyword"}
+                }
+              },
+              "rights": {
+                "type": "object",
+                "properties": {
+                  "copyright_status": {"type": "keyword"},
+                  "credit_line": {"type": "text", "analyzer": "media_text_analyzer"}
+                }
+              },
+              "repository": {
+                "type": "object",
+                "properties": {
+                  "name": {"type": "keyword"}
+                }
+              }
+            }
+          },
+          "updated_at": {"type": "date"}
+        }
+      },
+      "inherited_metadata_updated_at": {
+        "type": "date"
+      },
+      "inherited_subjects": {
+        "type": "text",
+        "analyzer": "media_text_analyzer"
+      },
+      "inherited_materials": {
+        "type": "text",
+        "analyzer": "media_text_analyzer"
+      },
+      "inherited_techniques": {
+        "type": "text",
+        "analyzer": "media_text_analyzer"
+      },
+      "inherited_depicted_places": {
+        "type": "text",
+        "analyzer": "media_text_analyzer"
+      },
+      "ai_tags": {
+        "type": "text",
+        "analyzer": "media_text_analyzer",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "transcript": {
+        "type": "text",
+        "analyzer": "media_text_analyzer"
+      },
+      "ocr_text": {
+        "type": "text",
+        "analyzer": "media_text_analyzer"
+      },
+      "extracted_text": {
+        "type": "text",
+        "analyzer": "media_text_analyzer"
+      },
+      "dominant_colors": {
+        "type": "nested",
+        "properties": {
+          "hex": {
+            "type": "keyword"
+          },
+          "name": {
+            "type": "keyword"
+          },
+          "percentage": {
+            "type": "float"
+          }
+        }
+      },
+      "color_key": {
+        "type": "keyword"
+      }
+    }
+  }
+}

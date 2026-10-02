@@ -1,0 +1,28 @@
+# Staging environment docker-compose override
+#
+# This file extends docker-compose.yml with staging-specific settings.
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.staging.yml up
+#
+# CANONICAL VALIDATION: Error mode is enabled in staging to catch
+# non-canonical payloads before they reach production.
+
+services:
+  backend:
+    environment:
+      # APP_ENV is a strict Literal of development|production|testing; there
+      # is no "staging" value, and setting one fails settings validation at
+      # boot. Staging is internet-facing, so it runs the hardened profile.
+      APP_ENV: production
+      # STAGING: Canonical validation in error mode
+      # Non-canonical payloads will be REJECTED (not just warned)
+      # This catches integration issues before production
+      CANONICAL_VALIDATION_MODE: error
+
+  celery-worker:
+    environment:
+      # APP_ENV is a strict Literal of development|production|testing; there
+      # is no "staging" value, and setting one fails settings validation at
+      # boot. Staging is internet-facing, so it runs the hardened profile.
+      APP_ENV: production
+      # STAGING: Canonical validation in error mode
+      CANONICAL_VALIDATION_MODE: error

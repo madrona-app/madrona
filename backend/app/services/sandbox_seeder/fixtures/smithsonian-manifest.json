@@ -1,0 +1,2591 @@
+[
+  {
+    "media": {
+      "alt_text": "Plate, from Le Jugement Universal (Tommaso Piroli, Italian, 1752 - 1824)",
+      "copyright_status": "public_domain",
+      "creator": "Tommaso Piroli, Italian, 1752 - 1824",
+      "credit": null,
+      "file_size": 168609,
+      "height": 1200,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=CHSDM-A271C32E86D92-000001",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1896-31-92-5.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 5829,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1896-31-92-5_thumb.jpg",
+      "thumbnail_width": 134,
+      "title": "Plate, from Le Jugement Universal",
+      "width": 805
+    },
+    "object_fields": {
+      "brief_description": "Research in Progress",
+      "creation_date_display": "1808",
+      "creation_place": "Europe",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Tommaso Piroli, Italian, 1752 - 1824",
+          "role": "Print Maker",
+          "ulan_id": null
+        },
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Michelangelo Buonarroti, Italian, 1475–1564",
+          "role": "After",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": null,
+      "materials": null,
+      "object_name": "Plate, from Le Jugement Universal",
+      "object_status": "accessioned",
+      "object_type": "Prints",
+      "responsible_department": "CHNDM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-chndm_1896-31-92-5",
+    "source_id": "edanmdm-chndm_1896-31-92-5",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Plate, from Le Jugement Universal",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Fragment",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Given by Thomas Snell",
+      "file_size": 140075,
+      "height": 445,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=CHSDM-22B23CC03E002-000001",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1897-8-18.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 4859,
+      "thumbnail_height": 74,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1897-8-18_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Fragment",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": "Research in Progress",
+      "creation_date_display": "18th century",
+      "creation_place": "France",
+      "creators": null,
+      "credit_line": "Given by Thomas Snell",
+      "materials": null,
+      "object_name": "Fragment",
+      "object_status": "accessioned",
+      "object_type": "Lace (needlework)",
+      "responsible_department": "CHNDM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-chndm_1897-8-18",
+    "source_id": "edanmdm-chndm_1897-8-18",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Fragment",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Fragments",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Gift of John Pierpont Morgan",
+      "file_size": 200884,
+      "height": 1200,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=CHSDM-1902-1-822-a_bMattFlynn",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1902-1-822-a_d.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 7471,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1902-1-822-a_d_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Fragments",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": "Research in Progress",
+      "creation_date_display": "late 17th century",
+      "creation_place": "France Spain",
+      "creators": null,
+      "credit_line": "Gift of John Pierpont Morgan",
+      "materials": null,
+      "object_name": "Fragments",
+      "object_status": "accessioned",
+      "object_type": "Textiles",
+      "responsible_department": "CHNDM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-chndm_1902-1-822-a_d",
+    "source_id": "edanmdm-chndm_1902-1-822-a_d",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Fragments",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Horn and Silver Folding Spoon with Leather Case",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Gift of Samuel P. Avery",
+      "file_size": 52312,
+      "height": 431,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=CHSDM-12457_02-000001",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1903-1-39-a_c.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 2808,
+      "thumbnail_height": 71,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1903-1-39-a_c_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Horn and Silver Folding Spoon with Leather Case",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": "Research in Progress",
+      "creation_date_display": "ca. 1710",
+      "creation_place": "Germany",
+      "creators": null,
+      "credit_line": "Gift of Samuel P. Avery",
+      "materials": null,
+      "object_name": "Horn and Silver Folding Spoon with Leather Case",
+      "object_status": "accessioned",
+      "object_type": "Spoons",
+      "responsible_department": "CHNDM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-chndm_1903-1-39-a_c",
+    "source_id": "edanmdm-chndm_1903-1-39-a_c",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Horn and Silver Folding Spoon with Leather Case",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Two Young Girls in a Field (Winslow Homer, American, 1836–1910)",
+      "copyright_status": "public_domain",
+      "creator": "Winslow Homer, American, 1836–1910",
+      "credit": "Gift of Charles Savage Homer, Jr.",
+      "file_size": 65327,
+      "height": 1200,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=CHSDM-18993_02-000001",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1912-12-256.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 2767,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1912-12-256_thumb.jpg",
+      "thumbnail_width": 84,
+      "title": "Two Young Girls in a Field",
+      "width": 508
+    },
+    "object_fields": {
+      "brief_description": "Research in Progress",
+      "creation_date_display": "1879",
+      "creation_place": "USA",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Winslow Homer, American, 1836–1910",
+          "role": "Artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Gift of Charles Savage Homer, Jr.",
+      "materials": null,
+      "object_name": "Two Young Girls in a Field",
+      "object_status": "accessioned",
+      "object_type": "Figures (representations)",
+      "responsible_department": "CHNDM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-chndm_1912-12-256",
+    "source_id": "edanmdm-chndm_1912-12-256",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Two Young Girls in a Field",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Projet du Sallon de la Princesse Sartorinski en Pologne (Project for the Salon of the Princess Czartoryski in Poland), plate 84, from Oeuvres de Juste-Aurèle Meissonnier (Works by Juste-Aurèle Meissonnier) (Juste-Aurèle Meissonnier, French, b. Italy, 1695–1750)",
+      "copyright_status": "public_domain",
+      "creator": "Juste-Aurèle Meissonnier, French, b. Italy, 1695–1750",
+      "credit": "Purchased for the Museum by the Advisory Council",
+      "file_size": 171531,
+      "height": 1200,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=CHSDM-26830_02-000001",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1921-6-212-42.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 6493,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1921-6-212-42_thumb.jpg",
+      "thumbnail_width": 139,
+      "title": "Projet du Sallon de la Princesse Sartorinski en Pologne (Project for the Salon of the Princess Czartoryski in Poland), plate 84, from Oeuvres de Juste-Aurèle Meissonnier (Works by Juste-Aurèle Meissonnier)",
+      "width": 838
+    },
+    "object_fields": {
+      "brief_description": "Research in Progress",
+      "creation_date_display": "1695–1750",
+      "creation_place": "France",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Juste-Aurèle Meissonnier, French, b. Italy, 1695–1750",
+          "role": "Designer",
+          "ulan_id": null
+        },
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Pierre Edme Babel, French, 1720–1775",
+          "role": "Engraver",
+          "ulan_id": null
+        },
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Gabriel Huquier, French, 1695–1772",
+          "role": "Publisher",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Purchased for the Museum by the Advisory Council",
+      "materials": null,
+      "object_name": "Projet du Sallon de la Princesse Sartorinski en Pologne (Project for the Salon of the Princess Czartoryski in Poland), plate 84, from Oeuvres de Juste-Aurèle Meissonnier (Works by Juste-Aurèle Meissonnier)",
+      "object_status": "accessioned",
+      "object_type": "Interior views",
+      "responsible_department": "CHNDM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-chndm_1921-6-212-42",
+    "source_id": "edanmdm-chndm_1921-6-212-42",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Projet du Sallon de la Princesse Sartorinski en Pologne (Project for the Salon of the Princess Czartoryski in Poland), plate 84, from Oeuvres de Juste-Aurèle Meissonnier (Works by Juste-Aurèle Meissonnier)",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Gaines (Juste-François Boucher, French, 1736 – 1782)",
+      "copyright_status": "public_domain",
+      "creator": "Juste-François Boucher, French, 1736 – 1782",
+      "credit": "Purchased for the Museum by the Advisory Council",
+      "file_size": 129074,
+      "height": 841,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=CHSDM-34CC0AC0695B2-000001",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1921-6-252-74.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 5293,
+      "thumbnail_height": 140,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1921-6-252-74_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Gaines",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": "Research in Progress",
+      "creation_date_display": "ca. 1775",
+      "creation_place": "France",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Juste-François Boucher, French, 1736 – 1782",
+          "role": "Designer",
+          "ulan_id": null
+        },
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Nicolas Dupin, French, active 18th century",
+          "role": "Print Maker",
+          "ulan_id": null
+        },
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Le Père et Avaulez, Paris, 1772–1777",
+          "role": "Publisher",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Purchased for the Museum by the Advisory Council",
+      "materials": null,
+      "object_name": "Gaines",
+      "object_status": "accessioned",
+      "object_type": "Prints",
+      "responsible_department": "CHNDM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-chndm_1921-6-252-74",
+    "source_id": "edanmdm-chndm_1921-6-252-74",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Gaines",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Print",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Purchased for the Museum by the Advisory Council",
+      "file_size": 105542,
+      "height": 1200,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=CHSDM-33229_01",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1921-6-377-24.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 4806,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1921-6-377-24_thumb.jpg",
+      "thumbnail_width": 137,
+      "title": "Print",
+      "width": 826
+    },
+    "object_fields": {
+      "brief_description": "Research in Progress",
+      "creation_date_display": null,
+      "creation_place": "France",
+      "creators": null,
+      "credit_line": "Purchased for the Museum by the Advisory Council",
+      "materials": null,
+      "object_name": "Print",
+      "object_status": "accessioned",
+      "object_type": "Prints",
+      "responsible_department": "CHNDM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-chndm_1921-6-377-24",
+    "source_id": "edanmdm-chndm_1921-6-377-24",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Print",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Designs for Gun Parts and Ornament (François Marcou, French, 1595 – 1660)",
+      "copyright_status": "public_domain",
+      "creator": "François Marcou, French, 1595 – 1660",
+      "credit": "Purchased for the Museum by the Advisory Council",
+      "file_size": 171051,
+      "height": 917,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=CHSDM-2398A5C6A38B2-000001",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1921-6-408-21.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 6145,
+      "thumbnail_height": 152,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1921-6-408-21_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Designs for Gun Parts and Ornament",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": "Research in Progress",
+      "creation_date_display": "1657",
+      "creation_place": "France",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "François Marcou, French, 1595 – 1660",
+          "role": "Designer",
+          "ulan_id": null
+        },
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "C. Jacquinet, French, active 1650 – 1660",
+          "role": "Print Maker",
+          "ulan_id": null
+        },
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "François Marcou, French, 1595 – 1660",
+          "role": "Publisher",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Purchased for the Museum by the Advisory Council",
+      "materials": null,
+      "object_name": "Designs for Gun Parts and Ornament",
+      "object_status": "accessioned",
+      "object_type": "Prints",
+      "responsible_department": "CHNDM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-chndm_1921-6-408-21",
+    "source_id": "edanmdm-chndm_1921-6-408-21",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Designs for Gun Parts and Ornament",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Designs for Jewelry, Clasps, Fans, Mirror, and Bookbinding (Friedrich Jacob Morison, German, active 1693 – 1699)",
+      "copyright_status": "public_domain",
+      "creator": "Friedrich Jacob Morison, German, active 1693 – 1699",
+      "credit": "Purchased for the Museum by the Advisory Council",
+      "file_size": 232505,
+      "height": 861,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=CHSDM-A34CEE684C542-000001",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1921-6-466-3.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 7632,
+      "thumbnail_height": 143,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1921-6-466-3_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Designs for Jewelry, Clasps, Fans, Mirror, and Bookbinding",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": "Research in Progress",
+      "creation_date_display": "ca. 1700",
+      "creation_place": "Augsburg",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Friedrich Jacob Morison, German, active 1693 – 1699",
+          "role": "Designer",
+          "ulan_id": null
+        },
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Johann Andréas Pfeffel, German, 1674–1748",
+          "role": "Print Maker",
+          "ulan_id": null
+        },
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Jeremias Wolff, German, 1663–1724",
+          "role": "Publisher",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Purchased for the Museum by the Advisory Council",
+      "materials": null,
+      "object_name": "Designs for Jewelry, Clasps, Fans, Mirror, and Bookbinding",
+      "object_status": "accessioned",
+      "object_type": "Prints",
+      "responsible_department": "CHNDM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-chndm_1921-6-466-3",
+    "source_id": "edanmdm-chndm_1921-6-466-3",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Designs for Jewelry, Clasps, Fans, Mirror, and Bookbinding",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Title Page (Jean Claude Thomas Duplessis, French, 1730-1783)",
+      "copyright_status": "public_domain",
+      "creator": "Jean Claude Thomas Duplessis, French, 1730-1783",
+      "credit": "Purchased for the Museum by the Advisory Council",
+      "file_size": 187368,
+      "height": 1200,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=CHSDM-4EB687040D622-000001",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1921-6-499-1.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 6783,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1921-6-499-1_thumb.jpg",
+      "thumbnail_width": 166,
+      "title": "Title Page",
+      "width": 998
+    },
+    "object_fields": {
+      "brief_description": "Research in Progress",
+      "creation_date_display": "1775-1780",
+      "creation_place": "France",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Jean Claude Thomas Duplessis, French, 1730-1783",
+          "role": "Designer",
+          "ulan_id": null
+        },
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Jean Claude Thomas Duplessis, French, 1730-1783",
+          "role": "Publisher",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Purchased for the Museum by the Advisory Council",
+      "materials": null,
+      "object_name": "Title Page",
+      "object_status": "accessioned",
+      "object_type": "Prints",
+      "responsible_department": "CHNDM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-chndm_1921-6-499-1",
+    "source_id": "edanmdm-chndm_1921-6-499-1",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Title Page",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Sidewall",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Gift of Eleanor and Sarah Hewitt",
+      "file_size": 153665,
+      "height": 1007,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=CHSDM-006DF4042FE52-000001",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1931-45-105.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 3826,
+      "thumbnail_height": 167,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1931-45-105_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Sidewall",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": "Research in Progress",
+      "creation_date_display": "ca. 1840–50",
+      "creation_place": "USA",
+      "creators": null,
+      "credit_line": "Gift of Eleanor and Sarah Hewitt",
+      "materials": null,
+      "object_name": "Sidewall",
+      "object_status": "accessioned",
+      "object_type": "Fill papers",
+      "responsible_department": "CHNDM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-chndm_1931-45-105",
+    "source_id": "edanmdm-chndm_1931-45-105",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Sidewall",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Playing card",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Gift of Jean McKinnon Holt",
+      "file_size": 260020,
+      "height": 1200,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=CHSDM-F58953DE81E72-000001",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1935-12-1-7.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 10010,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1935-12-1-7_thumb.jpg",
+      "thumbnail_width": 140,
+      "title": "Playing card",
+      "width": 840
+    },
+    "object_fields": {
+      "brief_description": "Research in Progress",
+      "creation_date_display": "ca. 1855",
+      "creation_place": "Europe",
+      "creators": null,
+      "credit_line": "Gift of Jean McKinnon Holt",
+      "materials": null,
+      "object_name": "Playing card",
+      "object_status": "accessioned",
+      "object_type": "Playing cards",
+      "responsible_department": "CHNDM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-chndm_1935-12-1-7",
+    "source_id": "edanmdm-chndm_1935-12-1-7",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Playing card",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Tile",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Gift of Edith Wetmore",
+      "file_size": 144494,
+      "height": 943,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=CHSDM-B367BBCA95192-000001",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1936-43-4.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 6527,
+      "thumbnail_height": 157,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1936-43-4_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Tile",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": "Research in Progress",
+      "creation_date_display": "late 18th century",
+      "creation_place": "Spain",
+      "creators": null,
+      "credit_line": "Gift of Edith Wetmore",
+      "materials": null,
+      "object_name": "Tile",
+      "object_status": "accessioned",
+      "object_type": "Tile",
+      "responsible_department": "CHNDM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-chndm_1936-43-4",
+    "source_id": "edanmdm-chndm_1936-43-4",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Tile",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Cup and Saucer, from a \"Topographical\" Dinner or Dessert Service (\"A Vedute\") (Doccia Porcelain Factory, Italian, established 1735)",
+      "copyright_status": "public_domain",
+      "creator": "Doccia Porcelain Factory, Italian, established 1735",
+      "credit": "Gift of Anonymous Donor",
+      "file_size": 86390,
+      "height": 754,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=CHSDM-1949-151-16abEllenMcDermott",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1949-151-16-a_b.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 3933,
+      "thumbnail_height": 125,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1949-151-16-a_b_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Cup and Saucer, from a \"Topographical\" Dinner or Dessert Service (\"A Vedute\")",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": "Research in Progress",
+      "creation_date_display": "ca. 1810–1820",
+      "creation_place": "Italy",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Doccia Porcelain Factory, Italian, established 1735",
+          "role": "Manufacturer",
+          "ulan_id": null
+        },
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Ferdinando Ammannati, Italian, before 1781 – after 1823",
+          "role": "Probably",
+          "ulan_id": null
+        },
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Giovan Battista Fanciullacci, Italian, 1745 – 1825",
+          "role": "Probably",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Gift of Anonymous Donor",
+      "materials": null,
+      "object_name": "Cup and Saucer, from a \"Topographical\" Dinner or Dessert Service (\"A Vedute\")",
+      "object_status": "accessioned",
+      "object_type": "Ceramics (objects)",
+      "responsible_department": "CHNDM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-chndm_1949-151-16-a_b",
+    "source_id": "edanmdm-chndm_1949-151-16-a_b",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Cup and Saucer, from a \"Topographical\" Dinner or Dessert Service (\"A Vedute\")",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Gourd Vase",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Gift of Catharine Oglesby",
+      "file_size": 108269,
+      "height": 1200,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=CHSDM-582D3DDB5C4B2_02",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1958-119-8.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 5635,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1958-119-8_thumb.jpg",
+      "thumbnail_width": 169,
+      "title": "Gourd Vase",
+      "width": 1016
+    },
+    "object_fields": {
+      "brief_description": "Research in Progress",
+      "creation_date_display": "mid-18th century",
+      "creation_place": "St Omer",
+      "creators": null,
+      "credit_line": "Gift of Catharine Oglesby",
+      "materials": null,
+      "object_name": "Gourd Vase",
+      "object_status": "accessioned",
+      "object_type": "Ceramics (objects)",
+      "responsible_department": "CHNDM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-chndm_1958-119-8",
+    "source_id": "edanmdm-chndm_1958-119-8",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Gourd Vase",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Livre Curieux et Utile pour Les Sçavans, et Artists. Composé de trois Alphabets de Chiffres, Simples, doubles et triples. (Nicolas Verien, French, active 1685 – 1724)",
+      "copyright_status": "public_domain",
+      "creator": "Nicolas Verien, French, active 1685 – 1724",
+      "credit": "Gift of Hamill and Barker",
+      "file_size": 242625,
+      "height": 848,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=CHSDM-CHP4275",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1962-143-121-56.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 8069,
+      "thumbnail_height": 141,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1962-143-121-56_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Livre Curieux et Utile pour Les Sçavans, et Artists. Composé de trois Alphabets de Chiffres, Simples, doubles et triples.",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": "Research in Progress",
+      "creation_date_display": "1685",
+      "creation_place": "France",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Nicolas Verien, French, active 1685 – 1724",
+          "role": "Designer",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Gift of Hamill and Barker",
+      "materials": null,
+      "object_name": "Livre Curieux et Utile pour Les Sçavans, et Artists. Composé de trois Alphabets de Chiffres, Simples, doubles et triples.",
+      "object_status": "accessioned",
+      "object_type": "Books",
+      "responsible_department": "CHNDM",
+      "subjects": [
+        {
+          "term": "Graphic arts",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "SI-edanmdm-chndm_1962-143-121-56",
+    "source_id": "edanmdm-chndm_1962-143-121-56",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Livre Curieux et Utile pour Les Sçavans, et Artists. Composé de trois Alphabets de Chiffres, Simples, doubles et triples.",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Sidewall (Ericson & Weiss)",
+      "copyright_status": "public_domain",
+      "creator": "Ericson & Weiss",
+      "credit": "Gift of Harvey Smith",
+      "file_size": 145070,
+      "height": 1200,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=CHSDM-1968-111-47MattFlynn",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1968-111-47.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 6896,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1968-111-47_thumb.jpg",
+      "thumbnail_width": 156,
+      "title": "Sidewall",
+      "width": 939
+    },
+    "object_fields": {
+      "brief_description": "Research in Progress",
+      "creation_date_display": "1855–1900",
+      "creation_place": "France",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Ericson & Weiss",
+          "role": "Artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Gift of Harvey Smith",
+      "materials": null,
+      "object_name": "Sidewall",
+      "object_status": "accessioned",
+      "object_type": "Fill papers",
+      "responsible_department": "CHNDM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-chndm_1968-111-47",
+    "source_id": "edanmdm-chndm_1968-111-47",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Sidewall",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Fragment",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": null,
+      "file_size": 175689,
+      "height": 932,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=CHSDM-CD68B0CB128E2-000001",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1974-101-34.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 10346,
+      "thumbnail_height": 194,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1974-101-34_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Fragment",
+      "width": 960
+    },
+    "object_fields": {
+      "brief_description": "Research in Progress",
+      "creation_date_display": "19th century",
+      "creation_place": "Turkey",
+      "creators": null,
+      "credit_line": null,
+      "materials": null,
+      "object_name": "Fragment",
+      "object_status": "accessioned",
+      "object_type": "Textiles",
+      "responsible_department": "CHNDM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-chndm_1974-101-34",
+    "source_id": "edanmdm-chndm_1974-101-34",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Fragment",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Ornament Design, Roman Standards and Rinceau Panel with Griffons (Michel Angelo Pergolesi, Italian, active ca. 1760–1801)",
+      "copyright_status": "public_domain",
+      "creator": "Michel Angelo Pergolesi, Italian, active ca. 1760–1801",
+      "credit": "Gift of Unknown Donor",
+      "file_size": 143775,
+      "height": 1200,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=CHSDM-137C524D99D62_02-000001",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1980-32-1436.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 7636,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1980-32-1436_thumb.jpg",
+      "thumbnail_width": 145,
+      "title": "Ornament Design, Roman Standards and Rinceau Panel with Griffons",
+      "width": 871
+    },
+    "object_fields": {
+      "brief_description": "Research in Progress",
+      "creation_date_display": "1776",
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Michel Angelo Pergolesi, Italian, active ca. 1760–1801",
+          "role": "Artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Gift of Unknown Donor",
+      "materials": null,
+      "object_name": "Ornament Design, Roman Standards and Rinceau Panel with Griffons",
+      "object_status": "accessioned",
+      "object_type": "Drawings",
+      "responsible_department": "CHNDM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-chndm_1980-32-1436",
+    "source_id": "edanmdm-chndm_1980-32-1436",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Ornament Design, Roman Standards and Rinceau Panel with Griffons",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Sidewall",
+      "copyright_status": "public_domain",
+      "creator": null,
+      "credit": "Gift of Dorwin L. Starr",
+      "file_size": 24835,
+      "height": 1200,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=CHSDM-1985-19-61MattFlynn",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1985-19-61.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 1660,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1985-19-61_thumb.jpg",
+      "thumbnail_width": 146,
+      "title": "Sidewall",
+      "width": 878
+    },
+    "object_fields": {
+      "brief_description": "Sidewall sample with varieties of flowers and fruit, including grapes and pears, growing from scrolling acanthus leaves. Printed on speckled tan ground.",
+      "creation_date_display": "1906–08",
+      "creation_place": "USA",
+      "creators": null,
+      "credit_line": "Gift of Dorwin L. Starr",
+      "materials": null,
+      "object_name": "Sidewall",
+      "object_status": "accessioned",
+      "object_type": "Fill papers",
+      "responsible_department": "CHNDM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-chndm_1985-19-61",
+    "source_id": "edanmdm-chndm_1985-19-61",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Sidewall",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Textile (Oberkampf & Cie., Jouy-en-Josas, France, 1759–1815)",
+      "copyright_status": "public_domain",
+      "creator": "Oberkampf & Cie., Jouy-en-Josas, France, 1759–1815",
+      "credit": "Bequest of Elinor Merrell",
+      "file_size": 384852,
+      "height": 1200,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=CHSDM-C5318CF91DDC2-000001",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1995-50-212.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 12305,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-chndm_1995-50-212_thumb.jpg",
+      "thumbnail_width": 186,
+      "title": "Textile",
+      "width": 1119
+    },
+    "object_fields": {
+      "brief_description": "Research in Progress",
+      "creation_date_display": "1770–90",
+      "creation_place": "Jouy",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Oberkampf & Cie., Jouy-en-Josas, France, 1759–1815",
+          "role": "Producer",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Bequest of Elinor Merrell",
+      "materials": null,
+      "object_name": "Textile",
+      "object_status": "accessioned",
+      "object_type": "Textiles",
+      "responsible_department": "CHNDM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-chndm_1995-50-212",
+    "source_id": "edanmdm-chndm_1995-50-212",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Textile",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Bell X-1 (Bell Aircraft Corp.)",
+      "copyright_status": "public_domain",
+      "creator": "Bell Aircraft Corp.",
+      "credit": "Transferred from the Department of the Air Force",
+      "file_size": 59797,
+      "height": 778,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=NASM-A19510007000_NASM2015-07319",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-nasm_A19510007000.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 3400,
+      "thumbnail_height": 129,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-nasm_A19510007000_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Bell X-1",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": "Single engine, single seat, mid-wing rocket plane with international orange paint scheme.",
+      "creation_date_display": "1946",
+      "creation_place": "United States of America",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Bell Aircraft Corp.",
+          "role": "Manufacturer",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Transferred from the Department of the Air Force",
+      "materials": null,
+      "object_name": "Bell X-1",
+      "object_status": "accessioned",
+      "object_type": "Aircraft",
+      "responsible_department": "NASM",
+      "subjects": [
+        {
+          "term": "Aeronautics",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "SI-edanmdm-nasm_A19510007000",
+    "source_id": "edanmdm-nasm_A19510007000",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Bell X-1",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Indicator, Coolant Temperature (The Electric Auto-Lite Co.)",
+      "copyright_status": "public_domain",
+      "creator": "The Electric Auto-Lite Co.",
+      "credit": "Transferred from the Department of Commerce",
+      "file_size": 111047,
+      "height": 1200,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=NASM-C02FC54FB03A2_001-000001",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-nasm_A19570896000.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 5924,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-nasm_A19570896000_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Indicator, Coolant Temperature",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": "65mm diameter; range 0 to 120 c; with coil; vapor-pressure type.",
+      "creation_date_display": null,
+      "creation_place": "United States of America",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "The Electric Auto-Lite Co.",
+          "role": "Manufacturer",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Transferred from the Department of Commerce",
+      "materials": null,
+      "object_name": "Indicator, Coolant Temperature",
+      "object_status": "accessioned",
+      "object_type": "Engines",
+      "responsible_department": "NASM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-nasm_A19570896000",
+    "source_id": "edanmdm-nasm_A19570896000",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Indicator, Coolant Temperature",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Pinback button promoting African Liberation Day (Unidentified)",
+      "copyright_status": "public_domain",
+      "creator": "Unidentified",
+      "credit": "Collection of the Smithsonian National Museum of African American History and Culture",
+      "file_size": 81299,
+      "height": 1099,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=NMAAHC-2013_201_1_14_5001-000001",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-nmaahc_2013.201.1.14.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 4471,
+      "thumbnail_height": 183,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-nmaahc_2013.201.1.14_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Pinback button promoting African Liberation Day",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": "Round pin-back button with green image of Africa set against a red background. Black type on front of button reads, [AFRICAN LIBERATION DAY/MAY 28, 1977/A-APRP].Round pin-back button with green image of Africa set against a red background. Black type on front of button reads, [AFRICAN LIBERATION DAY/MAY 28, 1977/A-APRP].",
+      "creation_date_display": "1977",
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Unidentified",
+          "role": "Manufactured by",
+          "ulan_id": null
+        },
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "All-African People's Revolutionary Party, founded 1958",
+          "role": "Subject of",
+          "ulan_id": null
+        },
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Jan Bailey, American, 1942 - 2010",
+          "role": "Owned by",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Collection of the Smithsonian National Museum of African American History and Culture",
+      "materials": null,
+      "object_name": "Pinback button promoting African Liberation Day",
+      "object_status": "accessioned",
+      "object_type": "Buttons (information artifacts)",
+      "responsible_department": "NMAAHC",
+      "subjects": [
+        {
+          "term": "African diaspora",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Associations and institutions",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Politics",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Freedom",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "SI-edanmdm-nmaahc_2013.201.1.14",
+    "source_id": "edanmdm-nmaahc_2013.201.1.14",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Pinback button promoting African Liberation Day",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Woman's African-style Headwrap (Ruffins, Fath Davis)",
+      "copyright_status": "public_domain",
+      "creator": "Ruffins, Fath Davis",
+      "credit": "Gift of Fath Davis Ruffins",
+      "file_size": 203563,
+      "height": 900,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=NMAH-JN2024-01245-000001",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-nmah_1006937.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 9518,
+      "thumbnail_height": 150,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-nmah_1006937_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Woman's African-style Headwrap",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": "This headwrap dating between 1972 and 1984 was worn by Fath Davis Ruffins, an African American woman in Washington, DC. Ruffins bought the fabric for this headwrap and matching dress, which is also in the Smithsonian collections, at an African shop on Georgia Avenue in Washington, DC. It was made in 1972 but was worn as part of a summer \"dress-up\" outfit through 1984. Elaborately tied headwraps were worn by young African American women during this period to acknowledge their West African ancestr",
+      "creation_date_display": "1972-1984",
+      "creation_place": "District of Columbia",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Ruffins, Fath Davis",
+          "role": "used by",
+          "ulan_id": null
+        },
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Ruffins, Fath Davis",
+          "role": "maker",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Gift of Fath Davis Ruffins",
+      "materials": null,
+      "object_name": "Woman's African-style Headwrap",
+      "object_status": "accessioned",
+      "object_type": "headwrap",
+      "responsible_department": "NMAH",
+      "subjects": [
+        {
+          "term": "Clothing and dress",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Dress accessories",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Textiles",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "SI-edanmdm-nmah_1006937",
+    "source_id": "edanmdm-nmah_1006937",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Woman's African-style Headwrap",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Geometric Model by A. Harry Wheeler, Polar Triangles (Wheeler, Albert Harry)",
+      "copyright_status": "public_domain",
+      "creator": "Wheeler, Albert Harry",
+      "credit": "Gift of Helen M. Wheeler",
+      "file_size": 88682,
+      "height": 773,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=NMAH-DOR2015-00723",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-nmah_1071246.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 4262,
+      "thumbnail_height": 128,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-nmah_1071246_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Geometric Model by A. Harry Wheeler, Polar Triangles",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": "This cut and glued plastic model is one of several in which A. Harry Wheeler illustrated properties of polar spherical triangles. A sticker on it reads: PT. One polar triangle is inside the other. The vertices are unlabeled. The model is undated and has no Wheeler number.",
+      "creation_date_display": null,
+      "creation_place": "United States",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Wheeler, Albert Harry",
+          "role": "maker",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Gift of Helen M. Wheeler",
+      "materials": null,
+      "object_name": "Geometric Model by A. Harry Wheeler, Polar Triangles",
+      "object_status": "accessioned",
+      "object_type": "Models",
+      "responsible_department": "NMAH",
+      "subjects": [
+        {
+          "term": "Spherical Trigonometry",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Science",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Mathematics",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Trigonometry",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "SI-edanmdm-nmah_1071246",
+    "source_id": "edanmdm-nmah_1071246",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Geometric Model by A. Harry Wheeler, Polar Triangles",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Animal Locomotion: Series 300, Plate 316 (Muybridge, Eadweard)",
+      "copyright_status": "public_domain",
+      "creator": "Muybridge, Eadweard",
+      "credit": null,
+      "file_size": 91356,
+      "height": 798,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=NMAH-AHB2019q047833",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-nmah_1904345.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 5878,
+      "thumbnail_height": 133,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-nmah_1904345_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Animal Locomotion: Series 300, Plate 316",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": null,
+      "creation_place": "United States",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Muybridge, Eadweard",
+          "role": "maker",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": null,
+      "materials": null,
+      "object_name": "Animal Locomotion: Series 300, Plate 316",
+      "object_status": "accessioned",
+      "object_type": "glass plate positive",
+      "responsible_department": "NMAH",
+      "subjects": [
+        {
+          "term": "Photography",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "SI-edanmdm-nmah_1904345",
+    "source_id": "edanmdm-nmah_1904345",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Animal Locomotion: Series 300, Plate 316",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Animal Locomotion: Series 1524, Plate 566 (Muybridge, Eadweard)",
+      "copyright_status": "public_domain",
+      "creator": "Muybridge, Eadweard",
+      "credit": null,
+      "file_size": 108909,
+      "height": 798,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=NMAH-AHB2019q048716",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-nmah_1904489.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 6398,
+      "thumbnail_height": 133,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-nmah_1904489_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Animal Locomotion: Series 1524, Plate 566",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": null,
+      "creation_place": "United States",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Muybridge, Eadweard",
+          "role": "maker",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": null,
+      "materials": null,
+      "object_name": "Animal Locomotion: Series 1524, Plate 566",
+      "object_status": "accessioned",
+      "object_type": "glass plate positive",
+      "responsible_department": "NMAH",
+      "subjects": [
+        {
+          "term": "Photography",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "SI-edanmdm-nmah_1904489",
+    "source_id": "edanmdm-nmah_1904489",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Animal Locomotion: Series 1524, Plate 566",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Franklin's Reception at the Court of France 1778 by John Smith (Franklin, Benjamin)",
+      "copyright_status": "public_domain",
+      "creator": "Franklin, Benjamin",
+      "credit": "Harry T. Peters \"America on Stone\" Lithography Collection",
+      "file_size": 250354,
+      "height": 935,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=NMAH-DOR2011-8450",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-nmah_324907.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 10761,
+      "thumbnail_height": 155,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-nmah_324907_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Franklin's Reception at the Court of France 1778 by John Smith",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": "This copy of an earlier lithograph depicts Benjamin Franklin, the American Minister at the Court of France, receiving a laurel wreath from Countess Diana Polignac. Amid the elegant finery of the French aristocracy, Franklin is easily identifiable, clothed simply in a brown suit.",
+      "creation_date_display": "ca 1869",
+      "creation_place": "United States",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Franklin, Benjamin",
+          "role": "depicted",
+          "ulan_id": null
+        },
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Smith, John",
+          "role": "publisher",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Harry T. Peters \"America on Stone\" Lithography Collection",
+      "materials": null,
+      "object_name": "Franklin's Reception at the Court of France 1778 by John Smith",
+      "object_status": "accessioned",
+      "object_type": "Lithographs",
+      "responsible_department": "NMAH",
+      "subjects": [
+        {
+          "term": "Art",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Costume",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Architecture, Historic Residences",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Peters Prints",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "NMAH Reception Suite",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Furnishings",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "SI-edanmdm-nmah_324907",
+    "source_id": "edanmdm-nmah_324907",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Franklin's Reception at the Court of France 1778 by John Smith",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "American Troops Descending Avenue President Wilson (War Department)",
+      "copyright_status": "public_domain",
+      "creator": "War Department",
+      "credit": "War Department. Historical Branch of the General Staff",
+      "file_size": 171825,
+      "height": 1066,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=NMAH-2011-04060",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-nmah_445270.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 6884,
+      "thumbnail_height": 177,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-nmah_445270_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "American Troops Descending Avenue President Wilson",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": "Pencil and ink wash sketch. The scene is of a group of American soldiers marching in formation in an urban square. One of the soldiers in the march is carrying an American flag. An airplane flies over the city. Washington statue on left. The sketch is on a piece of heavy card stock that is affixed to a piece of cardboard. Underneath the sketch, also attached to the cardboard, is a printed label that reads :\"AMERICAN TROOPS DESCENDING AVENUE/PRESIDENT WILSON/Paris, July 4, 1918/BY E. PEIXOTTO/TRA",
+      "creation_date_display": "ca 1918",
+      "creation_place": "Île-de-France",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "War Department",
+          "role": "associated person",
+          "ulan_id": null
+        },
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Peixotto, Ernest Clifford",
+          "role": "artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "War Department. Historical Branch of the General Staff",
+      "materials": null,
+      "object_name": "American Troops Descending Avenue President Wilson",
+      "object_status": "accessioned",
+      "object_type": "Sketches",
+      "responsible_department": "NMAH",
+      "subjects": [
+        {
+          "term": "Official Art from the American Expeditionary Forces in World War I",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "World War I Art",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Combat Art",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Military",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "SI-edanmdm-nmah_445270",
+    "source_id": "edanmdm-nmah_445270",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "American Troops Descending Avenue President Wilson",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "James Pollard Espy (Thomas Sully, 19 Jun 1783 - 5 Nov 1872)",
+      "copyright_status": "public_domain",
+      "creator": "Thomas Sully, 19 Jun 1783 - 5 Nov 1872",
+      "credit": "National Portrait Gallery, Smithsonian Institution; transfer from the Smithsonian American Art Museum; gift of the Espy family to the Smithsonian Institution, 1860",
+      "file_size": 104950,
+      "height": 1200,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=NPG-NPG_66_55Espy-000001",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-npg_NPG.66.55.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 5066,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-npg_NPG.66.55_thumb.jpg",
+      "thumbnail_width": 164,
+      "title": "James Pollard Espy",
+      "width": 986
+    },
+    "object_fields": {
+      "brief_description": "Espy family; gift to Smithsonian 1860 [NCFA]; transferred 1966 to NPG.",
+      "creation_date_display": "1849",
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Thomas Sully, 19 Jun 1783 - 5 Nov 1872",
+          "role": "Artist",
+          "ulan_id": null
+        },
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "James Pollard Espy, 9 May 1785 - 24 Jan 1860",
+          "role": "Sitter",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "National Portrait Gallery, Smithsonian Institution; transfer from the Smithsonian American Art Museum; gift of the Espy family to the Smithsonian Institution, 1860",
+      "materials": null,
+      "object_name": "James Pollard Espy",
+      "object_status": "accessioned",
+      "object_type": "Paintings",
+      "responsible_department": "NPG",
+      "subjects": [
+        {
+          "term": "Arts and Culture",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Portraits",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Lawyers",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Lecturer",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Educators",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "School administrator",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Science and Technology",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Earth scientists",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "SI-edanmdm-npg_NPG.66.55",
+    "source_id": "edanmdm-npg_NPG.66.55",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "James Pollard Espy",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Charles R. Buckalew (Mathew Brady Studio, active 1844 - 1894)",
+      "copyright_status": "public_domain",
+      "creator": "Mathew Brady Studio, active 1844 - 1894",
+      "credit": "National Portrait Gallery, Smithsonian Institution; Frederick Hill Meserve Collection",
+      "file_size": 117452,
+      "height": 1200,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=NPG-NPG_81_M498",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-npg_NPG.81.M498.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 7501,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-npg_NPG.81.M498_thumb.jpg",
+      "thumbnail_width": 144,
+      "title": "Charles R. Buckalew",
+      "width": 864
+    },
+    "object_fields": {
+      "brief_description": "The Frederick Hill Meserve Collection comprises more than five thousand Civil War-era portrait negatives from the Mathew Brady photography studio in New York City. The collection, which the National Portrait Gallery acquired in 1981, includes portraits of generals, politicians, diplomats, painters, and performers. It also contains depictions of “Human Curiosities” at P. T. Barnum’s American Museum in New York City, that, although highly exploitative, help to document the historical representatio",
+      "creation_date_display": "c. 1860-70",
+      "creation_place": "United States",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Mathew Brady Studio, active 1844 - 1894",
+          "role": "Attribution",
+          "ulan_id": null
+        },
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Charles Rollin Buckalew, 1821 - 1899",
+          "role": "Sitter",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "National Portrait Gallery, Smithsonian Institution; Frederick Hill Meserve Collection",
+      "materials": null,
+      "object_name": "Charles R. Buckalew",
+      "object_status": "accessioned",
+      "object_type": "Photographs",
+      "responsible_department": "NPG",
+      "subjects": [
+        {
+          "term": "Legislators",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Neckwear",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Dress accessories",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Home Furnishings",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Design",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Chairs",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Bowtie",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Seating",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "SI-edanmdm-npg_NPG.81.M498",
+    "source_id": "edanmdm-npg_NPG.81.M498",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Charles R. Buckalew",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Unidentified Boy (William Bache, 22 Dec 1771 - 9 Jul 1845)",
+      "copyright_status": "public_domain",
+      "creator": "William Bache, 22 Dec 1771 - 9 Jul 1845",
+      "credit": "National Portrait Gallery, Smithsonian Institution; partial gift of Sarah Bache Bloise",
+      "file_size": 203596,
+      "height": 1200,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=NPG-S_NPG_2002_184_1555",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-npg_S_NPG.2002.184.1555.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 6812,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-npg_S_NPG.2002.184.1555_thumb.jpg",
+      "thumbnail_width": 148,
+      "title": "Unidentified Boy",
+      "width": 892
+    },
+    "object_fields": {
+      "brief_description": "Ledger book of William Bache, with associated pieces",
+      "creation_date_display": "c. 1804-06",
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "William Bache, 22 Dec 1771 - 9 Jul 1845",
+          "role": "Artist",
+          "ulan_id": null
+        },
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Unidentified Boy",
+          "role": "Sitter",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "National Portrait Gallery, Smithsonian Institution; partial gift of Sarah Bache Bloise",
+      "materials": null,
+      "object_name": "Unidentified Boy",
+      "object_status": "accessioned",
+      "object_type": "Silhouettes",
+      "responsible_department": "NPG",
+      "subjects": [
+        {
+          "term": "Cut-out",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Books and reading",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Men",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Portraits",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Silhouette",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Albums",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "SI-edanmdm-npg_S_NPG.2002.184.1555",
+    "source_id": "edanmdm-npg_S_NPG.2002.184.1555",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Unidentified Boy",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Captain Codrington (Charles Balthazar Julien Févret de Saint-Mémin, 12 Mar 1770 - 23 Jun 1852)",
+      "copyright_status": "public_domain",
+      "creator": "Charles Balthazar Julien Févret de Saint-Mémin, 12 Mar 1770 - 23 Jun 1852",
+      "credit": "National Portrait Gallery, Smithsonian Institution; gift of Mr. and Mrs. Paul Mellon",
+      "file_size": 340928,
+      "height": 1200,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=NPG-S_NPG_74_39_3_5Codrington-000001",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-npg_S_NPG.74.39.3.5.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 9342,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-npg_S_NPG.74.39.3.5_thumb.jpg",
+      "thumbnail_width": 198,
+      "title": "Captain Codrington",
+      "width": 1190
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1796",
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Charles Balthazar Julien Févret de Saint-Mémin, 12 Mar 1770 - 23 Jun 1852",
+          "role": "Artist",
+          "ulan_id": null
+        },
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Capt. Codrington",
+          "role": "Sitter",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "National Portrait Gallery, Smithsonian Institution; gift of Mr. and Mrs. Paul Mellon",
+      "materials": null,
+      "object_name": "Captain Codrington",
+      "object_status": "accessioned",
+      "object_type": "Prints",
+      "responsible_department": "NPG",
+      "subjects": [
+        {
+          "term": "Men",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Portraits",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "SI-edanmdm-npg_S_NPG.74.39.3.5",
+    "source_id": "edanmdm-npg_S_NPG.74.39.3.5",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Captain Codrington",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "The Happy Mother (Max Bohm, born Cleveland, OH 1868-died Provincetown, MA 1923)",
+      "copyright_status": "public_domain",
+      "creator": "Max Bohm, born Cleveland, OH 1868-died Provincetown, MA 1923",
+      "credit": "Smithsonian American Art Museum, Gift of Mary B. Longyear",
+      "file_size": 124719,
+      "height": 1200,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=SAAM-1917.1.4_1",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-saam_1917.1.4.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 5325,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-saam_1917.1.4_thumb.jpg",
+      "thumbnail_width": 132,
+      "title": "The Happy Mother",
+      "width": 793
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1913",
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Max Bohm, born Cleveland, OH 1868-died Provincetown, MA 1923",
+          "role": "Artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Smithsonian American Art Museum, Gift of Mary B. Longyear",
+      "materials": null,
+      "object_name": "The Happy Mother",
+      "object_status": "accessioned",
+      "object_type": "Paintings",
+      "responsible_department": "SAAM",
+      "subjects": [
+        {
+          "term": "Mother and child",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Happiness",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Landscapes",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Coasts",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Sleep",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "State of being",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Figure group",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Family",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "SI-edanmdm-saam_1917.1.4",
+    "source_id": "edanmdm-saam_1917.1.4",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "The Happy Mother",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Japanese Lacquer Vase (Unidentified)",
+      "copyright_status": "public_domain",
+      "creator": "Unidentified",
+      "credit": "Smithsonian American Art Museum, Bequest of Mary Houston Eddy, the A.R. and M.H. Eddy Donation",
+      "file_size": 79063,
+      "height": 1200,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=SAAM-1918.5.91_1",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-saam_1918.5.91.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 3780,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-saam_1918.5.91_thumb.jpg",
+      "thumbnail_width": 149,
+      "title": "Japanese Lacquer Vase",
+      "width": 900
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "n.d.",
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Unidentified",
+          "role": "Artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Smithsonian American Art Museum, Bequest of Mary Houston Eddy, the A.R. and M.H. Eddy Donation",
+      "materials": null,
+      "object_name": "Japanese Lacquer Vase",
+      "object_status": "accessioned",
+      "object_type": "Decorative arts",
+      "responsible_department": "SAAM",
+      "subjects": [
+        {
+          "term": "Boats and boating",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Landscapes",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Coasts",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Architecture",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Vase",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Sailboats",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Waterscapes",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "SI-edanmdm-saam_1918.5.91",
+    "source_id": "edanmdm-saam_1918.5.91",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Japanese Lacquer Vase",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Cutlery (George W. Adams, English, n.d.)",
+      "copyright_status": "public_domain",
+      "creator": "George W. Adams, English, n.d.",
+      "credit": "Smithsonian American Art Museum, Gift of John Gellatly",
+      "file_size": 41050,
+      "height": 432,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=SAAM-1929.8.246.1-.24_1",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-saam_1929.8.246.10.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 3150,
+      "thumbnail_height": 72,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-saam_1929.8.246.10_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Cutlery",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": null,
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "George W. Adams, English, n.d.",
+          "role": "Artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Smithsonian American Art Museum, Gift of John Gellatly",
+      "materials": null,
+      "object_name": "Cutlery",
+      "object_status": "accessioned",
+      "object_type": "Decorative arts",
+      "responsible_department": "SAAM",
+      "subjects": null
+    },
+    "object_number": "SI-edanmdm-saam_1929.8.246.10",
+    "source_id": "edanmdm-saam_1929.8.246.10",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Cutlery",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Ebenezer Martin (Henry Inman, born Utica, NY 1801-died New York City 1846)",
+      "copyright_status": "public_domain",
+      "creator": "Henry Inman, born Utica, NY 1801-died New York City 1846",
+      "credit": "Smithsonian American Art Museum, Museum purchase through the Catherine Walden Myer Fund",
+      "file_size": 95484,
+      "height": 857,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=SAAM-1949.2.1_1",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-saam_1949.2.1.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 4148,
+      "thumbnail_height": 142,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-saam_1949.2.1_thumb.jpg",
+      "thumbnail_width": 200,
+      "title": "Ebenezer Martin",
+      "width": 1200
+    },
+    "object_fields": {
+      "brief_description": "Ebenezer Martin (1791-1876) was a graduate of the College of New Jersey, now Princeton University.",
+      "creation_date_display": "ca. 1838",
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Henry Inman, born Utica, NY 1801-died New York City 1846",
+          "role": "Artist",
+          "ulan_id": null
+        },
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Ebenezer Martin",
+          "role": "Sitter",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Smithsonian American Art Museum, Museum purchase through the Catherine Walden Myer Fund",
+      "materials": null,
+      "object_name": "Ebenezer Martin",
+      "object_status": "accessioned",
+      "object_type": "Paintings",
+      "responsible_department": "SAAM",
+      "subjects": [
+        {
+          "term": "Men",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Portraits",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "SI-edanmdm-saam_1949.2.1",
+    "source_id": "edanmdm-saam_1949.2.1",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Ebenezer Martin",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Model of the Greek Slave (Hiram Powers, born Woodstock, VT 1805-died Florence, Italy 1873)",
+      "copyright_status": "public_domain",
+      "creator": "Hiram Powers, born Woodstock, VT 1805-died Florence, Italy 1873",
+      "credit": "Smithsonian American Art Museum, Museum purchase in memory of Ralph Cross Johnson",
+      "file_size": 80137,
+      "height": 1200,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=SAAM-1968.155.8_4",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-saam_1968.155.8.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 4424,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-saam_1968.155.8_thumb.jpg",
+      "thumbnail_width": 104,
+      "title": "Model of the Greek Slave",
+      "width": 627
+    },
+    "object_fields": {
+      "brief_description": "This plaster cast is as close as we can get to Powers' \"original\" Greek Slave. It was made in the artist's studio directly from Powers' clay model and records the date \"March 12, 1843,\" when the sculptor proclaimed he finished modeling his masterpiece in clay. Powers carefully sculpted the body but did minimal work on the locket, cross, and drapery, since it was more efficient to refer to real examples of these objects when carving these elements in marble. Similarly, Powers did not lose time mo",
+      "creation_date_display": "1843",
+      "creation_place": "Greece",
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Hiram Powers, born Woodstock, VT 1805-died Florence, Italy 1873",
+          "role": "Artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Smithsonian American Art Museum, Museum purchase in memory of Ralph Cross Johnson",
+      "materials": null,
+      "object_name": "Model of the Greek Slave",
+      "object_status": "accessioned",
+      "object_type": "Sculpture",
+      "responsible_department": "SAAM",
+      "subjects": [
+        {
+          "term": "Figure female",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "State of being",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Imprisonment",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "History",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Enslaved",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "SI-edanmdm-saam_1968.155.8",
+    "source_id": "edanmdm-saam_1968.155.8",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Model of the Greek Slave",
+        "title_type": "primary"
+      }
+    ]
+  },
+  {
+    "media": {
+      "alt_text": "Phlox (Mary Vaux Walcott, born Philadelphia, PA 1860-died St. Andrews, New Brunswick, Canada 1940)",
+      "copyright_status": "public_domain",
+      "creator": "Mary Vaux Walcott, born Philadelphia, PA 1860-died St. Andrews, New Brunswick, Canada 1940",
+      "credit": "Smithsonian American Art Museum, Gift of the artist",
+      "file_size": 92027,
+      "height": 1200,
+      "image_url": "https://ids.si.edu/ids/deliveryService?id=SAAM-1970.355.326_2",
+      "license": "CC0-1.0",
+      "mime_type": "image/jpeg",
+      "rights_statement": "CC0 1.0 Universal Public Domain Dedication",
+      "s3_key": "sandbox-fixtures/smithsonian/edanmdm-saam_1970.355.326.jpg",
+      "source": "Smithsonian Open Access",
+      "thumbnail_file_size": 3312,
+      "thumbnail_height": 200,
+      "thumbnail_s3_key": "sandbox-fixtures/smithsonian/edanmdm-saam_1970.355.326_thumb.jpg",
+      "thumbnail_width": 143,
+      "title": "Phlox",
+      "width": 863
+    },
+    "object_fields": {
+      "brief_description": null,
+      "creation_date_display": "1915",
+      "creation_place": null,
+      "creators": [
+        {
+          "attribution": null,
+          "authority_id": null,
+          "name": "Mary Vaux Walcott, born Philadelphia, PA 1860-died St. Andrews, New Brunswick, Canada 1940",
+          "role": "Artist",
+          "ulan_id": null
+        }
+      ],
+      "credit_line": "Smithsonian American Art Museum, Gift of the artist",
+      "materials": null,
+      "object_name": "Phlox",
+      "object_status": "accessioned",
+      "object_type": "Paintings",
+      "responsible_department": "SAAM",
+      "subjects": [
+        {
+          "term": "Phlox",
+          "type": "topic",
+          "vocabulary_term_id": null
+        },
+        {
+          "term": "Botanical study",
+          "type": "topic",
+          "vocabulary_term_id": null
+        }
+      ]
+    },
+    "object_number": "SI-edanmdm-saam_1970.355.326",
+    "source_id": "edanmdm-saam_1970.355.326",
+    "titles": [
+      {
+        "is_preferred": true,
+        "title": "Phlox",
+        "title_type": "primary"
+      }
+    ]
+  }
+]

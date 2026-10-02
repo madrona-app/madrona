@@ -1,0 +1,14 @@
+# Development overlay: source hot-reload via bind mounts.
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#
+# Deliberately NOT part of the base compose: bind-mounting ./backend over
+# /app injects your local backend/.env (real credentials) into the
+# container, overriding the self-hosted defaults — pydantic-settings loads
+# /app/.env if present. Keep production-shaped runs on the image alone.
+services:
+  backend:
+    volumes:
+      - ./backend:/app
+  celery-worker:
+    volumes:
+      - ./backend:/app

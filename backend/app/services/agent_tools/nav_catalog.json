@@ -1,0 +1,1594 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "id": "admin:api-keys",
+      "product": "admin",
+      "label": "API Keys",
+      "pathPattern": "/organizations/:orgId/admin/api-keys",
+      "breadcrumb": [
+        "Admin",
+        "API Keys"
+      ],
+      "keywords": [
+        "admin",
+        "api",
+        "api key",
+        "api keys",
+        "api tokens",
+        "keys"
+      ],
+      "permission": "org.manage_api_keys"
+    },
+    {
+      "id": "admin:applications",
+      "product": "admin",
+      "label": "Applications",
+      "pathPattern": "/organizations/:orgId/admin/applications",
+      "breadcrumb": [
+        "Admin",
+        "Applications"
+      ],
+      "keywords": [
+        "admin",
+        "applications"
+      ],
+      "permission": "org.manage_settings"
+    },
+    {
+      "id": "admin:departments",
+      "product": "admin",
+      "label": "Departments",
+      "pathPattern": "/organizations/:orgId/admin/departments",
+      "breadcrumb": [
+        "Admin",
+        "Departments"
+      ],
+      "keywords": [
+        "admin",
+        "departments",
+        "org units",
+        "teams"
+      ],
+      "permission": "departments.manage_members"
+    },
+    {
+      "id": "admin:entity-audit",
+      "product": "admin",
+      "label": "Change History",
+      "pathPattern": "/organizations/:orgId/admin/entity-audit",
+      "breadcrumb": [
+        "Admin",
+        "Change History"
+      ],
+      "keywords": [
+        "admin",
+        "audit log",
+        "change",
+        "change history",
+        "history"
+      ],
+      "permission": "org.view_audit_logs"
+    },
+    {
+      "id": "admin:roles",
+      "product": "admin",
+      "label": "Role Management",
+      "pathPattern": "/organizations/:orgId/admin/roles",
+      "breadcrumb": [
+        "Admin",
+        "Role Management"
+      ],
+      "keywords": [
+        "admin",
+        "management",
+        "permissions",
+        "rbac",
+        "role",
+        "role management"
+      ],
+      "permission": "org.manage_roles"
+    },
+    {
+      "id": "admin:users",
+      "product": "admin",
+      "label": "Users",
+      "pathPattern": "/organizations/:orgId/admin/users",
+      "breadcrumb": [
+        "Admin",
+        "Users"
+      ],
+      "keywords": [
+        "admin",
+        "members",
+        "team",
+        "user management",
+        "users"
+      ],
+      "permission": "org.manage_members"
+    },
+    {
+      "id": "bridge:config",
+      "product": "bridge",
+      "label": "Configuration",
+      "pathPattern": "/organizations/:orgId/bridge/setup",
+      "breadcrumb": [
+        "Configuration"
+      ],
+      "keywords": [
+        "bridge",
+        "configuration"
+      ],
+      "permission": "connectors.view",
+      "appKey": "bridge"
+    },
+    {
+      "id": "bridge:datasets",
+      "product": "bridge",
+      "label": "Datasets",
+      "pathPattern": "/organizations/:orgId/bridge/datasets",
+      "breadcrumb": [
+        "Datasets"
+      ],
+      "keywords": [
+        "bridge",
+        "datasets",
+        "raw data",
+        "source data"
+      ],
+      "appKey": "bridge"
+    },
+    {
+      "id": "bridge:pipeline",
+      "product": "bridge",
+      "label": "Pipeline",
+      "pathPattern": "/organizations/:orgId/bridge",
+      "breadcrumb": [
+        "Pipeline"
+      ],
+      "keywords": [
+        "bridge",
+        "data pipeline",
+        "etl",
+        "pipeline"
+      ],
+      "appKey": "bridge"
+    },
+    {
+      "id": "bridge:reports",
+      "product": "bridge",
+      "label": "Reports",
+      "pathPattern": "/organizations/:orgId/bridge/reports",
+      "breadcrumb": [
+        "Reports"
+      ],
+      "keywords": [
+        "bridge",
+        "reports"
+      ],
+      "appKey": "bridge"
+    },
+    {
+      "id": "bridge:runs",
+      "product": "bridge",
+      "label": "Run History",
+      "pathPattern": "/organizations/:orgId/bridge/runs",
+      "breadcrumb": [
+        "Run History"
+      ],
+      "keywords": [
+        "bridge",
+        "executions",
+        "history",
+        "job history",
+        "run",
+        "run history"
+      ],
+      "appKey": "bridge"
+    },
+    {
+      "id": "bridge:search",
+      "product": "bridge",
+      "label": "Search",
+      "pathPattern": "/organizations/:orgId/bridge/search",
+      "breadcrumb": [
+        "Search"
+      ],
+      "keywords": [
+        "bridge",
+        "search"
+      ],
+      "appKey": "bridge"
+    },
+    {
+      "id": "collections:acquisitions",
+      "product": "collections",
+      "label": "Acquisitions",
+      "pathPattern": "/organizations/:orgId/collections/acquisitions",
+      "breadcrumb": [
+        "Transactions",
+        "Acquisitions"
+      ],
+      "keywords": [
+        "accession",
+        "accessioning",
+        "acquire",
+        "acquisitions",
+        "collections",
+        "donation",
+        "purchase",
+        "transactions"
+      ],
+      "permission": "acquisitions.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:approvals",
+      "product": "collections",
+      "label": "Approvals",
+      "pathPattern": "/organizations/:orgId/collections/work/approvals",
+      "breadcrumb": [
+        "Work",
+        "Approvals"
+      ],
+      "keywords": [
+        "approvals",
+        "collections",
+        "pending approvals",
+        "review queue",
+        "work"
+      ],
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:audits",
+      "product": "collections",
+      "label": "Audit Campaigns",
+      "pathPattern": "/organizations/:orgId/collections/audits",
+      "breadcrumb": [
+        "Governance",
+        "Audit Campaigns"
+      ],
+      "keywords": [
+        "audit",
+        "audit campaigns",
+        "campaigns",
+        "collections",
+        "governance",
+        "inventory audit"
+      ],
+      "permission": "audits.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:barcode-labels",
+      "product": "collections",
+      "label": "Barcode Labels",
+      "pathPattern": "/organizations/:orgId/collections/barcodes/labels",
+      "breadcrumb": [
+        "Inventory",
+        "Barcode Labels"
+      ],
+      "keywords": [
+        "barcode",
+        "barcode labels",
+        "barcodes",
+        "collections",
+        "inventory",
+        "labels",
+        "print labels"
+      ],
+      "permission": "barcodes.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:barcode-scanner",
+      "product": "collections",
+      "label": "Scanner",
+      "pathPattern": "/organizations/:orgId/collections/barcodes/scanner",
+      "breadcrumb": [
+        "Inventory",
+        "Scanner"
+      ],
+      "keywords": [
+        "barcode scanner",
+        "collections",
+        "inventory",
+        "scan",
+        "scanner"
+      ],
+      "permission": "barcodes.scan",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:condition-reports",
+      "product": "collections",
+      "label": "Condition Reports",
+      "pathPattern": "/organizations/:orgId/collections/condition-reports",
+      "breadcrumb": [
+        "Care & Risk",
+        "Condition Reports"
+      ],
+      "keywords": [
+        "assessment",
+        "care",
+        "care & risk",
+        "collections",
+        "condition",
+        "condition check",
+        "condition reports",
+        "reports",
+        "risk"
+      ],
+      "permission": "condition_reports.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:config",
+      "product": "collections",
+      "label": "Configuration",
+      "pathPattern": "/organizations/:orgId/collections/config",
+      "breadcrumb": [
+        "Configuration"
+      ],
+      "keywords": [
+        "collections",
+        "configuration"
+      ],
+      "permission": "org.manage_settings",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:conservation",
+      "product": "collections",
+      "label": "Conservation",
+      "pathPattern": "/organizations/:orgId/collections/conservation",
+      "breadcrumb": [
+        "Care & Risk",
+        "Conservation"
+      ],
+      "keywords": [
+        "care",
+        "care & risk",
+        "collections",
+        "conservation",
+        "conservation treatment",
+        "repair",
+        "restoration",
+        "risk",
+        "treatment"
+      ],
+      "permission": "conservation.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:constituents",
+      "product": "collections",
+      "label": "People and Organizations",
+      "pathPattern": "/organizations/:orgId/collections/constituents",
+      "breadcrumb": [
+        "People and Organizations"
+      ],
+      "keywords": [
+        "and",
+        "artists",
+        "collections",
+        "contacts",
+        "donors",
+        "organizations",
+        "people",
+        "people and organizations",
+        "persons"
+      ],
+      "permission": "constituents.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:deaccessions",
+      "product": "collections",
+      "label": "Deaccessions",
+      "pathPattern": "/organizations/:orgId/collections/deaccessions",
+      "breadcrumb": [
+        "Transactions",
+        "Deaccessions"
+      ],
+      "keywords": [
+        "collections",
+        "deaccession",
+        "deaccessions",
+        "disposal",
+        "removal from collection",
+        "transactions"
+      ],
+      "permission": "deaccession.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:drafts",
+      "product": "collections",
+      "label": "Drafts",
+      "pathPattern": "/organizations/:orgId/collections/work/drafts",
+      "breadcrumb": [
+        "Intelligence",
+        "Drafts"
+      ],
+      "keywords": [
+        "collections",
+        "drafts",
+        "intelligence"
+      ],
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:emergency-plans",
+      "product": "collections",
+      "label": "Emergency Plans",
+      "pathPattern": "/organizations/:orgId/collections/emergency-plans",
+      "breadcrumb": [
+        "Care & Risk",
+        "Emergency Plans"
+      ],
+      "keywords": [
+        "care",
+        "care & risk",
+        "collections",
+        "disaster plan",
+        "emergency",
+        "emergency plans",
+        "plans",
+        "risk",
+        "salvage plan"
+      ],
+      "permission": "emergency_plans.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:entries",
+      "product": "collections",
+      "label": "Incoming",
+      "pathPattern": "/organizations/:orgId/collections/entries",
+      "breadcrumb": [
+        "Transactions",
+        "Incoming"
+      ],
+      "keywords": [
+        "collections",
+        "incoming",
+        "intake",
+        "object entry",
+        "receipt",
+        "transactions"
+      ],
+      "permission": "entries.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:events",
+      "product": "collections",
+      "label": "Events",
+      "pathPattern": "/organizations/:orgId/collections/events",
+      "breadcrumb": [
+        "Programs & Research",
+        "Events"
+      ],
+      "keywords": [
+        "calendar",
+        "collections",
+        "events",
+        "programs",
+        "programs & research",
+        "research"
+      ],
+      "permission": "events.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:exhibitions-list",
+      "product": "collections",
+      "label": "Exhibitions",
+      "pathPattern": "/organizations/:orgId/collections/exhibitions",
+      "breadcrumb": [
+        "Exhibitions",
+        "Exhibitions"
+      ],
+      "keywords": [
+        "collections",
+        "display",
+        "exhibition",
+        "exhibitions",
+        "gallery",
+        "show"
+      ],
+      "permission": "exhibit.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:exits",
+      "product": "collections",
+      "label": "Departures",
+      "pathPattern": "/organizations/:orgId/collections/exits",
+      "breadcrumb": [
+        "Transactions",
+        "Departures"
+      ],
+      "keywords": [
+        "collections",
+        "departures",
+        "object exit",
+        "outgoing",
+        "transactions"
+      ],
+      "permission": "exits.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:incidents",
+      "product": "collections",
+      "label": "Incidents",
+      "pathPattern": "/organizations/:orgId/collections/incidents",
+      "breadcrumb": [
+        "Care & Risk",
+        "Incidents"
+      ],
+      "keywords": [
+        "care",
+        "care & risk",
+        "collections",
+        "damage report",
+        "incident report",
+        "incidents",
+        "loss",
+        "risk"
+      ],
+      "permission": "incidents.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:indemnity",
+      "product": "collections",
+      "label": "Indemnity",
+      "pathPattern": "/organizations/:orgId/collections/insurance/indemnities",
+      "breadcrumb": [
+        "Care & Risk",
+        "Indemnity"
+      ],
+      "keywords": [
+        "care",
+        "care & risk",
+        "collections",
+        "government indemnity",
+        "indemnification",
+        "indemnity",
+        "risk"
+      ],
+      "permission": "insurance.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:insurance",
+      "product": "collections",
+      "label": "Insurance",
+      "pathPattern": "/organizations/:orgId/collections/insurance",
+      "breadcrumb": [
+        "Care & Risk",
+        "Insurance"
+      ],
+      "keywords": [
+        "care",
+        "care & risk",
+        "collections",
+        "coverage",
+        "insurance",
+        "insurance policy",
+        "policy",
+        "risk"
+      ],
+      "permission": "insurance.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:loans-in",
+      "product": "collections",
+      "label": "Loans In",
+      "pathPattern": "/organizations/:orgId/collections/loans-in",
+      "breadcrumb": [
+        "Transactions",
+        "Loans In"
+      ],
+      "keywords": [
+        "borrow",
+        "collections",
+        "in",
+        "inbound loan",
+        "incoming loan",
+        "loan in",
+        "loans",
+        "loans in",
+        "transactions"
+      ],
+      "permission": "loans.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:loans-out",
+      "product": "collections",
+      "label": "Loans Out",
+      "pathPattern": "/organizations/:orgId/collections/loans-out",
+      "breadcrumb": [
+        "Transactions",
+        "Loans Out"
+      ],
+      "keywords": [
+        "collections",
+        "lending",
+        "loan out",
+        "loans",
+        "loans out",
+        "out",
+        "outbound loan",
+        "outgoing loan",
+        "transactions"
+      ],
+      "permission": "loans.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:movements",
+      "product": "collections",
+      "label": "Movements",
+      "pathPattern": "/organizations/:orgId/collections/movements",
+      "breadcrumb": [
+        "Transactions",
+        "Movements"
+      ],
+      "keywords": [
+        "collections",
+        "move object",
+        "movements",
+        "object movement",
+        "relocate",
+        "transactions"
+      ],
+      "permission": "movements.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:my-tasks",
+      "product": "collections",
+      "label": "My Tasks",
+      "pathPattern": "/organizations/:orgId/collections/work",
+      "breadcrumb": [
+        "Work",
+        "My Tasks"
+      ],
+      "keywords": [
+        "assignments",
+        "collections",
+        "inbox",
+        "my",
+        "my tasks",
+        "tasks",
+        "todo",
+        "work"
+      ],
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:objects",
+      "product": "collections",
+      "label": "Cataloging",
+      "pathPattern": "/organizations/:orgId/collections/objects",
+      "breadcrumb": [
+        "Collection",
+        "Cataloging"
+      ],
+      "keywords": [
+        "artefacts",
+        "artifacts",
+        "catalog",
+        "cataloging",
+        "collection",
+        "collection objects",
+        "collections",
+        "items",
+        "records"
+      ],
+      "permission": "collections.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:plans",
+      "product": "collections",
+      "label": "Plans",
+      "pathPattern": "/organizations/:orgId/collections/work/plans",
+      "breadcrumb": [
+        "Intelligence",
+        "Plans"
+      ],
+      "keywords": [
+        "collections",
+        "intelligence",
+        "plans"
+      ],
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:reproduction-requests",
+      "product": "collections",
+      "label": "Reproduction Requests",
+      "pathPattern": "/organizations/:orgId/collections/reproduction-requests",
+      "breadcrumb": [
+        "Rights & Reproduction",
+        "Reproduction Requests"
+      ],
+      "keywords": [
+        "collections",
+        "image request",
+        "repro",
+        "reproduction",
+        "reproduction requests",
+        "requests",
+        "rights",
+        "rights & reproduction"
+      ],
+      "permission": "reproduction_requests.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:reviews",
+      "product": "collections",
+      "label": "Collections Reviews",
+      "pathPattern": "/organizations/:orgId/collections/reviews",
+      "breadcrumb": [
+        "Governance",
+        "Collections Reviews"
+      ],
+      "keywords": [
+        "collections",
+        "collections review",
+        "collections reviews",
+        "governance",
+        "review",
+        "reviews"
+      ],
+      "permission": "reviews.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:rights",
+      "product": "collections",
+      "label": "Rights",
+      "pathPattern": "/organizations/:orgId/collections/rights",
+      "breadcrumb": [
+        "Rights & Reproduction",
+        "Rights"
+      ],
+      "keywords": [
+        "collections",
+        "copyright",
+        "intellectual property",
+        "ip",
+        "permissions",
+        "reproduction",
+        "rights",
+        "rights & reproduction"
+      ],
+      "permission": "rights.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:risk-overview",
+      "product": "collections",
+      "label": "Risk Overview",
+      "pathPattern": "/organizations/:orgId/collections/risk-overview",
+      "breadcrumb": [
+        "Care & Risk",
+        "Risk Overview"
+      ],
+      "keywords": [
+        "care",
+        "care & risk",
+        "collections",
+        "hazards",
+        "overview",
+        "risk",
+        "risk assessment",
+        "risk overview",
+        "risks"
+      ],
+      "permission": "condition_reports.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:scan-history",
+      "product": "collections",
+      "label": "Scan History",
+      "pathPattern": "/organizations/:orgId/collections/barcodes/scans",
+      "breadcrumb": [
+        "Inventory",
+        "Scan History"
+      ],
+      "keywords": [
+        "collections",
+        "history",
+        "inventory",
+        "scan",
+        "scan history",
+        "scan log",
+        "scans"
+      ],
+      "permission": "barcodes.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:shipments",
+      "product": "collections",
+      "label": "Shipments",
+      "pathPattern": "/organizations/:orgId/collections/shipments",
+      "breadcrumb": [
+        "Transactions",
+        "Shipments"
+      ],
+      "keywords": [
+        "collections",
+        "freight",
+        "shipments",
+        "shipping",
+        "transactions",
+        "transport"
+      ],
+      "permission": "shipments.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:use-requests",
+      "product": "collections",
+      "label": "Use Requests",
+      "pathPattern": "/organizations/:orgId/collections/use-requests",
+      "breadcrumb": [
+        "Rights & Reproduction",
+        "Use Requests"
+      ],
+      "keywords": [
+        "collections",
+        "permission request",
+        "reproduction",
+        "requests",
+        "rights",
+        "rights & reproduction",
+        "use",
+        "use request",
+        "use requests"
+      ],
+      "permission": "use_requests.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:valuations",
+      "product": "collections",
+      "label": "Valuations",
+      "pathPattern": "/organizations/:orgId/collections/valuations",
+      "breadcrumb": [
+        "Care & Risk",
+        "Valuations"
+      ],
+      "keywords": [
+        "appraisal",
+        "care",
+        "care & risk",
+        "collections",
+        "risk",
+        "valuation",
+        "valuations",
+        "value",
+        "worth"
+      ],
+      "permission": "valuations.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:venues",
+      "product": "collections",
+      "label": "Venues",
+      "pathPattern": "/organizations/:orgId/collections/venues",
+      "breadcrumb": [
+        "Exhibitions",
+        "Venues"
+      ],
+      "keywords": [
+        "buildings",
+        "collections",
+        "exhibition venues",
+        "exhibitions",
+        "locations",
+        "venues"
+      ],
+      "permission": "venues.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:vocabularies",
+      "product": "collections",
+      "label": "Controlled Vocabularies",
+      "pathPattern": "/organizations/:orgId/collections/vocabularies",
+      "breadcrumb": [
+        "Programs & Research",
+        "Controlled Vocabularies"
+      ],
+      "keywords": [
+        "authorities",
+        "collections",
+        "controlled",
+        "controlled vocabularies",
+        "programs",
+        "programs & research",
+        "research",
+        "terms",
+        "thesaurus",
+        "vocabularies"
+      ],
+      "permission": "authorities.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:workspaces",
+      "product": "collections",
+      "label": "Work Sets",
+      "pathPattern": "/organizations/:orgId/collections/work/workspaces",
+      "breadcrumb": [
+        "Work",
+        "Work Sets"
+      ],
+      "keywords": [
+        "batch work",
+        "collections",
+        "sets",
+        "work",
+        "work sets"
+      ],
+      "appKey": "collections"
+    },
+    {
+      "id": "content:categories",
+      "product": "content",
+      "label": "Categories",
+      "pathPattern": "/organizations/:orgId/content/categories",
+      "breadcrumb": [
+        "Categories"
+      ],
+      "keywords": [
+        "categories",
+        "content"
+      ],
+      "permission": "content.view",
+      "appKey": "content"
+    },
+    {
+      "id": "content:pages",
+      "product": "content",
+      "label": "Pages",
+      "pathPattern": "/organizations/:orgId/content/pages",
+      "breadcrumb": [
+        "Pages"
+      ],
+      "keywords": [
+        "content",
+        "pages",
+        "site pages",
+        "web pages"
+      ],
+      "permission": "content.view",
+      "appKey": "content"
+    },
+    {
+      "id": "content:posts",
+      "product": "content",
+      "label": "Blog",
+      "pathPattern": "/organizations/:orgId/content/posts",
+      "breadcrumb": [
+        "Blog"
+      ],
+      "keywords": [
+        "articles",
+        "blog",
+        "content",
+        "news"
+      ],
+      "permission": "content.view",
+      "appKey": "content"
+    },
+    {
+      "id": "content:site-settings",
+      "product": "content",
+      "label": "Site Settings",
+      "pathPattern": "/organizations/:orgId/content/site-settings",
+      "breadcrumb": [
+        "Site Settings"
+      ],
+      "keywords": [
+        "content",
+        "settings",
+        "site",
+        "site settings"
+      ],
+      "permission": "content.edit",
+      "appKey": "content"
+    },
+    {
+      "id": "guide:guide-corpus",
+      "product": "guide",
+      "label": "Corpus",
+      "pathPattern": "/organizations/:orgId/guide/documents",
+      "breadcrumb": [
+        "Corpus"
+      ],
+      "keywords": [
+        "corpus",
+        "guide"
+      ],
+      "permission": "org.manage_settings",
+      "appKey": "guide"
+    },
+    {
+      "id": "guide:guide-qr",
+      "product": "guide",
+      "label": "QR Codes",
+      "pathPattern": "/organizations/:orgId/guide/qr",
+      "breadcrumb": [
+        "QR Codes"
+      ],
+      "keywords": [
+        "codes",
+        "guide",
+        "qr",
+        "qr codes"
+      ],
+      "permission": "org.manage_settings",
+      "appKey": "guide"
+    },
+    {
+      "id": "guide:guide-visitor-insights",
+      "product": "guide",
+      "label": "Visitor Insights",
+      "pathPattern": "/organizations/:orgId/guide/visitors",
+      "breadcrumb": [
+        "Visitor Insights"
+      ],
+      "keywords": [
+        "guide",
+        "insights",
+        "visitor",
+        "visitor insights"
+      ],
+      "permission": "org.manage_settings",
+      "appKey": "guide"
+    },
+    {
+      "id": "guide:guide-widget",
+      "product": "guide",
+      "label": "Widget & Embed",
+      "pathPattern": "/organizations/:orgId/guide/widget",
+      "breadcrumb": [
+        "Widget & Embed"
+      ],
+      "keywords": [
+        "embed",
+        "guide",
+        "widget",
+        "widget & embed"
+      ],
+      "permission": "org.manage_settings",
+      "appKey": "guide"
+    },
+    {
+      "id": "media:ai-config",
+      "product": "media",
+      "label": "AI Tagging",
+      "pathPattern": "/organizations/:orgId/media/ai-config",
+      "breadcrumb": [
+        "Settings",
+        "AI Tagging"
+      ],
+      "keywords": [
+        "ai",
+        "ai tagging",
+        "media",
+        "settings",
+        "tagging"
+      ],
+      "permission": "org.manage_settings",
+      "appKey": "media"
+    },
+    {
+      "id": "media:analytics",
+      "product": "media",
+      "label": "Analytics",
+      "pathPattern": "/organizations/:orgId/media/analytics",
+      "breadcrumb": [
+        "Tools",
+        "Analytics"
+      ],
+      "keywords": [
+        "analytics",
+        "media",
+        "tools"
+      ],
+      "permission": "media.view",
+      "appKey": "media"
+    },
+    {
+      "id": "media:approvals",
+      "product": "media",
+      "label": "Approvals",
+      "pathPattern": "/organizations/:orgId/media/work/approvals",
+      "breadcrumb": [
+        "Work",
+        "Approvals"
+      ],
+      "keywords": [
+        "approvals",
+        "media",
+        "pending approvals",
+        "review queue",
+        "work"
+      ],
+      "appKey": "media"
+    },
+    {
+      "id": "media:collections",
+      "product": "media",
+      "label": "Lightboxes",
+      "pathPattern": "/organizations/:orgId/media/collections",
+      "breadcrumb": [
+        "Lightboxes"
+      ],
+      "keywords": [
+        "lightbox",
+        "lightboxes",
+        "media",
+        "media collections"
+      ],
+      "permission": "media.view",
+      "appKey": "media"
+    },
+    {
+      "id": "media:config",
+      "product": "media",
+      "label": "Configuration",
+      "pathPattern": "/organizations/:orgId/media/config",
+      "breadcrumb": [
+        "Settings",
+        "Configuration"
+      ],
+      "keywords": [
+        "configuration",
+        "media",
+        "settings"
+      ],
+      "permission": "org.manage_settings",
+      "appKey": "media"
+    },
+    {
+      "id": "media:derivative-settings",
+      "product": "media",
+      "label": "Derivative Sizes",
+      "pathPattern": "/organizations/:orgId/media/derivative-settings",
+      "breadcrumb": [
+        "Settings",
+        "Derivative Sizes"
+      ],
+      "keywords": [
+        "derivative",
+        "derivative sizes",
+        "media",
+        "settings",
+        "sizes"
+      ],
+      "permission": "org.manage_settings",
+      "appKey": "media"
+    },
+    {
+      "id": "media:download-requests",
+      "product": "media",
+      "label": "Download Requests",
+      "pathPattern": "/organizations/:orgId/media/download-requests",
+      "breadcrumb": [
+        "Download Requests"
+      ],
+      "keywords": [
+        "download",
+        "download queue",
+        "download requests",
+        "downloads",
+        "media",
+        "requests"
+      ],
+      "permission": "download_requests.view",
+      "appKey": "media"
+    },
+    {
+      "id": "media:drafts",
+      "product": "media",
+      "label": "Drafts",
+      "pathPattern": "/organizations/:orgId/media/work/drafts",
+      "breadcrumb": [
+        "Intelligence",
+        "Drafts"
+      ],
+      "keywords": [
+        "drafts",
+        "intelligence",
+        "media"
+      ],
+      "appKey": "media"
+    },
+    {
+      "id": "media:field-inheritance",
+      "product": "media",
+      "label": "Field Inheritance",
+      "pathPattern": "/organizations/:orgId/media/field-inheritance",
+      "breadcrumb": [
+        "Settings",
+        "Field Inheritance"
+      ],
+      "keywords": [
+        "field",
+        "field inheritance",
+        "inheritance",
+        "media",
+        "settings"
+      ],
+      "permission": "org.manage_settings",
+      "appKey": "media"
+    },
+    {
+      "id": "media:library",
+      "product": "media",
+      "label": "Library",
+      "pathPattern": "/organizations/:orgId/media",
+      "breadcrumb": [
+        "Library"
+      ],
+      "keywords": [
+        "assets",
+        "dam",
+        "images",
+        "library",
+        "media",
+        "media library",
+        "photos"
+      ],
+      "permission": "media.view",
+      "appKey": "media"
+    },
+    {
+      "id": "media:metadata-templates",
+      "product": "media",
+      "label": "Metadata Templates",
+      "pathPattern": "/organizations/:orgId/media/metadata-templates",
+      "breadcrumb": [
+        "Settings",
+        "Metadata Templates"
+      ],
+      "keywords": [
+        "media",
+        "metadata",
+        "metadata templates",
+        "settings",
+        "templates"
+      ],
+      "permission": "org.manage_settings",
+      "appKey": "media"
+    },
+    {
+      "id": "media:my-download-requests",
+      "product": "media",
+      "label": "My Requests",
+      "pathPattern": "/organizations/:orgId/media/my-download-requests",
+      "breadcrumb": [
+        "My Requests"
+      ],
+      "keywords": [
+        "media",
+        "my",
+        "my requests",
+        "requests"
+      ],
+      "permission": "media.view",
+      "appKey": "media"
+    },
+    {
+      "id": "media:my-shares",
+      "product": "media",
+      "label": "My Shared Links",
+      "pathPattern": "/organizations/:orgId/media/my-shares",
+      "breadcrumb": [
+        "My Shared Links"
+      ],
+      "keywords": [
+        "links",
+        "media",
+        "my",
+        "my shared links",
+        "shared"
+      ],
+      "permission": "media.view",
+      "appKey": "media"
+    },
+    {
+      "id": "media:my-tasks",
+      "product": "media",
+      "label": "My Tasks",
+      "pathPattern": "/organizations/:orgId/media/work",
+      "breadcrumb": [
+        "Work",
+        "My Tasks"
+      ],
+      "keywords": [
+        "assignments",
+        "inbox",
+        "media",
+        "my",
+        "my tasks",
+        "tasks",
+        "todo",
+        "work"
+      ],
+      "appKey": "media"
+    },
+    {
+      "id": "media:plans",
+      "product": "media",
+      "label": "Plans",
+      "pathPattern": "/organizations/:orgId/media/work/plans",
+      "breadcrumb": [
+        "Intelligence",
+        "Plans"
+      ],
+      "keywords": [
+        "intelligence",
+        "media",
+        "plans"
+      ],
+      "appKey": "media"
+    },
+    {
+      "id": "media:preservation",
+      "product": "media",
+      "label": "Preservation",
+      "pathPattern": "/organizations/:orgId/media/preservation",
+      "breadcrumb": [
+        "Tools",
+        "Preservation"
+      ],
+      "keywords": [
+        "media",
+        "preservation",
+        "tools"
+      ],
+      "permission": "media.view",
+      "appKey": "media"
+    },
+    {
+      "id": "media:processing-jobs",
+      "product": "media",
+      "label": "Processing Jobs",
+      "pathPattern": "/organizations/:orgId/media/processing-jobs",
+      "breadcrumb": [
+        "Tools",
+        "Processing Jobs"
+      ],
+      "keywords": [
+        "jobs",
+        "media",
+        "processing",
+        "processing jobs",
+        "tools"
+      ],
+      "permission": "media.view",
+      "appKey": "media"
+    },
+    {
+      "id": "media:publishing",
+      "product": "media",
+      "label": "Publishing",
+      "pathPattern": "/organizations/:orgId/media/publishing",
+      "breadcrumb": [
+        "Tools",
+        "Publishing"
+      ],
+      "keywords": [
+        "media",
+        "publication",
+        "publish media",
+        "publishing",
+        "tools"
+      ],
+      "permission": "media.publish",
+      "appKey": "media"
+    },
+    {
+      "id": "media:review-queue",
+      "product": "media",
+      "label": "Review Queue",
+      "pathPattern": "/organizations/:orgId/media/review-queue",
+      "breadcrumb": [
+        "Tools",
+        "Review Queue"
+      ],
+      "keywords": [
+        "media",
+        "queue",
+        "review",
+        "review queue",
+        "tools"
+      ],
+      "permission": "media.edit",
+      "appKey": "media"
+    },
+    {
+      "id": "media:tag-settings",
+      "product": "media",
+      "label": "Tag Settings",
+      "pathPattern": "/organizations/:orgId/media/tag-settings",
+      "breadcrumb": [
+        "Settings",
+        "Tag Settings"
+      ],
+      "keywords": [
+        "media",
+        "settings",
+        "tag",
+        "tag settings"
+      ],
+      "permission": "org.manage_settings",
+      "appKey": "media"
+    },
+    {
+      "id": "media:watermark-templates",
+      "product": "media",
+      "label": "Watermark Templates",
+      "pathPattern": "/organizations/:orgId/media/watermark-templates",
+      "breadcrumb": [
+        "Settings",
+        "Watermark Templates"
+      ],
+      "keywords": [
+        "media",
+        "settings",
+        "templates",
+        "watermark",
+        "watermark templates"
+      ],
+      "permission": "org.manage_settings",
+      "appKey": "media"
+    },
+    {
+      "id": "media:workspaces",
+      "product": "media",
+      "label": "Work Sets",
+      "pathPattern": "/organizations/:orgId/media/work/workspaces",
+      "breadcrumb": [
+        "Work",
+        "Work Sets"
+      ],
+      "keywords": [
+        "batch work",
+        "media",
+        "sets",
+        "work",
+        "work sets"
+      ],
+      "appKey": "media"
+    },
+    {
+      "id": "platform-admin:app-subscriptions",
+      "product": "platform-admin",
+      "label": "App Subscriptions",
+      "pathPattern": "/organizations/:orgId/admin/app-subscriptions",
+      "breadcrumb": [
+        "Platform Admin",
+        "App Subscriptions"
+      ],
+      "keywords": [
+        "admin",
+        "app",
+        "app subscriptions",
+        "platform",
+        "platform admin",
+        "subscriptions"
+      ],
+      "permission": "platform.admin"
+    },
+    {
+      "id": "platform-admin:bulk-user-import",
+      "product": "platform-admin",
+      "label": "Bulk User Import",
+      "pathPattern": "/organizations/:orgId/admin/bulk-import",
+      "breadcrumb": [
+        "Platform Admin",
+        "Bulk User Import"
+      ],
+      "keywords": [
+        "admin",
+        "bulk",
+        "bulk user import",
+        "import",
+        "platform",
+        "platform admin",
+        "user"
+      ],
+      "permission": "platform.admin"
+    },
+    {
+      "id": "platform-admin:logs",
+      "product": "platform-admin",
+      "label": "Logs",
+      "pathPattern": "/organizations/:orgId/admin/logs",
+      "breadcrumb": [
+        "Platform Admin",
+        "Logs"
+      ],
+      "keywords": [
+        "admin",
+        "logs",
+        "platform",
+        "platform admin"
+      ],
+      "permission": "platform.admin"
+    },
+    {
+      "id": "platform-admin:organizations",
+      "product": "platform-admin",
+      "label": "Organizations",
+      "pathPattern": "/organizations/:orgId/admin/organizations",
+      "breadcrumb": [
+        "Platform Admin",
+        "Organizations"
+      ],
+      "keywords": [
+        "admin",
+        "organizations",
+        "platform",
+        "platform admin"
+      ],
+      "permission": "platform.admin"
+    },
+    {
+      "id": "platform-admin:permissions",
+      "product": "platform-admin",
+      "label": "Permissions",
+      "pathPattern": "/organizations/:orgId/admin/permissions",
+      "breadcrumb": [
+        "Platform Admin",
+        "Permissions"
+      ],
+      "keywords": [
+        "admin",
+        "permissions",
+        "platform",
+        "platform admin"
+      ],
+      "permission": "platform.admin"
+    },
+    {
+      "id": "platform-admin:sso-configuration",
+      "product": "platform-admin",
+      "label": "SSO Configuration",
+      "pathPattern": "/organizations/:orgId/admin/sso",
+      "breadcrumb": [
+        "Platform Admin",
+        "SSO Configuration"
+      ],
+      "keywords": [
+        "admin",
+        "configuration",
+        "platform",
+        "platform admin",
+        "sso",
+        "sso configuration"
+      ],
+      "permission": "platform.admin"
+    }
+  ]
+}
