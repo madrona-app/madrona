@@ -26,24 +26,24 @@ test.describe('Media Library', () => {
       ).toBeVisible();
 
       // List page: upload button or drag-drop zone visible
-      const hasUpload = await page
-        .getByRole('button', { name: /upload/i })
-        .or(page.locator('[data-testid="upload-zone"]'))
-        .or(page.getByText(/drag.*drop|upload.*files/i))
-        .first()
-        .isVisible()
-        .catch(() => false);
-      expect(hasUpload).toBeTruthy();
+      await expect(
+        page
+          .getByRole('button', { name: /upload/i })
+          .or(page.locator('[data-testid="upload-zone"]'))
+          .or(page.getByText(/drag.*drop|upload.*files/i))
+          .filter({ visible: true })
+          .first()
+      ).toBeVisible({ timeout: 10000 });
 
       // List page: grid/list content or empty state
-      const hasContent = await page
-        .locator('[data-testid="media-grid"], [data-testid="media-list"]')
-        .or(page.locator('.media-grid, .media-list'))
-        .or(page.getByText(/no.*media|no.*assets|upload.*first|get started/i))
-        .first()
-        .isVisible()
-        .catch(() => false);
-      expect(hasContent).toBeTruthy();
+      await expect(
+        page
+          .locator('[data-testid="media-grid"], [data-testid="media-list"]')
+          .or(page.locator('.media-grid, .media-list'))
+          .or(page.getByText(/no.*media|no.*assets|upload.*first|get started/i))
+          .filter({ visible: true })
+          .first()
+      ).toBeVisible({ timeout: 10000 });
 
       // No error boundary
       const errorBoundary = await page.locator('[data-testid="error-boundary"]').count();
@@ -60,13 +60,13 @@ test.describe('Media Library', () => {
         await page.waitForTimeout(500); // debounce
 
         // Should show filtered results or empty state
-        const hasResponse = await page
-          .getByText(/no.*results|no.*media|0 results/i)
-          .or(page.locator('img[alt]')) // still showing results
-          .first()
-          .isVisible({ timeout: 5000 })
-          .catch(() => false);
-        expect(hasResponse).toBeTruthy();
+        await expect(
+          page
+            .getByText(/no.*results|no.*media|0 results/i)
+            .or(page.locator('img[alt]')) // still showing results
+            .filter({ visible: true })
+            .first()
+        ).toBeVisible({ timeout: 10000 });
 
         // Clear search
         await searchInput.clear();
@@ -93,13 +93,13 @@ test.describe('Media Library', () => {
         await page.waitForTimeout(2000);
 
         // Detail page: should show media info
-        const hasDetail = await page
-          .locator('img, video, audio')
-          .or(page.getByText(/filename|title|metadata|details/i))
-          .first()
-          .isVisible()
-          .catch(() => false);
-        expect(hasDetail).toBeTruthy();
+        await expect(
+          page
+            .locator('img, video, audio')
+            .or(page.getByText(/filename|title|metadata|details/i))
+            .filter({ visible: true })
+            .first()
+        ).toBeVisible({ timeout: 10000 });
 
         // No error boundary
         const errorBoundary = await page.locator('[data-testid="error-boundary"]').count();
