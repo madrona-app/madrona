@@ -45,7 +45,11 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # One source for the Node version: frontend/.nvmrc. The image builds
+          # on the same major (frontend/Dockerfile), and nodeVersion.test.ts
+          # fails if the two drift. CI ran Node 20 here while the image shipped
+          # 24, so the release was built on a runtime CI never tested.
+          node-version-file: frontend/.nvmrc
           cache: 'pnpm'
           cache-dependency-path: frontend/pnpm-lock.yaml
 
