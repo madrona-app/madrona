@@ -129,16 +129,19 @@ export function ShipmentLinker({
         );
       }}
       onUnlink={async (s: LinkedShipment) => {
-        // Find the reference linking this shipment to this procedure
+        // Find the reference linking this shipment to this procedure. Throw if
+        // it is missing rather than skip: the list endpoint once omitted
+        // references entirely, and skipping made Unlink a silent no-op.
         const ref = s.references?.find(
           (r) => r.procedure_type === procedureType && r.procedure_id === procedureId
         );
-        if (ref) {
-          await apiFetch(
-            `/organizations/${organizationId}/collections/shipments/${s.shipment_id}/references/${ref.reference_id}`,
-            { method: 'DELETE' }
-          );
+        if (!ref) {
+          throw new Error(`No reference links shipment ${s.shipment_number} to this record`);
         }
+        await apiFetch(
+          `/organizations/${organizationId}/collections/shipments/${s.shipment_id}/references/${ref.reference_id}`,
+          { method: 'DELETE' }
+        );
       }}
       search={{
         title: 'Link Shipment',

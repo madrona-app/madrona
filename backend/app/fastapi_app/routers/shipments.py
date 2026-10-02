@@ -19,7 +19,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy import func, or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
@@ -422,6 +422,20 @@ def get_shipment_enums(
 # =============================================================================
 
 
+def _serialize_list_item(shipment: Shipment) -> dict:
+    """A list row: the shipment without its heavy relations, plus references.
+
+    References ride along because a procedure's Shipments section unlinks by
+    reference_id, and the only shipments it has are the ones this list
+    returned. Without them ShipmentLinker found no reference to delete and
+    did nothing: Unlink was a silent no-op on every procedure. They are a few
+    small rows per shipment, loaded in one selectinload by the caller.
+    """
+    data = _serialize_shipment(shipment, include_relations=False)
+    data["references"] = [_serialize_reference(r) for r in (shipment.references or [])]
+    return data
+
+
 @router.get("/api/organizations/{org_id}/collections/shipments", response_model=ShipmentListResponse, summary="List shipments")
 def list_shipments(
     org_id: UUID,
@@ -469,7 +483,7 @@ def list_shipments(
     )
 
     total = query.count()
-    shipments = query.offset(offset).limit(limit).all()
+    shipments = query.options(selectinload(Shipment.references)).offset(offset).limit(limit).all()
 
     # Summary stats
     all_q = db.query(Shipment).filter(Shipment.organization_id == org_id)
@@ -482,7 +496,7 @@ def list_shipments(
     }
 
     return {
-        "items": [_serialize_shipment(s, include_relations=False) for s in shipments],
+        "items": [_serialize_list_item(s) for s in shipments],
         "summary": summary,
         "total": total,
         "limit": limit,

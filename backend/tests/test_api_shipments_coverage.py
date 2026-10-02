@@ -224,6 +224,41 @@ class TestListShipmentsExpanded:
         assert resp.status_code == 200
         assert resp.get_json()["total"] == 1
 
+    def test_list_items_carry_their_references(self, auth_setup, db_session):
+        """A procedure's Shipments section unlinks by the reference_id it gets
+        from this list. The list used to omit references, so the frontend found
+        nothing to delete and Unlink silently did nothing on every procedure."""
+        auth_client, org, _ = auth_setup
+        shipment = _create_shipment(db_session, org)
+        loan_id = uuid4()
+        ref = ShipmentReference(
+            organization_id=org.organization_id,
+            shipment_id=shipment.shipment_id,
+            procedure_type="loan_out",
+            procedure_id=loan_id,
+        )
+        db_session.add(ref)
+        db_session.commit()
+
+        listed = auth_client.get(f"{_shipments_url(org)}?reference=loan_out:{loan_id}").get_json()
+        refs = listed["items"][0]["references"]
+        assert refs == [
+            {
+                **refs[0],
+                "reference_id": str(ref.reference_id),
+                "procedure_type": "loan_out",
+                "procedure_id": str(loan_id),
+            }
+        ]
+
+        # The reference_id from the list is the one the unlink call needs.
+        resp = auth_client.delete(
+            f"{_shipment_url(org, shipment.shipment_id)}/references/{refs[0]['reference_id']}"
+        )
+        assert resp.status_code == 204
+        after = auth_client.get(f"{_shipments_url(org)}?reference=loan_out:{loan_id}").get_json()
+        assert after["total"] == 0
+
     def test_list_pagination(self, auth_setup, db_session):
         auth_client, org, _ = auth_setup
         for i in range(5):
