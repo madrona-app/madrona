@@ -40,7 +40,10 @@ jobs:
   # ---------------------------------------------------------------------------
   tests:
     name: Tests (PostgreSQL) ${{ matrix.shard }}/6
-    runs-on: ubuntu-latest
+    # Pinned rather than ubuntu-latest, which GitHub moves to a new
+    # Ubuntu release on its own schedule. Upgrade deliberately, in a PR
+    # whose checks pass. Guarded by frontend/src/test/ciRunners.test.ts.
+    runs-on: ubuntu-24.04
 
     # Sharded, and not for speed alone: a single whole-suite job has never
     # completed on a hosted runner here. The runs that finished (15m, 18m) were
@@ -226,7 +229,7 @@ jobs:
   # ---------------------------------------------------------------------------
   coverage:
     name: Coverage Gate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: tests
     # Run even when a shard failed: the coverage number is still worth having,
     # and a failing shard already fails the workflow on its own.
@@ -279,7 +282,7 @@ jobs:
   # ---------------------------------------------------------------------------
   migration-smoke:
     name: Migration Smoke Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4
@@ -356,7 +359,7 @@ jobs:
   # ---------------------------------------------------------------------------
   api-sweep:
     name: API Sweep (every endpoint)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     # Postgres is started as a step, from docker/postgres; see the tests job.
     services:
@@ -597,7 +600,7 @@ jobs:
   # ---------------------------------------------------------------------------
   schema-audit:
     name: Schema Usage Audit
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4

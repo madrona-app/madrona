@@ -37,7 +37,10 @@ on:
 jobs:
   e2e-tests:
     name: Playwright E2E Tests (${{ matrix.shard }}/4)
-    runs-on: ubuntu-latest
+    # Pinned rather than ubuntu-latest, which GitHub moves to a new
+    # Ubuntu release on its own schedule. Upgrade deliberately, in a PR
+    # whose checks pass. Guarded by frontend/src/test/ciRunners.test.ts.
+    runs-on: ubuntu-24.04
     # Sharded because one job could not hold the suite: ~550 tests at 2
     # workers ran past the limit on every run, with the report unwritten.
     # Most of that time was the page sweeps waiting out clicks the Guide
@@ -309,7 +312,7 @@ jobs:
 
   visual-regression:
     name: Visual Regression Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     # Only run visual regression tests on specific label or manual trigger
     if: contains(github.event.pull_request.labels.*.name, 'visual-test') || github.event_name == 'workflow_dispatch'

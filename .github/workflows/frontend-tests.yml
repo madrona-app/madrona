@@ -32,7 +32,10 @@ on:
 jobs:
   test:
     name: Lint, Typecheck & Test
-    runs-on: ubuntu-latest
+    # Pinned rather than ubuntu-latest, which GitHub moves to a new
+    # Ubuntu release on its own schedule. Upgrade deliberately, in a PR
+    # whose checks pass. Guarded by frontend/src/test/ciRunners.test.ts.
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4
