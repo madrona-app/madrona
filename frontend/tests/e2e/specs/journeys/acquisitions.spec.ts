@@ -73,12 +73,12 @@ test.describe('Acquisitions', () => {
       ).toBeVisible();
 
       // Form page: at least one form section visible
-      const hasFormSection = await page
-        .getByText(/acquisition information|source information/i)
-        .first()
-        .isVisible()
-        .catch(() => false);
-      expect(hasFormSection).toBeTruthy();
+      await expect(
+        page
+          .getByText(/acquisition information|source information/i)
+          .filter({ visible: true })
+          .first()
+      ).toBeVisible({ timeout: 10000 });
     });
   });
 
@@ -104,12 +104,12 @@ test.describe('Acquisitions', () => {
       await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
 
       // Detail page: title/header visible
-      const hasHeader = await page
-        .getByRole('heading')
-        .first()
-        .isVisible({ timeout: 10000 })
-        .catch(() => false);
-      expect(hasHeader).toBeTruthy();
+      await expect(
+        page
+          .getByRole('heading')
+          .filter({ visible: true })
+          .first()
+      ).toBeVisible({ timeout: 10000 });
 
       // No error boundary
       const errorBoundary = await page.locator('[data-testid="error-boundary"]').count();

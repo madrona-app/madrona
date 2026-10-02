@@ -30,13 +30,13 @@ test.describe('Object Entry', () => {
       ).toBeVisible();
 
       // List page: table/grid or empty-state message visible
-      const hasContent = await page
-        .locator('table, [role="grid"], [data-testid="empty-state"]')
-        .or(page.getByText(/no.*entries|no.*records|get started/i))
-        .first()
-        .isVisible()
-        .catch(() => false);
-      expect(hasContent).toBeTruthy();
+      await expect(
+        page
+          .locator('table, [role="grid"], [data-testid="empty-state"]')
+          .or(page.getByText(/no.*entries|no.*records|get started/i))
+          .filter({ visible: true })
+          .first()
+      ).toBeVisible({ timeout: 10000 });
     });
 
     test('can navigate to create entry page', async ({ page, orgId }) => {
@@ -102,13 +102,13 @@ test.describe('Object Entry', () => {
         await expect(page.getByRole('heading').first()).toBeVisible({ timeout: 10000 });
 
         // Detail page: at least one data section visible
-        const hasSection = await page
-          .locator('[data-section-id], section, .workspace-section')
-          .or(page.getByText(/depositor|objects|insurance|status/i))
-          .first()
-          .isVisible()
-          .catch(() => false);
-        expect(hasSection).toBeTruthy();
+        await expect(
+          page
+            .locator('[data-section-id], section, .workspace-section')
+            .or(page.getByText(/depositor|objects|insurance|status/i))
+            .filter({ visible: true })
+            .first()
+        ).toBeVisible({ timeout: 10000 });
 
         // No error boundary visible
         const errorBoundary = await page.locator('[data-testid="error-boundary"]').count();

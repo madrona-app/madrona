@@ -19,14 +19,14 @@ test.describe('Search & Filter', () => {
       await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
 
       // List page: card grid, table, or empty-state message visible
-      const hasContent = await page
-        .locator('table, [role="grid"], .grid, [class*="grid"]')
-        .or(page.locator('img[alt]').first()) // object thumbnail cards
-        .or(page.getByText(/no.*objects|no.*records|get started/i))
-        .first()
-        .isVisible()
-        .catch(() => false);
-      expect(hasContent).toBeTruthy();
+      await expect(
+        page
+          .locator('table, [role="grid"], .grid, [class*="grid"]')
+          .or(page.locator('img[alt]').first()) // object thumbnail cards
+          .or(page.getByText(/no.*objects|no.*records|get started/i))
+          .filter({ visible: true })
+          .first()
+      ).toBeVisible({ timeout: 10000 });
     });
 
     test('search input filters results', async ({ page, orgId }) => {
@@ -96,12 +96,12 @@ test.describe('Search & Filter', () => {
         await page.waitForTimeout(500);
 
         // Filter panel should show options
-        const hasFilterOptions = await page
-          .getByText(/status|type|classification|department/i)
-          .first()
-          .isVisible()
-          .catch(() => false);
-        expect(hasFilterOptions).toBeTruthy();
+        await expect(
+          page
+            .getByText(/status|type|classification|department/i)
+            .filter({ visible: true })
+            .first()
+        ).toBeVisible({ timeout: 10000 });
       }
     });
   });
