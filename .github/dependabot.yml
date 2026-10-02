@@ -1,20 +1,15 @@
 version: 2
 
-# Version updates are PAUSED (open-pull-requests-limit: 0).
+# Version updates arrive grouped: one PR per ecosystem per week, minor and
+# patch only. Major versions are ignored here and taken deliberately.
 #
-# They were opening up to 40 PRs a week across four ecosystems, and every one
-# of them was auto-closed the next time main's root commit was rewritten —
-# a rewritten branch has no common ancestor, so GitHub closes the PR and
-# Dependabot comments on the way out. Two closure storms so far: 26 PRs on
-# 2026-09-18, 20 more on 2026-09-21.
+# They were paused (open-pull-requests-limit: 0) while main's root commit was
+# still being rewritten before launch: a rewritten branch shares no ancestor
+# with an open PR, so GitHub closes it, and two rewrites closed 46 Dependabot
+# PRs. main is now protected — no force pushes — so the limits are back.
 #
-# Re-enable at launch, once history is stable: set the limits below back to a
-# real number. The grouping and major-version rules are already in place so
-# that when it comes back it arrives as ~4 PRs a week, not ~40.
-#
-# This does NOT affect Dependabot SECURITY updates, which are a separate
-# feature driven by Dependabot alerts (enabled on this repo) and are not
-# subject to open-pull-requests-limit.
+# This does not affect Dependabot SECURITY updates, which are driven by
+# Dependabot alerts and are not subject to open-pull-requests-limit.
 
 updates:
   # Backend Python dependencies
@@ -24,7 +19,7 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 0
+    open-pull-requests-limit: 5
     groups:
       backend:
         patterns: ["*"]
@@ -42,7 +37,7 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 0
+    open-pull-requests-limit: 5
     groups:
       frontend:
         patterns: ["*"]
@@ -53,16 +48,26 @@ updates:
       - "dependencies"
       - "frontend"
 
-  # Docker base images
+  # Docker base images — every Dockerfile we build and publish. The frontend
+  # and postgres images ship in every release (ghcr.io/<owner>/madrona-*)
+  # but were not watched, so their base images' fixes went unseen. Majors are
+  # ignored like everywhere else: node:24 must also match frontend/.nvmrc
+  # (src/test/nodeVersion.test.ts), and pg16 is the database's major version.
   - package-ecosystem: "docker"
-    directory: "/backend"
+    directories:
+      - "/backend"
+      - "/frontend"
+      - "/docker/postgres"
     target-branch: "main"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 0
+    open-pull-requests-limit: 5
     groups:
       docker:
         patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     labels:
       - "dependencies"
       - "docker"
@@ -73,7 +78,7 @@ updates:
     target-branch: "main"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 0
+    open-pull-requests-limit: 5
     groups:
       actions:
         patterns: ["*"]
