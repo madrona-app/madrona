@@ -169,6 +169,27 @@ docker compose exec backend python -m seeds.bootstrap_admin \
   --org-name "Your Museum" --platform-admin
 ```
 
+#### Load the demo collection (optional)
+
+To look around with real content instead of an empty install, load the sample
+collection into your organization:
+
+```bash
+docker compose exec backend python -m seeds.seed_demo_collection
+```
+
+It adds about 150 cataloged objects with images, drawn from Met, Smithsonian
+and Rijksmuseum open-access records, plus the reference data around them
+(locations, contacts, vocabularies) and worked procedures: acquisitions,
+loans, exhibitions, conservation and condition reports. Everything comes from
+fixtures in this repository, so it needs no API keys and no network.
+
+- It goes into the first organization it finds. Pass `--org-slug <slug>` to
+  choose one.
+- It takes a few minutes.
+- It is **not idempotent**: running it twice adds every record twice. Load it
+  into an organization you can throw away, not one holding your own data.
+
 For development with hot reload:
 
 ```bash
