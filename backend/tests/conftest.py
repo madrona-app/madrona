@@ -26,6 +26,7 @@ teardown, so tests are isolated without repeated DDL.
 import os
 import sys
 import time as _time
+import warnings
 
 # Run the suite in UTC, because the application does.
 #
@@ -414,6 +415,43 @@ def _serialize_schema_ddl(engine):
                 lock_engine.dispose()
 
 
+def _terminate_stray_connections(engine):
+    """Close every other client connection to this test database.
+
+    Called by test_engine's teardown just before it drops the schemas. DROP
+    needs an exclusive lock, so one connection left open in a transaction — a
+    leak from some test or code path — made the teardown wait until
+    pytest-timeout killed it at 120 s. That failed a shard whose tests had all
+    passed, and blamed whichever test the worker ran last (#14).
+
+    The database is about to be thrown away, so stray connections are
+    terminated rather than waited on. Each is reported first, with what it was
+    doing: the leak should stay visible, not be silently papered over.
+
+    Only client backends on the current database are touched — not this
+    connection, not other xdist workers (each has its own database), and not
+    the maintenance-database connection holding _serialize_schema_ddl's lock.
+    """
+    with engine.connect() as conn:
+        stray = conn.execute(
+            text(
+                "SELECT pid, state, now() - state_change, left(query, 200) "
+                "FROM pg_stat_activity "
+                "WHERE datname = current_database() "
+                "AND pid <> pg_backend_pid() "
+                "AND backend_type = 'client backend'"
+            )
+        ).fetchall()
+        for pid, state, in_state, query in stray:
+            warnings.warn(
+                f"test teardown: terminating a connection still open on the test "
+                f"database (pid {pid}, {state} for {in_state}): {query!r}",
+                stacklevel=1,
+            )
+            conn.execute(text("SELECT pg_terminate_backend(:pid)"), {"pid": pid})
+        conn.commit()
+
+
 @pytest.fixture(scope="session")
 def test_engine():
     """Session-scoped postgres engine with schemas + extensions + full schema."""
@@ -463,6 +501,7 @@ def test_engine():
     # linearize. DROP SCHEMA CASCADE sidesteps the sort entirely and is
     # equivalent for a test DB we're going to throw away anyway.
     with _serialize_schema_ddl(engine):
+        _terminate_stray_connections(engine)
         with engine.begin() as conn:
             conn.execute(text('DROP TABLE IF EXISTS public.alembic_version'))
             for schema in _SCHEMAS:
