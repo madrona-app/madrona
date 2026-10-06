@@ -26,6 +26,13 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+      # The rule above did not hold for mcp: Dependabot rewrote
+      # mcp>=1.9.0,<2.0.0 as >=2.3.0,<3.0.0 (#20). mcp 2.0 removed
+      # mcp.server.fastmcp, which the MCP server router imports: the API
+      # still starts, but /mcp is not mounted. Lift this together with a port
+      # to the 2.x API.
+      - dependency-name: "mcp"
+        versions: [">=2.0.0"]
     labels:
       - "dependencies"
       - "backend"
