@@ -24,6 +24,38 @@ describe('SlideOver', () => {
     expect(container.firstChild).toBeNull();
   });
 
+  it('is a modal dialog named by its title', () => {
+    renderSlide();
+    const dialog = screen.getByRole('dialog', { name: 'My Panel' });
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+  });
+
+  it('is described by its subtitle when there is one', () => {
+    renderSlide({ subtitle: 'A small descriptor' });
+    expect(screen.getByRole('dialog')).toHaveAccessibleDescription('A small descriptor');
+  });
+
+  it('has no description without a subtitle', () => {
+    renderSlide();
+    expect(screen.getByRole('dialog')).not.toHaveAttribute('aria-describedby');
+  });
+
+  it('names each of two open panels by its own title', () => {
+    render(
+      <>
+        <SlideOver isOpen onClose={() => {}} title="First">a</SlideOver>
+        <SlideOver isOpen onClose={() => {}} title="Second">b</SlideOver>
+      </>,
+    );
+    expect(screen.getByRole('dialog', { name: 'First' })).toHaveTextContent('a');
+    expect(screen.getByRole('dialog', { name: 'Second' })).toHaveTextContent('b');
+  });
+
+  it('moves focus to the dialog when it opens', () => {
+    renderSlide();
+    expect(screen.getByRole('dialog')).toHaveFocus();
+  });
+
   it('renders the title', () => {
     renderSlide();
     expect(screen.getByText('My Panel')).toBeInTheDocument();
