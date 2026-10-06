@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { getModalAriaProps } from '../../hooks/useAccessibleModal';
 
 interface SlideOverProps {
   isOpen: boolean;
@@ -30,6 +31,9 @@ export function SlideOver({
 }: SlideOverProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
+  // Per instance, so two panels open at once never share an id.
+  const titleId = useId();
+  const subtitleId = useId();
 
   // Close on Escape key — only if no higher-z modal is open
   useEffect(() => {
@@ -60,7 +64,7 @@ export function SlideOver({
     };
   }, [isOpen]);
 
-  // Focus trap
+  // Move focus into the panel
   useEffect(() => {
     if (isOpen && panelRef.current) {
       panelRef.current.focus();
@@ -90,7 +94,7 @@ export function SlideOver({
       <div className="fixed inset-x-0 bottom-0 flex max-h-[92dvh] sm:inset-y-0 sm:right-0 sm:bottom-auto sm:left-auto sm:max-h-none sm:max-w-full sm:pl-10">
         <div
           ref={panelRef}
-          tabIndex={-1}
+          {...getModalAriaProps(titleId, subtitle ? subtitleId : undefined)}
           className={`relative w-full sm:w-screen ${WIDTH_CLASSES[width]} transform transition-transform duration-300 ease-in-out animate-slide-up sm:animate-slide-in-right`}
         >
           <div
@@ -105,11 +109,11 @@ export function SlideOver({
             <div className="px-6 py-5 border-b border-lichen">
               <div className="flex items-start justify-between">
                 <div>
-                  <h2 className="text-xl font-serif font-semibold text-forest">
+                  <h2 id={titleId} className="text-xl font-serif font-semibold text-forest">
                     {title}
                   </h2>
                   {subtitle && (
-                    <p className="mt-1 text-sm text-archive">{subtitle}</p>
+                    <p id={subtitleId} className="mt-1 text-sm text-archive">{subtitle}</p>
                   )}
                 </div>
                 <button

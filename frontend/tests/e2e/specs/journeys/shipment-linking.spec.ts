@@ -175,9 +175,9 @@ test.describe('Shipment Link/Unlink Flow', () => {
   // Loans Out, the most common shipping scenario. Every step asserts. This
   // test used to wrap each step in an isVisible() guard with no expect() and
   // pass whether or not linking worked; its dialog selectors looked for
-  // [role="dialog"], which SlideOver does not set, so the guarded steps never
-  // even ran. It also borrowed whatever loan out happened to exist, which the
-  // E2E seed does not create. It now makes what it needs.
+  // [role="dialog"], which SlideOver did not set then, so the guarded steps
+  // never even ran. It also borrowed whatever loan out happened to exist, which
+  // the E2E seed does not create. It now makes what it needs.
   test('Loans Out — create shipment, link, verify, unlink', async ({ page, apiHelpers, orgId }) => {
     test.setTimeout(120000);
 
@@ -207,10 +207,7 @@ test.describe('Shipment Link/Unlink Flow', () => {
       // An empty section offers Link Shipment twice (header and empty state);
       // both open the same slide-over.
       await section.getByRole('button', { name: 'Link Shipment' }).first().click();
-      // SlideOver has no dialog role yet, so anchor on its focus panel.
-      const panel = page
-        .locator('[tabindex="-1"]')
-        .filter({ has: page.getByRole('heading', { name: 'Link Shipment' }) });
+      const panel = page.getByRole('dialog', { name: 'Link Shipment' });
       await expect(panel).toBeVisible();
       await panel.getByPlaceholder('Search by shipment number...').fill(shipment.shipment_number);
       await panel.getByRole('button', { name: shipment.shipment_number }).click();
