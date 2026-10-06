@@ -114,7 +114,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Build and start madrona-postgres (matches local image)
         run: |
@@ -143,7 +143,7 @@ jobs:
 
       # Backend setup
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -228,12 +228,12 @@ jobs:
 
       # Frontend setup
       - name: Set up pnpm
-        uses: pnpm/action-setup@v3
+        uses: pnpm/action-setup@v6
         with:
           version: 10
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           # One source for the Node version: frontend/.nvmrc. The image builds
           # on the same major (frontend/Dockerfile), and nodeVersion.test.ts
@@ -295,7 +295,7 @@ jobs:
       # Upload artifacts on failure. Named per shard: upload-artifact@v4
       # rejects a second artifact with the same name in one run.
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: playwright-report-${{ matrix.shard }}
@@ -303,7 +303,7 @@ jobs:
           retention-days: 30
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: test-results-${{ matrix.shard }}
@@ -371,7 +371,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Build and start madrona-postgres (matches local image)
         run: |
@@ -397,7 +397,7 @@ jobs:
 
       # Backend setup (same as e2e-tests job)
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -479,12 +479,12 @@ jobs:
 
       # Frontend setup
       - name: Set up pnpm
-        uses: pnpm/action-setup@v3
+        uses: pnpm/action-setup@v6
         with:
           version: 10
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           # One source for the Node version: frontend/.nvmrc. The image builds
           # on the same major (frontend/Dockerfile), and nodeVersion.test.ts
@@ -537,7 +537,7 @@ jobs:
           CI: true
 
       - name: Upload visual test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: visual-test-results
