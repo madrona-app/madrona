@@ -288,9 +288,11 @@ export class ApiHelpers {
   }
 
   /**
-   * Create a shipment via API. Returns its id.
+   * Create a shipment via API. Returns its id and its generated number.
    */
-  async createShipment(data: Record<string, unknown>): Promise<string> {
+  async createShipment(
+    data: Record<string, unknown>
+  ): Promise<{ shipment_id: string; shipment_number: string }> {
     const response = await this.request.post(
       `${this.baseUrl}/api/organizations/${this.orgId}/collections/shipments`,
       {
@@ -304,7 +306,53 @@ export class ApiHelpers {
       throw new Error(`Failed to create shipment: ${response.status()} - ${body}`);
     }
 
-    return ((await response.json()) as { shipment_id: string }).shipment_id;
+    return (await response.json()) as { shipment_id: string; shipment_number: string };
+  }
+
+  /**
+   * Ids of the shipments that reference a procedure — what the procedure's
+   * Shipments section lists.
+   */
+  async shipmentsReferencing(procedureType: string, procedureId: string): Promise<string[]> {
+    const response = await this.request.get(
+      `${this.baseUrl}/api/organizations/${this.orgId}/collections/shipments` +
+        `?reference=${procedureType}:${procedureId}&limit=50`
+    );
+    if (!response.ok()) {
+      throw new Error(`Failed to list shipments: ${response.status()} - ${await response.text()}`);
+    }
+    const { items } = (await response.json()) as { items: { shipment_id: string }[] };
+    return items.map((s) => s.shipment_id);
+  }
+
+  /**
+   * A loan out the shipment-link spec can use. The E2E seed creates none, and
+   * the API has no delete for loans out, so this reuses the one an earlier run
+   * created (found by its note) rather than adding another every run.
+   */
+  async getOrCreateLoanOut(): Promise<string> {
+    const marker = 'E2E shipment-link loan';
+    const found = await this.request.get(
+      `${this.baseUrl}/api/organizations/${this.orgId}/collections/loans-out` +
+        `?q=${encodeURIComponent(marker)}&limit=1`
+    );
+    if (!found.ok()) {
+      throw new Error(`Failed to list loans out: ${found.status()} - ${await found.text()}`);
+    }
+    const { items } = (await found.json()) as { items: { loan_out_id: string }[] };
+    if (items.length > 0) return items[0].loan_out_id;
+
+    const created = await this.request.post(
+      `${this.baseUrl}/api/organizations/${this.orgId}/collections/loans-out`,
+      {
+        data: { loan_purpose: 'research', loan_note: `${marker} — safe to delete` },
+        headers: await this.mutatingHeaders({ 'Content-Type': 'application/json' }),
+      }
+    );
+    if (!created.ok()) {
+      throw new Error(`Failed to create loan out: ${created.status()} - ${await created.text()}`);
+    }
+    return ((await created.json()) as { loan_out_id: string }).loan_out_id;
   }
 
   /**

@@ -172,116 +172,74 @@ test.describe('Shipment Section Interaction', () => {
 // =============================================================================
 
 test.describe('Shipment Link/Unlink Flow', () => {
-  // Use Loans Out as the test case — most common shipping scenario
+  // Loans Out, the most common shipping scenario. Every step asserts. This
+  // test used to wrap each step in an isVisible() guard with no expect() and
+  // pass whether or not linking worked; its dialog selectors looked for
+  // [role="dialog"], which SlideOver does not set, so the guarded steps never
+  // even ran. It also borrowed whatever loan out happened to exist, which the
+  // E2E seed does not create. It now makes what it needs.
   test('Loans Out — create shipment, link, verify, unlink', async ({ page, apiHelpers, orgId }) => {
     test.setTimeout(120000);
 
-    // Step 1: Find a loan out record
-    await page.goto(`${collectionsBase(orgId)}/loans-out`, { waitUntil: 'domcontentloaded', timeout: 20000 });
-    await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
-
-    const firstLink = page.locator('table tbody tr').first();
-    const hasRecords = await firstLink.isVisible({ timeout: 8000 }).catch(() => false);
-
-    if (!hasRecords) {
-      test.skip();
-      return;
-    }
-
-    await firstLink.click({ timeout: 5000 });
-    await page.waitForURL(/\/loans-out\/[a-f0-9-]+/, { timeout: 15000 }).catch(() => {});
-    await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
-
-    const loanUrl = page.url();
-    const loanId = loanUrl.match(/loans-out\/([a-f0-9-]+)/)?.[1];
-    expect(loanId).toBeTruthy();
-
-    // Step 2: Create a test shipment via API.
-    //
-    // A failure here fails the test. It used to skip, and the raw POST it
-    // made sent no CSRF token, so every run got a 403 and skipped: the
-    // link/unlink steps below had never once executed, in CI or anywhere,
-    // and the suite reported the spec as passing. ApiHelpers adds the token.
-    const shipmentId = await apiHelpers.createShipment({
+    const loanId = await apiHelpers.getOrCreateLoanOut();
+    const shipment = await apiHelpers.createShipment({
       shipment_type: 'outbound',
       direction: 'outbound',
       purpose: 'loan',
       remarks: 'E2E test shipment — safe to delete',
     });
 
-    console.log(`  Created test shipment: ${shipmentId}`);
-
     try {
-      // Step 3: Enter edit mode
-      const editButton = page.getByRole('button', { name: /edit/i }).first();
-      if (await editButton.isVisible().catch(() => false)) {
-        await editButton.click();
-        await page.waitForTimeout(500);
+      // Edit mode has its own URL, and the Shipments section only offers
+      // Link and Unlink in edit mode.
+      await page.goto(`${collectionsBase(orgId)}/loans-out/${loanId}/edit`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 20000,
+      });
+      const section = page.locator('#section-shipments');
+      await expect(section).toBeVisible({ timeout: 15000 });
+      const header = section.locator('[aria-expanded]').first();
+      if ((await header.getAttribute('aria-expanded')) === 'false') {
+        await header.click();
       }
 
-      // Step 4: Expand Shipments section
-      const sectionHeader = page.locator(
-        '[aria-expanded]:has-text("Shipments")'
-      ).first();
+      // Link: search for this test's own shipment, not the first SHP- result.
+      // An empty section offers Link Shipment twice (header and empty state);
+      // both open the same slide-over.
+      await section.getByRole('button', { name: 'Link Shipment' }).first().click();
+      // SlideOver has no dialog role yet, so anchor on its focus panel.
+      const panel = page
+        .locator('[tabindex="-1"]')
+        .filter({ has: page.getByRole('heading', { name: 'Link Shipment' }) });
+      await expect(panel).toBeVisible();
+      await panel.getByPlaceholder('Search by shipment number...').fill(shipment.shipment_number);
+      await panel.getByRole('button', { name: shipment.shipment_number }).click();
+      await panel.getByRole('button', { name: 'Link Shipment' }).click();
+      await expect(panel).toBeHidden();
 
-      if (await sectionHeader.isVisible().catch(() => false)) {
-        const isExpanded = await sectionHeader.getAttribute('aria-expanded');
-        if (isExpanded === 'false') {
-          await sectionHeader.click();
-          await page.waitForTimeout(300);
-        }
-      }
+      // Linked: shown in the section, and recorded on the server.
+      await expect(section.getByText(shipment.shipment_number)).toBeVisible();
+      expect(await apiHelpers.shipmentsReferencing('loan_out', loanId)).toContain(
+        shipment.shipment_id
+      );
 
-      // Step 5: Click "Link Shipment" button
-      const linkButton = page.getByRole('button', { name: /link shipment/i }).first();
-      const linkVisible = await linkButton.isVisible({ timeout: 3000 }).catch(() => false);
+      // Unlink, from this shipment's own row.
+      const row = section
+        .locator('div')
+        .filter({ hasText: shipment.shipment_number })
+        .filter({ has: page.getByRole('button', { name: 'Unlink' }) })
+        .last();
+      await row.getByRole('button', { name: 'Unlink' }).click();
 
-      if (linkVisible) {
-        await linkButton.click();
-        await page.waitForTimeout(500);
-
-        // Step 6: Search for the shipment in the slide-over
-        const searchInput = page.locator(
-          '[role="dialog"] input[type="text"], [role="dialog"] input[placeholder*="Search"]'
-        ).first();
-
-        if (await searchInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-          // Type the shipment number prefix
-          await searchInput.fill('SHP-');
-          await page.waitForTimeout(1000); // Wait for search results
-
-          // Look for our shipment in results and click it
-          const searchResult = page.locator('[role="dialog"]').locator('text=/SHP-/').first();
-          if (await searchResult.isVisible({ timeout: 3000 }).catch(() => false)) {
-            await searchResult.click();
-            await page.waitForTimeout(300);
-
-            // Click submit/link button in dialog
-            const submitButton = page.locator('[role="dialog"]').getByRole('button', { name: /link/i }).first();
-            if (await submitButton.isVisible().catch(() => false)) {
-              await submitButton.click();
-              await page.waitForTimeout(1000);
-            }
-          }
-        }
-
-        // Dismiss dialog
-        await page.keyboard.press('Escape');
-        await page.waitForTimeout(300);
-      }
-
-      // Step 7: Verify the shipment appears in the section
-      // (It may or may not be there depending on search results)
-      await page.waitForTimeout(500);
-
+      // Unlinked: gone from the section and from the server.
+      await expect(section.getByText(shipment.shipment_number)).toHaveCount(0);
+      expect(await apiHelpers.shipmentsReferencing('loan_out', loanId)).not.toContain(
+        shipment.shipment_id
+      );
     } finally {
-      // Step 8: Cleanup — delete the test shipment
-      try {
-        await apiHelpers.deleteShipment(shipmentId);
-        console.log(`  Cleaned up test shipment: ${shipmentId}`);
-      } catch {
-        console.warn(`  Failed to cleanup test shipment: ${shipmentId}`);
-      }
+      await apiHelpers.deleteShipment(shipment.shipment_id).catch(() => {
+        console.warn(`  Failed to clean up test shipment ${shipment.shipment_id}`);
+      });
     }
   });
 });

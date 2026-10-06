@@ -107,18 +107,25 @@ describe('ShipmentLinker', () => {
     );
   });
 
-  it('onUnlink does nothing when no matching reference is found', async () => {
+  it('onUnlink rejects, without calling the API, when no matching reference is found', async () => {
+    // It used to resolve quietly here. With the list endpoint omitting
+    // references, that made Unlink a silent no-op on every procedure; a
+    // missing reference is now an error the user sees.
     apiFetchMock.mockResolvedValue({ items: [], total: 0 });
     renderLinker();
     apiFetchMock.mockClear();
     const onUnlink = recordLinkerCalls.at(-1)!.onUnlink as (s: {
       shipment_id: string;
+      shipment_number: string;
       references: Array<{ reference_id: string; procedure_type: string; procedure_id: string }>;
     }) => Promise<void>;
-    await onUnlink({
-      shipment_id: 'sh-1',
-      references: [{ reference_id: 'r-1', procedure_type: 'loan_out', procedure_id: 'other' }],
-    });
+    await expect(
+      onUnlink({
+        shipment_id: 'sh-1',
+        shipment_number: 'SHP-001',
+        references: [{ reference_id: 'r-1', procedure_type: 'loan_out', procedure_id: 'other' }],
+      }),
+    ).rejects.toThrow('No reference links shipment SHP-001 to this record');
     expect(apiFetchMock).not.toHaveBeenCalled();
   });
 
