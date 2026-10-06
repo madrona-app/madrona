@@ -13,4 +13,4 @@
 #     audio uploads still work without it; they simply carry no embedded tag
 #     metadata (duration, bitrate, artist, album).
 
-mutagen>=1.47.0
+mutagen>=1.48.1
