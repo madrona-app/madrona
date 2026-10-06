@@ -1,4 +1,4 @@
-FROM pgvector/pgvector:0.8.0-pg16
+FROM pgvector/pgvector:0.8.7-pg16
 
 # Add PostGIS
 RUN apt-get update && \
