@@ -107,7 +107,7 @@ jobs:
       CANONICAL_VALIDATION_MODE: error
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Free up runner disk
         run: |
@@ -117,7 +117,7 @@ jobs:
           df -h /
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
           cache: 'pip'
@@ -222,7 +222,7 @@ jobs:
         # combine step below should report on what ran rather than silently
         # under-counting.
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-shard-${{ matrix.shard }}
           path: backend/.coverage
@@ -246,10 +246,10 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
@@ -257,7 +257,7 @@ jobs:
         run: pip install coverage
 
       - name: Download shard fragments
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: coverage-shard-*
           path: fragments
@@ -280,7 +280,7 @@ jobs:
           coverage xml
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
         with:
           files: backend/coverage.xml
           flags: backend-tests
@@ -294,7 +294,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Free up runner disk
         run: |
@@ -304,7 +304,7 @@ jobs:
           df -h /
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
           cache: 'pip'
@@ -431,7 +431,7 @@ jobs:
       AWS_REGION: us-west-2
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Free up runner disk
         run: |
@@ -441,7 +441,7 @@ jobs:
           df -h /
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
           cache: 'pip'
@@ -589,7 +589,7 @@ jobs:
 
       - name: Upload the API log (on failure)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: api-sweep-app-log
           path: /tmp/api.log
@@ -598,7 +598,7 @@ jobs:
 
       - name: Upload sweep results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: api-sweep-results
           path: /tmp/sweep.json
@@ -612,10 +612,10 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
@@ -643,7 +643,7 @@ jobs:
           cat schema-summary.txt
 
       - name: Upload audit artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: schema-audit-report
           path: |
