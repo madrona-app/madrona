@@ -43,7 +43,9 @@ The section header is a clickable div/button with the section name as text conte
 
 ### Custom modals
 Admin pages use custom overlay modals, not native `<dialog>` or `role="dialog"`.
-Don't use `getByRole('dialog')`. Instead, assert on the modal's heading: `getByRole('heading', { name: /invite user/i })`.
+For those, don't use `getByRole('dialog')`. Instead, assert on the modal's heading: `getByRole('heading', { name: /invite user/i })`.
+
+Slide-over panels are different: `SlideOver` (every record linker, and the other panels built on it) is a dialog named by its title, so use `getByRole('dialog', { name: 'Link Shipment' })`.
 
 ## Button text reference
 
