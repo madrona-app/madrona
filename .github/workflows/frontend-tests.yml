@@ -29,6 +29,15 @@ on:
   pull_request:
     branches: [main]
 
+# One run per branch or PR at a time. A newer push cancels the run it
+# supersedes: each run tests everything up to its own commit, so an older run
+# still queued or in progress only delays the one that matters. Without this,
+# merging five PRs back to back queued five full runs on main, and open PRs
+# waited behind them.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Lint, Typecheck & Test

@@ -34,6 +34,15 @@ on:
         default: false
         type: boolean
 
+# One run per branch or PR at a time. A newer push cancels the run it
+# supersedes: each run tests everything up to its own commit, so an older run
+# still queued or in progress only delays the one that matters. Without this,
+# merging five PRs back to back queued five full runs on main, and open PRs
+# waited behind them.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   e2e-tests:
     name: Playwright E2E Tests (${{ matrix.shard }}/4)
