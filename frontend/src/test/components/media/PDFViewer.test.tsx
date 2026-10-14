@@ -58,43 +58,37 @@ describe('PDFViewer', () => {
   it('shows page navigation after document loads', async () => {
     render(<PDFViewer url="http://x/file.pdf" />);
     // The mocked Document fires onLoadSuccess on next tick
-    await new Promise((r) => setTimeout(r, 10));
-    expect(screen.getByText('Page 1 of 5')).toBeInTheDocument();
+    expect(await screen.findByText('Page 1 of 5')).toBeInTheDocument();
   });
 
   it('disables Previous on page 1', async () => {
     render(<PDFViewer url="http://x/file.pdf" />);
-    await new Promise((r) => setTimeout(r, 10));
-    const prev = screen.getByLabelText('Previous page');
+    const prev = await screen.findByLabelText('Previous page');
     expect(prev).toBeDisabled();
   });
 
   it('navigates to next page when Next clicked', async () => {
     render(<PDFViewer url="http://x/file.pdf" />);
-    await new Promise((r) => setTimeout(r, 10));
-    fireEvent.click(screen.getByLabelText('Next page'));
+    fireEvent.click(await screen.findByLabelText('Next page'));
     expect(screen.getByText('Page 2 of 5')).toBeInTheDocument();
   });
 
   it('shows error fallback when load fails', async () => {
     __PDF_FAIL = true;
     render(<PDFViewer url="http://x/file.pdf" />);
-    await new Promise((r) => setTimeout(r, 10));
-    expect(screen.getByText('Unable to render PDF preview')).toBeInTheDocument();
+    expect(await screen.findByText('Unable to render PDF preview')).toBeInTheDocument();
   });
 
   it('uses downloadUrl when provided', async () => {
     __PDF_FAIL = true;
     render(<PDFViewer url="http://x/file.pdf" downloadUrl="http://x/download.pdf" />);
-    await new Promise((r) => setTimeout(r, 10));
-    const link = screen.getByText('Open File').closest('a');
+    const link = (await screen.findByText('Open File')).closest('a');
     expect(link).toHaveAttribute('href', 'http://x/download.pdf');
   });
 
   it('shows Open File link in error state', async () => {
     __PDF_FAIL = true;
     render(<PDFViewer url="http://x/file.pdf" />);
-    await new Promise((r) => setTimeout(r, 10));
-    expect(screen.getByText('Open File')).toBeInTheDocument();
+    expect(await screen.findByText('Open File')).toBeInTheDocument();
   });
 });

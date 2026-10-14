@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { SuggestionCard } from '../../components/SuggestionCard';
 import type { Suggestion } from '../../types/assistance';
 
@@ -213,9 +213,7 @@ describe('SuggestionCard', () => {
       expect(screen.getByText('Copied')).toBeInTheDocument();
     });
 
-    it('reverts copy button text after timeout', async () => {
-      vi.useRealTimers(); // Use real timers for this test
-
+    it('reverts copy button text after timeout', () => {
       render(
         <SuggestionCard
           suggestion={baseSuggestion}
@@ -227,9 +225,14 @@ describe('SuggestionCard', () => {
 
       expect(screen.getByText('Copied')).toBeInTheDocument();
 
-      // Wait for timeout
-      await new Promise((resolve) => setTimeout(resolve, 2100));
+      act(() => {
+        vi.advanceTimersByTime(1999);
+      });
+      expect(screen.getByText('Copied')).toBeInTheDocument();
 
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
       expect(screen.getByText('Copy')).toBeInTheDocument();
     });
 
