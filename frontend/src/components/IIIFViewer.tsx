@@ -309,10 +309,12 @@ export default function IIIFViewer({
       {/* Modal close button — hidden when metadata panel is open (it has its own close) */}
       {modal && onClose && !showMetadata && (
         <button
+          type="button"
           onClick={onClose}
+          aria-label="Close viewer"
           className="absolute top-4 right-4 z-20 p-2 bg-ink/70 hover:bg-ink/90 text-parchment rounded-lg"
         >
-          <X size={24} />
+          <X size={24} aria-hidden="true" />
         </button>
       )}
 
