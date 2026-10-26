@@ -1,12 +1,12 @@
 # Direct dependencies. Pins live here; there is no separate lockfile.
-sqlalchemy>=2.1.4
-alembic>=1.20.0
+sqlalchemy>=2.1.6
+alembic>=1.20.1
 psycopg[binary]>=3.3.6
 pydantic[email]>=2.14.1
-pydantic-settings>=2.16.0
+pydantic-settings>=2.16.1
 python-dotenv>=1.2.4
 jsonschema>=4.26.0
-fastapi>=0.143.2
+fastapi>=0.161.1
 python-multipart>=0.0.32
 uvicorn[standard]>=0.54.0
 httpx>=0.28.1
@@ -31,7 +31,7 @@ gevent>=24.11.1
 gevent-websocket>=0.10.1
 
 # Email sending
-boto3>=1.43.114
+boto3>=1.43.118
 cryptography>=41.0.7  # For SNS signature verification
 
 # QR code generation (visitor labels, ticketing)
@@ -76,7 +76,7 @@ shapely>=2.2.0
 # Structured logging and observability
 structlog>=24.4.0
 prometheus-client>=0.26.0
-sentry-sdk[fastapi,celery]>=2.72.0
+sentry-sdk[fastapi,celery]>=2.73.0
 
 # DAM AI Features — CLIP Visual Search and Whisper Transcription live in
 # requirements-ml.txt. They pull torch and (on Linux) the NVIDIA CUDA
@@ -107,7 +107,7 @@ pyexiftool>=0.5.6
 python-docx>=1.2.0
 odfpy>=1.4.1
 beautifulsoup4>=4.15.0
-striprtf>=0.0.33
+striprtf>=0.0.34
 chardet>=5.2.0
 
 # DAM — Social publishing (optional)
