@@ -1,17 +1,17 @@
 # Direct dependencies. Pins live here; there is no separate lockfile.
-sqlalchemy>=2.1.6
+sqlalchemy>=2.1.8
 alembic>=1.20.1
-psycopg[binary]>=3.3.6
-pydantic[email]>=2.14.2
+psycopg[binary]>=3.3.8
+pydantic[email]>=2.14.3
 pydantic-settings>=2.16.2
 python-dotenv>=1.2.4
 jsonschema>=4.26.0
 fastapi>=0.162.0
-python-multipart>=0.0.32
+python-multipart>=0.0.33
 uvicorn[standard]>=0.54.0
 httpx>=0.28.1
 requests>=2.34.2
-google-auth>=2.62.0
+google-auth>=2.62.1
 bcrypt>=4.3.0
 argon2-cffi>=23.1.0  # For MFA recovery code hashing
 pyjwt>=2.15.1
@@ -19,19 +19,19 @@ anthropic>=0.125.0
 mcp>=1.30.0,<2.0.0  # MCP server for AI client access. Upper bound is REQUIRED: 2.0.0 removed `mcp.server.fastmcp` (moved to `mcp.server.mcpserver`), which app/fastapi_app/routers/mcp_server.py imports. Unpinned, CI/rebuilds resolve to 2.0.0 and the API fails to boot. Lift only alongside a port to the new API.
 
 # Background task processing
-celery>=5.6.3
+celery>=5.7.0
 redis>=5.3.1
 
 # OpenSearch for entity search
 opensearch-py>=2.8.0
 
 # WebSocket support
-python-socketio[client]>=5.17.1
+python-socketio[client]>=5.18.1
 gevent>=24.11.1
 gevent-websocket>=0.10.1
 
 # Email sending
-boto3>=1.43.122
+boto3>=1.43.125
 cryptography>=41.0.7  # For SNS signature verification
 
 # QR code generation (visitor labels, ticketing)
@@ -62,21 +62,21 @@ pymysql>=1.2.3                 # For MySQL/MariaDB connections. Replaced
                                # mysql-connector-python, which is GPLv2 with
                                # Oracle's FOSS exception; PyMySQL is MIT, so
                                # nothing turns on reading an exception schedule.
-pyodbc>=5.3.0                  # For SQL Server connections
+pyodbc>=5.4.0                  # For SQL Server connections
 oracledb>=2.5.1                # For Oracle Database connections
 pymongo>=4.19.0                 # For MongoDB connections
 
 # SQL parsing and validation (SQL Explorer)
-sqlparse>=0.6.0
+sqlparse>=0.6.1
 
 # GIS support (PostGIS spatial queries)
-geoalchemy2>=0.20.0
+geoalchemy2>=0.21.0
 shapely>=2.2.0
 
 # Structured logging and observability
 structlog>=24.4.0
 prometheus-client>=0.26.0
-sentry-sdk[fastapi,celery]>=2.73.0
+sentry-sdk[fastapi,celery]>=2.74.0
 
 # DAM AI Features — CLIP Visual Search and Whisper Transcription live in
 # requirements-ml.txt. They pull torch and (on Linux) the NVIDIA CUDA
