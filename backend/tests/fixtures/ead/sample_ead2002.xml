@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ead xmlns="urn:isbn:1-931666-22-9" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <eadheader>
+    <eadid>nfb-test-001</eadid>
+    <filedesc><titlestmt><titleproper>Guide to the Test Papers</titleproper></titlestmt></filedesc>
+  </eadheader>
+  <archdesc level="collection">
+    <did>
+      <unittitle>Test Papers</unittitle>
+      <unitid>TP</unitid>
+      <unitdate normal="1940/1968">1940-1968</unitdate>
+      <physdesc><extent>12 linear feet</extent></physdesc>
+      <origination><persname>Example, Person</persname></origination>
+      <langmaterial>English</langmaterial>
+    </did>
+    <bioghist><p>A short biography.</p></bioghist>
+    <scopecontent><p>First paragraph.</p><p>Second paragraph.</p></scopecontent>
+    <controlaccess>
+      <subject source="lcsh" authfilenumber="sh85014896">Blind -- Civil rights</subject>
+      <corpname role="subject">National Federation of the Blind</corpname>
+    </controlaccess>
+    <otherfindaid><p>A card index exists.</p></otherfindaid>
+    <dsc>
+      <c01 level="series">
+        <did><unittitle>Correspondence</unittitle><unitid>TP.1</unitid></did>
+        <c02 level="file">
+          <did><container type="box">1</container><container type="folder">1</container><unittitle>Letters, 1950</unittitle></did>
+          <controlaccess><subject>Braille</subject></controlaccess>
+        </c02>
+        <c02 level="file">
+          <did><container type="box">1</container><container type="folder">2</container><unittitle>Letters, 1951</unittitle></did>
+        </c02>
+        <c02 level="file">
+          <did><container type="box">2</container><container type="folder">1</container><unittitle>Letters, 1952</unittitle></did>
+        </c02>
+      </c01>
+      <c01 level="series"><did><unittitle>Speeches</unittitle></did></c01>
+    </dsc>
+  </archdesc>
+</ead>

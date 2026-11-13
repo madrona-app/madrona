@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -155,3 +155,34 @@ def export_ead(
         media_type="application/xml",
         headers={"Content-Disposition": f'attachment; filename="{name}-ead3.xml"'},
     )
+
+
+@router.post("/api/organizations/{organization_id}/collections/ead/import", response_model=dict,
+             summary="Import an EAD 2002 finding aid (preview first)")
+async def import_ead_finding_aid(
+    organization_id: UUID,
+    file: UploadFile = File(...),
+    dry_run: bool = Form(True),
+    number_prefix: str | None = Form(None),
+    auth: AuthContext = Depends(require_permission(Permission.COLLECTIONS_CREATE)),
+    db: Session = Depends(get_db),
+):
+    """Preview (dry_run=true, the default) or import a finding aid as hierarchy records.
+
+    The preview lists every record that would be created, counts by level,
+    warnings, and any object numbers that already exist (which block import).
+    """
+    from app.services import ead_import
+
+    data = await file.read(ead_import.MAX_BYTES + 1)
+    try:
+        if dry_run:
+            plan = ead_import.preview(db, organization_id, data, number_prefix)
+            return {"dry_run": True, "records": plan.records[:2000], "total": len(plan.records),
+                    "by_level": plan.by_level, "warnings": plan.warnings, "conflicts": plan.conflicts}
+        result = ead_import.import_ead(db, organization_id, data, auth.user_id, number_prefix)
+    except ead_import.EADImportError as e:
+        db.rollback()
+        raise HTTPException(status_code=422, detail={"code": "ead_import_error", "message": str(e)})
+    db.commit()
+    return {"dry_run": False, **result}
