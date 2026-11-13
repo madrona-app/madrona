@@ -6,7 +6,7 @@
  * Resolves URLs by link_type.
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useId } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import type { PublicMenuItem } from '../../../types/content';
@@ -68,6 +68,8 @@ export function NavMenuItem({ item, orgSlug }: NavMenuItemProps) {
   const [isOpen, setIsOpen] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuId = useId();
   const hasChildren = item.children && item.children.length > 0;
 
   const url = resolveUrl(item, orgSlug);
@@ -77,16 +79,33 @@ export function NavMenuItem({ item, orgSlug }: NavMenuItemProps) {
     c => c.description || c.image_media_id
   );
 
-  // Close on outside click
+  // Close on outside click, when focus moves out of the menu, or on Escape
+  // (Escape returns focus to the toggle button).
   useEffect(() => {
     if (!isOpen) return;
+    function isOutside(target: EventTarget | null) {
+      return !!containerRef.current && !containerRef.current.contains(target as Node);
+    }
     function handleClick(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (isOutside(e.target)) setIsOpen(false);
+    }
+    function handleFocusIn(e: FocusEvent) {
+      if (isOutside(e.target)) setIsOpen(false);
+    }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
         setIsOpen(false);
+        buttonRef.current?.focus();
       }
     }
     document.addEventListener('click', handleClick);
-    return () => document.removeEventListener('click', handleClick);
+    document.addEventListener('focusin', handleFocusIn);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('click', handleClick);
+      document.removeEventListener('focusin', handleFocusIn);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, [isOpen]);
 
   const handleMouseEnter = () => {
@@ -117,17 +136,21 @@ export function NavMenuItem({ item, orgSlug }: NavMenuItemProps) {
       onMouseLeave={handleMouseLeave}
     >
       <button
+        ref={buttonRef}
+        type="button"
         onClick={() => setIsOpen((v) => !v)}
-        className={`${linkClasses} inline-flex items-center gap-1`}
+        aria-expanded={isOpen}
+        aria-controls={isOpen ? menuId : undefined}
+        className={`${linkClasses} inline-flex items-center gap-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-parchment/40 focus-visible:ring-offset-2 focus-visible:ring-offset-forest`}
       >
         {item.label}
-        <ChevronDown size={12} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown size={12} aria-hidden="true" className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
         hasMegaContent ? (
           // Mega menu panel — grid with descriptions/images
-          <div className="absolute left-0 top-full mt-1 min-w-[480px] max-w-[640px] bg-forest/95 backdrop-blur-sm border border-parchment/10 rounded-lg shadow-lg p-4 z-50">
+          <div id={menuId} className="absolute left-0 top-full mt-1 min-w-[480px] max-w-[640px] bg-forest/95 backdrop-blur-sm border border-parchment/10 rounded-lg shadow-lg p-4 z-50">
             <div className="grid grid-cols-2 gap-3">
               {item.children!.map((child, i) => {
                 const childUrl = resolveUrl(child, orgSlug);
@@ -160,7 +183,7 @@ export function NavMenuItem({ item, orgSlug }: NavMenuItemProps) {
           </div>
         ) : (
           // Simple dropdown
-          <div className="absolute left-0 top-full mt-1 min-w-[180px] bg-forest/95 backdrop-blur-sm border border-parchment/10 rounded-lg shadow-lg py-1 z-50">
+          <div id={menuId} className="absolute left-0 top-full mt-1 min-w-[180px] bg-forest/95 backdrop-blur-sm border border-parchment/10 rounded-lg shadow-lg py-1 z-50">
             {/* Parent link */}
             <div className="border-b border-parchment/10 pb-1 mb-1">
               <NavLink
