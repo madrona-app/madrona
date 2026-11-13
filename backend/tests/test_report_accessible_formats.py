@@ -356,3 +356,89 @@ class TestDocx:
         assert len([1 for s, _ in styles if s == "Heading1"]) == 1
         assert any(s == "Heading2" for s, _ in styles)
         assert "<dc:title>" in parts["docProps/core.xml"]
+
+
+# ============================================================================
+# Object media threaded from the database (alt text, attachments)
+# ============================================================================
+
+class _StubStorage:
+    def get_object_sync(self, key):
+        import base64
+        return base64.b64decode(_PNG_B64), "image/png"
+
+
+def _make_object_with_media(session, org_id, *, alt_text, title="Front view", caption=None):
+    import uuid as _uuid
+    from app.models import CollectionObject, CollectionObjectMedia, Media
+
+    obj = CollectionObject(organization_id=org_id, object_number=f"R-{_uuid.uuid4().hex[:6]}",
+                           object_name="Bowl")
+    session.add(obj)
+    session.flush()
+    media = Media(organization_id=org_id, s3_key=f"orgs/{org_id}/media/{_uuid.uuid4().hex}.png",
+                  filename="bowl-front.png", file_size=10, mime_type="image/png", media_type="image",
+                  title=title, alt_text=alt_text, processing_status="completed")
+    session.add(media)
+    session.flush()
+    session.add(CollectionObjectMedia(object_id=obj.object_id, media_id=media.media_id,
+                                      is_primary=True, sort_order=0, caption_override=caption))
+    session.flush()
+    return obj
+
+
+def _render_record_sheet(obj, org_id, export_format, monkeypatch):
+    from app.services.report_resolvers import resolve_record
+    import app.services.storage as storage
+    monkeypatch.setattr(storage, "get_storage_backend", lambda *a, **k: _StubStorage())
+    rows, _, metadata = resolve_record({"record_id": str(obj.object_id), "record_type": "collection_objects"},
+                                       org_id)
+    return rdr.render_object_record_sheet_html(rows, metadata, export_format=export_format)
+
+
+class TestObjectMediaInReports:
+    def test_alt_text_from_media_record_in_html(self, auth_setup, monkeypatch):
+        from app.database import current_session
+        _, org, _ = auth_setup
+        obj = _make_object_with_media(current_session(), org.organization_id,
+                                      alt_text="Bowl seen from above, crackled green glaze")
+        tree = _parse(_render_record_sheet(obj, org.organization_id, "html", monkeypatch))
+        assert tree.find("img")[0]["alt"] == "Bowl seen from above, crackled green glaze"
+
+    def test_alt_text_in_word(self, auth_setup, monkeypatch):
+        from app.database import current_session
+        _, org, _ = auth_setup
+        obj = _make_object_with_media(current_session(), org.organization_id, alt_text="Green bowl")
+        xml = _docx_parts(_render_record_sheet(obj, org.organization_id, "docx", monkeypatch))["word/document.xml"]
+        assert 'descr="Green bowl"' in xml
+
+    def test_alt_text_in_pdf_template(self, auth_setup, monkeypatch):
+        """The print template receives the media alt text, not a placeholder."""
+        import weasyprint
+        from app.database import current_session
+        _, org, _ = auth_setup
+        obj = _make_object_with_media(current_session(), org.organization_id, alt_text="Green bowl")
+        seen = {}
+
+        class _HTML:
+            def __init__(self, string=None, **kw):
+                seen["html"] = string
+
+            def write_pdf(self, **kw):
+                return b"%PDF-1.7 stub"
+
+        monkeypatch.setattr(weasyprint, "HTML", _HTML)
+        _render_record_sheet(obj, org.organization_id, "pdf", monkeypatch)
+        assert 'alt="Green bowl"' in seen["html"]
+        assert "Primary image" not in seen["html"]
+
+    def test_falls_back_to_caption_then_title_then_object(self, auth_setup, monkeypatch):
+        from app.database import current_session
+        _, org, _ = auth_setup
+        s = current_session()
+        obj = _make_object_with_media(s, org.organization_id, alt_text=None, caption="Detail of rim")
+        assert _parse(_render_record_sheet(obj, org.organization_id, "html", monkeypatch)).find("img")[0]["alt"] \
+            == "Detail of rim"
+        obj = _make_object_with_media(s, org.organization_id, alt_text="  ", title=None)
+        alt = _parse(_render_record_sheet(obj, org.organization_id, "html", monkeypatch)).find("img")[0]["alt"]
+        assert alt == f"Image of {obj.object_number} — Bowl"

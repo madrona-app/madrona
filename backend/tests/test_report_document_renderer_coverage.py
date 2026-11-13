@@ -1300,7 +1300,7 @@ class TestDocxBuilders:
         assert out.startswith(b"PK")
 
     def test_object_record_sheet_docx_bad_image_b64(self, real_package_loader, minimal_metadata):
-        with patch.object(rdr, "_fetch_primary_image_b64", return_value=("NOT_VALID_BASE64_!!!", "image/png")):
+        with patch.object(rdr, "_fetch_primary_image_b64", return_value=("NOT_VALID_BASE64_!!!", "image/png", None)):
             out = rdr.render_object_record_sheet_html(
                 [{"object_number": "B.1", "object_id": "x", "organization_id": "y"}],
                 minimal_metadata, export_format="docx",

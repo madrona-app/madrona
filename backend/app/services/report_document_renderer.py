@@ -1454,13 +1454,32 @@ class _S3TemplateLoader:
             return None
 
 
+def _media_alt_text(media: Any, link: Any = None) -> str | None:
+    """Alt text for a media record shown in a report.
+
+    Uses the curator-authored ``alt_text`` stored on the media record, then the
+    object-specific caption, then the media title. Unreviewed AI alt text is
+    not used. Returns None when nothing meaningful is stored, so the caller
+    can describe the image from the object it depicts — an object's record
+    image is content, never decoration, so it must never get an empty alt.
+    """
+    for value in (
+        getattr(media, "alt_text", None),
+        getattr(link, "caption_override", None) if link is not None else None,
+        getattr(media, "title", None),
+    ):
+        if value and str(value).strip():
+            return str(value).strip()
+    return None
+
+
 def _fetch_primary_image_b64(
     record: dict[str, Any],
     metadata: dict[str, Any],
-) -> tuple[str, str] | None:
+) -> tuple[str, str, str | None] | None:
     """Fetch the primary image as a base64 string for HTML embedding.
 
-    Returns (base64_string, mime_type) or None.
+    Returns (base64_string, mime_type, alt_text_or_None) or None.
     """
     orm_record = metadata.get("record")
     if not orm_record:
@@ -1517,7 +1536,7 @@ def _fetch_primary_image_b64(
         elif s3_key.endswith(".webp"):
             mime = "image/webp"
 
-        return base64.b64encode(img_data).decode("ascii"), mime
+        return base64.b64encode(img_data).decode("ascii"), mime, _media_alt_text(media, link)
     except Exception:
         logger.debug("Could not fetch primary image b64 for object %s", object_id, exc_info=True)
         return None
@@ -1581,6 +1600,9 @@ def render_object_record_sheet_html(
     image_result = _fetch_primary_image_b64(record, metadata)
     image_b64 = image_result[0] if image_result else None
     image_mime = image_result[1] if image_result else None
+    # Never a placeholder such as "Primary image": the media record's alt text,
+    # else a description naming the object the image depicts.
+    image_alt = (image_result[2] if image_result else None) or f"Image of {title}"
 
     # Timestamp
     generated_at = datetime.now(timezone.utc).strftime("%B %d, %Y at %H:%M UTC")
@@ -1596,6 +1618,7 @@ def render_object_record_sheet_html(
         "ident_fields": ident_fields,
         "image_b64": image_b64,
         "image_mime": image_mime,
+        "image_alt": image_alt,
         # Creators
         "creators": creators,
         # Description

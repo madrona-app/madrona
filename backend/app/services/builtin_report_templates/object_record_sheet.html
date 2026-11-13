@@ -255,7 +255,7 @@
       </table>
     </td>
     <td class="ident-image">
-      <img class="primary-image" src="data:{{ image_mime }};base64,{{ image_b64 }}" alt="Primary image">
+      <img class="primary-image" src="data:{{ image_mime }};base64,{{ image_b64 }}" alt="{{ image_alt or ('Image of ' ~ title) }}">
     </td>
   </tr>
 </table>
