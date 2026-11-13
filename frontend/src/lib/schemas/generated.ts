@@ -611,6 +611,13 @@ export const AuditCampaignOutSchema = z.object({
   sample_method: z.string().nullable().optional(),
   sample_size: z.number().nullable().optional(),
   sample_percentage: z.number().nullable().optional(),
+  sampling_criteria: z.string().nullable().optional(),
+  target_locations: z.any().optional(),
+  target_object_types: z.any().optional(),
+  check_list_seed: z.number().nullable().optional(),
+  check_list_generated_at: z.string().nullable().optional(),
+  check_list_generated_by: z.string().nullable().optional(),
+  check_list_params: z.any().optional(),
   start_date: z.string().nullable().optional(),
   end_date: z.string().nullable().optional(),
   items_total: z.number().nullable().optional(),
@@ -703,6 +710,8 @@ export const AuditResultOutSchema = z.object({
   resolution_notes: z.string().nullable().optional(),
   resolved_at: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
+  result_status: z.string().nullable().optional(),
+  check_sequence: z.number().nullable().optional(),
 }).passthrough();
 
 export type AuditResultOut = z.infer<typeof AuditResultOutSchema>;
@@ -1384,6 +1393,36 @@ export const BulkReprocessResponseSchema = z.object({
 
 export type BulkReprocessResponse = z.infer<typeof BulkReprocessResponseSchema>;
 
+export const BulkUpdateRowOutSchema = z.object({
+  result_id: z.string(),
+  object_id: z.string().nullable().optional(),
+  object_number: z.string().nullable().optional(),
+  title: z.string().nullable().optional(),
+  outcome: z.string().nullable().optional(),
+  current_location_name: z.string().nullable().optional(),
+  found_location_name: z.string().nullable().optional(),
+  changes: z.array(z.string()).optional(),
+  skipped: z.array(z.string()).optional(),
+  status: z.string().nullable().optional(),
+  message: z.string().nullable().optional(),
+  movement_reference: z.string().nullable().optional(),
+}).passthrough();
+
+export type BulkUpdateRowOut = z.infer<typeof BulkUpdateRowOutSchema>;
+
+export const BulkUpdateResponseSchema = z.object({
+  audit_id: z.string(),
+  update_location: z.boolean(),
+  mark_inventoried: z.boolean(),
+  rows: z.array(BulkUpdateRowOutSchema),
+  location_update_count: z.number(),
+  inventoried_count: z.number(),
+  skipped_count: z.number(),
+  executed: z.boolean(),
+}).passthrough();
+
+export type BulkUpdateResponse = z.infer<typeof BulkUpdateResponseSchema>;
+
 export const BySourceItemSchema = z.object({
   source: z.string(),
   count: z.number(),
@@ -1553,6 +1592,45 @@ export const ChangePasswordMFABodySchema = z.object({
 }).passthrough();
 
 export type ChangePasswordMFABody = z.infer<typeof ChangePasswordMFABodySchema>;
+
+export const CheckListItemOutSchema = z.object({
+  result_id: z.string(),
+  check_sequence: z.number().nullable().optional(),
+  object_id: z.string().nullable().optional(),
+  object_number: z.string().nullable().optional(),
+  title: z.string().nullable().optional(),
+  expected_location_id: z.string().nullable().optional(),
+  expected_location_name: z.string().nullable().optional(),
+  expected_location_path: z.string().nullable().optional(),
+  actual_location_id: z.string().nullable().optional(),
+  actual_location_name: z.string().nullable().optional(),
+  actual_location_path: z.string().nullable().optional(),
+  current_location_id: z.string().nullable().optional(),
+  outcome: z.string(),
+  result_status: z.string(),
+  checked_at: z.string().nullable().optional(),
+  checked_by: z.string().nullable().optional(),
+  note: z.string().nullable().optional(),
+  follow_up_action: z.string().nullable().optional(),
+}).passthrough();
+
+export type CheckListItemOut = z.infer<typeof CheckListItemOutSchema>;
+
+export const CheckListResponseSchema = z.object({
+  audit_id: z.string(),
+  generated_at: z.string().nullable().optional(),
+  generated_by: z.string().nullable().optional(),
+  seed: z.number().nullable().optional(),
+  params: z.any().optional(),
+  total: z.number(),
+  checked: z.number(),
+  counts: z.record(z.string(), z.number()),
+  items: z.array(CheckListItemOutSchema),
+  limit: z.number(),
+  offset: z.number(),
+}).passthrough();
+
+export type CheckListResponse = z.infer<typeof CheckListResponseSchema>;
 
 export const ChecklistEnumsResponseSchema = z.object({
   phases: z.array(EnumValueLabelSchema),
@@ -3712,6 +3790,7 @@ export const DiscoverMediaOutSchema = z.object({
   height: z.number().nullable().optional(),
   alt_text: z.string().nullable().optional(),
   credit: z.string().nullable().optional(),
+  preferred_citation: z.string().nullable().optional(),
   is_primary: z.boolean().nullable().optional(),
   caption: z.string().nullable().optional(),
 }).passthrough();
@@ -3750,6 +3829,7 @@ export const DiscoverObjectDetailOutSchema = z.object({
   style_period: z.string().nullable().optional(),
   provenance: z.string().nullable().optional(),
   credit_line: z.string().nullable().optional(),
+  external_links: z.array(z.record(z.string(), z.string())).optional(),
   media: z.array(DiscoverMediaOutSchema).nullable().optional(),
   has_image: z.boolean().optional(),
 }).passthrough();
@@ -6974,6 +7054,7 @@ export const MediaOutSchema = z.object({
   caption: z.string().nullable().optional(),
   copyright_notice: z.string().nullable().optional(),
   credit: z.string().nullable().optional(),
+  preferred_citation: z.string().nullable().optional(),
   creator: z.string().nullable().optional(),
   source: z.string().nullable().optional(),
   date_created: z.string().nullable().optional(),
@@ -7968,6 +8049,24 @@ export const ObjectRelationshipsResponseSchema = z.object({
 }).passthrough();
 
 export type ObjectRelationshipsResponse = z.infer<typeof ObjectRelationshipsResponseSchema>;
+
+export const ObjectResearchVisitOutSchema = z.object({
+  visit_id: z.string(),
+  visit_date: z.string(),
+  researcher_name: z.string(),
+  researcher_affiliation: z.string().nullable().optional(),
+  research_topic: z.string().nullable().optional(),
+  handling_note: z.string().nullable().optional(),
+  condition_on_return: z.string().nullable().optional(),
+}).passthrough();
+
+export type ObjectResearchVisitOut = z.infer<typeof ObjectResearchVisitOutSchema>;
+
+export const ObjectResearchVisitsResponseSchema = z.object({
+  items: z.array(ObjectResearchVisitOutSchema),
+}).passthrough();
+
+export type ObjectResearchVisitsResponse = z.infer<typeof ObjectResearchVisitsResponseSchema>;
 
 export const ObjectRightOutSchema = z.object({
   right_id: z.string(),
@@ -9468,6 +9567,123 @@ export const ReproductionRequestListResponseSchema = z.object({
 }).passthrough();
 
 export type ReproductionRequestListResponse = z.infer<typeof ReproductionRequestListResponseSchema>;
+
+export const _VisitFieldsSchema = z.object({
+  researcher_constituent_id: z.string().nullable().optional(),
+  researcher_name: z.string().nullable().optional(),
+  researcher_affiliation: z.string().nullable().optional(),
+  visit_date: z.string().nullable().optional(),
+  arrival_time: z.string().nullable().optional(),
+  departure_time: z.string().nullable().optional(),
+  location: z.string().nullable().optional(),
+  research_topic: z.string().nullable().optional(),
+  purpose: z.string().nullable().optional(),
+  supervised_by_user_id: z.string().nullable().optional(),
+  supervised_by_name: z.string().nullable().optional(),
+  use_request_id: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+}).passthrough();
+
+export type _VisitFields = z.infer<typeof _VisitFieldsSchema>;
+
+export const ResearchVisitCreateSchema = z.object({
+  researcher_constituent_id: z.string().nullable().optional(),
+  researcher_name: z.string(),
+  researcher_affiliation: z.string().nullable().optional(),
+  visit_date: z.string(),
+  arrival_time: z.string().nullable().optional(),
+  departure_time: z.string().nullable().optional(),
+  location: z.string().nullable().optional(),
+  research_topic: z.string().nullable().optional(),
+  purpose: z.string().nullable().optional(),
+  supervised_by_user_id: z.string().nullable().optional(),
+  supervised_by_name: z.string().nullable().optional(),
+  use_request_id: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+}).passthrough();
+
+export type ResearchVisitCreate = z.infer<typeof ResearchVisitCreateSchema>;
+
+export const ResearchVisitObjectOutSchema = z.object({
+  visit_object_id: z.string(),
+  visit_id: z.string(),
+  object_id: z.string(),
+  object_number: z.string().nullable().optional(),
+  object_name: z.string().nullable().optional(),
+  handling_note: z.string().nullable().optional(),
+  condition_on_return: z.string().nullable().optional(),
+  created_at: z.string().nullable().optional(),
+}).passthrough();
+
+export type ResearchVisitObjectOut = z.infer<typeof ResearchVisitObjectOutSchema>;
+
+export const ResearchVisitOutSchema = z.object({
+  visit_id: z.string(),
+  organization_id: z.string(),
+  researcher_constituent_id: z.string().nullable().optional(),
+  researcher_constituent_name: z.string().nullable().optional(),
+  researcher_name: z.string(),
+  researcher_affiliation: z.string().nullable().optional(),
+  visit_date: z.string(),
+  arrival_time: z.string().nullable().optional(),
+  departure_time: z.string().nullable().optional(),
+  location: z.string().nullable().optional(),
+  research_topic: z.string().nullable().optional(),
+  purpose: z.string().nullable().optional(),
+  supervised_by_user_id: z.string().nullable().optional(),
+  supervised_by_name: z.string().nullable().optional(),
+  use_request_id: z.string().nullable().optional(),
+  use_request_number: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  object_count: z.number().optional(),
+  objects: z.array(ResearchVisitObjectOutSchema).nullable().optional(),
+  created_at: z.string().nullable().optional(),
+  updated_at: z.string().nullable().optional(),
+}).passthrough();
+
+export type ResearchVisitOut = z.infer<typeof ResearchVisitOutSchema>;
+
+export const ResearchVisitListResponseSchema = z.object({
+  items: z.array(ResearchVisitOutSchema),
+  total: z.number(),
+  limit: z.number(),
+  offset: z.number(),
+}).passthrough();
+
+export type ResearchVisitListResponse = z.infer<typeof ResearchVisitListResponseSchema>;
+
+export const ResearchVisitObjectAddSchema = z.object({
+  object_id: z.string(),
+  handling_note: z.string().nullable().optional(),
+  condition_on_return: z.string().nullable().optional(),
+}).passthrough();
+
+export type ResearchVisitObjectAdd = z.infer<typeof ResearchVisitObjectAddSchema>;
+
+export const ResearchVisitObjectUpdateSchema = z.object({
+  handling_note: z.string().nullable().optional(),
+  condition_on_return: z.string().nullable().optional(),
+}).passthrough();
+
+export type ResearchVisitObjectUpdate = z.infer<typeof ResearchVisitObjectUpdateSchema>;
+
+export const ResearchVisitUpdateSchema = z.object({
+  researcher_constituent_id: z.string().nullable().optional(),
+  researcher_name: z.string().nullable().optional(),
+  researcher_affiliation: z.string().nullable().optional(),
+  visit_date: z.string().nullable().optional(),
+  arrival_time: z.string().nullable().optional(),
+  departure_time: z.string().nullable().optional(),
+  location: z.string().nullable().optional(),
+  research_topic: z.string().nullable().optional(),
+  purpose: z.string().nullable().optional(),
+  supervised_by_user_id: z.string().nullable().optional(),
+  supervised_by_name: z.string().nullable().optional(),
+  use_request_id: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+}).passthrough();
+
+export type ResearchVisitUpdate = z.infer<typeof ResearchVisitUpdateSchema>;
 
 export const ResendInviteResponseSchema = z.object({
   message: z.string(),
