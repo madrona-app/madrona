@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useId, useRef, useState, useEffect, useCallback } from 'react';
 import {
   Play,
   Pause,
@@ -47,7 +47,8 @@ const PLAYBACK_RATES = [0.5, 1, 1.5, 2];
 export default function VideoPlayer({ url, mimeType, posterUrl, subtitles, metadata }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const progressRef = useRef<HTMLDivElement>(null);
+  const rateButtonRef = useRef<HTMLButtonElement>(null);
+  const rateMenuId = useId();
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -139,13 +140,12 @@ export default function VideoPlayer({ url, mimeType, posterUrl, subtitles, metad
     }
   }, [isMuted]);
 
-  const handleProgressClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+  const handleSeek = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const video = videoRef.current;
-    const bar = progressRef.current;
-    if (!video || !bar || !duration) return;
-    const rect = bar.getBoundingClientRect();
-    const fraction = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    video.currentTime = fraction * duration;
+    if (!video || !duration) return;
+    const t = Math.max(0, Math.min(duration, parseFloat(e.target.value)));
+    video.currentTime = t;
+    setCurrentTime(t);
   }, [duration]);
 
   const setRate = useCallback((rate: number) => {
@@ -173,11 +173,29 @@ export default function VideoPlayer({ url, mimeType, posterUrl, subtitles, metad
     return () => document.removeEventListener('fullscreenchange', handler);
   }, []);
 
-  // Keyboard shortcuts
+  // Escape closes the playback-speed menu and returns focus to its button
+  useEffect(() => {
+    if (!showRateMenu) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setShowRateMenu(false);
+      rateButtonRef.current?.focus();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [showRateMenu]);
+
+  // Keyboard shortcuts — only while focus is inside the player (or nowhere in particular),
+  // so single-key shortcuts never fire while the user is working elsewhere on the page
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't capture when typing in inputs
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      // Don't capture when typing in inputs, or override a focused control's own keys
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement ||
+        e.target instanceof HTMLButtonElement
+      ) return;
 
       const video = videoRef.current;
       if (!video) return;
@@ -192,11 +210,11 @@ export default function VideoPlayer({ url, mimeType, posterUrl, subtitles, metad
           break;
         case 'm':
         case 'M':
-          toggleMute();
+          if (containerRef.current?.contains(e.target as Node)) toggleMute();
           break;
         case 'f':
         case 'F':
-          toggleFullscreen();
+          if (containerRef.current?.contains(e.target as Node)) toggleFullscreen();
           break;
         case 'ArrowLeft':
           if (containerRef.current?.contains(e.target as Node) || e.target === document.body) {
@@ -238,11 +256,8 @@ export default function VideoPlayer({ url, mimeType, posterUrl, subtitles, metad
 
   return (
     <div ref={containerRef} className="w-full h-full flex flex-col bg-ink">
-      {/* Video area — click to toggle play */}
-      <div
-        className="relative flex-1 min-h-0 flex items-center justify-center cursor-pointer"
-        onClick={togglePlay}
-      >
+      {/* Video area — click to toggle play (mouse shortcut for the Play button below) */}
+      <div className="relative flex-1 min-h-0 flex items-center justify-center cursor-pointer">
         <video
           ref={videoRef}
           className="w-full max-h-full object-contain"
@@ -261,10 +276,11 @@ export default function VideoPlayer({ url, mimeType, posterUrl, subtitles, metad
             />
           ))}
         </video>
+        <div aria-hidden="true" className="absolute inset-0" onClick={togglePlay} />
 
         {/* Large play overlay when paused and not yet started */}
         {!isPlaying && currentTime === 0 && isReady && (
-          <div className="absolute inset-0 flex items-center justify-center bg-ink/30">
+          <div aria-hidden="true" className="absolute inset-0 flex items-center justify-center bg-ink/30 pointer-events-none">
             <div className="p-5 rounded-full bg-bark/90 text-parchment">
               <Play size={32} className="ml-1" />
             </div>
@@ -274,12 +290,20 @@ export default function VideoPlayer({ url, mimeType, posterUrl, subtitles, metad
 
       {/* Controls bar */}
       <div className="flex-shrink-0 px-4 py-2 bg-ink/95">
-        {/* Progress bar */}
-        <div
-          ref={progressRef}
-          className="relative h-1.5 bg-parchment/20 rounded-full cursor-pointer mb-3 group"
-          onClick={handleProgressClick}
-        >
+        {/* Progress bar: a native range input (invisible) over the drawn track */}
+        <div className="relative h-1.5 bg-parchment/20 rounded-full cursor-pointer mb-3 group has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-bark/30 has-[:focus-visible]:ring-offset-2">
+          <input
+            type="range"
+            min={0}
+            max={duration || 0}
+            step={1}
+            value={Math.min(currentTime, duration || 0)}
+            onChange={handleSeek}
+            disabled={!isReady}
+            aria-label="Seek"
+            aria-valuetext={`${formatTime(currentTime)} of ${formatTime(duration)}`}
+            className="absolute inset-0 z-10 w-full h-full opacity-0 cursor-pointer m-0"
+          />
           {/* Buffered */}
           <div
             className="absolute inset-y-0 left-0 bg-parchment/30 rounded-full"
@@ -319,6 +343,11 @@ export default function VideoPlayer({ url, mimeType, posterUrl, subtitles, metad
           {/* Playback rate */}
           <div className="relative">
             <button
+              ref={rateButtonRef}
+              type="button"
+              aria-expanded={showRateMenu}
+              aria-controls={showRateMenu ? rateMenuId : undefined}
+              aria-label={`Playback speed ${playbackRate}x`}
               onClick={(e) => { e.stopPropagation(); setShowRateMenu(!showRateMenu); }}
               className="px-2 py-1 text-xs font-medium text-parchment/70 hover:text-parchment bg-parchment/10 hover:bg-parchment/20 rounded transition-colors"
             >
@@ -326,11 +355,17 @@ export default function VideoPlayer({ url, mimeType, posterUrl, subtitles, metad
             </button>
             {showRateMenu && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowRateMenu(false)} />
-                <div className="absolute bottom-full mb-1 right-0 bg-ink border border-parchment/20 rounded-lg shadow-lg py-1 z-20">
+                <div aria-hidden="true" className="fixed inset-0 z-10" onClick={() => setShowRateMenu(false)} />
+                <div
+                  id={rateMenuId}
+                  role="group"
+                  aria-label="Playback speed"
+                  className="absolute bottom-full mb-1 right-0 bg-ink border border-parchment/20 rounded-lg shadow-lg py-1 z-20">
                   {PLAYBACK_RATES.map((rate) => (
                     <button
                       key={rate}
+                      type="button"
+                      aria-pressed={rate === playbackRate}
                       onClick={(e) => { e.stopPropagation(); setRate(rate); }}
                       className={`block w-full px-4 py-1.5 text-xs text-left transition-colors ${
                         rate === playbackRate
