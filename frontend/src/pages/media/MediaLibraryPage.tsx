@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useToast } from '../../contexts/ToastContext';
 import Checkbox from '../../components/Checkbox';
 import { createPortal } from 'react-dom';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { setDragPayload, clearDragPayload } from '../../lib/dragTypes';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
@@ -135,7 +135,6 @@ function getQuickRightsStatus(media: Media): { status: QuickRightsStatus; dotCol
 
 export default function MediaLibraryPage() {
   const { orgId } = useParams<{ orgId: string }>();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { addFiles } = useUpload();
@@ -979,7 +978,7 @@ export default function MediaLibraryPage() {
               orgId={orgId!}
               selected={selectedItems.has(media.media_id)}
               onSelect={(e) => handleSelect(index, media.media_id, e)}
-              onClick={() => navigate(`/organizations/${orgId}/media/${media.media_id}`)}
+              href={`/organizations/${orgId}/media/${media.media_id}`}
               onDelete={canDelete ? () => {
                 setMediaToDelete(media.media_id);
                 setShowDeleteDialog(true);
@@ -998,10 +997,12 @@ export default function MediaLibraryPage() {
         <div className={`card overflow-hidden transition-opacity duration-300 ${isFetching ? 'opacity-60' : ''}`}>
           {/* Desktop list view — 8-col table, md and up */}
           <table className="hidden md:table w-full">
+            <caption className="sr-only">Media items</caption>
             <thead className="bg-stone/50">
               <tr>
-                <th className="w-8 p-3">
+                <th scope="col" className="w-8 p-3">
                   <Checkbox
+                    aria-label="Select all media on this page"
                     checked={selectedItems.size === mediaItems.length && mediaItems.length > 0}
                     onChange={(e) => {
                       if (e.target.checked) {
@@ -1012,13 +1013,13 @@ export default function MediaLibraryPage() {
                     }}
                   />
                 </th>
-                <th className="p-3 text-left text-sm font-medium text-archive">Preview</th>
-                <th className="p-3 text-left text-sm font-medium text-archive">Name</th>
-                <th className="p-3 text-left text-sm font-medium text-archive">Type</th>
-                <th className="p-3 text-left text-sm font-medium text-archive">Size</th>
-                <th className="p-3 text-left text-sm font-medium text-archive">Status</th>
-                <th className="p-3 text-left text-sm font-medium text-archive">Created</th>
-                <th className="w-12 p-3"></th>
+                <th scope="col" className="p-3 text-left text-sm font-medium text-archive">Preview</th>
+                <th scope="col" className="p-3 text-left text-sm font-medium text-archive">Name</th>
+                <th scope="col" className="p-3 text-left text-sm font-medium text-archive">Type</th>
+                <th scope="col" className="p-3 text-left text-sm font-medium text-archive">Size</th>
+                <th scope="col" className="p-3 text-left text-sm font-medium text-archive">Status</th>
+                <th scope="col" className="p-3 text-left text-sm font-medium text-archive">Created</th>
+                <th scope="col" className="w-12 p-3"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
@@ -1029,7 +1030,7 @@ export default function MediaLibraryPage() {
                   orgId={orgId!}
                   selected={selectedItems.has(media.media_id)}
                   onSelect={(e) => handleSelect(index, media.media_id, e)}
-                  onClick={() => navigate(`/organizations/${orgId}/media/${media.media_id}`)}
+                  href={`/organizations/${orgId}/media/${media.media_id}`}
                   onDelete={canDelete ? () => {
                     setMediaToDelete(media.media_id);
                     setShowDeleteDialog(true);
@@ -1056,13 +1057,13 @@ export default function MediaLibraryPage() {
               return (
                 <li
                   key={media.media_id}
-                  className={`flex items-center gap-3 p-3 cursor-pointer select-none transition-colors ${
+                  className={`relative flex items-center gap-3 p-3 cursor-pointer select-none transition-colors ${
                     isSelected ? 'bg-forest/5' : 'active:bg-stone/40 hover:bg-stone/20'
                   }`}
-                  onClick={() => navigate(`/organizations/${orgId}/media/${media.media_id}`)}
                 >
-                  <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                  <div className="relative z-10 shrink-0">
                     <Checkbox
+                      aria-label={`Select ${media.title || media.filename}`}
                       checked={isSelected}
                       onChange={(e) => handleSelect(index, media.media_id, e)}
                     />
@@ -1080,9 +1081,14 @@ export default function MediaLibraryPage() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-ink truncate">
+                    {/* Opens the record; its ::after stretches over the whole row */}
+                    <Link
+                      to={`/organizations/${orgId}/media/${media.media_id}`}
+                      draggable={false}
+                      className="block text-sm font-medium text-ink truncate after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-bark/30 focus-visible:after:ring-offset-2"
+                    >
                       {media.title || media.filename}
-                    </p>
+                    </Link>
                     <p className="text-xs text-archive truncate">
                       <span className="inline-flex items-center gap-1">
                         <MediaIcon size={11} />
@@ -1092,7 +1098,7 @@ export default function MediaLibraryPage() {
                       {formatFileSize(media.file_size)}
                     </p>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <div className="relative z-10 flex items-center gap-1 shrink-0">
                     <div className="relative">
                       <button
                         onClick={(e) => {
@@ -1102,7 +1108,7 @@ export default function MediaLibraryPage() {
                           );
                         }}
                         className="tap-target rounded text-archive hover:text-ink hover:bg-stone"
-                        aria-label="Add to Lightbox"
+                        aria-label={`Add ${media.title || media.filename} to lightbox`}
                       >
                         <FolderPlus size={18} />
                       </button>
@@ -1122,7 +1128,7 @@ export default function MediaLibraryPage() {
                           setShowDeleteDialog(true);
                         }}
                         className="tap-target rounded text-archive hover:text-semantic-error hover:bg-semantic-error/10"
-                        aria-label="Delete"
+                        aria-label={`Delete ${media.title || media.filename}`}
                       >
                         <Trash2 size={18} />
                       </button>
@@ -1390,7 +1396,7 @@ function MediaGridItem({
   orgId,
   selected,
   onSelect,
-  onClick,
+  href,
   onDelete,
   collectionDropdownOpen,
   onCollectionDropdownToggle,
@@ -1404,7 +1410,7 @@ function MediaGridItem({
   orgId: string;
   selected: boolean;
   onSelect: (e: React.MouseEvent | React.ChangeEvent) => void;
-  onClick: () => void;
+  href: string;
   onDelete?: () => void;
   collectionDropdownOpen: boolean;
   onCollectionDropdownToggle: (open: boolean) => void;
@@ -1426,8 +1432,6 @@ function MediaGridItem({
     if (e.shiftKey) {
       e.preventDefault();
       onSelect(e);
-    } else {
-      onClick();
     }
   };
 
@@ -1448,7 +1452,6 @@ function MediaGridItem({
     <div
       className={`group relative card overflow-hidden cursor-pointer transition-all duration-300 hover:scale-[1.02] animate-fade-in select-none ${selected ? 'ring-2 ring-forest' : ''} ${isDragging ? 'opacity-50' : ''}`}
       style={{ animationDelay: `${animationDelay}ms` }}
-      onClick={handleClick}
       draggable
       onDragStart={handleDragStart}
       onDragEnd={onDragEnd}
@@ -1456,11 +1459,11 @@ function MediaGridItem({
       {/* Selection checkbox — always visible on touch, hover-reveal on desktop */}
       <div
         className={`absolute top-2 left-2 z-20 transition-opacity ${
-          selected ? 'opacity-100' : 'opacity-100 md:opacity-0 md:group-hover:opacity-100'
+          selected ? 'opacity-100' : 'opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100'
         }`}
-        onClick={(e) => e.stopPropagation()}
       >
         <Checkbox
+          aria-label={`Select ${media.title || media.filename}`}
           checked={selected}
           onChange={onSelect}
           className="bg-parchment/90 shadow-sm"
@@ -1541,9 +1544,16 @@ function MediaGridItem({
       {/* Info. Dimensions/mime are shown only at md+ — on phones the space
        * is better spent on the action row below the filename. */}
       <div className="p-2">
-        <p className="text-sm font-medium text-ink truncate" title={media.title || media.filename}>
+        {/* Opens the record; its ::after stretches over the whole card */}
+        <Link
+          to={href}
+          draggable={false}
+          onClick={handleClick}
+          className="block text-sm font-medium text-ink truncate after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-bark/30 focus-visible:after:ring-offset-2"
+          title={media.title || media.filename}
+        >
           {media.title || media.filename}
-        </p>
+        </Link>
         <p className="hidden md:block text-xs text-archive">
           {media.width && media.height ? `${media.width}x${media.height}` : media.mime_type}
         </p>
@@ -1551,15 +1561,14 @@ function MediaGridItem({
         {/* Mobile action row — always visible below md. Stacks under the
          * filename so it never overlaps the text. Desktop uses the hover
          * overlay instead. */}
-        <div className="md:hidden mt-1 flex items-center justify-end gap-0.5">
+        <div className="relative z-10 md:hidden mt-1 flex items-center justify-end gap-0.5">
           {media.url && (
             <a
               href={media.url}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center w-8 h-8 rounded text-ink hover:bg-stone"
-              aria-label="Open in new tab"
-              onClick={(e) => e.stopPropagation()}
+              aria-label={`Open ${media.title || media.filename} in new tab`}
             >
               <ExternalLink size={14} />
             </a>
@@ -1571,7 +1580,7 @@ function MediaGridItem({
                 onCollectionDropdownToggle(!collectionDropdownOpen);
               }}
               className="inline-flex items-center justify-center w-8 h-8 rounded text-ink hover:bg-stone"
-              aria-label="Add to Lightbox"
+              aria-label={`Add ${media.title || media.filename} to lightbox`}
             >
               <FolderPlus size={14} />
             </button>
@@ -1590,7 +1599,7 @@ function MediaGridItem({
                 onDelete();
               }}
               className="inline-flex items-center justify-center w-8 h-8 rounded text-archive hover:bg-semantic-error/10 hover:text-semantic-error"
-              aria-label="Delete"
+              aria-label={`Delete ${media.title || media.filename}`}
             >
               <Trash2 size={14} />
             </button>
@@ -1600,7 +1609,7 @@ function MediaGridItem({
 
       {/* Hover actions (desktop only) — hierarchy: Open (primary), Add to Collection (secondary), Delete (destructive/muted) */}
       <div
-        className="hidden md:flex absolute inset-0 bg-ink/50 opacity-0 group-hover:opacity-100 transition-opacity flex-col items-center justify-center gap-2 pointer-events-none"
+        className="hidden md:flex absolute inset-0 bg-ink/50 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex-col items-center justify-center gap-2 pointer-events-none"
       >
         <div className="flex items-center gap-2">
           {/* Primary action: Open */}
@@ -1611,7 +1620,7 @@ function MediaGridItem({
               rel="noopener noreferrer"
               className="p-2 bg-parchment rounded-full hover:bg-stone text-ink pointer-events-auto"
               title="Open in new tab"
-              onClick={(e) => e.stopPropagation()}
+              aria-label={`Open ${media.title || media.filename} in new tab`}
             >
               <ExternalLink className="w-4 h-4" />
             </a>
@@ -1625,6 +1634,7 @@ function MediaGridItem({
               }}
               className="p-2 bg-parchment/90 rounded-full hover:bg-parchment text-ink/80 hover:text-ink"
               title="Add to Lightbox"
+              aria-label={`Add ${media.title || media.filename} to lightbox`}
             >
               <FolderPlus className="w-4 h-4" />
             </button>
@@ -1645,6 +1655,7 @@ function MediaGridItem({
               }}
               className="p-2 bg-parchment/70 rounded-full text-archive hover:bg-parchment hover:text-semantic-error pointer-events-auto transition-colors"
               title="Delete"
+              aria-label={`Delete ${media.title || media.filename}`}
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -1667,7 +1678,7 @@ function MediaListItem({
   orgId,
   selected,
   onSelect,
-  onClick,
+  href,
   onDelete,
   formatFileSize,
   collectionDropdownOpen,
@@ -1680,7 +1691,7 @@ function MediaListItem({
   orgId: string;
   selected: boolean;
   onSelect: (e: React.MouseEvent | React.ChangeEvent) => void;
-  onClick: () => void;
+  href: string;
   onDelete?: () => void;
   formatFileSize: (bytes: number) => string;
   collectionDropdownOpen: boolean;
@@ -1701,8 +1712,6 @@ function MediaListItem({
     if (e.shiftKey) {
       e.preventDefault();
       onSelect(e);
-    } else {
-      onClick();
     }
   };
 
@@ -1725,13 +1734,14 @@ function MediaListItem({
       onDragStart={handleDragStart}
       onDragEnd={onDragEnd}
     >
-      <td className="p-3" onClick={(e) => e.stopPropagation()}>
+      <td className="p-3">
         <Checkbox
+          aria-label={`Select ${media.title || media.filename}`}
           checked={selected}
           onChange={onSelect}
         />
       </td>
-      <td className="p-3" onClick={handleClick}>
+      <td className="p-3">
         <div className="w-12 h-12 bg-stone rounded flex items-center justify-center overflow-hidden relative">
           {media.thumbnail_url ? (
             <>
@@ -1758,8 +1768,10 @@ function MediaListItem({
           )}
         </div>
       </td>
-      <td className="p-3" onClick={handleClick}>
-        <p className="font-medium text-ink">{media.title || media.filename}</p>
+      <td className="p-3">
+        <Link to={href} draggable={false} onClick={handleClick} className="font-medium text-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 rounded-sm">
+          {media.title || media.filename}
+        </Link>
         {media.description && (
           <p className="text-sm text-archive truncate max-w-xs">{media.description}</p>
         )}
@@ -1799,6 +1811,7 @@ function MediaListItem({
               }}
               className="p-2 hover:bg-stone rounded text-archive hover:text-ink"
               title="Add to Lightbox"
+              aria-label={`Add ${media.title || media.filename} to lightbox`}
             >
               <FolderPlus size={16} />
             </button>
@@ -1815,6 +1828,7 @@ function MediaListItem({
               onClick={onDelete}
               className="p-2 hover:bg-semantic-error/10 rounded text-archive hover:text-semantic-error"
               title="Delete"
+              aria-label={`Delete ${media.title || media.filename}`}
             >
               <Trash2 size={16} />
             </button>

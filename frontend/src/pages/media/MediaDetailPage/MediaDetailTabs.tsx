@@ -66,8 +66,18 @@ export function MediaDetailTabs({
         setMoreOpen(false);
       }
     };
+    // Escape closes the overflow list and returns focus to the More button
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setMoreOpen(false);
+      moreRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
+    };
     document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKey);
+    };
   }, [moreOpen]);
 
   const filterByType = (tab: TabConfig) => {
@@ -153,10 +163,14 @@ export function MediaDetailTabs({
         <TabIcon size={16} />
         {hasLabel && tab.label}
         {tab.key === 'rights' && (
-          <span
-            className={cn('w-2 h-2 rounded-full', rightsStatus.dotColor)}
-            title={rightsStatus.label}
-          />
+          <>
+            <span
+              aria-hidden="true"
+              className={cn('w-2 h-2 rounded-full', rightsStatus.dotColor)}
+              title={rightsStatus.label}
+            />
+            <span className="sr-only">({rightsStatus.label})</span>
+          </>
         )}
       </>
     );
@@ -167,8 +181,10 @@ export function MediaDetailTabs({
           key={tab.key}
           to={`${basePath}/${SUB_ROUTE_TABS[tab.key as SubRouteTabKey]}`}
           title={tab.label}
+          aria-current={active ? 'page' : undefined}
           className={className}
         >
+          {!hasLabel && <span className="sr-only">{tab.label}</span>}
           {content}
         </Link>
       );
@@ -177,10 +193,13 @@ export function MediaDetailTabs({
     return (
       <button
         key={tab.key}
+        type="button"
         onClick={() => onTabChange(tab.key)}
         title={tab.label}
+        aria-current={active ? 'page' : undefined}
         className={className}
       >
+        {!hasLabel && <span className="sr-only">{tab.label}</span>}
         {content}
       </button>
     );
@@ -211,6 +230,7 @@ export function MediaDetailTabs({
           key={tab.key}
           to={`${basePath}/${SUB_ROUTE_TABS[tab.key as SubRouteTabKey]}`}
           className={className}
+          aria-current={active ? 'page' : undefined}
           onClick={() => setMoreOpen(false)}
         >
           {content}
@@ -221,6 +241,8 @@ export function MediaDetailTabs({
     return (
       <button
         key={tab.key}
+        type="button"
+        aria-current={active ? 'page' : undefined}
         onClick={() => {
           onTabChange(tab.key);
           setMoreOpen(false);
@@ -257,12 +279,15 @@ export function MediaDetailTabs({
         </span>
       </div>
 
-      <nav ref={navRef} className="flex items-center -mb-px">
+      <nav ref={navRef} aria-label="Media record sections" className="flex items-center -mb-px">
         {primaryTabs.map((tab, i) => renderTab(tab, i, i < labelsToShow))}
 
         {overflowTabs.length > 0 && (
           <div className="relative ml-auto" ref={moreRef}>
             <button
+              type="button"
+              aria-expanded={moreOpen}
+              aria-label={labelsToShow > 0 ? undefined : activeOverflowTab ? `More sections, current: ${activeOverflowTab.label}` : 'More sections'}
               onClick={() => setMoreOpen((o) => !o)}
               className={cn(
                 'flex items-center gap-1.5 px-3.5 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap',

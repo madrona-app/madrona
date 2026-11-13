@@ -132,10 +132,10 @@ describe('MediaDerivativeSettingsPage', () => {
     await waitFor(() => {
       // Image tab and Video tab should both render
       expect(
-        screen.getByRole('button', { name: /image/i }),
-      ).toBeInTheDocument();
+        screen.getByRole('tab', { name: /image/i }),
+      ).toHaveAttribute('aria-selected', 'true');
     });
-    expect(screen.getByRole('button', { name: /video/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /video/i })).toHaveAttribute('aria-selected', 'false');
   });
 
   it('switches tab when clicking video', async () => {
@@ -144,7 +144,7 @@ describe('MediaDerivativeSettingsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Web Large')).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByRole('button', { name: /video/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /video/i }));
     await waitFor(() => {
       expect(screen.getByText('Video Preview')).toBeInTheDocument();
     });

@@ -124,7 +124,7 @@ describe('MetadataTemplatesPage', () => {
     });
     expect(screen.getByText('Default Template')).toBeInTheDocument();
     expect(screen.getByText(/creator: museum staff/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/default template/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^default template$/i)).toBeInTheDocument();
   });
 
   it('filters templates by search query', async () => {
@@ -173,8 +173,8 @@ describe('MetadataTemplatesPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Standard Photo')).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByLabelText(/template options/i));
-    fireEvent.click(await screen.findByRole('button', { name: /^delete$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /options for standard photo/i }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: /^delete$/i }));
     await waitFor(() => {
       expect(screen.getByText(/delete metadata template/i)).toBeInTheDocument();
       expect(
@@ -192,8 +192,8 @@ describe('MetadataTemplatesPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Standard Photo')).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByLabelText(/template options/i));
-    fireEvent.click(await screen.findByRole('button', { name: /set as default/i }));
+    fireEvent.click(screen.getByRole('button', { name: /options for standard photo/i }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: /set as default/i }));
     await waitFor(() => {
       expect(mockSetDefaultMetadataTemplate).toHaveBeenCalledWith('org-123', 't-1');
     });

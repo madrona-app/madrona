@@ -133,17 +133,17 @@ describe('WatermarkTemplatesPage', () => {
     } as any);
     mockDeleteWatermarkTemplate.mockResolvedValue({} as any);
 
-    const { container } = renderPage();
+    renderPage();
     await waitFor(() => expect(screen.getByText('My Watermark')).toBeInTheDocument());
 
-    // The kebab menu is the only button with MoreHorizontal — find by role and structure
-    // There is a button after the template card's header area; simulate clicks in order
-    const cardButtons = container.querySelectorAll('.card button');
-    // First card button is the kebab menu trigger
-    fireEvent.click(cardButtons[0]);
+    // The kebab menu trigger is a menu button named for its template
+    const trigger = screen.getByRole('button', { name: /options for my watermark/i });
+    expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
     // Delete menu item now visible
-    const deleteBtn = await screen.findByRole('button', { name: /delete/i });
+    const deleteBtn = await screen.findByRole('menuitem', { name: /delete/i });
     fireEvent.click(deleteBtn);
 
     await waitFor(() => {

@@ -48,6 +48,8 @@ import { getAlternatives, lockMedia, unlockMedia } from '../../../lib/api/media-
 import { AlternativeFilesTab } from '../../../components/dam/AlternativeFilesTab';
 import { SimilarMediaPanel } from '../../../components/dam/SimilarMediaPanel';
 import { EmbedCodeGenerator } from '../../../components/dam/EmbedCodeGenerator';
+import { useActionMenu } from '../../../components/dam/useActionMenu';
+import { useAccessibleModal, getModalAriaProps } from '../../../hooks/useAccessibleModal';
 import AudioWaveformPlayer from '../../../components/media/AudioWaveformPlayer';
 import VideoPlayer from '../../../components/media/VideoPlayer';
 import PDFViewer from '../../../components/media/PDFViewer';
@@ -96,6 +98,8 @@ export default function MediaDetailPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const closeQuickActions = useCallback(() => setShowQuickActions(false), []);
+  const quickActionsMenu = useActionMenu(showQuickActions, closeQuickActions);
   const [showAddToWorkspace, setShowAddToWorkspace] = useState(false);
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [showDownloadRequest, setShowDownloadRequest] = useState(false);
@@ -388,10 +392,10 @@ export default function MediaDetailPage() {
         )}
 
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm">
+        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm">
           <Link to={backHref} className="text-archive hover:text-bark transition-colors">{backLabel}</Link>
           <ChevronRight size={14} className="text-archive" />
-          <span className="text-ink font-medium truncate max-w-[300px]">{media.title || media.filename}</span>
+          <span aria-current="page" className="text-ink font-medium truncate max-w-[300px]">{media.title || media.filename}</span>
         </nav>
 
         {/* Header */}
@@ -431,24 +435,31 @@ export default function MediaDetailPage() {
                 <Lock size={14} />Locked by you
               </button>
             ) : (
-              <button onClick={() => { if (canAdmin) lockMutation.mutate(); }} disabled={!canAdmin || lockMutation.isPending} title={!canAdmin ? "You don't have permission" : "Lock for editing"} className={`flex items-center gap-1.5 px-3 py-2 text-sm border border-lichen rounded-lg hover:bg-stone/30 transition-colors ${!canAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}>
+              <button onClick={() => { if (canAdmin) lockMutation.mutate(); }} disabled={!canAdmin || lockMutation.isPending} title={!canAdmin ? "You don't have permission" : "Lock for editing"} aria-label="Lock for editing" className={`flex items-center gap-1.5 px-3 py-2 text-sm border border-lichen rounded-lg hover:bg-stone/30 transition-colors ${!canAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}>
                 <Unlock size={14} className="text-archive" />
               </button>
             )}
 
             {/* Quick Actions */}
             <div className="relative">
-              <button onClick={() => setShowQuickActions(!showQuickActions)} className="flex items-center gap-2 px-3 py-2 text-sm border border-lichen rounded-lg hover:bg-stone/30 transition-colors">
+              <button ref={quickActionsMenu.triggerRef} type="button" aria-haspopup="menu" aria-expanded={showQuickActions} onClick={() => setShowQuickActions(!showQuickActions)} className="flex items-center gap-2 px-3 py-2 text-sm border border-lichen rounded-lg hover:bg-stone/30 transition-colors">
                 <MoreHorizontal size={16} />Actions
               </button>
               {showQuickActions && (
                 <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowQuickActions(false)} />
-                  <div className="absolute right-0 top-full mt-1 w-56 bg-parchment border border-lichen rounded-lg shadow-lg py-1 z-20">
-                    <button onClick={() => { setShowQuickActions(false); setShowAddToWorkspace(true); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-left hover:bg-stone/30">
+                  <div aria-hidden="true" className="fixed inset-0 z-10" onClick={() => setShowQuickActions(false)} />
+                  <div
+                    ref={quickActionsMenu.menuRef}
+                    role="menu"
+                    tabIndex={-1}
+                    aria-label="Media actions"
+                    onKeyDown={quickActionsMenu.onMenuKeyDown}
+                    className="absolute right-0 top-full mt-1 w-56 bg-parchment border border-lichen rounded-lg shadow-lg py-1 z-20"
+                  >
+                    <button type="button" role="menuitem" onClick={() => { setShowQuickActions(false); setShowAddToWorkspace(true); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-left hover:bg-stone/30">
                       <FolderPlus size={16} className="text-archive" />Add to Work Set
                     </button>
-                    <button onClick={() => { setShowQuickActions(false); setShowCreateTask(true); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-left hover:bg-stone/30">
+                    <button type="button" role="menuitem" onClick={() => { setShowQuickActions(false); setShowCreateTask(true); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-left hover:bg-stone/30">
                       <ListChecks size={16} className="text-archive" />Create Task
                     </button>
                     {/* Copy Direct Link hands out media.url — a presigned URL
@@ -460,16 +471,16 @@ export default function MediaDetailPage() {
                         one whose rights are expired. */}
                     {media.url && canDownloadOriginal && media.download_access === 'direct' && (
                       <>
-                        <button onClick={() => { copyToClipboard(media.url!, 'Direct link'); setShowQuickActions(false); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-left hover:bg-stone/30">
+                        <button type="button" role="menuitem" onClick={() => { copyToClipboard(media.url!, 'Direct link'); setShowQuickActions(false); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-left hover:bg-stone/30">
                           <LinkIcon size={16} className="text-archive" />Copy Direct Link
                         </button>
-                        <button onClick={() => { setShowEmbedPanel(true); setShowQuickActions(false); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-left hover:bg-stone/30">
+                        <button type="button" role="menuitem" onClick={() => { setShowEmbedPanel(true); setShowQuickActions(false); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-left hover:bg-stone/30">
                           <Code size={16} className="text-archive" />Embed Code
                         </button>
                       </>
                     )}
-                    <div className="border-t border-lichen my-1" />
-                    <button
+                    <div role="separator" className="border-t border-lichen my-1" />
+                    <button type="button" role="menuitem"
                       onClick={() => { if (canEdit) { goToTab('history'); setShowQuickActions(false); } }}
                       disabled={!canEdit}
                       title={!canEdit ? "You don't have permission" : undefined}
@@ -477,8 +488,8 @@ export default function MediaDetailPage() {
                     >
                       <Upload size={16} className="text-archive" />Upload New Version
                     </button>
-                    <div className="border-t border-lichen my-1" />
-                    <button
+                    <div role="separator" className="border-t border-lichen my-1" />
+                    <button type="button" role="menuitem"
                       onClick={() => { if (canEdit) { reprocessMutation.mutate(); setShowQuickActions(false); } }}
                       disabled={!canEdit || reprocessMutation.isPending || media?.processing_status === 'processing'}
                       title={!canEdit ? "You don't have permission" : undefined}
@@ -489,8 +500,8 @@ export default function MediaDetailPage() {
                     </button>
                     {canDelete && (
                       <>
-                        <div className="border-t border-lichen my-1" />
-                        <button onClick={() => { setShowDeleteDialog(true); setShowQuickActions(false); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-left text-semantic-error hover:bg-semantic-error/10">
+                        <div role="separator" className="border-t border-lichen my-1" />
+                        <button type="button" role="menuitem" onClick={() => { setShowDeleteDialog(true); setShowQuickActions(false); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-left text-semantic-error hover:bg-semantic-error/10">
                           <Trash2 size={16} />Delete Asset
                         </button>
                       </>
@@ -929,19 +940,27 @@ export default function MediaDetailPage() {
       )}
 
       {showEmbedPanel && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50" onClick={() => setShowEmbedPanel(false)}>
-          <div className="bg-parchment rounded-lg shadow-xl w-full max-w-lg p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-ink flex items-center gap-2"><Code size={18} className="text-bark" />Embed Code</h2>
-              <button onClick={() => setShowEmbedPanel(false)} className="text-archive hover:text-ink"><X size={20} /></button>
-            </div>
-            <EmbedCodeGenerator organizationId={orgId!} mediaId={mediaId!} />
-            <div className="mt-4 flex justify-end"><button onClick={() => setShowEmbedPanel(false)} className="btn btn-secondary">Close</button></div>
-          </div>
-        </div>
+        <EmbedCodeDialog organizationId={orgId!} mediaId={mediaId!} onClose={() => setShowEmbedPanel(false)} />
       )}
 
       <ConfirmDialog isOpen={showDeleteDialog} onClose={() => setShowDeleteDialog(false)} onConfirm={() => deleteMutation.mutate()} title="Delete Media" message="Are you sure you want to delete this media? This action cannot be undone." confirmText="Delete" confirmStyle="danger" />
     </>
+  );
+}
+
+function EmbedCodeDialog({ organizationId, mediaId, onClose }: { organizationId: string; mediaId: string; onClose: () => void }) {
+  const { modalRef, titleId } = useAccessibleModal({ isOpen: true, onClose, titlePrefix: 'embed-code-dialog' });
+  return (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50">
+      <div aria-hidden="true" className="absolute inset-0" onClick={onClose} />
+      <div ref={modalRef} {...getModalAriaProps(titleId)} className="relative bg-parchment rounded-lg shadow-xl w-full max-w-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 id={titleId} className="text-lg font-semibold text-ink flex items-center gap-2"><Code size={18} className="text-bark" />Embed Code</h2>
+          <button type="button" onClick={onClose} aria-label="Close" className="text-archive hover:text-ink"><X size={20} /></button>
+        </div>
+        <EmbedCodeGenerator organizationId={organizationId} mediaId={mediaId} />
+        <div className="mt-4 flex justify-end"><button type="button" onClick={onClose} className="btn btn-secondary">Close</button></div>
+      </div>
+    </div>
   );
 }
