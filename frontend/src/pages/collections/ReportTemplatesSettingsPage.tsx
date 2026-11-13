@@ -12,6 +12,7 @@ import {
 } from '../../lib/api/report-templates';
 import { formatDateTime } from '@/lib/formatters';
 import type { ReportTemplate } from '../../lib/api/report-templates';
+import { ReportPdfSetting } from '../../components/reports/ReportPdfSetting';
 
 /** Known built-in templates and their descriptions. */
 const KNOWN_TEMPLATES: { filename: string; description: string }[] = [
@@ -102,6 +103,10 @@ export default function ReportTemplatesSettingsPage() {
           Upload custom HTML templates to override the built-in report layouts.
         </p>
       </div>
+
+      {organizationId && <ReportPdfSetting organizationId={organizationId} />}
+
+      <h2 className="mb-3 text-lg font-semibold text-ink">Template overrides</h2>
 
       {/* Info box */}
       <div className="mb-6 rounded-md border border-semantic-info/20 bg-semantic-info/5 p-4">

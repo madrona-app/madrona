@@ -12,7 +12,7 @@ import {
 import { MadronaLoader } from '../ui/MadronaLoader';
 import { useOrganization } from '../../contexts/useOrganization';
 import { useToast } from '../../contexts/ToastContext';
-import { getReportRuns, downloadReport, cancelReportRun, dismissReportRun } from '../../lib/api/on-demand-reports';
+import { getReportRuns, downloadReport, cancelReportRun, dismissReportRun, reportFormatShortLabel } from '../../lib/api/on-demand-reports';
 import type { ReportRun } from '../../lib/api/on-demand-reports';
 import { ApiError } from '../../lib/apiClient';
 import { formatRelativeTime, formatNumber } from '@/lib/formatters';
@@ -109,7 +109,7 @@ function ReportRunRow({ run }: { run: ReportRun }) {
           {run.export_format && (
             <>
               <span className="text-lichen">|</span>
-              <span>{run.export_format.toUpperCase()}</span>
+              <span>{reportFormatShortLabel(run.export_format)}</span>
             </>
           )}
           {run.row_count !== null && run.status === 'completed' && (
