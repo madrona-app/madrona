@@ -51,12 +51,13 @@ export function StatusAdvancementDialog({
 
   return (
     <ModalPortal>
-    { }
+    {/* Backdrop: pointer dismiss only; Escape is handled by useAccessibleModal. */}
+    {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- backdrop dismiss, not a control */}
     <div
       className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
       onClick={onClose}
     >
-      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation wrapper so clicks inside the dialog don't dismiss it */}
       <div
         ref={modalRef}
         {...getModalAriaProps(titleId, descriptionId)}
@@ -75,8 +76,9 @@ export function StatusAdvancementDialog({
             type="button"
             className="rounded-md text-archive hover:text-archive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             onClick={onClose}
+            aria-label="Close dialog"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 

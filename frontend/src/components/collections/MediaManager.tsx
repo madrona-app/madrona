@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useId } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Upload, AlertCircle } from 'lucide-react';
 import { MadronaLoader } from '../ui/MadronaLoader';
@@ -28,6 +28,7 @@ const ACCEPTED_FILE_TYPES = {
 export function MediaManager({ organizationId, objectId, readOnly = false }: MediaManagerProps) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const errorId = useId();
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -123,10 +124,23 @@ export function MediaManager({ organizationId, objectId, readOnly = false }: Med
 
   return (
     <div className="space-y-4">
-      {/* Upload area */}
-      <div
+      {/* Upload area: a real button (click / Enter / Space opens the file
+          picker) that is also a drop target for dragged files. */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        accept={Object.values(ACCEPTED_FILE_TYPES).join(',')}
+        multiple
+        onChange={handleInputChange}
+        tabIndex={-1}
+        aria-hidden="true"
+      />
+      <button
+        type="button"
         className={`
-          border-2 border-dashed rounded-institutional p-6 text-center cursor-pointer transition-colors
+          block w-full border-2 border-dashed rounded-institutional p-6 text-center cursor-pointer transition-colors
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2
           ${dragOver
             ? 'border-bark bg-bark/5'
             : 'border-lichen hover:border-archive hover:bg-stone/20'
@@ -137,38 +151,31 @@ export function MediaManager({ organizationId, objectId, readOnly = false }: Med
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={handleClickUpload}
+        disabled={uploading}
+        aria-describedby={uploadError ? errorId : undefined}
       >
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="hidden"
-          accept={Object.values(ACCEPTED_FILE_TYPES).join(',')}
-          multiple
-          onChange={handleInputChange}
-        />
-
         {uploading ? (
-          <div className="flex flex-col items-center gap-2">
+          <span className="flex flex-col items-center gap-2" role="status">
             <MadronaLoader />
-            <p className="text-sm text-accessible-gray">Uploading...</p>
-          </div>
+            <span className="text-sm text-accessible-gray">Uploading...</span>
+          </span>
         ) : (
-          <div className="flex flex-col items-center gap-2">
-            <Upload className="w-8 h-8 text-archive" />
-            <p className="text-sm text-ink">
+          <span className="flex flex-col items-center gap-2">
+            <Upload className="w-8 h-8 text-archive" aria-hidden="true" />
+            <span className="text-sm text-ink">
               <span className="font-medium text-bark">Click to upload</span> or drag and drop
-            </p>
-            <p className="text-xs text-archive">
+            </span>
+            <span className="text-xs text-archive">
               Images, videos, audio, or documents
-            </p>
-          </div>
+            </span>
+          </span>
         )}
-      </div>
+      </button>
 
       {/* Upload error */}
       {uploadError && (
-        <div className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-institutional text-semantic-error text-sm flex items-start gap-2">
-          <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+        <div id={errorId} role="alert" className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-institutional text-semantic-error text-sm flex items-start gap-2">
+          <AlertCircle size={16} className="flex-shrink-0 mt-0.5" aria-hidden="true" />
           <span>{uploadError}</span>
         </div>
       )}

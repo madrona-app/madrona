@@ -43,6 +43,7 @@ export function MaterialLinker({
       linkedItems={materials}
       isLoading={isLoading}
       getItemId={(link) => link.link_id}
+      getItemLabel={(link) => link.vocabulary_term?.preferred_term || 'Unknown Material'}
       getLinkedEntityId={(link) => link.vocabulary_term_id}
       renderItem={(link) => (
         <>

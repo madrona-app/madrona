@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { getObjectClassifications, linkObjectClassification, unlinkObjectClassification } from '../../lib/api/collections';
@@ -15,6 +16,7 @@ export function ClassificationLinker({
   isEditing = false,
 }: ClassificationLinkerProps) {
   const queryClient = useQueryClient();
+  const headingId = useId();
   const queryKey = ['object-classifications', organizationId, objectId];
 
   const { data: linked = [], isLoading } = useQuery({
@@ -63,35 +65,40 @@ export function ClassificationLinker({
 
   // Edit mode
   return (
-    <div>
-      <label className="text-sm font-medium text-ink block mb-2">Classifications</label>
+    <div role="group" aria-labelledby={headingId}>
+      <span id={headingId} className="text-sm font-medium text-ink block mb-2">Classifications</span>
 
       {/* Current classifications as removable tags */}
       {(linked as any[]).length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-3">
-          {(linked as any[]).map((link: any) => (
-            <span
-              key={link.link_id}
-              className="inline-flex items-center gap-1 px-2 py-1 bg-stone/50 text-ink text-sm rounded group"
-            >
-              {link.lookup_value?.label || link.value_key || 'Unknown'}
-              <button
-                type="button"
-                onClick={() => unlinkMutation.mutate(link.link_id)}
-                className="text-archive hover:text-semantic-error transition-colors"
-                disabled={unlinkMutation.isPending}
+        <ul className="flex flex-wrap gap-2 mb-3" aria-label="Current classifications">
+          {(linked as any[]).map((link: any) => {
+            const label = link.lookup_value?.label || link.value_key || 'Unknown';
+            return (
+              <li
+                key={link.link_id}
+                className="inline-flex items-center gap-1 px-2 py-1 bg-stone/50 text-ink text-sm rounded group"
               >
-                <X size={14} />
-              </button>
-            </span>
-          ))}
-        </div>
+                {label}
+                <button
+                  type="button"
+                  onClick={() => unlinkMutation.mutate(link.link_id)}
+                  aria-label={`Remove classification ${label}`}
+                  className="text-archive hover:text-semantic-error transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+                  disabled={unlinkMutation.isPending}
+                >
+                  <X size={14} aria-hidden="true" />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       )}
 
       {/* Add classification dropdown */}
       {availableOptions.length > 0 && (
         <select
           className="input w-full"
+          aria-label="Add classification"
           value=""
           onChange={(e) => {
             if (e.target.value) {

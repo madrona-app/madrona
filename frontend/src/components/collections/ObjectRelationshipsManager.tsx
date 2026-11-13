@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
@@ -9,7 +9,6 @@ import {
   X,
   Loader2,
   AlertCircle,
-  MoreVertical,
   Package,
   ExternalLink,
   ArrowRight,
@@ -27,7 +26,9 @@ import {
 import type { WikidataArtworkResult } from '../../lib/api/authorities';
 import type { ObjectRelationship, CollectionObjectListItem } from '../../lib/schemas';
 import SlideOver from '../ui/SlideOver';
+import { RowActionsMenu } from './RowActionsMenu';
 import { ModalPortal } from '../ModalPortal';
+import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
 
 interface ObjectRelationshipsManagerProps {
   organizationId: string;
@@ -420,39 +421,23 @@ function RelationshipItem({
       </div>
 
       {!readOnly && (
-        <div className="relative">
-          <button
-            onClick={() => setActiveMenu(isActive ? null : relationship.relationship_id)}
-            className="p-1 text-archive hover:text-ink opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <MoreVertical size={16} />
-          </button>
-
-          {isActive && (
-            <div className="absolute right-0 top-full mt-1 bg-parchment border border-lichen rounded-institutional shadow-lg z-50 py-1 min-w-[120px]">
-              <button
-                onClick={() => {
-                  onEdit();
-                  setActiveMenu(null);
-                }}
-                className="w-full text-left px-3 py-1.5 text-sm hover:bg-stone/50 flex items-center gap-2"
-              >
-                <Edit2 size={14} />
-                Edit
-              </button>
-              <button
-                onClick={() => {
-                  onDelete();
-                  setActiveMenu(null);
-                }}
-                className="w-full text-left px-3 py-1.5 text-sm hover:bg-stone/50 text-semantic-error flex items-center gap-2"
-              >
-                <Trash2 size={14} />
-                Delete
-              </button>
-            </div>
-          )}
-        </div>
+        <RowActionsMenu
+          targetLabel={
+            (isExternal
+              ? relationship.external_work_title
+              : relationship.related_object_summary?.title || relationship.related_object_summary?.object_number) ||
+            'relationship'
+          }
+          open={isActive}
+          onOpenChange={(open) => setActiveMenu(open ? relationship.relationship_id : null)}
+          triggerClassName="p-1 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity hover:text-ink"
+          menuClassName="rounded-institutional z-50 min-w-[120px]"
+          itemClassName="px-3 py-1.5"
+          actions={[
+            { label: 'Edit', icon: Edit2, onSelect: onEdit },
+            { label: 'Delete', icon: Trash2, onSelect: onDelete, destructive: true },
+          ]}
+        />
       )}
     </div>
   );
@@ -468,6 +453,7 @@ interface AddRelationshipSlideOverProps {
 }
 
 function AddRelationshipSlideOver({ isOpen, organizationId, objectId, onClose, onSuccess }: AddRelationshipSlideOverProps) {
+  const fid = useId();
   const [isExternal, setIsExternal] = useState(false);
   const [relatedObjectId, setRelatedObjectId] = useState<string>('');
   const [relationshipType, setRelationshipType] = useState<string>('related_to');
@@ -635,10 +621,11 @@ function AddRelationshipSlideOver({ isOpen, organizationId, objectId, onClose, o
 
         {/* Relationship Type */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fid}-relationship-type-2`} className="block text-sm font-medium text-ink mb-1.5">
             Relationship Type <span className="text-semantic-error">*</span>
           </label>
           <select
+            id={`${fid}-relationship-type-2`}
             value={relationshipType}
             onChange={(e) => setRelationshipType(e.target.value)}
             className="input w-full"
@@ -652,10 +639,11 @@ function AddRelationshipSlideOver({ isOpen, organizationId, objectId, onClose, o
         {/* Internal Object Selection */}
         {!isExternal && (
           <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">
+            <label htmlFor={`${fid}-search-objects`} className="block text-sm font-medium text-ink mb-1.5">
               Search Objects <span className="text-semantic-error">*</span>
             </label>
             <input
+              id={`${fid}-search-objects`}
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -696,12 +684,13 @@ function AddRelationshipSlideOver({ isOpen, organizationId, objectId, onClose, o
           <>
             {/* Wikidata Search */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+              <label htmlFor={`${fid}-search-wikidata`} className="block text-sm font-medium text-ink mb-1.5">
                 Search Wikidata
               </label>
               <div className="relative">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-archive" />
                 <input
+                  id={`${fid}-search-wikidata`}
                   type="text"
                   value={wikidataQuery}
                   onChange={(e) => setWikidataQuery(e.target.value)}
@@ -766,8 +755,9 @@ function AddRelationshipSlideOver({ isOpen, organizationId, objectId, onClose, o
                   href={`https://www.wikidata.org/wiki/${externalIdentifier}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-bark hover:text-copper-dark flex-shrink-0"
+                  className="text-bark hover:text-copper-dark flex-shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                   title="View on Wikidata"
+                  aria-label={`View ${externalTitle} on Wikidata`}
                 >
                   <ExternalLink size={16} />
                 </a>
@@ -775,10 +765,11 @@ function AddRelationshipSlideOver({ isOpen, organizationId, objectId, onClose, o
             )}
 
             <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+              <label htmlFor={`${fid}-title-2`} className="block text-sm font-medium text-ink mb-1.5">
                 Title <span className="text-semantic-error">*</span>
               </label>
               <input
+                id={`${fid}-title-2`}
                 type="text"
                 value={externalTitle}
                 onChange={(e) => setExternalTitle(e.target.value)}
@@ -788,8 +779,9 @@ function AddRelationshipSlideOver({ isOpen, organizationId, objectId, onClose, o
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">Creator</label>
+                <label htmlFor={`${fid}-creator-2`} className="block text-sm font-medium text-ink mb-1.5">Creator</label>
                 <input
+                  id={`${fid}-creator-2`}
                   type="text"
                   value={externalCreator}
                   onChange={(e) => setExternalCreator(e.target.value)}
@@ -797,8 +789,9 @@ function AddRelationshipSlideOver({ isOpen, organizationId, objectId, onClose, o
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">Date</label>
+                <label htmlFor={`${fid}-date-2`} className="block text-sm font-medium text-ink mb-1.5">Date</label>
                 <input
+                  id={`${fid}-date-2`}
                   type="text"
                   value={externalDate}
                   onChange={(e) => setExternalDate(e.target.value)}
@@ -807,8 +800,9 @@ function AddRelationshipSlideOver({ isOpen, organizationId, objectId, onClose, o
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">Location</label>
+              <label htmlFor={`${fid}-location-2`} className="block text-sm font-medium text-ink mb-1.5">Location</label>
               <input
+                id={`${fid}-location-2`}
                 type="text"
                 value={externalLocation}
                 onChange={(e) => setExternalLocation(e.target.value)}
@@ -821,10 +815,11 @@ function AddRelationshipSlideOver({ isOpen, organizationId, objectId, onClose, o
 
         {/* Sequence Number */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fid}-sequence-number-2`} className="block text-sm font-medium text-ink mb-1.5">
             Sequence Number
           </label>
           <input
+            id={`${fid}-sequence-number-2`}
             type="number"
             value={sequenceNumber}
             onChange={(e) => setSequenceNumber(e.target.value)}
@@ -835,8 +830,9 @@ function AddRelationshipSlideOver({ isOpen, organizationId, objectId, onClose, o
 
         {/* Notes */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">Notes</label>
+          <label htmlFor={`${fid}-notes-2`} className="block text-sm font-medium text-ink mb-1.5">Notes</label>
           <textarea
+            id={`${fid}-notes-2`}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
@@ -858,6 +854,13 @@ interface EditRelationshipModalProps {
 }
 
 function EditRelationshipModal({ organizationId, relationship, onClose, onSuccess }: EditRelationshipModalProps) {
+  const fid = useId();
+  // Dialog semantics, focus trap, Escape and focus return
+  const { modalRef, titleId } = useAccessibleModal({
+    isOpen: true,
+    onClose,
+    titlePrefix: 'edit-relationship-modal',
+  });
   const [relationshipType, setRelationshipType] = useState(relationship.relationship_type);
   const [externalTitle, setExternalTitle] = useState(relationship.external_work_title || '');
   const [externalCreator, setExternalCreator] = useState(relationship.external_work_creator || '');
@@ -894,11 +897,15 @@ function EditRelationshipModal({ organizationId, relationship, onClose, onSucces
   return (
     <ModalPortal>
     <div className="fixed inset-0 bg-ink/50 flex items-center justify-center z-50">
-      <div className="bg-parchment rounded-institutional shadow-lg max-w-lg w-full mx-4">
+      <div
+        ref={modalRef}
+        {...getModalAriaProps(titleId)}
+        className="bg-parchment rounded-institutional shadow-lg max-w-lg w-full mx-4"
+      >
         <div className="p-4 border-b border-lichen flex items-center justify-between">
-          <h3 className="font-serif font-medium text-forest">Edit Relationship</h3>
-          <button onClick={onClose} className="text-archive hover:text-ink">
-            <X size={20} />
+          <h3 id={titleId} className="font-serif font-medium text-forest">Edit Relationship</h3>
+          <button type="button" onClick={onClose} aria-label="Close" className="text-archive hover:text-ink rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2">
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
 
@@ -910,8 +917,9 @@ function EditRelationshipModal({ organizationId, relationship, onClose, onSucces
           )}
 
           <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">Relationship Type</label>
+            <label htmlFor={`${fid}-relationship-type`} className="block text-sm font-medium text-ink mb-1.5">Relationship Type</label>
             <select
+              id={`${fid}-relationship-type`}
               value={relationshipType}
               onChange={(e) => setRelationshipType(e.target.value)}
               className="input w-full"
@@ -962,16 +970,18 @@ function EditRelationshipModal({ organizationId, relationship, onClose, onSucces
                     href={`https://www.wikidata.org/wiki/${relationship.external_work_identifier}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-bark hover:text-copper-dark flex-shrink-0"
+                    className="text-bark hover:text-copper-dark flex-shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                     title="View on Wikidata"
+                    aria-label={`View ${relationship.external_work_title} on Wikidata`}
                   >
                     <ExternalLink size={16} />
                   </a>
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">Title</label>
+                <label htmlFor={`${fid}-title`} className="block text-sm font-medium text-ink mb-1.5">Title</label>
                 <input
+                  id={`${fid}-title`}
                   type="text"
                   value={externalTitle}
                   onChange={(e) => setExternalTitle(e.target.value)}
@@ -980,8 +990,9 @@ function EditRelationshipModal({ organizationId, relationship, onClose, onSucces
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1.5">Creator</label>
+                  <label htmlFor={`${fid}-creator`} className="block text-sm font-medium text-ink mb-1.5">Creator</label>
                   <input
+                    id={`${fid}-creator`}
                     type="text"
                     value={externalCreator}
                     onChange={(e) => setExternalCreator(e.target.value)}
@@ -989,8 +1000,9 @@ function EditRelationshipModal({ organizationId, relationship, onClose, onSucces
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1.5">Date</label>
+                  <label htmlFor={`${fid}-date`} className="block text-sm font-medium text-ink mb-1.5">Date</label>
                   <input
+                    id={`${fid}-date`}
                     type="text"
                     value={externalDate}
                     onChange={(e) => setExternalDate(e.target.value)}
@@ -999,8 +1011,9 @@ function EditRelationshipModal({ organizationId, relationship, onClose, onSucces
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">Location</label>
+                <label htmlFor={`${fid}-location`} className="block text-sm font-medium text-ink mb-1.5">Location</label>
                 <input
+                  id={`${fid}-location`}
                   type="text"
                   value={externalLocation}
                   onChange={(e) => setExternalLocation(e.target.value)}
@@ -1011,8 +1024,9 @@ function EditRelationshipModal({ organizationId, relationship, onClose, onSucces
           )}
 
           <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">Sequence Number</label>
+            <label htmlFor={`${fid}-sequence-number`} className="block text-sm font-medium text-ink mb-1.5">Sequence Number</label>
             <input
+              id={`${fid}-sequence-number`}
               type="number"
               value={sequenceNumber}
               onChange={(e) => setSequenceNumber(e.target.value)}
@@ -1021,8 +1035,8 @@ function EditRelationshipModal({ organizationId, relationship, onClose, onSucces
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">Notes</label>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="input w-full" />
+            <label htmlFor={`${fid}-notes`} className="block text-sm font-medium text-ink mb-1.5">Notes</label>
+            <textarea id={`${fid}-notes`} value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="input w-full" />
           </div>
 
           <div className="flex justify-end gap-2 pt-4">

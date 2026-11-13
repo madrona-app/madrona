@@ -120,7 +120,7 @@ describe('AuthorizationSection', () => {
         authorizerContact: { name: 'Jane', organization_name: null },
       });
       expect(screen.getByText('Jane')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Change' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Change authorizer' })).toBeInTheDocument();
     });
 
     it('clears the authorizer by calling onUpdateField with empty string', () => {

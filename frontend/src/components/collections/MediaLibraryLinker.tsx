@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
@@ -284,8 +284,19 @@ function MediaLinkCard({
   onUpdateLink,
 }: MediaLinkCardProps) {
   const media = item.media;
+  const mediaName = media ? media.title || media.filename : '';
   const [isEditingCaption, setIsEditingCaption] = useState(false);
   const [captionDraft, setCaptionDraft] = useState(item.caption_override || '');
+  // Opening the inline caption editor moves focus into it; closing it
+  // returns focus to the Edit caption button it replaced.
+  const captionInputRef = useRef<HTMLInputElement>(null);
+  const editCaptionButtonRef = useRef<HTMLButtonElement>(null);
+  const wasEditingCaption = useRef(false);
+  useEffect(() => {
+    if (isEditingCaption) captionInputRef.current?.focus();
+    else if (wasEditingCaption.current) editCaptionButtonRef.current?.focus();
+    wasEditingCaption.current = isEditingCaption;
+  }, [isEditingCaption]);
 
   if (!media) return null;
 
@@ -317,12 +328,12 @@ function MediaLinkCard({
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <Icon className="w-8 h-8 text-archive" />
+            <Icon className="w-8 h-8 text-archive" aria-hidden="true" />
           </div>
         )}
-        {/* Primary badge on thumbnail */}
+        {/* Primary badge on thumbnail (the text badge beside the title says it too) */}
         {showPrimary && item.is_primary && (
-          <div className="absolute top-0.5 left-0.5 p-0.5 bg-semantic-warning/100 text-parchment rounded">
+          <div className="absolute top-0.5 left-0.5 p-0.5 bg-semantic-warning/100 text-parchment rounded" aria-hidden="true">
             <Star size={10} fill="currentColor" />
           </div>
         )}
@@ -337,7 +348,7 @@ function MediaLinkCard({
           </p>
           {showPrimary && item.is_primary && (
             <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-semantic-warning/100 text-parchment rounded text-[10px] font-medium flex-shrink-0">
-              <Star size={8} fill="currentColor" />
+              <Star size={8} fill="currentColor" aria-hidden="true" />
               Primary
             </span>
           )}
@@ -346,30 +357,35 @@ function MediaLinkCard({
             <div className="flex items-center gap-1 flex-shrink-0">
               {showPrimary && onSetPrimary && !item.is_primary && isImage && (
                 <button
+                  type="button"
                   onClick={onSetPrimary}
                   disabled={isSettingPrimary}
-                  className="p-1 text-archive hover:text-semantic-warning disabled:opacity-50"
+                  className="p-1 rounded text-archive hover:text-semantic-warning disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                   title="Set as primary"
+                  aria-label={`Set ${mediaName} as primary`}
                 >
-                  {isSettingPrimary ? <Loader2 size={14} className="animate-spin" /> : <Star size={14} />}
+                  {isSettingPrimary ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <Star size={14} aria-hidden="true" />}
                 </button>
               )}
               {hasMediaApp && (
                 <Link
                   to={`/organizations/${organizationId}/media/${item.media_id}`}
-                  className="p-1 text-archive hover:text-bark"
+                  className="p-1 rounded text-archive hover:text-bark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                   title="View in library"
+                  aria-label={`View ${mediaName} in library`}
                 >
-                  <ExternalLink size={14} />
+                  <ExternalLink size={14} aria-hidden="true" />
                 </Link>
               )}
               <button
+                type="button"
                 onClick={onUnlink}
                 disabled={isUnlinking}
-                className="p-1 text-archive hover:text-semantic-error disabled:opacity-50"
+                className="p-1 rounded text-archive hover:text-semantic-error disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                 title="Unlink"
+                aria-label={`Unlink ${mediaName}`}
               >
-                {isUnlinking ? <Loader2 size={14} className="animate-spin" /> : <X size={14} />}
+                {isUnlinking ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <X size={14} aria-hidden="true" />}
               </button>
             </div>
           )}
@@ -380,6 +396,7 @@ function MediaLinkCard({
           <div className="mb-1.5">
             <select
               value={item.usage_type || ''}
+              aria-label={`Usage type for ${mediaName}`}
               onChange={(e) => handleUsageTypeChange(e.target.value)}
               disabled={isUpdating}
               className="text-xs px-2 py-1 border border-lichen rounded bg-parchment focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-bark/30 focus-visible:ring-offset-2 disabled:opacity-50"
@@ -405,12 +422,13 @@ function MediaLinkCard({
           isEditingCaption ? (
             <div className="flex items-center gap-2">
               <input
+                ref={captionInputRef}
                 type="text"
+                aria-label={`Caption for ${mediaName}`}
                 value={captionDraft}
                 onChange={(e) => setCaptionDraft(e.target.value)}
                 placeholder="Add a caption..."
                 className="flex-1 text-xs px-2 py-1 border border-lichen rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
-                autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     handleSaveCaption();
@@ -421,20 +439,24 @@ function MediaLinkCard({
                 }}
               />
               <button
+                type="button"
                 onClick={handleSaveCaption}
                 disabled={isUpdating}
-                className="p-1 text-semantic-success hover:bg-semantic-success/10 rounded"
+                aria-label="Save caption"
+                className="p-1 text-semantic-success hover:bg-semantic-success/10 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
               >
-                {isUpdating ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                {isUpdating ? <Loader2 size={12} className="animate-spin" aria-hidden="true" /> : <Check size={12} aria-hidden="true" />}
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setCaptionDraft(item.caption_override || '');
                   setIsEditingCaption(false);
                 }}
-                className="p-1 text-archive hover:bg-stone rounded"
+                aria-label="Cancel caption edit"
+                className="p-1 text-archive hover:bg-stone rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
               >
-                <X size={12} />
+                <X size={12} aria-hidden="true" />
               </button>
             </div>
           ) : (
@@ -443,14 +465,17 @@ function MediaLinkCard({
                 {item.caption_override || <span className="italic">No caption</span>}
               </p>
               <button
+                ref={editCaptionButtonRef}
+                type="button"
                 onClick={() => {
                   setCaptionDraft(item.caption_override || '');
                   setIsEditingCaption(true);
                 }}
-                className="p-1 text-archive hover:text-bark"
+                className="p-1 rounded text-archive hover:text-bark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                 title="Edit caption"
+                aria-label={`Edit caption for ${mediaName}`}
               >
-                <Edit2 size={12} />
+                <Edit2 size={12} aria-hidden="true" />
               </button>
             </div>
           )
@@ -594,7 +619,7 @@ function LinkMediaSlideOver({
       <div className="flex flex-col h-full -my-5">
         {/* Error message */}
         {error && (
-          <div className="p-3 mx-1 mt-5 bg-semantic-error/10 border border-semantic-error/30 rounded-lg text-sm text-semantic-error">
+          <div role="alert" className="p-3 mx-1 mt-5 bg-semantic-error/10 border border-semantic-error/30 rounded-lg text-sm text-semantic-error">
             {error}
           </div>
         )}
@@ -602,19 +627,20 @@ function LinkMediaSlideOver({
         {/* Search and filters - fixed at top */}
         <div className="flex gap-3 p-1 pt-5 flex-shrink-0">
           <div className="flex-1 relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-archive" />
+            <Search size={16} aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-archive" />
             <input
-              type="text"
+              type="search"
+              aria-label="Search media"
               value={searchTerm}
               onChange={(e) => handleSearchChange(e.target.value)}
               placeholder="Search media by title, filename..."
               className="w-full pl-9 pr-4 py-2 border border-lichen rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
-              autoFocus
             />
           </div>
           <div className="relative">
-            <Filter size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-archive pointer-events-none" />
+            <Filter size={16} aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-archive pointer-events-none" />
             <select
+              aria-label="Media type"
               value={mediaTypeFilter}
               onChange={(e) => {
                 setMediaTypeFilter(e.target.value);
@@ -638,8 +664,8 @@ function LinkMediaSlideOver({
               Type at least 2 characters to search, or filter by type...
             </div>
           ) : isSearching ? (
-            <div className="p-8 text-center text-archive">
-              <Loader2 size={20} className="inline animate-spin mr-2" />
+            <div className="p-8 text-center text-archive" role="status">
+              <Loader2 size={20} className="inline animate-spin mr-2" aria-hidden="true" />
               Searching...
             </div>
           ) : availableMedia.length > 0 ? (
@@ -656,7 +682,8 @@ function LinkMediaSlideOver({
                     key={media.media_id}
                     type="button"
                     onClick={() => handleSelectMedia(media)}
-                    className={`relative rounded-lg overflow-hidden border-2 transition-all text-left ${
+                    aria-pressed={isSelected}
+                    className={`relative rounded-lg overflow-hidden border-2 transition-all text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 ${
                       isSelected
                         ? 'border-bark ring-2 ring-bark/20 bg-bark/5'
                         : 'border-lichen hover:border-bark/50 bg-parchment'
@@ -666,14 +693,14 @@ function LinkMediaSlideOver({
                       {isImage && imageUrl ? (
                         <img
                           src={imageUrl}
-                          alt={displayName}
+                          alt=""
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <Icon className="w-8 h-8 text-archive" />
+                        <Icon className="w-8 h-8 text-archive" aria-hidden="true" />
                       )}
                       {isSelected && (
-                        <div className="absolute inset-0 bg-bark/20 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-bark/20 flex items-center justify-center" aria-hidden="true">
                           <div className="bg-bark text-parchment rounded-full p-1">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -699,7 +726,7 @@ function LinkMediaSlideOver({
               })}
             </div>
           ) : showNoResults ? (
-            <div className="p-8 text-center text-archive text-sm">
+            <div className="p-8 text-center text-archive text-sm" role="status">
               No media found matching your search
             </div>
           ) : null}

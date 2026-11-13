@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Plus, X, AlertCircle } from 'lucide-react';
 import type { Measurement } from './types';
 
@@ -17,6 +18,7 @@ export function MeasurementsField({
   onAdd: () => void;
   onSave: () => void;
 }) {
+  const groupLabelId = useId();
   if (!isEditing) {
     if (measurements.length === 0) return null;
     return (
@@ -36,11 +38,11 @@ export function MeasurementsField({
   }
 
   return (
-    <div>
+    <div role="group" aria-labelledby={groupLabelId}>
       <div className="flex items-center justify-between mb-2">
-        <label className="text-sm font-medium text-ink">Measurements</label>
+        <span id={groupLabelId} className="text-sm font-medium text-ink">Measurements</span>
         <button type="button" onClick={onAdd} className="text-sm text-bark hover:text-copper-dark flex items-center gap-1">
-          <Plus size={14} />
+          <Plus size={14} aria-hidden="true" />
           Add measurement
         </button>
       </div>
@@ -51,6 +53,9 @@ export function MeasurementsField({
             <div key={i}>
               <div className="flex items-center gap-2">
                 <select
+                  aria-label={`Measurement ${i + 1} dimension`}
+                  aria-invalid={missingDimension || undefined}
+                  aria-describedby={missingDimension ? `${groupLabelId}-dim-${i}` : undefined}
                   value={m.dimension}
                   onChange={(e) => {
                     const updated = [...measurements];
@@ -71,6 +76,7 @@ export function MeasurementsField({
                 <input
                   type="number"
                   step="0.1"
+                  aria-label={`Measurement ${i + 1} value`}
                   value={m.value ?? ''}
                   onChange={(e) => {
                     const updated = [...measurements];
@@ -82,6 +88,7 @@ export function MeasurementsField({
                   className={`w-24 ${inputClass}`}
                 />
                 <select
+                  aria-label={`Measurement ${i + 1} unit`}
                   value={m.unit}
                   onChange={(e) => {
                     const updated = [...measurements];
@@ -106,14 +113,15 @@ export function MeasurementsField({
                     onChange(measurements.filter((_, idx) => idx !== i));
                     onSave();
                   }}
-                  className="p-1 text-archive hover:text-semantic-error"
+                  aria-label={`Remove measurement ${i + 1}${m.dimension ? `, ${m.dimension}` : ''}`}
+                  className="p-1 rounded text-archive hover:text-semantic-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                 >
-                  <X size={16} />
+                  <X size={16} aria-hidden="true" />
                 </button>
               </div>
               {missingDimension && (
-                <p className="flex items-center gap-1 text-xs text-semantic-error mt-1 ml-1">
-                  <AlertCircle size={12} />
+                <p id={`${groupLabelId}-dim-${i}`} className="flex items-center gap-1 text-xs text-semantic-error mt-1 ml-1">
+                  <AlertCircle size={12} aria-hidden="true" />
                   Select a dimension to save this measurement
                 </p>
               )}

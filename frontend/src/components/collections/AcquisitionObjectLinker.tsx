@@ -145,10 +145,11 @@ export function ObjectAcquisitionSelector({
           </div>
           <a
             href={`/organizations/${organizationId}/collections/acquisitions/${acq.acquisition_id}`}
-            className="text-bark hover:text-copper-dark p-1"
+            className="text-bark hover:text-copper-dark p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 rounded"
             title="View acquisition"
+            aria-label={`View acquisition ${acq.acquisition_number}`}
           >
-            <ExternalLink size={14} />
+            <ExternalLink size={14} aria-hidden="true" />
           </a>
         </div>
       )}

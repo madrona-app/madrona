@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { User, Building2, Users, CheckCircle } from 'lucide-react';
 import {
@@ -54,6 +55,7 @@ export function ConstituentLinker({
   addLabel: addLabelOverride,
   onCountChange,
 }: ConstituentLinkerProps) {
+  const fid = useId();
   // Map entity type to lookup category key
   const categoryKey = `constituent_role_${entityType === 'collection_object' ? 'object' : entityType}`;
   const { options: lookupOptions, getLabel: _getLabel, isLoading: _rolesLoading } = useLookupCategory(categoryKey);
@@ -102,6 +104,7 @@ export function ConstituentLinker({
       linkedItems={xrefs}
       isLoading={isLoading}
       getItemId={(xref) => xref.xref_id}
+      getItemLabel={(xref) => xref.display_name_override || xref.constituent?.name || 'Unknown'}
       getLinkedEntityId={(xref) => xref.constituent_id}
       getItemGroup={(xref) => xref.role}
       groupLabels={roleLabels}
@@ -180,10 +183,10 @@ export function ConstituentLinker({
         submitLabel: 'Create & Link',
         renderCreateFields: ({ searchTerm, formData, setFormData }) => (
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+            <fieldset>
+              <legend className="block text-sm font-medium text-ink mb-1.5">
                 Type <span className="text-semantic-error">*</span>
-              </label>
+              </legend>
               <div className="flex gap-4">
                 {([
                   { value: 'person', label: 'Person', Icon: User },
@@ -191,7 +194,7 @@ export function ConstituentLinker({
                 ] as const).map(({ value, label, Icon }) => (
                   <label
                     key={value}
-                    className={`flex-1 flex items-center justify-center gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${
+                    className={`flex-1 flex items-center justify-center gap-2 p-3 border rounded-lg cursor-pointer transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-bark/30 has-[:focus-visible]:ring-offset-2 ${
                       (formData.constituent_type || 'person') === value
                         ? 'border-bark bg-bark/5'
                         : 'border-lichen hover:border-bark/30'
@@ -209,6 +212,7 @@ export function ConstituentLinker({
                     />
                     <Icon
                       size={18}
+                      aria-hidden="true"
                       className={
                         (formData.constituent_type || 'person') === value
                           ? 'text-bark'
@@ -219,12 +223,13 @@ export function ConstituentLinker({
                   </label>
                 ))}
               </div>
-            </div>
+            </fieldset>
             <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+              <label htmlFor={`${fid}-name`} className="block text-sm font-medium text-ink mb-1.5">
                 Name <span className="text-semantic-error">*</span>
               </label>
               <input
+                id={`${fid}-name`}
                 type="text"
                 value={formData.name ?? searchTerm}
                 onChange={(e) =>
@@ -236,14 +241,14 @@ export function ConstituentLinker({
                     : 'Enter organization name...'
                 }
                 className="w-full px-3 py-2 border border-lichen rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
-                autoFocus
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+              <label htmlFor={`${fid}-role`} className="block text-sm font-medium text-ink mb-1.5">
                 Role <span className="text-semantic-error">*</span>
               </label>
               <select
+                id={`${fid}-role`}
                 value={formData.role || roleOptions[0]?.value || allowedRoles?.[0] || 'creator'}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, role: e.target.value }))

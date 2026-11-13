@@ -43,6 +43,7 @@ export function TechniqueLinker({
       linkedItems={techniques}
       isLoading={isLoading}
       getItemId={(link) => link.link_id}
+      getItemLabel={(link) => link.vocabulary_term?.preferred_term || 'Unknown Technique'}
       getLinkedEntityId={(link) => link.vocabulary_term_id}
       renderItem={(link) => (
         <>

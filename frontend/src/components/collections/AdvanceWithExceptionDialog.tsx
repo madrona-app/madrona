@@ -110,8 +110,9 @@ export function AdvanceWithExceptionDialog({
               type="button"
               onClick={handleClose}
               className="text-archive hover:text-archive dark:hover:text-stone"
+              aria-label="Close dialog"
             >
-              <X className="h-5 w-5" />
+              <X className="h-5 w-5" aria-hidden="true" />
             </button>
           </div>
 

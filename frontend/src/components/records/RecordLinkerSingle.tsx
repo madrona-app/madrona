@@ -112,20 +112,25 @@ export function RecordLinkerSingle<TLinked, TSearch>({
           {isEditing && (
             <div className="mt-2 flex items-center gap-3">
               <button
+                type="button"
                 onClick={() => setShowSlideOver(true)}
-                className="text-sm text-bark hover:text-copper-dark"
+                aria-haspopup="dialog"
+                aria-label={`Change ${singularNoun.toLowerCase()}`}
+                className="text-sm text-bark hover:text-copper-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
               >
                 Change
               </button>
               <button
+                type="button"
                 onClick={handleUnlink}
                 disabled={isUnlinking}
-                className="flex items-center gap-1 text-sm text-semantic-error hover:text-semantic-error/80 disabled:opacity-50"
+                aria-label={`Unlink ${singularNoun.toLowerCase()}`}
+                className="flex items-center gap-1 text-sm text-semantic-error hover:text-semantic-error/80 disabled:opacity-50 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
               >
                 {isUnlinking ? (
-                  <Loader2 size={14} className="animate-spin" />
+                  <Loader2 size={14} className="animate-spin" aria-hidden="true" />
                 ) : (
-                  <X size={14} />
+                  <X size={14} aria-hidden="true" />
                 )}
                 Unlink
               </button>
@@ -136,10 +141,12 @@ export function RecordLinkerSingle<TLinked, TSearch>({
         <div>
           {isEditing ? (
             <button
+              type="button"
               onClick={() => setShowSlideOver(true)}
-              className="w-full p-4 border-2 border-dashed border-lichen rounded-lg text-archive hover:border-bark hover:text-bark transition-colors flex items-center justify-center gap-2"
+              aria-haspopup="dialog"
+              className="w-full p-4 border-2 border-dashed border-lichen rounded-lg text-archive hover:border-bark hover:text-bark transition-colors flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             >
-              <Plus size={16} />
+              <Plus size={16} aria-hidden="true" />
               {emptyLabel || `Link to ${singularNoun}`}
             </button>
           ) : (

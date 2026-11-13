@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Plus, X } from 'lucide-react';
 
 /**
@@ -21,6 +22,7 @@ export function StringListField({
   placeholder?: string;
   emptyMessage?: string;
 }) {
+  const groupLabelId = useId();
   if (!isEditing) {
     if (!items || items.length === 0) return null;
     return (
@@ -38,15 +40,16 @@ export function StringListField({
   }
 
   return (
-    <div>
+    <div role="group" aria-labelledby={groupLabelId}>
       <div className="flex items-center justify-between mb-2">
-        <label className="text-sm font-medium text-ink">{label}</label>
+        <span id={groupLabelId} className="text-sm font-medium text-ink">{label}</span>
         <button
           type="button"
           onClick={() => onChange([...items, ''])}
           className="text-sm text-bark hover:text-copper-dark flex items-center gap-1"
+          aria-label={`Add ${label.toLowerCase()}`}
         >
-          <Plus size={14} />
+          <Plus size={14} aria-hidden="true" />
           Add
         </button>
       </div>
@@ -55,6 +58,7 @@ export function StringListField({
           <div key={i} className="flex items-center gap-2">
             <input
               type="text"
+              aria-label={`${label} ${i + 1}`}
               value={item}
               onChange={(e) => {
                 const updated = [...items];
@@ -71,9 +75,10 @@ export function StringListField({
                 onChange(items.filter((_, idx) => idx !== i));
                 onSave();
               }}
-              className="p-1 text-archive hover:text-semantic-error"
+              aria-label={`Remove ${label.toLowerCase()} ${i + 1}${item ? `, ${item}` : ''}`}
+              className="p-1 rounded text-archive hover:text-semantic-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             >
-              <X size={16} />
+              <X size={16} aria-hidden="true" />
             </button>
           </div>
         ))}

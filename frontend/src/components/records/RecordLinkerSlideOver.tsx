@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useId, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Search, Loader2, Plus, ArrowLeft } from 'lucide-react';
 import SlideOver from '../ui/SlideOver';
@@ -30,6 +30,8 @@ export function RecordLinkerSlideOver<TSearch>({
   onLink,
   submitLabel,
 }: RecordLinkerSlideOverProps<TSearch>) {
+  const searchInputId = useId();
+  const resultsId = useId();
   const [mode, setMode] = useState<'search' | 'create'>('search');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState<TSearch | null>(null);
@@ -47,6 +49,29 @@ export function RecordLinkerSlideOver<TSearch>({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const minSearchLength = search.minSearchLength ?? 2;
+
+  // Switching between search and create replaces the panel content, which
+  // would drop keyboard focus on the removed button. Move it to the first
+  // field of the view that was just shown instead.
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const createPanelRef = useRef<HTMLDivElement>(null);
+  const previousMode = useRef(mode);
+  useEffect(() => {
+    if (previousMode.current === mode) return;
+    previousMode.current = mode;
+    if (!isOpen) return;
+    if (mode === 'create') {
+      const panel = createPanelRef.current;
+      const target =
+        panel?.querySelector<HTMLElement>(
+          'input:not([type=hidden]):not([type=radio]):not([type=checkbox]):not([disabled]), textarea:not([disabled])'
+        ) ??
+        panel?.querySelector<HTMLElement>('input:not([disabled]), select:not([disabled]), button:not([disabled])');
+      target?.focus();
+    } else {
+      searchInputRef.current?.focus();
+    }
+  }, [mode, isOpen]);
 
   // Search query
   const { data: searchResults, isLoading: isSearching } = useQuery({
@@ -225,12 +250,14 @@ export function RecordLinkerSlideOver<TSearch>({
       footer={
         <div className="flex justify-end gap-2">
           <button
+            type="button"
             onClick={handleClose}
             className="px-4 py-2 text-sm border border-lichen rounded-lg hover:bg-stone/50"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={handleSubmit}
             disabled={
               isSubmitting ||
@@ -240,7 +267,7 @@ export function RecordLinkerSlideOver<TSearch>({
           >
             {isSubmitting ? (
               <>
-                <Loader2 size={16} className="animate-spin" />
+                <Loader2 size={16} className="animate-spin" aria-hidden="true" />
                 {mode === 'create' ? 'Creating...' : 'Adding...'}
               </>
             ) : (
@@ -253,7 +280,7 @@ export function RecordLinkerSlideOver<TSearch>({
       <div className="space-y-5">
         {/* Error */}
         {error && (
-          <div className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-lg text-sm text-semantic-error">
+          <div role="alert" className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-lg text-sm text-semantic-error">
             {error}
           </div>
         )}
@@ -271,39 +298,45 @@ export function RecordLinkerSlideOver<TSearch>({
 
             {/* Search input */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+              <label htmlFor={searchInputId} className="block text-sm font-medium text-ink mb-1.5">
                 {search.searchLabel || 'Search'}
               </label>
               <div className="relative">
                 <Search
                   size={16}
+                  aria-hidden="true"
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-archive"
                 />
                 <input
-                  type="text"
+                  ref={searchInputRef}
+                  id={searchInputId}
+                  type="search"
+                  aria-controls={resultsId}
                   value={searchTerm}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   placeholder={search.placeholder || 'Search...'}
                   className="w-full pl-9 pr-4 py-2 border border-lichen rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
-                  autoFocus
                 />
               </div>
             </div>
 
             {/* Search results */}
-            <div className="border border-lichen rounded-lg overflow-hidden">
+            <div id={resultsId} className="border border-lichen rounded-lg overflow-hidden">
               {searchTerm.length < minSearchLength ? (
                 <div className="p-6 text-center text-archive text-sm">
                   Type at least {minSearchLength} character
                   {minSearchLength !== 1 ? 's' : ''} to search...
                 </div>
               ) : isSearching ? (
-                <div className="p-6 text-center text-archive">
-                  <Loader2 size={16} className="inline animate-spin mr-2" />
+                <div className="p-6 text-center text-archive" role="status">
+                  <Loader2 size={16} className="inline animate-spin mr-2" aria-hidden="true" />
                   Searching...
                 </div>
               ) : filteredResults.length > 0 ? (
-                <div className="max-h-64 overflow-y-auto">
+                <ul
+                  className="max-h-64 overflow-y-auto"
+                  aria-label={`${filteredResults.length} result${filteredResults.length !== 1 ? 's' : ''}`}
+                >
                   {filteredResults.map((item) => {
                     const id = search.getSearchItemId(item);
                     const isSelected = bulkSelect
@@ -312,11 +345,12 @@ export function RecordLinkerSlideOver<TSearch>({
                         ? search.getSearchItemId(selectedItem) === id
                         : false;
                     return (
+                      <li key={id} className="border-b border-lichen last:border-b-0">
                       <button
-                        key={id}
                         type="button"
                         onClick={() => handleSelect(item)}
-                        className={`w-full text-left px-3 py-2.5 hover:bg-stone/50 border-b border-lichen last:border-b-0 flex items-center gap-3 ${
+                        aria-pressed={isSelected}
+                        className={`w-full text-left px-3 py-2.5 hover:bg-stone/50 flex items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bark/30 ${
                           isSelected
                             ? 'bg-bark/10 border-l-2 border-l-bark'
                             : ''
@@ -324,12 +358,13 @@ export function RecordLinkerSlideOver<TSearch>({
                       >
                         {search.renderSearchItem(item, isSelected)}
                       </button>
+                      </li>
                     );
                   })}
-                </div>
+                </ul>
               ) : showNoResults ? (
                 <div className="p-6 text-center">
-                  <p className="text-sm text-archive mb-3">
+                  <p className="text-sm text-archive mb-3" role="status">
                     {search.noResultsMessage
                       ? search.noResultsMessage.includes('{term}')
                         ? search.noResultsMessage.replace('{term}', searchTerm)
@@ -342,7 +377,7 @@ export function RecordLinkerSlideOver<TSearch>({
                       onClick={() => setMode('create')}
                       className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-parchment bg-bark rounded-lg hover:bg-copper-dark"
                     >
-                      <Plus size={16} />
+                      <Plus size={16} aria-hidden="true" />
                       {create.label}
                     </button>
                   )}
@@ -368,6 +403,7 @@ export function RecordLinkerSlideOver<TSearch>({
             {/* Selected indicator (single select) */}
             {!bulkSelect && selectedItem && (
               <div
+                role="status"
                 className={`p-3 rounded-lg border ${
                   isRemoteSelected
                     ? 'bg-semantic-warning/5 border-semantic-warning/20'
@@ -387,7 +423,7 @@ export function RecordLinkerSlideOver<TSearch>({
 
             {/* Bulk selection summary */}
             {bulkSelect && selectedItems.size > 0 && (
-              <div className="p-3 bg-bark/5 border border-bark/20 rounded-lg">
+              <div className="p-3 bg-bark/5 border border-bark/20 rounded-lg" role="status">
                 <p className="text-sm text-ink">
                   {selectedItems.size} item{selectedItems.size !== 1 ? 's' : ''}{' '}
                   selected
@@ -405,13 +441,13 @@ export function RecordLinkerSlideOver<TSearch>({
             )}
           </>
         ) : create ? (
-          <>
+          <div ref={createPanelRef} className="space-y-5">
             <button
               type="button"
               onClick={() => setMode('search')}
               className="flex items-center gap-1 text-sm text-archive hover:text-ink"
             >
-              <ArrowLeft size={14} />
+              <ArrowLeft size={14} aria-hidden="true" />
               Back to search
             </button>
             {create.renderCreateFields({
@@ -420,7 +456,7 @@ export function RecordLinkerSlideOver<TSearch>({
               setFormData: setCreateFormData,
               metadata,
             })}
-          </>
+          </div>
         ) : null}
       </div>
     </SlideOver>
