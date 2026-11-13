@@ -29,7 +29,12 @@ export default defineConfig([
       // Accessibility rules - catch issues at development time
       // Set as warnings initially to allow gradual fixes without blocking builds
       ...Object.fromEntries(
-        Object.entries(jsxA11y.configs.recommended.rules).map(([key, value]) => [key, 'warn'])
+        // Keep each rule's preset options (e.g. which elements may take which
+        // ARIA roles); only the severity is lowered.
+        Object.entries(jsxA11y.configs.recommended.rules).map(([key, value]) => [
+          key,
+          Array.isArray(value) ? ['warn', ...value.slice(1)] : 'warn',
+        ])
       ),
       // Disable deprecated label-has-for rule (replaced by label-has-associated-control)
       'jsx-a11y/label-has-for': 'off',
