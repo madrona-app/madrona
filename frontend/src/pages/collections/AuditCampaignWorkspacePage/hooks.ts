@@ -53,7 +53,7 @@ export function useFormState({ orgId, campaignId, isCreateMode, campaign }: UseF
         sample_method: (campaign.sample_method as string) || 'complete',
         sample_size: campaign.sample_size != null ? String(campaign.sample_size) : '',
         sample_percentage: campaign.sample_percentage != null ? String(campaign.sample_percentage) : '',
-        sampling_criteria: '',
+        sampling_criteria: (campaign.sampling_criteria as string) || '',
         methodology: (campaign.methodology as string) || '',
         verification_procedures: '',
         planned_start_date: (campaign.start_date as string) || '',
@@ -138,6 +138,7 @@ export function useFormState({ orgId, campaignId, isCreateMode, campaign }: UseF
       sample_method: fd.sample_method || null,
       sample_size: fd.sample_size ? parseInt(fd.sample_size) : null,
       sample_percentage: fd.sample_percentage ? parseFloat(fd.sample_percentage) : null,
+      sampling_criteria: fd.sampling_criteria || null,
       methodology: fd.methodology || null,
       start_date: fd.planned_start_date || null,
       end_date: fd.planned_end_date || null,
@@ -268,6 +269,7 @@ export function useSectionSummaries(formData: FormData): Record<string, string |
       timeline: parts([formData.planned_start_date, formData.planned_end_date]),
       methodology: truncate(formData.methodology),
       findings: truncate(formData.findings_summary),
+      checklist: undefined,
       history: undefined,
     };
   }, [formData]);
@@ -284,6 +286,7 @@ export function useHasContent(formData: FormData): Record<string, boolean> {
     timeline: !!(formData.planned_start_date || formData.planned_end_date),
     methodology: !!(formData.methodology || formData.verification_procedures),
     findings: !!(formData.findings_summary || formData.recommendations || formData.remedial_actions),
+    checklist: true,
     history: true,
   }), [formData]);
 }

@@ -27,12 +27,21 @@ from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import (
     CollectionObject,
+    Location,
+    ObjectTitle,
     CollectionsReview,
     ObjectReviewAssessment,
     AuditCampaign,
     AuditResult,
 )
 from app.permissions import Permission
+from app.services.audit_checklist_service import (
+    CheckListError,
+    apply_check_outcome,
+    generate_check_list,
+    outcome_of,
+    recompute_campaign_counters,
+)
 from app.services.api_security import escape_ilike
 from app.services.validation_utils import parse_uuid_or_raise
 from app.fastapi_app.schemas.collections_procedure_compliance import (
@@ -44,6 +53,8 @@ from app.fastapi_app.schemas.collections_procedure_compliance import (
     AuditCampaignListResponse,
     AuditResultOut,
     AuditResultListResponse,
+    CheckListItemOut,
+    CheckListResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -164,6 +175,13 @@ def _serialize_audit_campaign(ac: AuditCampaign) -> dict:
         "sample_method": ac.sample_method,
         "sample_size": ac.sample_size,
         "sample_percentage": float(ac.sample_percentage) if ac.sample_percentage else None,
+        "sampling_criteria": ac.sampling_criteria,
+        "target_locations": ac.target_locations,
+        "target_object_types": ac.target_object_types,
+        "check_list_seed": ac.check_list_seed,
+        "check_list_generated_at": ac.check_list_generated_at.isoformat() if ac.check_list_generated_at else None,
+        "check_list_generated_by": str(ac.check_list_generated_by_id) if ac.check_list_generated_by_id else None,
+        "check_list_params": ac.check_list_params,
         "start_date": ac.planned_start_date.isoformat() if ac.planned_start_date else None,
         "end_date": ac.planned_end_date.isoformat() if ac.planned_end_date else None,
         "items_total": ac.objects_total,
@@ -196,7 +214,9 @@ def _serialize_audit_result(ar: AuditResult) -> dict:
         "expected_condition": ar.expected_condition,
         "actual_condition": ar.actual_condition,
         "documentation_verified": ar.documentation_complete,
-        "documentation_issues": ar.documentation_issues,
+        # No column backs this; reading ar.documentation_issues raised
+        # AttributeError, so listing any campaign with results returned 500.
+        "documentation_issues": None,
         "discrepancy_found": ar.result_status == "discrepancy",
         "discrepancy_type": ar.discrepancy_type,
         "discrepancy_description": ar.location_discrepancy_note,
@@ -204,6 +224,8 @@ def _serialize_audit_result(ar: AuditResult) -> dict:
         "resolution_notes": ar.follow_up_note,
         "resolved_at": ar.follow_up_date.isoformat() if ar.follow_up_date else None,
         "notes": ar.result_note,
+        "result_status": ar.result_status,
+        "check_sequence": ar.check_sequence,
     }
 
 
@@ -612,6 +634,9 @@ def update_audit_campaign(
         "organization_id", "created_at", "created_by", "created_by_id",
         "updated_by_id", "approved_by", "approved_by_id",
         "signed_off_by", "signed_off_by_id", "audit_lead_id",
+        # Written only by check-list generation, so a list stays reproducible.
+        "check_list_seed", "check_list_generated_at", "check_list_generated_by",
+        "check_list_generated_by_id", "check_list_params",
     }
     for key, value in body.items():
         if key in protected:
@@ -726,16 +751,10 @@ def create_audit_result(
 
     db.add(result)
 
-    # Update audit counters
-    audit.objects_audited = (audit.objects_audited or 0) + 1
-    if has_discrepancy:
-        audit.discrepancies_found = (audit.discrepancies_found or 0) + 1
-
-    # Recalculate accuracy rate
-    if audit.objects_audited > 0:
-        audit.accuracy_rate = ((audit.objects_audited - audit.discrepancies_found) / audit.objects_audited) * 100
-
     try:
+        # Counters are derived from the results so generated check lists,
+        # barcode scans and ad hoc results all agree.
+        recompute_campaign_counters(db, audit)
         db.commit()
     except IntegrityError:
         db.rollback()
@@ -743,3 +762,227 @@ def create_audit_result(
 
     db.refresh(result)
     return _serialize_audit_result(result)
+
+
+# ============================================================================
+# CHECK LISTS — generate a sampled list, record found / not found / moved
+# ============================================================================
+
+
+def _get_campaign_or_404(db: Session, org_id: UUID, audit_id: UUID) -> AuditCampaign:
+    audit = db.query(AuditCampaign).filter(
+        AuditCampaign.campaign_id == audit_id,
+        AuditCampaign.organization_id == org_id,
+    ).first()
+    if not audit:
+        raise HTTPException(status_code=404, detail="Audit campaign not found")
+    return audit
+
+
+def _check_list_error(exc: CheckListError) -> HTTPException:
+    return HTTPException(status_code=exc.status_code, detail={"code": exc.code, "message": str(exc)})
+
+
+def _preferred_titles(db: Session, object_ids: list) -> dict:
+    """object_id -> preferred title (else lowest display_order)."""
+    if not object_ids:
+        return {}
+    rows = db.query(ObjectTitle.object_id, ObjectTitle.title, ObjectTitle.is_preferred, ObjectTitle.display_order).filter(
+        ObjectTitle.object_id.in_(object_ids),
+    ).all()
+    best: dict = {}
+    for r in rows:
+        rank = (0 if r.is_preferred else 1, r.display_order or 0)
+        if r.object_id not in best or rank < best[r.object_id][0]:
+            best[r.object_id] = (rank, r.title)
+    return {k: v[1] for k, v in best.items()}
+
+
+def _check_list_rows(db: Session, results: list[AuditResult]) -> list[dict]:
+    object_ids = [r.object_id for r in results if r.object_id]
+    objects = {}
+    if object_ids:
+        for o in db.query(
+            CollectionObject.object_id, CollectionObject.object_number,
+            CollectionObject.object_name, CollectionObject.current_location_id,
+        ).filter(CollectionObject.object_id.in_(object_ids)).all():
+            objects[o.object_id] = o
+    titles = _preferred_titles(db, object_ids)
+
+    loc_ids = set()
+    for r in results:
+        loc_ids.update(x for x in (r.expected_location_id, r.actual_location_id) if x)
+    locations = {}
+    if loc_ids:
+        for loc in db.query(Location.location_id, Location.name, Location.path).filter(Location.location_id.in_(loc_ids)).all():
+            locations[loc.location_id] = loc
+
+    def loc(field):
+        found = locations.get(field) if field else None
+        return (found.name if found else None, found.path if found else None)
+
+    rows = []
+    for r in results:
+        obj = objects.get(r.object_id)
+        exp_name, exp_path = loc(r.expected_location_id)
+        act_name, act_path = loc(r.actual_location_id)
+        rows.append({
+            "result_id": str(r.result_id),
+            "check_sequence": r.check_sequence,
+            "object_id": str(r.object_id) if r.object_id else None,
+            "object_number": obj.object_number if obj else None,
+            "title": titles.get(r.object_id) or (obj.object_name if obj else None),
+            "expected_location_id": str(r.expected_location_id) if r.expected_location_id else None,
+            "expected_location_name": exp_name,
+            "expected_location_path": exp_path,
+            "actual_location_id": str(r.actual_location_id) if r.actual_location_id else None,
+            "actual_location_name": act_name,
+            "actual_location_path": act_path,
+            "current_location_id": str(obj.current_location_id) if obj and obj.current_location_id else None,
+            "outcome": outcome_of(r),
+            "result_status": r.result_status,
+            "checked_at": r.verification_date.isoformat() if r.verification_date and r.result_status != "pending" else None,
+            "checked_by": str(r.verified_by_id) if r.verified_by_id else None,
+            "note": r.result_note,
+            "follow_up_action": r.follow_up_action,
+        })
+    return rows
+
+
+@router.get(
+    "/api/organizations/{org_id}/collections/audits/{audit_id}/check-list",
+    response_model=CheckListResponse,
+    summary="Get audit check list",
+)
+def get_check_list(
+    org_id: UUID,
+    audit_id: UUID,
+    limit: int = Query(5000, ge=1, le=5000),
+    offset: int = Query(0, ge=0),
+    auth: AuthContext = Depends(require_permission(Permission.AUDITS_VIEW)),
+    db: Session = Depends(get_db),
+):
+    """The campaign's check list in walking order, with how it was drawn."""
+    audit = _get_campaign_or_404(db, org_id, audit_id)
+
+    base = db.query(AuditResult).filter(AuditResult.campaign_id == audit_id)
+    total = base.count()
+    counts = {"pending": 0, "found": 0, "not_found": 0, "wrong_location": 0, "other": 0}
+    for status, dtype, loc_ok in db.query(
+        AuditResult.result_status, AuditResult.discrepancy_type, AuditResult.location_correct,
+    ).filter(AuditResult.campaign_id == audit_id).all():
+        if status == "pending":
+            counts["pending"] += 1
+        elif status == "not_found":
+            counts["not_found"] += 1
+        elif dtype == "location_mismatch" or loc_ok is False:
+            counts["wrong_location"] += 1
+        elif status == "verified":
+            counts["found"] += 1
+        else:
+            counts["other"] += 1
+
+    results = base.order_by(
+        AuditResult.check_sequence.asc().nulls_last(),
+        AuditResult.verification_date.asc(),
+    ).offset(offset).limit(limit).all()
+
+    return {
+        "audit_id": str(audit.campaign_id),
+        "generated_at": audit.check_list_generated_at.isoformat() if audit.check_list_generated_at else None,
+        "generated_by": str(audit.check_list_generated_by_id) if audit.check_list_generated_by_id else None,
+        "seed": audit.check_list_seed,
+        "params": audit.check_list_params,
+        "total": total,
+        "checked": total - counts["pending"],
+        "counts": counts,
+        "items": _check_list_rows(db, results),
+        "limit": limit,
+        "offset": offset,
+    }
+
+
+@router.post(
+    "/api/organizations/{org_id}/collections/audits/{audit_id}/check-list/generate",
+    response_model=CheckListResponse,
+    summary="Generate audit check list",
+)
+def generate_audit_check_list(
+    org_id: UUID,
+    audit_id: UUID,
+    body: dict | None = None,
+    auth: AuthContext = Depends(require_permission(Permission.AUDITS_EDIT)),
+    db: Session = Depends(get_db),
+):
+    """Draw the check list from the campaign's scope and sampling method.
+
+    Body (all optional): ``seed`` to reproduce an earlier draw, ``replace``
+    true to replace an unchecked list. Refused once any check is recorded.
+    """
+    body = body or {}
+    audit = _get_campaign_or_404(db, org_id, audit_id)
+
+    seed = body.get("seed")
+    if seed is not None:
+        try:
+            seed = int(seed)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail={"code": "invalid_seed", "message": "Seed must be a whole number."})
+
+    try:
+        generate_check_list(db, audit, auth.user_id, seed=seed, replace=bool(body.get("replace")))
+    except CheckListError as exc:
+        db.rollback()
+        raise _check_list_error(exc)
+    db.commit()
+    db.refresh(audit)
+    return get_check_list(org_id, audit_id, limit=5000, offset=0, auth=auth, db=db)
+
+
+@router.put(
+    "/api/organizations/{org_id}/collections/audits/{audit_id}/check-list/{result_id}",
+    response_model=CheckListItemOut,
+    summary="Record a check",
+)
+def record_check(
+    org_id: UUID,
+    audit_id: UUID,
+    result_id: UUID,
+    body: dict,
+    auth: AuthContext = Depends(require_permission(Permission.AUDITS_EDIT)),
+    db: Session = Depends(get_db),
+):
+    """Record one check: ``outcome`` is found, not_found, wrong_location, or
+    pending (to undo). wrong_location needs ``actual_location_id``."""
+    audit = _get_campaign_or_404(db, org_id, audit_id)
+    if audit.status in ("completed", "cancelled"):
+        raise HTTPException(status_code=409, detail={"code": "campaign_closed", "message": f"This campaign is {audit.status}; checks can't be changed."})
+
+    result = db.query(AuditResult).filter(
+        AuditResult.result_id == result_id,
+        AuditResult.campaign_id == audit_id,
+    ).first()
+    if not result:
+        raise HTTPException(status_code=404, detail="Check not found")
+
+    actual = None
+    if body.get("actual_location_id"):
+        actual = parse_uuid_or_raise(body["actual_location_id"])
+        exists = db.query(Location.location_id).filter(
+            Location.location_id == actual,
+            Location.organization_id == org_id,
+        ).first()
+        if not exists:
+            raise HTTPException(status_code=404, detail={"code": "location_not_found", "message": "Found location not found"})
+
+    try:
+        apply_check_outcome(result, body.get("outcome", ""), auth.user_id, actual_location_id=actual, note=body.get("note"))
+    except CheckListError as exc:
+        raise _check_list_error(exc)
+
+    recompute_campaign_counters(db, audit)
+    audit.updated_by_id = auth.user_id
+    audit.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(result)
+    return _check_list_rows(db, [result])[0]

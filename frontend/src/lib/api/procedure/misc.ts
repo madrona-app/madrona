@@ -631,6 +631,90 @@ export async function createAuditResult(
   });
 }
 
+// ---- Check lists (generated spot-check lists for a campaign) ----
+
+export type AuditCheckOutcome = 'pending' | 'found' | 'not_found' | 'wrong_location';
+
+export interface AuditCheckListItem {
+  result_id: string;
+  check_sequence: number | null;
+  object_id: string | null;
+  object_number: string | null;
+  title: string | null;
+  expected_location_id: string | null;
+  expected_location_name: string | null;
+  expected_location_path: string | null;
+  actual_location_id: string | null;
+  actual_location_name: string | null;
+  actual_location_path: string | null;
+  current_location_id: string | null;
+  outcome: AuditCheckOutcome | string;
+  result_status: string;
+  checked_at: string | null;
+  checked_by: string | null;
+  note: string | null;
+  follow_up_action: string | null;
+}
+
+export interface AuditCheckList {
+  audit_id: string;
+  generated_at: string | null;
+  generated_by: string | null;
+  seed: number | null;
+  params: Record<string, unknown> | null;
+  total: number;
+  checked: number;
+  counts: Record<string, number>;
+  items: AuditCheckListItem[];
+  limit: number;
+  offset: number;
+}
+
+export async function getAuditCheckList(
+  organizationId: string,
+  campaignId: string,
+): Promise<AuditCheckList> {
+  return await apiFetch(`/organizations/${organizationId}/collections/audits/${campaignId}/check-list`);
+}
+
+export async function generateAuditCheckList(
+  organizationId: string,
+  campaignId: string,
+  options: { replace?: boolean; seed?: number } = {},
+): Promise<AuditCheckList> {
+  return await apiFetch(`/organizations/${organizationId}/collections/audits/${campaignId}/check-list/generate`, {
+    method: 'POST',
+    body: JSON.stringify(options),
+  });
+}
+
+export async function recordAuditCheck(
+  organizationId: string,
+  campaignId: string,
+  resultId: string,
+  body: { outcome: AuditCheckOutcome; actual_location_id?: string | null; note?: string | null },
+): Promise<AuditCheckListItem> {
+  return await apiFetch(`/organizations/${organizationId}/collections/audits/${campaignId}/check-list/${resultId}`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+}
+
+export interface LocationOption {
+  location_id: string;
+  name: string;
+  path?: string | null;
+}
+
+/** Locations for a native select, ordered by path. Server caps at 500 per call. */
+export async function getLocationOptions(
+  organizationId: string,
+  q?: string,
+): Promise<{ items: LocationOption[]; total?: number }> {
+  const query = buildQueryString({ limit: 500, is_active: true, q: q || undefined });
+  return await apiFetch(`/organizations/${organizationId}/collections/locations${query}`);
+}
+
 export async function deleteAuditCampaign(
   organizationId: string,
   campaignId: string

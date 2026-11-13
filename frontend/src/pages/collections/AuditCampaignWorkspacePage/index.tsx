@@ -11,6 +11,7 @@ import {
   PlayCircle,
   Search,
   History,
+  ListChecks,
 } from 'lucide-react';
 import {
   WorkspaceHeader,
@@ -34,6 +35,7 @@ import {
   STATUS_STYLES,
 } from './types';
 import { MadronaLoader } from '../../../components/ui/MadronaLoader';
+import { AuditCheckList } from './AuditCheckList';
 
 /**
  * Outer wrapper that provides section order context.
@@ -128,6 +130,9 @@ function AuditCampaignWorkspacePageContent() {
     findings: {
       findings_summary: formData.findings_summary,
       remedial_actions: formData.remedial_actions,
+    },
+    checklist: {
+      check_list_generated_at: campaign?.check_list_generated_at,
     },
     history: {},
   };
@@ -417,6 +422,24 @@ function AuditCampaignWorkspacePageContent() {
             />
           </div>
         </WorkspaceSection>
+
+        {/* === INVENTORY GROUP === */}
+        {useNewLayout && !isCreateMode && <SectionGroupDivider label="Inventory" icon={ListChecks} />}
+
+        {!isCreateMode && campaign && orgId && (
+          <WorkspaceSection
+            id="checklist"
+            title="Check List"
+            icon={<ListChecks size={18} />}
+            isExpanded={expandedSections.checklist}
+            onToggle={() => toggleSection('checklist')}
+            isEditing={isEditing}
+            order={getSectionOrder('checklist')}
+            isEmpty={false}
+          >
+            <AuditCheckList orgId={orgId} campaign={campaign} canEdit={canEdit} />
+          </WorkspaceSection>
+        )}
 
         {/* === OUTCOME GROUP === */}
         {useNewLayout && <SectionGroupDivider label="Outcome" icon={CheckSquare} />}
