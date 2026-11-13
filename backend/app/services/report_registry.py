@@ -31,6 +31,9 @@ class ReportDefinition:
     organization_ids: list[str] | None = None  # None = all orgs, list = customer-specific
     default_format: str = "excel"
     icon: str | None = None  # Frontend icon hint
+    # True when this report's PDF is a tagged PDF (structure tree, /Lang,
+    # alt text). Organizations can hide untagged PDFs (report_pdf_mode).
+    pdf_tagged: bool = False
 
 
 class ReportRegistry:

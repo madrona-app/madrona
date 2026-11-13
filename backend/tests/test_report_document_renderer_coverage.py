@@ -75,7 +75,7 @@ def stub_weasyprint():
         def __init__(self, string=None, **kw):
             self._string = string or ""
 
-        def write_pdf(self):
+        def write_pdf(self, **kw):
             # Minimal valid-looking PDF header — same shape real output starts with
             return b"%PDF-1.4\n% stub\n" + self._string.encode("utf-8", errors="replace")[:128]
 

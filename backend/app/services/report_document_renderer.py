@@ -1,8 +1,10 @@
 """
 Document Renderer for on-demand reports.
 
-Generates formatted PDF documents for individual record reports using reportlab.
-Madrona-branded page template with forest header and parchment body.
+Generates documents for individual record reports. The registered renderers
+(``render_*_html``) produce tagged PDF via WeasyPrint from the HTML templates,
+and HTML / text / Word via ``report_accessible``. The ReportLab renderers
+(``render_object_record_sheet`` etc.) are legacy, unregistered, and untagged.
 """
 import io
 import logging
@@ -1760,8 +1762,19 @@ def render_object_record_sheet_html(
         html = template.render(**context)
 
     # Default: PDF via WeasyPrint
+    return _write_tagged_pdf(html)
+
+
+# Tagged PDF (PDF/UA-1 variant): WeasyPrint writes a structure tree from the
+# HTML — headings, paragraphs, lists, tables with TH/TD and header links, and
+# figures with the img alt as /Alt — plus /Lang from <html lang>, the document
+# title from <title>, and DisplayDocTitle. Requires WeasyPrint >= 63.
+PDF_VARIANT = "pdf/ua-1"
+
+
+def _write_tagged_pdf(html: str) -> bytes:
     import weasyprint
-    return weasyprint.HTML(string=html).write_pdf()
+    return weasyprint.HTML(string=html).write_pdf(pdf_variant=PDF_VARIANT)
 
 
 def _render_accessible(template_name: str, context: dict[str, Any], export_format: str) -> bytes:
@@ -1800,8 +1813,7 @@ def _render_html_template(
         template = env.get_template(template_name)
         html = template.render(**context)
 
-    import weasyprint
-    return weasyprint.HTML(string=html).write_pdf()
+    return _write_tagged_pdf(html)
 
 
 def render_condition_report_html(

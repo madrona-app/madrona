@@ -68,6 +68,7 @@ registry.register(ReportDefinition(
     context_types=["record"],
     record_types=["collection_objects"],
     supported_formats=DOCUMENT_FORMATS,
+    pdf_tagged=True,  # WeasyPrint pdf/ua-1
     resolver=_record_resolver,
     renderer=_make_html_renderer(render_object_record_sheet_html),
     default_format="pdf",
@@ -83,6 +84,7 @@ registry.register(ReportDefinition(
     context_types=["record"],
     record_types=["condition_reports"],
     supported_formats=DOCUMENT_FORMATS,
+    pdf_tagged=True,  # WeasyPrint pdf/ua-1
     resolver=_record_resolver,
     renderer=_make_html_renderer(render_condition_report_html),
     default_format="pdf",
@@ -98,6 +100,7 @@ registry.register(ReportDefinition(
     context_types=["record"],
     record_types=["loans_in"],
     supported_formats=DOCUMENT_FORMATS,
+    pdf_tagged=True,  # WeasyPrint pdf/ua-1
     resolver=_record_resolver,
     renderer=_make_html_renderer(render_loan_agreement_html),
     default_format="pdf",
@@ -113,6 +116,7 @@ registry.register(ReportDefinition(
     context_types=["record"],
     record_types=["loans_out"],
     supported_formats=DOCUMENT_FORMATS,
+    pdf_tagged=True,  # WeasyPrint pdf/ua-1
     resolver=_record_resolver,
     renderer=_make_html_renderer(render_loan_agreement_html),
     default_format="pdf",
@@ -128,6 +132,7 @@ registry.register(ReportDefinition(
     context_types=["record"],
     record_types=["object_entries"],
     supported_formats=DOCUMENT_FORMATS,
+    pdf_tagged=True,  # WeasyPrint pdf/ua-1
     resolver=_record_resolver,
     renderer=_make_html_renderer(render_object_entry_report_html),
     default_format="pdf",
@@ -143,6 +148,7 @@ registry.register(ReportDefinition(
     context_types=["record"],
     record_types=["object_exits"],
     supported_formats=DOCUMENT_FORMATS,
+    pdf_tagged=True,  # WeasyPrint pdf/ua-1
     resolver=_record_resolver,
     renderer=_make_html_renderer(render_object_exit_report_html),
     default_format="pdf",
@@ -158,6 +164,7 @@ registry.register(ReportDefinition(
     context_types=["record"],
     record_types=["conservation_treatments"],
     supported_formats=DOCUMENT_FORMATS,
+    pdf_tagged=True,  # WeasyPrint pdf/ua-1
     resolver=_record_resolver,
     renderer=_make_html_renderer(render_conservation_treatment_report_html),
     default_format="pdf",
@@ -173,6 +180,7 @@ registry.register(ReportDefinition(
     context_types=["record"],
     record_types=["acquisitions"],
     supported_formats=DOCUMENT_FORMATS,
+    pdf_tagged=True,  # WeasyPrint pdf/ua-1
     resolver=_record_resolver,
     renderer=_make_html_renderer(render_acquisition_report_html),
     default_format="pdf",

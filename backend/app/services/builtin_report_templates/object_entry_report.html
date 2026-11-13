@@ -78,13 +78,13 @@
     page-break-after: avoid;
   }
 
-  table.field-grid {
+  .field-grid {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 6pt;
   }
 
-  table.field-grid td.field {
+  .field-grid .field {
     width: 50%;
     padding: 0 8pt 6pt 0;
     vertical-align: top;
@@ -114,7 +114,7 @@
     white-space: pre-wrap;
   }
 
-  table.record-info {
+  .record-info {
     width: 100%;
     border-collapse: collapse;
     margin-top: 14pt;
@@ -123,7 +123,7 @@
     color: var(--archive);
   }
 
-  table.record-info td {
+  .record-info .row > div {
     padding: 4pt 0;
     width: 50%;
   }
@@ -131,6 +131,16 @@
   .keep-together {
     break-inside: avoid;
   }
+
+  /* Layout rows (divs, not tables, so tagged PDF has no false data tables) */
+  .field-grid > .row, .ident-layout > .row, .record-info > .row, .signature-block > .row {
+    display: flex;
+  }
+  .field-grid > .row > div, .record-info > .row > div, .signature-block > .row > div {
+    flex: 1 1 0;
+  }
+  .ident-layout .ident-fields { flex: 1 1 auto; }
+  .ident-layout .ident-image { flex: 0 0 2.5in; }
 </style>
 </head>
 <body>
@@ -142,72 +152,72 @@
 
 {# ── Entry Details ── #}
 <h2 class="section-header">Entry Details</h2>
-<table class="field-grid">
+<div class="field-grid">
   {% if entry_number or entry_date %}
-  <tr>
+  <div class="row">
     {% if entry_number %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Entry Number</div>
       <div class="field-value">{{ entry_number }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if entry_date %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Entry Date</div>
       <div class="field-value">{{ entry_date }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if depositor_name or current_owner %}
-  <tr>
+  <div class="row">
     {% if depositor_name %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Depositor</div>
       <div class="field-value">{{ depositor_name }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if current_owner %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Current Owner</div>
       <div class="field-value">{{ current_owner }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if entry_reason or status %}
-  <tr>
+  <div class="row">
     {% if entry_reason %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Entry Reason</div>
       <div class="field-value">{{ entry_reason }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if status %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Status</div>
       <div class="field-value">{{ status }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if objects_count or assigned_to_name %}
-  <tr>
+  <div class="row">
     {% if objects_count %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Number of Objects</div>
       <div class="field-value">{{ objects_count }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if assigned_to_name %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Assigned To</div>
       <div class="field-value">{{ assigned_to_name }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
-</table>
+</div>
 
 {% if objects_description %}
 <div class="field-full">
@@ -218,54 +228,54 @@
 
 {# ── Dates ── #}
 <h2 class="section-header">Dates</h2>
-<table class="field-grid">
+<div class="field-grid">
   {% if expected_return_date or return_date %}
-  <tr>
+  <div class="row">
     {% if expected_return_date %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Expected Return</div>
       <div class="field-value">{{ expected_return_date }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if return_date %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Return Date</div>
       <div class="field-value">{{ return_date }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if expected_duration %}
-  <tr>
-    <td class="field">
+  <div class="row">
+    <div class="field">
       <div class="field-label">Expected Duration</div>
       <div class="field-value">{{ expected_duration }}</div>
-    </td>
-    <td></td>
-  </tr>
+    </div>
+    <div></div>
+  </div>
   {% endif %}
-</table>
+</div>
 
 {# ── Insurance ── #}
 {% if insurance_value %}
 <div class="keep-together">
   <h2 class="section-header">Insurance</h2>
-  <table class="field-grid">
-    <tr>
-      <td class="field">
+  <div class="field-grid">
+    <div class="row">
+      <div class="field">
         <div class="field-label">Insurance Value</div>
         <div class="field-value">{{ insurance_value }}</div>
-      </td>
+      </div>
       {% if insurance_currency %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Currency</div>
         <div class="field-value">{{ insurance_currency }}</div>
-      </td>
+      </div>
       {% else %}
-      <td></td>
+      <div></div>
       {% endif %}
-    </tr>
-  </table>
+    </div>
+  </div>
 </div>
 {% endif %}
 
@@ -291,14 +301,14 @@
 {% endif %}
 
 {# ── Record Information ── #}
-<table class="record-info">
-  <tr>
+<div class="record-info">
+  <div class="row">
     {% if created_at %}
-    <td>Created: {{ created_at }}</td>
+    <div>Created: {{ created_at }}</div>
     {% endif %}
-    <td></td>
-  </tr>
-</table>
+    <div></div>
+  </div>
+</div>
 
 </body>
 </html>

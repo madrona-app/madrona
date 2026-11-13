@@ -1767,6 +1767,59 @@ def update_role_testing(
 
 
 # =============================================================================
+# REPORT PDF SETTING
+# =============================================================================
+
+
+@router.get("/api/organizations/{org_id}/settings/report-formats", response_model=dict, summary="Get report format setting")
+def get_report_formats(
+    org_id: UUID,
+    auth: AuthContext = Depends(require_permission(Permission.ORG_MANAGE_SETTINGS)),
+    db: Session = Depends(get_db),
+):
+    """Which PDF report exports this organization offers (all, tagged_only, none)."""
+    from app.models import Organization
+
+    org = db.query(Organization).filter_by(organization_id=org_id).first()
+    if not org:
+        raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Organization not found"})
+    return {"pdf_mode": org.report_pdf_mode or "all"}
+
+
+@router.put("/api/organizations/{org_id}/settings/report-formats", response_model=dict, summary="Set report format setting")
+def update_report_formats(
+    org_id: UUID,
+    body: dict,
+    auth: AuthContext = Depends(require_permission(Permission.ORG_MANAGE_SETTINGS)),
+    db: Session = Depends(get_db),
+):
+    """Choose which PDF report exports are offered.
+
+    'all' offers every PDF; 'tagged_only' hides PDFs that are not tagged for
+    access technology (tabular exports); 'none' offers accessible formats only.
+    Accessible formats (HTML, Word, plain text, CSV, Excel) are always offered.
+    """
+    from app.models import Organization
+    from app.services.report_formats import PDF_MODES
+
+    mode = body.get("pdf_mode") if isinstance(body, dict) else None
+    if mode not in PDF_MODES:
+        raise HTTPException(status_code=422, detail={
+            "code": "validation_error",
+            "message": f"Body must include 'pdf_mode', one of: {', '.join(PDF_MODES)}",
+        })
+
+    org = db.query(Organization).filter_by(organization_id=org_id).first()
+    if not org:
+        raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Organization not found"})
+
+    org.report_pdf_mode = mode
+    db.commit()
+    logger.info("Report PDF mode set to %s for org %s", mode, org_id)
+    return {"pdf_mode": org.report_pdf_mode}
+
+
+# =============================================================================
 # APPLICATION ENABLEMENT
 # =============================================================================
 

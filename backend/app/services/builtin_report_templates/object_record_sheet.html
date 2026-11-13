@@ -102,20 +102,20 @@
     margin: 10pt 0 4pt 0;
   }
 
-  /* Field grid — table-based for htmldocx compatibility */
-  table.field-grid {
+  /* Field grid — two-column rows of label/value fields */
+  .field-grid {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 6pt;
   }
 
-  table.field-grid td.field {
+  .field-grid .field {
     width: 50%;
     padding: 0 8pt 6pt 0;
     vertical-align: top;
   }
 
-  table.field-grid.single-column td.field {
+  .field-grid.single-column .field {
     width: 100%;
   }
 
@@ -150,22 +150,22 @@
   }
 
   /* Identification + image side-by-side */
-  table.ident-layout {
+  .ident-layout {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 6pt;
   }
 
-  table.ident-layout td {
+  .ident-layout .row > div {
     vertical-align: top;
     padding: 0;
   }
 
-  table.ident-layout td.ident-fields {
+  .ident-layout .ident-fields {
     width: auto;
   }
 
-  table.ident-layout td.ident-image {
+  .ident-layout .ident-image {
     width: 2.5in;
     text-align: right;
   }
@@ -221,7 +221,7 @@
   }
 
   /* Record info footer */
-  table.record-info {
+  .record-info {
     width: 100%;
     border-collapse: collapse;
     margin-top: 14pt;
@@ -231,7 +231,7 @@
     color: var(--archive);
   }
 
-  table.record-info td {
+  .record-info .row > div {
     padding: 2pt 0;
     width: 50%;
   }
@@ -240,6 +240,16 @@
   .keep-together {
     break-inside: avoid;
   }
+
+  /* Layout rows (divs, not tables, so tagged PDF has no false data tables) */
+  .field-grid > .row, .ident-layout > .row, .record-info > .row, .signature-block > .row {
+    display: flex;
+  }
+  .field-grid > .row > div, .record-info > .row > div, .signature-block > .row > div {
+    flex: 1 1 0;
+  }
+  .ident-layout .ident-fields { flex: 1 1 auto; }
+  .ident-layout .ident-image { flex: 0 0 2.5in; }
 </style>
 </head>
 <body>
@@ -254,36 +264,36 @@
 {# ── Identification ── #}
 <h2 class="section-header">Identification</h2>
 {% if image_b64 %}
-<table class="ident-layout">
-  <tr>
-    <td class="ident-fields">
-      <table class="field-grid single-column">
+<div class="ident-layout">
+  <div class="row">
+    <div class="ident-fields">
+      <div class="field-grid single-column">
         {% for label, value in ident_fields %}
           {% if value %}
-          <tr><td class="field">
+          <div class="row"><div class="field">
             <div class="field-label">{{ label }}</div>
             <div class="field-value">{{ value }}</div>
-          </td></tr>
+          </div></div>
           {% endif %}
         {% endfor %}
-      </table>
-    </td>
-    <td class="ident-image">
+      </div>
+    </div>
+    <div class="ident-image">
       <img class="primary-image" src="data:{{ image_mime }};base64,{{ image_b64 }}" alt="{{ image_alt or ('Image of ' ~ title) }}">
-    </td>
-  </tr>
-</table>
+    </div>
+  </div>
+</div>
 {% else %}
-<table class="field-grid single-column">
+<div class="field-grid single-column">
   {% for label, value in ident_fields %}
     {% if value %}
-    <tr><td class="field">
+    <div class="row"><div class="field">
       <div class="field-label">{{ label }}</div>
       <div class="field-value">{{ value }}</div>
-    </td></tr>
+    </div></div>
     {% endif %}
   {% endfor %}
-</table>
+</div>
 {% endif %}
 
 {# ── Artists / Creators ── #}
@@ -312,40 +322,40 @@
     <div class="field-value">{{ full_description }}</div>
   </div>
   {% endif %}
-  <table class="field-grid">
+  <div class="field-grid">
     {% if color or form %}
-    <tr>
+    <div class="row">
       {% if color %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Color</div>
         <div class="field-value">{{ color }}</div>
-      </td>
+      </div>
       {% endif %}
       {% if form %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Form</div>
         <div class="field-value">{{ form }}</div>
-      </td>
+      </div>
       {% endif %}
-    </tr>
+    </div>
     {% endif %}
     {% if physical_description or distinguishing_features %}
-    <tr>
+    <div class="row">
       {% if physical_description %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Physical Description</div>
         <div class="field-value">{{ physical_description }}</div>
-      </td>
+      </div>
       {% endif %}
       {% if distinguishing_features %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Distinguishing Features</div>
         <div class="field-value">{{ distinguishing_features }}</div>
-      </td>
+      </div>
       {% endif %}
-    </tr>
+    </div>
     {% endif %}
-  </table>
+  </div>
 </div>
 {% endif %}
 
@@ -363,22 +373,22 @@
 {% if materials or techniques %}
 <div class="keep-together">
   <h2 class="section-header">Materials &amp; Techniques</h2>
-  <table class="field-grid">
-    <tr>
+  <div class="field-grid">
+    <div class="row">
       {% if materials %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Materials</div>
         <div class="field-value">{{ materials }}</div>
-      </td>
+      </div>
       {% endif %}
       {% if techniques %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Techniques</div>
         <div class="field-value">{{ techniques }}</div>
-      </td>
+      </div>
       {% endif %}
-    </tr>
-  </table>
+    </div>
+  </div>
 </div>
 {% endif %}
 
@@ -396,40 +406,40 @@
 {% if edition or copy_number or edition_size or state_display %}
 <div class="keep-together">
   <h2 class="section-header">Edition</h2>
-  <table class="field-grid">
+  <div class="field-grid">
     {% if edition or copy_number %}
-    <tr>
+    <div class="row">
       {% if edition %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Edition</div>
         <div class="field-value">{{ edition }}</div>
-      </td>
+      </div>
       {% endif %}
       {% if copy_number %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Copy Number</div>
         <div class="field-value">{{ copy_number }}</div>
-      </td>
+      </div>
       {% endif %}
-    </tr>
+    </div>
     {% endif %}
     {% if edition_size or state_display %}
-    <tr>
+    <div class="row">
       {% if edition_size %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Edition Size</div>
         <div class="field-value">{{ edition_size }}</div>
-      </td>
+      </div>
       {% endif %}
       {% if state_display %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">State</div>
         <div class="field-value">{{ state_display }}</div>
-      </td>
+      </div>
       {% endif %}
-    </tr>
+    </div>
     {% endif %}
-  </table>
+  </div>
   {% if state_description %}
   <div class="field-full">
     <div class="field-label">State Description</div>
@@ -443,33 +453,33 @@
 {% if creation_date_display or creation_place or style_period or production_note %}
 <div class="keep-together">
   <h2 class="section-header">Production</h2>
-  <table class="field-grid">
+  <div class="field-grid">
     {% if creation_date_display or creation_place %}
-    <tr>
+    <div class="row">
       {% if creation_date_display %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Date</div>
         <div class="field-value">{{ creation_date_display }}</div>
-      </td>
+      </div>
       {% endif %}
       {% if creation_place %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Place of Creation</div>
         <div class="field-value">{{ creation_place }}</div>
-      </td>
+      </div>
       {% endif %}
-    </tr>
+    </div>
     {% endif %}
     {% if style_period %}
-    <tr>
-      <td class="field">
+    <div class="row">
+      <div class="field">
         <div class="field-label">Style / Period</div>
         <div class="field-value">{{ style_period }}</div>
-      </td>
-      <td></td>
-    </tr>
+      </div>
+      <div></div>
+    </div>
     {% endif %}
-  </table>
+  </div>
   {% if production_note %}
   <div class="field-full">
     <div class="field-label">Production Note</div>
@@ -531,22 +541,22 @@
 {% if barcode or last_inventoried_date %}
 <div class="keep-together">
   <h2 class="section-header">Location &amp; Inventory</h2>
-  <table class="field-grid">
-    <tr>
+  <div class="field-grid">
+    <div class="row">
       {% if barcode %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Barcode</div>
         <div class="field-value">{{ barcode }}</div>
-      </td>
+      </div>
       {% endif %}
       {% if last_inventoried_date %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Last Inventoried</div>
         <div class="field-value">{{ last_inventoried_date }}</div>
-      </td>
+      </div>
       {% endif %}
-    </tr>
-  </table>
+    </div>
+  </div>
 </div>
 {% endif %}
 
@@ -554,40 +564,40 @@
 {% if condition_rating %}
 <div class="keep-together">
   <h2 class="section-header">Condition</h2>
-  <table class="field-grid">
+  <div class="field-grid">
     {% if condition_rating or condition_date %}
-    <tr>
+    <div class="row">
       {% if condition_rating %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Condition Rating</div>
         <div class="field-value">{{ condition_rating }}</div>
-      </td>
+      </div>
       {% endif %}
       {% if condition_date %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Condition Date</div>
         <div class="field-value">{{ condition_date }}</div>
-      </td>
+      </div>
       {% endif %}
-    </tr>
+    </div>
     {% endif %}
     {% if completeness or conservation_priority %}
-    <tr>
+    <div class="row">
       {% if completeness %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Completeness</div>
         <div class="field-value">{{ completeness }}</div>
-      </td>
+      </div>
       {% endif %}
       {% if conservation_priority %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Conservation Priority</div>
         <div class="field-value">{{ conservation_priority }}</div>
-      </td>
+      </div>
       {% endif %}
-    </tr>
+    </div>
     {% endif %}
-  </table>
+  </div>
   {% if condition_note %}
   <div class="field-full">
     <div class="field-label">Condition Note</div>
@@ -607,33 +617,33 @@
 {% if current_value_display or insurance_value_display %}
 <div class="keep-together">
   <h2 class="section-header">Valuation</h2>
-  <table class="field-grid">
+  <div class="field-grid">
     {% if current_value_display or current_value_date %}
-    <tr>
+    <div class="row">
       {% if current_value_display %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Current Value</div>
         <div class="field-value">{{ current_value_display }}</div>
-      </td>
+      </div>
       {% endif %}
       {% if current_value_date %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Valuation Date</div>
         <div class="field-value">{{ current_value_date }}</div>
-      </td>
+      </div>
       {% endif %}
-    </tr>
+    </div>
     {% endif %}
     {% if insurance_value_display %}
-    <tr>
-      <td class="field">
+    <div class="row">
+      <div class="field">
         <div class="field-label">Insurance Value</div>
         <div class="field-value">{{ insurance_value_display }}</div>
-      </td>
-      <td></td>
-    </tr>
+      </div>
+      <div></div>
+    </div>
     {% endif %}
-  </table>
+  </div>
   {% if insurance_note %}
   <div class="field-full">
     <div class="field-label">Insurance Note</div>
@@ -672,16 +682,16 @@
 {% endif %}
 
 {# ── Record Information ── #}
-<table class="record-info">
-  <tr>
+<div class="record-info">
+  <div class="row">
     {% if created_at %}
-    <td>Created: {{ created_at }}</td>
+    <div>Created: {{ created_at }}</div>
     {% endif %}
     {% if updated_at %}
-    <td>Updated: {{ updated_at }}</td>
+    <div>Updated: {{ updated_at }}</div>
     {% endif %}
-  </tr>
-</table>
+  </div>
+</div>
 
 </body>
 </html>

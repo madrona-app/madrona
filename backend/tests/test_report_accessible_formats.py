@@ -14,6 +14,27 @@ from app.services import report_accessible as ra
 from app.services import report_document_renderer as rdr
 from app.services.report_export import export_report
 
+
+def _builtin_registry():
+    """A registry holding exactly the built-in report definitions.
+
+    Other test modules swap the ReportRegistry singleton, so rebuild it here
+    rather than depend on test order; the previous singleton is restored.
+    """
+    import importlib
+
+    from app.services.report_definitions import document_reports, location_reports, tabular_exports
+    from app.services.report_registry import ReportRegistry
+
+    previous = ReportRegistry._instance
+    ReportRegistry._instance = None
+    try:
+        for module in (tabular_exports, document_reports, location_reports):
+            importlib.reload(module)
+        return ReportRegistry.get_instance()
+    finally:
+        ReportRegistry._instance = previous
+
 # 1x1 transparent PNG
 _PNG_B64 = (
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
@@ -514,7 +535,6 @@ class TestAttachmentFilenames:
         from app.database import current_session
         from app.models import CollectionObject
         from app.services.report_definitions import tabular_exports
-        from app.services.report_registry import get_registry
         _, org, _ = auth_setup
         s = current_session()
         a = _make_object_with_media(s, org.organization_id, alt_text="Green bowl")
@@ -522,9 +542,9 @@ class TestAttachmentFilenames:
         b = CollectionObject(organization_id=org.organization_id, object_number="ZZZ-9", object_name="Cup")
         s.add(b)
         s.flush()
+        definition = _builtin_registry().get("collection_objects_attachments")
+        # after the registry rebuild (which reloads the module)
         monkeypatch.setattr(tabular_exports, "search_object_ids", lambda params, org_id: [a.object_id, b.object_id])
-
-        definition = get_registry().get("collection_objects_attachments")
         assert definition.supported_formats[:2] == ["html", "txt"]
         rows, cols, meta = definition.resolver("search", {"search_request": {}}, org.organization_id)
         assert [r["filename"] for r in rows] == ["bowl-front.png", "condition-2019.pdf", "No attached files"]
@@ -538,9 +558,8 @@ class TestAttachmentFilenames:
 
     def test_workspace_not_found(self, auth_setup):
         import uuid as _uuid
-        from app.services.report_registry import get_registry
         _, org, _ = auth_setup
-        definition = get_registry().get("collection_objects_attachments")
+        definition = _builtin_registry().get("collection_objects_attachments")
         rows, _, meta = definition.resolver("workspace", {"workspace_id": str(_uuid.uuid4())},
                                             org.organization_id)
         assert rows == [] and meta["error"] == "workspace_not_found"
