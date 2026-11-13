@@ -64,6 +64,7 @@ const actionIcons: Record<string, React.ComponentType<{ size?: number; className
   schedule_condition_check: AlertTriangle,
   flag_for_conservation: AlertOctagon,
   set_handling_requirements: AlertTriangle,
+  set_last_inventoried: Check,
 };
 
 export default function BulkActionDialog({
@@ -511,6 +512,29 @@ export default function BulkActionDialog({
                       className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
                       placeholder="Add status change notes..."
                     />
+                  </div>
+                </div>
+              )}
+
+              {selectedAction.key === 'set_last_inventoried' && (
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="bulk-inventoried-date" className="block text-sm font-medium text-ink mb-1">
+                      Inventoried date (optional)
+                    </label>
+                    <input
+                      id="bulk-inventoried-date"
+                      type="date"
+                      aria-describedby="bulk-inventoried-date-hint"
+                      value={(actionParams.inventoried_date as string) || ''}
+                      onChange={(e) =>
+                        setActionParams({ ...actionParams, inventoried_date: e.target.value || undefined })
+                      }
+                      className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
+                    />
+                    <p id="bulk-inventoried-date-hint" className="text-xs text-accessible-gray mt-1">
+                      Leave empty to use today. Your name is recorded as the person who inventoried them.
+                    </p>
                   </div>
                 </div>
               )}

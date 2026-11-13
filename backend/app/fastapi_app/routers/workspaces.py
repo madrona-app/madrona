@@ -55,6 +55,7 @@ from app.models import (
 )
 from app.permissions import Permission
 from app.services.nagpra_restrictions import display_restricted_ids
+from app.services.bulk_movement_service import FieldWriteRestricted
 from app.services.api_security import escape_ilike, sanitize_error_message
 from app.services.uploads import get_org_media_url
 
@@ -1571,6 +1572,14 @@ SUPPORTED_BULK_ACTIONS = {
         "optional_params": ["incident_location_id"],
         "category": "incidents",
     },
+    "set_last_inventoried": {
+        "label": "Mark Inventoried",
+        "description": "Record that objects were seen in an inventory (last inventoried date and by)",
+        "permission": Permission.COLLECTIONS_EDIT,
+        "required_params": [],
+        "optional_params": ["inventoried_date"],
+        "category": "location",
+    },
     "set_discoverable": {
         "label": "Set Discoverable",
         "description": "Publish or unpublish objects on the public collection page",
@@ -1869,6 +1878,7 @@ async def execute_bulk_action(
 
     try:
         if action == "record_movement":
+            from app.services.bulk_movement_service import record_bulk_movement
             to_location = db.query(Location).filter(
                 Location.location_id == UUID(action_params["to_location_id"]),
                 Location.organization_id == org_id,
@@ -1876,61 +1886,10 @@ async def execute_bulk_action(
             if not to_location:
                 raise HTTPException(status_code=404, detail="Destination location not found")
 
-            base_count = db.query(func.count(Movement.movement_id)).filter(
-                Movement.organization_id == org_id
-            ).scalar()
-
-            for idx, (item, obj) in enumerate(items):
-                result = {"object_id": str(obj.object_id), "accession_number": obj.object_number}
-
-                if obj.current_location_id == to_location.location_id:
-                    if skip_blocked:
-                        result["status"] = "skipped"
-                        result["message"] = "Already at destination"
-                    else:
-                        result["status"] = "error"
-                        result["message"] = "Already at destination"
-                        error_count += 1
-                    results.append(result)
-                    continue
-
-                ref_number = f"M.{datetime.now(timezone.utc).year}.{base_count + idx + 1:04d}"
-                mov = Movement(
-                    organization_id=org_id,
-                    movement_reference_number=ref_number,
-                    object_id=obj.object_id,
-                    from_location_id=obj.current_location_id,
-                    to_location_id=to_location.location_id,
-                    movement_date=datetime.now(timezone.utc),
-                    reason=action_params["reason"],
-                    movement_note=action_params.get("movement_note"),
-                    location_fitness=action_params.get("location_fitness"),
-                    movement_method=action_params.get("movement_method"),
-                    authorized_by=user_id,
-                    authorization_date=datetime.now(timezone.utc).date(),
-                    moved_by=user_id,
-                    created_by=user_id,
-                    status="completed",
-                )
-
-                old_location_id = obj.current_location_id
-                obj.current_location_id = to_location.location_id
-                obj.current_location_date = datetime.now(timezone.utc)
-                obj.current_location_fitness = action_params.get("location_fitness")
-                obj.updated_by = user_id
-
-                if old_location_id:
-                    old_loc = db.query(Location).filter(Location.location_id == old_location_id).first()
-                    if old_loc and old_loc.current_count > 0:
-                        old_loc.current_count -= 1
-                to_location.current_count += 1
-
-                db.add(mov)
-                result["status"] = "success"
-                result["record_id"] = str(mov.movement_id)
-                result["reference_number"] = ref_number
-                results.append(result)
-                success_count += 1
+            results, success_count, error_count, _ = record_bulk_movement(
+                db, org_id, user_id, [obj for _, obj in items], to_location, action_params,
+                skip_blocked=skip_blocked,
+            )
 
         elif action == "create_condition_report":
             base_count = db.query(func.count(ConditionReport.report_id)).filter(
@@ -2168,6 +2127,13 @@ async def execute_bulk_action(
                 results.append(result)
                 success_count += 1
 
+        elif action == "set_last_inventoried":
+            from app.services.bulk_movement_service import mark_inventoried
+            results, success_count, error_count = mark_inventoried(
+                db, org_id, user_id, [(obj, None, None) for _, obj in items],
+                inventoried_date=action_params.get("inventoried_date"),
+            )
+
         elif action == "set_discoverable":
             is_discoverable = bool(action_params["is_discoverable"])
             now = datetime.now(timezone.utc)
@@ -2237,6 +2203,12 @@ async def execute_bulk_action(
 
     except HTTPException:
         raise
+    except FieldWriteRestricted as e:
+        db.rollback()
+        raise HTTPException(status_code=403, detail={
+            "code": "field_restricted",
+            "message": f"You don't have permission to change: {e}",
+        })
     except Exception as e:
         db.rollback()
         logger.error(f"Bulk action execution error: {e}", exc_info=True)

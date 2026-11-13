@@ -169,3 +169,28 @@ class CheckListResponse(BaseModel):
     limit: int
     offset: int
 
+
+class BulkUpdateRowOut(BaseModel):
+    result_id: str
+    object_id: str | None = None
+    object_number: str | None = None
+    title: str | None = None
+    outcome: str | None = None
+    current_location_name: str | None = None
+    found_location_name: str | None = None
+    changes: list[str] = []
+    skipped: list[str] = []
+    status: str | None = None
+    message: str | None = None
+    movement_reference: str | None = None
+
+
+class BulkUpdateResponse(BaseModel):
+    audit_id: str
+    update_location: bool
+    mark_inventoried: bool
+    rows: list[BulkUpdateRowOut]
+    location_update_count: int
+    inventoried_count: int
+    skipped_count: int
+    executed: bool

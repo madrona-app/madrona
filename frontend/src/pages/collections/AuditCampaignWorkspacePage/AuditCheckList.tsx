@@ -68,6 +68,7 @@ interface AuditCheckListProps {
 export interface SelectionContext {
   items: AuditCheckListItem[];
   selectedIds: Set<string>;
+  setSelectedIds: (ids: Set<string>) => void;
   clearSelection: () => void;
   announce: (message: string) => void;
 }
@@ -431,6 +432,7 @@ export function AuditCheckList({ orgId, campaign, canEdit, renderSelectionToolba
   const selection: SelectionContext = {
     items,
     selectedIds,
+    setSelectedIds,
     clearSelection: () => setSelectedIds(new Set()),
     announce,
   };
@@ -521,7 +523,7 @@ export function AuditCheckList({ orgId, campaign, canEdit, renderSelectionToolba
                 <tr>
                   {renderSelectionToolbar && (
                     <th scope="col" className="px-3 py-2 text-left font-medium text-ink print:hidden">
-                      <SelectAll items={items} selectedIds={selectedIds} setSelectedIds={setSelectedIds} />
+                      <SelectAll items={items} selectedIds={selectedIds} setSelectedIds={setSelectedIds} announce={announce} />
                     </th>
                   )}
                   <th scope="col" className="px-3 py-2 text-left font-medium text-ink">#</th>
@@ -653,10 +655,11 @@ export function AuditCheckList({ orgId, campaign, canEdit, renderSelectionToolba
   );
 }
 
-function SelectAll({ items, selectedIds, setSelectedIds }: {
+function SelectAll({ items, selectedIds, setSelectedIds, announce }: {
   items: AuditCheckListItem[];
   selectedIds: Set<string>;
   setSelectedIds: (s: Set<string>) => void;
+  announce: (m: string) => void;
 }) {
   const ref = useRef<HTMLInputElement>(null);
   const all = items.length > 0 && items.every((i) => selectedIds.has(i.result_id));
@@ -668,7 +671,10 @@ function SelectAll({ items, selectedIds, setSelectedIds }: {
         type="checkbox"
         className="w-5 h-5"
         checked={all}
-        onChange={() => setSelectedIds(all ? new Set() : new Set(items.map((i) => i.result_id)))}
+        onChange={() => {
+          setSelectedIds(all ? new Set() : new Set(items.map((i) => i.result_id)));
+          announce(all ? 'Selection cleared.' : `All ${items.length} selected.`);
+        }}
       />
       <span className="sr-only">Select all {items.length} objects</span>
     </label>

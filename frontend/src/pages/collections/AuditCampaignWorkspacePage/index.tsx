@@ -36,6 +36,7 @@ import {
 } from './types';
 import { MadronaLoader } from '../../../components/ui/MadronaLoader';
 import { AuditCheckList } from './AuditCheckList';
+import { AuditBulkUpdate } from './AuditBulkUpdate';
 
 /**
  * Outer wrapper that provides section order context.
@@ -437,7 +438,14 @@ function AuditCampaignWorkspacePageContent() {
             order={getSectionOrder('checklist')}
             isEmpty={false}
           >
-            <AuditCheckList orgId={orgId} campaign={campaign} canEdit={canEdit} />
+            <AuditCheckList
+              orgId={orgId}
+              campaign={campaign}
+              canEdit={canEdit}
+              renderSelectionToolbar={canEdit
+                ? (ctx) => <AuditBulkUpdate orgId={orgId} campaignId={campaign.audit_id} {...ctx} />
+                : undefined}
+            />
           </WorkspaceSection>
         )}
 

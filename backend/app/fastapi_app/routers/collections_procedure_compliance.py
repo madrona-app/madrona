@@ -55,6 +55,7 @@ from app.fastapi_app.schemas.collections_procedure_compliance import (
     AuditResultListResponse,
     CheckListItemOut,
     CheckListResponse,
+    BulkUpdateResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -986,3 +987,224 @@ def record_check(
     db.commit()
     db.refresh(result)
     return _check_list_rows(db, [result])[0]
+
+
+# ============================================================================
+# BULK UPDATE FROM RESULTS — move records to found locations, mark inventoried
+# ============================================================================
+
+
+def _plan_bulk_update(db: Session, org_id: UUID, audit: AuditCampaign, body: dict, auth: AuthContext) -> dict:
+    """Validate a bulk-update request and work out what each row would do."""
+    from app.services.rbac_service import check_permission
+    from app.services.bulk_movement_service import FieldWriteRestricted, ensure_object_fields_writable
+
+    raw_ids = body.get("result_ids") or []
+    if not isinstance(raw_ids, list) or not raw_ids:
+        raise HTTPException(status_code=400, detail={"code": "no_selection", "message": "Select at least one result."})
+    result_ids = [parse_uuid_or_raise(r) for r in raw_ids]
+    update_location = bool(body.get("update_location"))
+    mark_inv = bool(body.get("mark_inventoried"))
+    if not update_location and not mark_inv:
+        raise HTTPException(status_code=400, detail={"code": "no_operation", "message": "Choose at least one update to apply."})
+
+    if update_location and not check_permission(str(auth.user_id), str(org_id), Permission.MOVEMENTS_CREATE, session=db):
+        raise HTTPException(status_code=403, detail={"code": "forbidden", "message": "You don't have permission to record movements."})
+    if mark_inv and not check_permission(str(auth.user_id), str(org_id), Permission.COLLECTIONS_EDIT, session=db):
+        raise HTTPException(status_code=403, detail={"code": "forbidden", "message": "You don't have permission to edit object records."})
+    fields = (["current_location_id"] if update_location else []) + (
+        ["last_inventoried_date", "last_inventoried_by"] if mark_inv else []
+    )
+    try:
+        ensure_object_fields_writable(db, org_id, auth.user_id, fields)
+    except FieldWriteRestricted as exc:
+        raise HTTPException(status_code=403, detail={"code": "field_restricted", "message": f"You don't have permission to change: {exc}"})
+
+    results = db.query(AuditResult).filter(
+        AuditResult.campaign_id == audit.campaign_id,
+        AuditResult.result_id.in_(result_ids),
+    ).all()
+    if len(results) != len(set(result_ids)):
+        raise HTTPException(status_code=404, detail={
+            "code": "result_not_found",
+            "message": "One or more selected results aren't part of this campaign.",
+        })
+    order = {rid: i for i, rid in enumerate(result_ids)}
+    results.sort(key=lambda r: (r.check_sequence is None, r.check_sequence or 0, order[r.result_id]))
+
+    object_ids = [r.object_id for r in results if r.object_id]
+    objects = {
+        o.object_id: o for o in db.query(CollectionObject).filter(
+            CollectionObject.object_id.in_(object_ids),
+            CollectionObject.organization_id == org_id,
+        ).all()
+    } if object_ids else {}
+    loc_ids = {r.actual_location_id for r in results if r.actual_location_id}
+    loc_ids |= {o.current_location_id for o in objects.values() if o.current_location_id}
+    locations = {
+        loc.location_id: loc for loc in db.query(Location).filter(
+            Location.location_id.in_(loc_ids), Location.organization_id == org_id,
+        ).all()
+    } if loc_ids else {}
+    titles = _preferred_titles(db, list(objects))
+
+    rows = []
+    for r in results:
+        obj = objects.get(r.object_id)
+        outcome = outcome_of(r)
+        current = locations.get(obj.current_location_id) if obj and obj.current_location_id else None
+        found = locations.get(r.actual_location_id) if r.actual_location_id else None
+        out = {
+            "result_id": str(r.result_id),
+            "object_id": str(r.object_id) if r.object_id else None,
+            "object_number": obj.object_number if obj else None,
+            "title": titles.get(r.object_id) or (obj.object_name if obj else None),
+            "outcome": outcome,
+            "current_location_name": current.name if current else None,
+            "found_location_name": found.name if found else None,
+            "changes": [],
+            "skipped": [],
+        }
+        row = {"result": r, "object": obj, "move_to": None, "inventory": False, "out": out}
+        rows.append(row)
+        if obj is None or obj.is_deleted:
+            out["skipped"].append("The object record no longer exists.")
+            continue
+        if update_location:
+            if outcome != "wrong_location":
+                out["skipped"].append("Location: only wrong-location results have a found location to apply.")
+            elif not found:
+                out["skipped"].append("Location: the found location no longer exists.")
+            elif obj.current_location_id == found.location_id:
+                out["skipped"].append(f"Location: the record already shows {found.name}.")
+            else:
+                row["move_to"] = found
+                out["changes"].append(
+                    f"Record a movement from {current.name if current else 'no location'} to {found.name}."
+                )
+        if mark_inv:
+            if outcome in ("found", "wrong_location"):
+                row["inventory"] = True
+                when = r.verification_date.date().isoformat() if r.verification_date else "today"
+                out["changes"].append(f"Set last inventoried to {when}.")
+            else:
+                out["skipped"].append("Inventoried: the object wasn't seen in this check.")
+
+    return {"update_location": update_location, "mark_inventoried": mark_inv, "rows": rows}
+
+
+def _bulk_response(audit: AuditCampaign, plan: dict, executed: bool) -> dict:
+    return {
+        "audit_id": str(audit.campaign_id),
+        "update_location": plan["update_location"],
+        "mark_inventoried": plan["mark_inventoried"],
+        "rows": [p["out"] for p in plan["rows"]],
+        "location_update_count": sum(1 for p in plan["rows"] if p["move_to"] is not None),
+        "inventoried_count": sum(1 for p in plan["rows"] if p["inventory"]),
+        "skipped_count": sum(1 for p in plan["rows"] if p["move_to"] is None and not p["inventory"]),
+        "executed": executed,
+    }
+
+
+@router.post(
+    "/api/organizations/{org_id}/collections/audits/{audit_id}/check-list/bulk-update/preview",
+    response_model=BulkUpdateResponse,
+    summary="Preview bulk update from audit results",
+)
+def preview_bulk_update_from_results(
+    org_id: UUID,
+    audit_id: UUID,
+    body: dict,
+    auth: AuthContext = Depends(require_permission(Permission.AUDITS_EDIT)),
+    db: Session = Depends(get_db),
+):
+    """Show what applying the selected results would change, row by row.
+
+    Body: ``result_ids``; ``update_location`` records a movement to the found
+    location for wrong-location results; ``mark_inventoried`` sets last
+    inventoried date/by from the check for objects that were seen.
+    """
+    audit = _get_campaign_or_404(db, org_id, audit_id)
+    plan = _plan_bulk_update(db, org_id, audit, body, auth)
+    return _bulk_response(audit, plan, executed=False)
+
+
+@router.post(
+    "/api/organizations/{org_id}/collections/audits/{audit_id}/check-list/bulk-update/execute",
+    response_model=BulkUpdateResponse,
+    summary="Apply bulk update from audit results",
+)
+def execute_bulk_update_from_results(
+    org_id: UUID,
+    audit_id: UUID,
+    body: dict,
+    auth: AuthContext = Depends(require_permission(Permission.AUDITS_EDIT)),
+    db: Session = Depends(get_db),
+):
+    """Apply what preview showed. Movements go through the same service as
+    the workspace record_movement bulk action; moved results are marked
+    resolved (follow_up_action = location_updated)."""
+    from datetime import date as date_cls
+    from app.services.bulk_movement_service import (
+        mark_inventoried,
+        next_movement_base,
+        record_bulk_movement,
+    )
+
+    audit = _get_campaign_or_404(db, org_id, audit_id)
+    plan = _plan_bulk_update(db, org_id, audit, body, auth)
+
+    reason = (body.get("reason") or "inventory").strip()[:50] or "inventory"
+    note = body.get("movement_note") or f"Found in this location during audit {audit.campaign_number}"
+
+    # One record_bulk_movement call per destination.
+    by_destination: dict = {}
+    for p in plan["rows"]:
+        if p["move_to"] is not None:
+            by_destination.setdefault(p["move_to"].location_id, (p["move_to"], []))[1].append(p)
+    base = next_movement_base(db, org_id)
+    today = date_cls.today()
+    for to_location, group in by_destination.values():
+        results, _, _, used = record_bulk_movement(
+            db, org_id, auth.user_id, [p["object"] for p in group], to_location,
+            {"reason": reason, "movement_note": note}, skip_blocked=True, base_count=base,
+        )
+        base += used
+        for p, res in zip(group, results):
+            p["out"]["status"] = res["status"]
+            if res["status"] == "success":
+                p["out"]["movement_reference"] = res.get("reference_number")
+                r = p["result"]
+                r.follow_up_action = "location_updated"
+                r.follow_up_completed = True
+                r.follow_up_date = today
+            else:
+                p["out"]["message"] = res.get("message")
+
+    inv_rows = [p for p in plan["rows"] if p["inventory"]]
+    if inv_rows:
+        mark_inventoried(
+            db, org_id, auth.user_id,
+            [(p["object"], p["result"].verification_date, p["result"].verified_by_id) for p in inv_rows],
+        )
+        for p in inv_rows:
+            p["out"]["status"] = p["out"].get("status") or "success"
+
+    for p in plan["rows"]:
+        p["out"].setdefault("status", "skipped")
+
+    audit.updated_by_id = auth.user_id
+    audit.updated_at = datetime.now(timezone.utc)
+    db.commit()
+
+    # The search index carries current location; refresh moved objects.
+    moved = [p["object"] for p in plan["rows"] if p["move_to"] is not None]
+    if moved:
+        try:
+            from app.fastapi_app.serializers.collections_helpers import _index_collection_object
+            for obj in moved:
+                _index_collection_object(obj)
+        except Exception:
+            logger.warning("Could not re-index objects after audit bulk update", exc_info=True)
+
+    return _bulk_response(audit, plan, executed=True)

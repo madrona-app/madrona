@@ -700,6 +700,63 @@ export async function recordAuditCheck(
   });
 }
 
+export interface AuditBulkUpdateRequest {
+  result_ids: string[];
+  update_location: boolean;
+  mark_inventoried: boolean;
+  reason?: string;
+  movement_note?: string;
+}
+
+export interface AuditBulkUpdateRow {
+  result_id: string;
+  object_id: string | null;
+  object_number: string | null;
+  title: string | null;
+  outcome: string | null;
+  current_location_name: string | null;
+  found_location_name: string | null;
+  changes: string[];
+  skipped: string[];
+  status: string | null;
+  message: string | null;
+  movement_reference: string | null;
+}
+
+export interface AuditBulkUpdateResult {
+  audit_id: string;
+  update_location: boolean;
+  mark_inventoried: boolean;
+  rows: AuditBulkUpdateRow[];
+  location_update_count: number;
+  inventoried_count: number;
+  skipped_count: number;
+  executed: boolean;
+}
+
+/** Preview, then apply, record updates from selected audit results. */
+export async function previewAuditBulkUpdate(
+  organizationId: string,
+  campaignId: string,
+  body: AuditBulkUpdateRequest,
+): Promise<AuditBulkUpdateResult> {
+  return await apiFetch(`/organizations/${organizationId}/collections/audits/${campaignId}/check-list/bulk-update/preview`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function executeAuditBulkUpdate(
+  organizationId: string,
+  campaignId: string,
+  body: AuditBulkUpdateRequest,
+): Promise<AuditBulkUpdateResult> {
+  return await apiFetch(`/organizations/${organizationId}/collections/audits/${campaignId}/check-list/bulk-update/execute`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
 export interface LocationOption {
   location_id: string;
   name: string;
