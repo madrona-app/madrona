@@ -639,6 +639,16 @@ def update_audit_campaign(
         "check_list_seed", "check_list_generated_at", "check_list_generated_by",
         "check_list_generated_by_id", "check_list_params",
     }
+    # Status moves through approve / start / complete; the only status a plain
+    # update may set is "cancelled" (from any status but completed).
+    if "status" in body and body["status"] != audit.status:
+        if body["status"] != "cancelled":
+            raise HTTPException(status_code=422, detail={
+                "code": "validation_error", "field": "status",
+                "message": "Use Approve, Start or Complete to change a campaign's status; only cancelling is an update.",
+            })
+        if audit.status == "completed":
+            raise HTTPException(status_code=409, detail={"code": "conflict", "message": "A completed campaign cannot be cancelled"})
     for key, value in body.items():
         if key in protected:
             continue
@@ -654,6 +664,136 @@ def update_audit_campaign(
     db.commit()
     db.refresh(audit)
     return _serialize_audit_campaign(audit)
+
+
+def _get_audit(db: Session, org_id: UUID, audit_id: UUID) -> AuditCampaign:
+    audit = db.query(AuditCampaign).filter(
+        AuditCampaign.campaign_id == audit_id,
+        AuditCampaign.organization_id == org_id,
+    ).first()
+    if not audit:
+        raise HTTPException(status_code=404, detail="Audit campaign not found")
+    return audit
+
+
+def _transition(audit: AuditCampaign, allowed_from: tuple[str, ...], to: str, verb: str) -> None:
+    if audit.status not in allowed_from:
+        raise HTTPException(status_code=409, detail={
+            "code": "invalid_transition",
+            "message": f"A campaign that is {audit.status.replace('_', ' ')} cannot be {verb}.",
+            "current_status": audit.status,
+        })
+    audit.status = to
+
+
+@router.post("/api/organizations/{org_id}/collections/audits/{audit_id}/approve", response_model=AuditCampaignOut, summary="Approve audit campaign")
+def approve_audit_campaign(
+    org_id: UUID,
+    audit_id: UUID,
+    auth: AuthContext = Depends(require_permission(Permission.AUDITS_APPROVE)),
+    db: Session = Depends(get_db),
+):
+    """Draft -> approved. The person who created the campaign cannot approve it."""
+    audit = _get_audit(db, org_id, audit_id)
+    if audit.created_by_id and audit.created_by_id == auth.user_id:
+        raise HTTPException(status_code=403, detail={
+            "code": "forbidden", "message": "Someone other than the campaign's creator must approve it.",
+        })
+    _transition(audit, ("draft",), "approved", "approved")
+    audit.approved_by_id = auth.user_id
+    audit.approval_date = datetime.now(timezone.utc).date()
+    audit.updated_by_id = auth.user_id
+    audit.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(audit)
+    return _serialize_audit_campaign(audit)
+
+
+@router.post("/api/organizations/{org_id}/collections/audits/{audit_id}/start", response_model=AuditCampaignOut, summary="Start audit campaign")
+def start_audit_campaign(
+    org_id: UUID,
+    audit_id: UUID,
+    auth: AuthContext = Depends(require_permission(Permission.AUDITS_EDIT)),
+    db: Session = Depends(get_db),
+):
+    """Approved -> in progress; records the actual start date."""
+    audit = _get_audit(db, org_id, audit_id)
+    _transition(audit, ("approved",), "in_progress", "started")
+    audit.actual_start_date = audit.actual_start_date or datetime.now(timezone.utc).date()
+    audit.updated_by_id = auth.user_id
+    audit.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(audit)
+    return _serialize_audit_campaign(audit)
+
+
+@router.post("/api/organizations/{org_id}/collections/audits/{audit_id}/complete", response_model=AuditCampaignOut, summary="Complete audit campaign")
+def complete_audit_campaign(
+    org_id: UUID,
+    audit_id: UUID,
+    auth: AuthContext = Depends(require_permission(Permission.AUDITS_EDIT)),
+    db: Session = Depends(get_db),
+):
+    """In progress -> completed, signed off by the caller.
+
+    Refused while objects on the check list are still unchecked: an audit is
+    complete when every listed object has a result (found, not found, ...).
+    """
+    audit = _get_audit(db, org_id, audit_id)
+    if audit.status == "in_progress":
+        pending = db.query(AuditResult).filter(
+            AuditResult.campaign_id == audit.campaign_id,
+            AuditResult.result_status == "pending",
+        ).count()
+        if pending:
+            raise HTTPException(status_code=409, detail={
+                "code": "checks_pending",
+                "message": f"{pending} object{'s' if pending != 1 else ''} on the check list "
+                           f"{'have' if pending != 1 else 'has'} not been checked yet.",
+                "pending": pending,
+            })
+    _transition(audit, ("in_progress",), "completed", "completed")
+    today = datetime.now(timezone.utc).date()
+    audit.actual_end_date = today
+    audit.signed_off_by_id = auth.user_id
+    audit.sign_off_date = today
+    audit.updated_by_id = auth.user_id
+    audit.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(audit)
+    return _serialize_audit_campaign(audit)
+
+
+@router.delete("/api/organizations/{org_id}/collections/audits/{audit_id}", response_model=dict, summary="Delete audit campaign")
+def delete_audit_campaign(
+    org_id: UUID,
+    audit_id: UUID,
+    auth: AuthContext = Depends(require_permission(Permission.AUDITS_EDIT)),
+    db: Session = Depends(get_db),
+):
+    """Delete a draft or cancelled campaign that has no recorded checks.
+
+    Campaigns that were run are audit evidence: they can be cancelled, never
+    deleted.
+    """
+    audit = _get_audit(db, org_id, audit_id)
+    if audit.status not in ("draft", "cancelled"):
+        raise HTTPException(status_code=409, detail={
+            "code": "conflict",
+            "message": "Only draft or cancelled campaigns can be deleted. Cancel this campaign instead.",
+        })
+    recorded = db.query(AuditResult).filter(
+        AuditResult.campaign_id == audit.campaign_id,
+        AuditResult.result_status != "pending",
+    ).count()
+    if recorded:
+        raise HTTPException(status_code=409, detail={
+            "code": "conflict",
+            "message": f"This campaign has {recorded} recorded check{'s' if recorded != 1 else ''} and is kept as audit evidence.",
+        })
+    db.delete(audit)
+    db.commit()
+    return {"success": True}
 
 
 @router.get("/api/organizations/{org_id}/collections/audits/{audit_id}/results", response_model=AuditResultListResponse, summary="List audit results")
