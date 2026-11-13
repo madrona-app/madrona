@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Plus, X } from 'lucide-react';
 import type { Title } from './types';
 
@@ -14,6 +15,7 @@ export function TitlesField({
   onAdd: () => void;
   onSave: () => void;
 }) {
+  const groupLabelId = useId();
   if (!isEditing) {
     if (titles.length === 0) return null;
     return (
@@ -49,15 +51,15 @@ export function TitlesField({
   }
 
   return (
-    <div>
+    <div role="group" aria-labelledby={groupLabelId}>
       <div className="flex items-center justify-between mb-2">
-        <label className="text-sm font-medium text-ink">Titles</label>
+        <span id={groupLabelId} className="text-sm font-medium text-ink">Titles</span>
         <button
           type="button"
           onClick={onAdd}
           className="text-sm text-bark hover:text-copper-dark flex items-center gap-1"
         >
-          <Plus size={14} />
+          <Plus size={14} aria-hidden="true" />
           Add title
         </button>
       </div>
@@ -81,10 +83,12 @@ export function TitlesField({
                 }}
                 className="mt-2"
                 title="Set as display title"
+                aria-label={`Display title: title ${i + 1}${t.title ? `, ${t.title}` : ''}`}
               />
               <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
                 <input
                   type="text"
+                  aria-label={`Title ${i + 1} text`}
                   value={t.title}
                   onChange={(e) => {
                     const updated = [...titles];
@@ -96,6 +100,7 @@ export function TitlesField({
                   className="input md:col-span-1"
                 />
                 <select
+                  aria-label={`Title ${i + 1} type`}
                   value={t.title_type || ''}
                   onChange={(e) => {
                     const updated = [...titles];
@@ -112,6 +117,7 @@ export function TitlesField({
                   <option value="alternate">Alternate</option>
                 </select>
                 <select
+                  aria-label={`Title ${i + 1} language`}
                   value={t.language || ''}
                   onChange={(e) => {
                     const updated = [...titles];
@@ -134,9 +140,10 @@ export function TitlesField({
                   onChange(titles.filter((_, idx) => idx !== i));
                   onSave();
                 }}
-                className="p-1 text-archive hover:text-semantic-error"
+                aria-label={`Remove title ${i + 1}${t.title ? `, ${t.title}` : ''}`}
+                className="p-1 rounded text-archive hover:text-semantic-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
               >
-                <X size={16} />
+                <X size={16} aria-hidden="true" />
               </button>
             </div>
           ))

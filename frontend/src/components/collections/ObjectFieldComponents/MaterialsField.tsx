@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Plus, X } from 'lucide-react';
 import { AuthorityAutocomplete, type AuthorityBackedValue } from '../AuthorityAutocomplete';
 import type { Material } from './types';
@@ -46,6 +47,7 @@ export function MaterialsField({
   onAdd: () => void;
   onSave: () => void;
 }) {
+  const groupLabelId = useId();
   if (!isEditing) {
     if (materials.length === 0) return null;
     return (
@@ -65,11 +67,11 @@ export function MaterialsField({
   }
 
   return (
-    <div>
+    <div role="group" aria-labelledby={groupLabelId}>
       <div className="flex items-center justify-between mb-2">
-        <label className="text-sm font-medium text-ink">Materials</label>
+        <span id={groupLabelId} className="text-sm font-medium text-ink">Materials</span>
         <button type="button" onClick={onAdd} className="text-sm text-bark hover:text-copper-dark flex items-center gap-1">
-          <Plus size={14} />
+          <Plus size={14} aria-hidden="true" />
           Add material
         </button>
       </div>
@@ -95,6 +97,7 @@ export function MaterialsField({
             </div>
             <input
               type="text"
+              aria-label={`Material ${i + 1} part`}
               value={m.part || ''}
               onChange={(e) => {
                 const updated = [...materials];

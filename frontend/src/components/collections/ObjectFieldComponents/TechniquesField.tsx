@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Plus, X } from 'lucide-react';
 import { AuthorityAutocomplete, type AuthorityBackedValue } from '../AuthorityAutocomplete';
 import type { Technique } from './types';
@@ -46,6 +47,7 @@ export function TechniquesField({
   onAdd: () => void;
   onSave: () => void;
 }) {
+  const groupLabelId = useId();
   if (!isEditing) {
     if (techniques.length === 0) return null;
     return (
@@ -65,11 +67,11 @@ export function TechniquesField({
   }
 
   return (
-    <div>
+    <div role="group" aria-labelledby={groupLabelId}>
       <div className="flex items-center justify-between mb-2">
-        <label className="text-sm font-medium text-ink">Techniques</label>
+        <span id={groupLabelId} className="text-sm font-medium text-ink">Techniques</span>
         <button type="button" onClick={onAdd} className="text-sm text-bark hover:text-copper-dark flex items-center gap-1">
-          <Plus size={14} />
+          <Plus size={14} aria-hidden="true" />
           Add technique
         </button>
       </div>
@@ -95,6 +97,7 @@ export function TechniquesField({
             </div>
             <input
               type="text"
+              aria-label={`Technique ${i + 1} part`}
               value={t.part || ''}
               onChange={(e) => {
                 const updated = [...techniques];

@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Plus, X, CheckCircle } from 'lucide-react';
 import { AuthorityAutocomplete, type AuthorityBackedValue } from '../AuthorityAutocomplete';
 import type { Creator } from './types';
@@ -39,6 +40,7 @@ export function CreatorsField({
   onAdd: () => void;
   onSave: () => void;
 }) {
+  const groupLabelId = useId();
   if (!isEditing) {
     if (creators.length === 0) return null;
     return (
@@ -69,11 +71,11 @@ export function CreatorsField({
   }
 
   return (
-    <div>
+    <div role="group" aria-labelledby={groupLabelId}>
       <div className="flex items-center justify-between mb-2">
-        <label className="text-sm font-medium text-ink">Creator(s)</label>
+        <span id={groupLabelId} className="text-sm font-medium text-ink">Creator(s)</span>
         <button type="button" onClick={onAdd} className="text-sm text-bark hover:text-copper-dark flex items-center gap-1">
-          <Plus size={14} />
+          <Plus size={14} aria-hidden="true" />
           Add creator
         </button>
       </div>
@@ -112,6 +114,7 @@ export function CreatorsField({
             </div>
             <div className="grid grid-cols-2 gap-2">
               <select
+                aria-label={`Creator ${i + 1} role`}
                 value={c.role || ''}
                 onChange={(e) => {
                   const updated = [...creators];
@@ -134,6 +137,7 @@ export function CreatorsField({
                 <option value="other">Other</option>
               </select>
               <select
+                aria-label={`Creator ${i + 1} attribution`}
                 value={c.role_qualifier || ''}
                 onChange={(e) => {
                   const updated = [...creators];
@@ -157,7 +161,7 @@ export function CreatorsField({
             </div>
             {c.ulan_id && (
               <div className="text-xs text-semantic-success flex items-center gap-1">
-                <CheckCircle size={12} />
+                <CheckCircle size={12} aria-hidden="true" />
                 Linked to Getty ULAN
               </div>
             )}

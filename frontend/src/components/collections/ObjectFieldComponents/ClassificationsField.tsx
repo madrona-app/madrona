@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Plus, X } from 'lucide-react';
 import { AuthorityAutocomplete, type AuthorityBackedValue } from '../AuthorityAutocomplete';
 import type { Classification } from './types';
@@ -52,6 +53,7 @@ export function ClassificationsField({
   /** Legacy lookup options — no longer used (replaced by live authority search) */
   lookupOptions?: { value: string; label: string }[];
 }) {
+  const groupLabelId = useId();
   if (!isEditing) {
     if (classifications.length === 0) return null;
     return (
@@ -69,15 +71,15 @@ export function ClassificationsField({
   }
 
   return (
-    <div>
+    <div role="group" aria-labelledby={groupLabelId}>
       <div className="flex items-center justify-between mb-2">
-        <label className="text-sm font-medium text-ink">Classifications</label>
+        <span id={groupLabelId} className="text-sm font-medium text-ink">Classifications</span>
         <button
           type="button"
           onClick={onAdd}
           className="text-sm text-bark hover:text-copper-dark flex items-center gap-1"
         >
-          <Plus size={14} />
+          <Plus size={14} aria-hidden="true" />
           Add classification
         </button>
       </div>
@@ -98,6 +100,7 @@ export function ClassificationsField({
                 placeholder="Search classifications (AAT, Nomenclature)..."
                 showVerifiedBadge={true}
                 allowCreate={true}
+                ariaLabel={`Classification ${i + 1}`}
               />
             </div>
             <button
@@ -106,9 +109,10 @@ export function ClassificationsField({
                 onChange(classifications.filter((_, idx) => idx !== i));
                 onSave();
               }}
-              className="p-1 text-archive hover:text-semantic-error"
+              aria-label={`Remove classification ${i + 1}${c.term ? `, ${c.term}` : ''}`}
+              className="p-1 rounded text-archive hover:text-semantic-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             >
-              <X size={16} />
+              <X size={16} aria-hidden="true" />
             </button>
           </div>
         ))}
