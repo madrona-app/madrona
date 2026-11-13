@@ -110,6 +110,18 @@ class Organization(Base):
         comment="Per-org media AI settings. Keys: visual_search_threshold (0.0-1.0)."
     )
 
+    # Which PDF report exports are offered (see services/report_formats.py).
+    # 'all' (default) keeps existing behaviour; 'tagged_only' hides PDFs that
+    # are not tagged for access technology; 'none' offers accessible formats
+    # only (HTML, Word, plain text, CSV, Excel).
+    report_pdf_mode: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="all",
+        server_default="all",
+        comment="PDF report exports offered: all | tagged_only | none.",
+    )
+
     # Storage configuration — 10 TB (10,240 GB) unified quota covers S3 media,
     # PostgreSQL database, and OpenSearch index storage.
     DEFAULT_STORAGE_LIMIT_GB = 10_240
@@ -230,6 +242,13 @@ class Organization(Base):
     )
     storage_config: Mapped["OrganizationStorageConfig | None"] = relationship(
         back_populates="organization", uselist=False, cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "report_pdf_mode IN ('all', 'tagged_only', 'none')",
+            name="check_org_report_pdf_mode",
+        ),
     )
 
 

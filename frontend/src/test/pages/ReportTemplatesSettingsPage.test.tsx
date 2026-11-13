@@ -18,6 +18,15 @@ vi.mock('../../lib/api/report-templates', () => ({
   ),
 }));
 
+vi.mock('../../lib/api/on-demand-reports', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib/api/on-demand-reports')>();
+  return {
+    ...actual,
+    getReportPdfMode: vi.fn().mockResolvedValue({ pdf_mode: 'all' }),
+    updateReportPdfMode: vi.fn(),
+  };
+});
+
 vi.mock('../../contexts/useOrganization', () => ({
   useOrganization: vi.fn(),
 }));
@@ -68,6 +77,14 @@ describe('ReportTemplatesSettingsPage', () => {
     expect(
       screen.getByText(/upload custom html templates/i),
     ).toBeInTheDocument();
+  });
+
+  it('includes the PDF reports setting under its own heading', async () => {
+    mockListReportTemplates.mockResolvedValue([]);
+    renderPage();
+    expect(await screen.findByRole('heading', { name: 'PDF reports', level: 2 })).toBeInTheDocument();
+    expect(await screen.findByRole('radio', { name: 'Offer all PDF reports' })).toBeChecked();
+    expect(screen.getByRole('heading', { name: 'Template overrides', level: 2 })).toBeInTheDocument();
   });
 
   it('renders the info box with available template names', async () => {

@@ -11,7 +11,39 @@ import { apiFetch, buildQueryString } from './_utils';
 // ============================================================================
 
 export type ReportContextType = 'search' | 'workspace' | 'record';
-export type ReportFormat = 'csv' | 'excel' | 'pdf';
+export type ReportFormat = 'html' | 'docx' | 'txt' | 'csv' | 'excel' | 'pdf';
+
+/**
+ * Labels for each export format. Accessible formats are offered first; the
+ * order here is the order the export menu lists them in.
+ */
+export const REPORT_FORMATS: { format: ReportFormat; label: string; short: string; description: string }[] = [
+  { format: 'html', label: 'Accessible web page (HTML)', short: 'HTML', description: 'Headings, labelled tables and image descriptions for screen readers' },
+  { format: 'docx', label: 'Word document', short: 'Word', description: 'Real heading styles and table header rows' },
+  { format: 'txt', label: 'Plain text', short: 'Text', description: 'Structured text; tables written as label: value records' },
+  { format: 'csv', label: 'CSV', short: 'CSV', description: 'Comma-separated values for any spreadsheet' },
+  { format: 'excel', label: 'Excel', short: 'Excel', description: 'Excel workbook' },
+  { format: 'pdf', label: 'PDF', short: 'PDF', description: 'Formatted for printing' },
+];
+
+const FORMAT_ORDER = REPORT_FORMATS.map((f) => f.format);
+
+/** Sort formats accessible-first, keeping unknown formats at the end. */
+export function sortReportFormats(formats: string[]): string[] {
+  const rank = (f: string) => {
+    const i = FORMAT_ORDER.indexOf(f as ReportFormat);
+    return i === -1 ? FORMAT_ORDER.length : i;
+  };
+  return [...formats].sort((a, b) => rank(a) - rank(b));
+}
+
+/** Short display name for a format ("HTML", "Word", "Text", ...). */
+export function reportFormatShortLabel(format: string): string {
+  return REPORT_FORMATS.find((f) => f.format === format)?.short ?? format.toUpperCase();
+}
+
+/** Which PDF report exports an organization offers. */
+export type ReportPdfMode = 'all' | 'tagged_only' | 'none';
 export type ReportRunStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
 
 export interface AvailableReport {
@@ -89,6 +121,26 @@ export async function getAvailableReports(
   return apiFetch<AvailableReportsResponse>(
     `/organizations/${orgId}/on-demand-reports/available${qs}`,
   );
+}
+
+/**
+ * Get the organization's PDF report setting.
+ */
+export async function getReportPdfMode(orgId: string): Promise<{ pdf_mode: ReportPdfMode }> {
+  return apiFetch<{ pdf_mode: ReportPdfMode }>(`/organizations/${orgId}/settings/report-formats`);
+}
+
+/**
+ * Set which PDF report exports the organization offers.
+ */
+export async function updateReportPdfMode(
+  orgId: string,
+  pdfMode: ReportPdfMode,
+): Promise<{ pdf_mode: ReportPdfMode }> {
+  return apiFetch<{ pdf_mode: ReportPdfMode }>(`/organizations/${orgId}/settings/report-formats`, {
+    method: 'PUT',
+    body: JSON.stringify({ pdf_mode: pdfMode }),
+  });
 }
 
 /**

@@ -78,13 +78,13 @@
     page-break-after: avoid;
   }
 
-  table.field-grid {
+  .field-grid {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 6pt;
   }
 
-  table.field-grid td.field {
+  .field-grid .field {
     width: 50%;
     padding: 0 8pt 6pt 0;
     vertical-align: top;
@@ -114,7 +114,7 @@
     white-space: pre-wrap;
   }
 
-  table.record-info {
+  .record-info {
     width: 100%;
     border-collapse: collapse;
     margin-top: 14pt;
@@ -123,7 +123,7 @@
     color: var(--archive);
   }
 
-  table.record-info td {
+  .record-info .row > div {
     padding: 4pt 0;
     width: 50%;
   }
@@ -131,6 +131,16 @@
   .keep-together {
     break-inside: avoid;
   }
+
+  /* Layout rows (divs, not tables, so tagged PDF has no false data tables) */
+  .field-grid > .row, .ident-layout > .row, .record-info > .row, .signature-block > .row {
+    display: flex;
+  }
+  .field-grid > .row > div, .record-info > .row > div, .signature-block > .row > div {
+    flex: 1 1 0;
+  }
+  .ident-layout .ident-fields { flex: 1 1 auto; }
+  .ident-layout .ident-image { flex: 0 0 2.5in; }
 </style>
 </head>
 <body>
@@ -142,104 +152,104 @@
 
 {# ── Exit Details ── #}
 <h2 class="section-header">Exit Details</h2>
-<table class="field-grid">
+<div class="field-grid">
   {% if exit_number or exit_date %}
-  <tr>
+  <div class="row">
     {% if exit_number %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Exit Number</div>
       <div class="field-value">{{ exit_number }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if exit_date %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Exit Date</div>
       <div class="field-value">{{ exit_date }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if recipient_name or exit_reason %}
-  <tr>
+  <div class="row">
     {% if recipient_name %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Recipient</div>
       <div class="field-value">{{ recipient_name }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if exit_reason %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Exit Reason</div>
       <div class="field-value">{{ exit_reason }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if exit_method or status %}
-  <tr>
+  <div class="row">
     {% if exit_method %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Exit Method</div>
       <div class="field-value">{{ exit_method }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if status %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Status</div>
       <div class="field-value">{{ status }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if assigned_to_name %}
-  <tr>
-    <td class="field">
+  <div class="row">
+    <div class="field">
       <div class="field-label">Assigned To</div>
       <div class="field-value">{{ assigned_to_name }}</div>
-    </td>
-    <td></td>
-  </tr>
+    </div>
+    <div></div>
+  </div>
   {% endif %}
-</table>
+</div>
 
 {# ── Shipping ── #}
 {% if shipping_method or shipping_company or tracking_number or courier_name %}
 <div class="keep-together">
   <h2 class="section-header">Shipping</h2>
-  <table class="field-grid">
+  <div class="field-grid">
     {% if shipping_method or shipping_company %}
-    <tr>
+    <div class="row">
       {% if shipping_method %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Shipping Method</div>
         <div class="field-value">{{ shipping_method }}</div>
-      </td>
+      </div>
       {% endif %}
       {% if shipping_company %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Shipping Company</div>
         <div class="field-value">{{ shipping_company }}</div>
-      </td>
+      </div>
       {% endif %}
-    </tr>
+    </div>
     {% endif %}
     {% if tracking_number or courier_name %}
-    <tr>
+    <div class="row">
       {% if tracking_number %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Tracking Number</div>
         <div class="field-value">{{ tracking_number }}</div>
-      </td>
+      </div>
       {% endif %}
       {% if courier_name %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Courier</div>
         <div class="field-value">{{ courier_name }}</div>
-      </td>
+      </div>
       {% endif %}
-    </tr>
+    </div>
     {% endif %}
-  </table>
+  </div>
 </div>
 {% endif %}
 
@@ -247,22 +257,22 @@
 {% if insurance_value %}
 <div class="keep-together">
   <h2 class="section-header">Insurance</h2>
-  <table class="field-grid">
-    <tr>
-      <td class="field">
+  <div class="field-grid">
+    <div class="row">
+      <div class="field">
         <div class="field-label">Insurance Value</div>
         <div class="field-value">{{ insurance_value }}</div>
-      </td>
+      </div>
       {% if insurance_currency %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Currency</div>
         <div class="field-value">{{ insurance_currency }}</div>
-      </td>
+      </div>
       {% else %}
-      <td></td>
+      <div></div>
       {% endif %}
-    </tr>
-  </table>
+    </div>
+  </div>
 </div>
 {% endif %}
 
@@ -285,14 +295,14 @@
 {% endif %}
 
 {# ── Record Information ── #}
-<table class="record-info">
-  <tr>
+<div class="record-info">
+  <div class="row">
     {% if created_at %}
-    <td>Created: {{ created_at }}</td>
+    <div>Created: {{ created_at }}</div>
     {% endif %}
-    <td></td>
-  </tr>
-</table>
+    <div></div>
+  </div>
+</div>
 
 </body>
 </html>
