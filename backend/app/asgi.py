@@ -195,6 +195,8 @@ def create_app() -> FastAPI:
     from app.fastapi_app.routers.email_webhooks import router as email_webhooks_router
     from app.fastapi_app.routers.user_settings import router as user_settings_router
     from app.fastapi_app.routers.discover_public import router as discover_public_router
+    from app.fastapi_app.routers.discover_members import router as discover_members_router
+    from app.fastapi_app.routers.collections_discover_members import router as discover_members_admin_router
     from app.fastapi_app.routers.guide_documents import router as guide_documents_router
     from app.fastapi_app.routers.guide_insights import router as guide_insights_router
     from app.fastapi_app.routers.guide_preferences import router as guide_preferences_router
@@ -312,6 +314,8 @@ def create_app() -> FastAPI:
     app.include_router(crm_router)
     app.include_router(email_webhooks_router)
     app.include_router(user_settings_router)
+    app.include_router(discover_members_router)
+    app.include_router(discover_members_admin_router)
     app.include_router(discover_public_router)
     app.include_router(guide_documents_router)
     app.include_router(guide_insights_router)

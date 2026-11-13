@@ -52,6 +52,15 @@ CSRF_EXEMPT_PATTERNS = (
 )
 
 
+# The portal member API (routers/discover_members.py) sits under the otherwise
+# exempt /api/discover/ prefix but authenticates with an ambient session
+# cookie, so its state-changing requests are checked like any staff request.
+# Matching more than strictly needed only adds a check, never removes one.
+CSRF_REQUIRED_PATTERNS = (
+    re.compile(r"^/api/discover/[^/]+/member(/|$)"),
+)
+
+
 def _is_exempt_guide_path(path: str) -> bool:
     parts = path.split("/")
     # ["", "api", "guide", "<slug>", ...]
@@ -73,12 +82,16 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         if not path.startswith("/api/"):
             return await call_next(request)
 
+        # The member API takes no API keys, so the machine-to-machine skip
+        # below must not apply to it either.
+        csrf_required = any(pattern.match(path) for pattern in CSRF_REQUIRED_PATTERNS)
+
         # Skip if API key auth is present (machine-to-machine)
-        if request.headers.get("X-API-Key"):
+        if not csrf_required and request.headers.get("X-API-Key"):
             return await call_next(request)
 
         # Skip exempt paths
-        if any(path.startswith(prefix) for prefix in CSRF_EXEMPT_PREFIXES):
+        if not csrf_required and any(path.startswith(prefix) for prefix in CSRF_EXEMPT_PREFIXES):
             return await call_next(request)
         if _is_exempt_guide_path(path):
             return await call_next(request)
