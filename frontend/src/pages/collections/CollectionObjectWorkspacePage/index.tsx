@@ -684,22 +684,24 @@ function CollectionObjectWorkspacePageContent() {
       {/* Primary Image - Always visible, above workflows for visual context */}
       {!isCreateMode && displayThumbnail && (
         <div className="mb-6">
-          <div
-            className="relative rounded-lg overflow-hidden bg-stone cursor-pointer group"
+          <button
+            type="button"
+            className="relative block w-full p-0 border-0 rounded-lg overflow-hidden bg-stone cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             onClick={() => setShowIIIFViewer(true)}
+            aria-label={`Open ${displayTitle || 'primary image'} in the deep zoom viewer`}
           >
             <img
               src={displayThumbnail}
-              alt={displayTitle}
+              alt=""
               className="w-full h-auto max-h-[60vh] object-contain opacity-0 transition-opacity duration-200"
               onLoad={(e) => { (e.target as HTMLImageElement).classList.remove('opacity-0'); }}
             />
-            <div className="absolute inset-0 bg-ink/0 group-hover:bg-ink/10 transition-colors flex items-center justify-center">
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+            <span aria-hidden="true" className="absolute inset-0 bg-ink/0 group-hover:bg-ink/10 group-focus-visible:bg-ink/10 transition-colors flex items-center justify-center">
+              <span className="opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity">
                 <ZoomIn size={32} className="text-parchment drop-shadow-lg" />
-              </div>
-            </div>
-          </div>
+              </span>
+            </span>
+          </button>
         </div>
       )}
 
