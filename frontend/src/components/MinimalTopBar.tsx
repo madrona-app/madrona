@@ -17,7 +17,7 @@ export function MinimalTopBar() {
         aria-expanded={isMobileOpen}
         aria-controls="mobile-nav-drawer"
       >
-        <Menu size={24} />
+        <Menu size={24} aria-hidden="true" />
       </button>
 
       {/* Product switcher - shows "Madrona · Product ▾" */}

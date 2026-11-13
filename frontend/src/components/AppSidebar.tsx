@@ -43,7 +43,7 @@ export function AppSidebar({ orgId, onOpenChat: _onOpenChat }: AppSidebarProps) 
   return (
     <aside
       className={`sidebar ${isCollapsed ? 'sidebar--collapsed' : 'sidebar--expanded'} hidden sm:flex`}
-      aria-label="Main navigation"
+      aria-label="Sidebar"
       data-product={activeProduct?.id}
     >
       {/* Header with logo */}
@@ -51,6 +51,7 @@ export function AppSidebar({ orgId, onOpenChat: _onOpenChat }: AppSidebarProps) 
         <Link
           to={orgId ? `/organizations/${orgId}/home` : '/'}
           className="sidebar-logo flex items-center no-underline justify-center"
+          aria-label="Madrona home"
         >
           <span className="text-2xl font-serif font-semibold text-parchment">
             {isCollapsed ? 'M' : <Wordmark />}
@@ -58,12 +59,13 @@ export function AppSidebar({ orgId, onOpenChat: _onOpenChat }: AppSidebarProps) 
         </Link>
         {!isCollapsed && (
           <button
+            type="button"
             onClick={toggleCollapsed}
             className="sidebar-collapse-toggle ml-auto"
             aria-label="Collapse sidebar"
             title="Collapse sidebar"
           >
-            <PanelLeftClose size={18} />
+            <PanelLeftClose size={18} aria-hidden="true" />
           </button>
         )}
       </div>
@@ -71,12 +73,13 @@ export function AppSidebar({ orgId, onOpenChat: _onOpenChat }: AppSidebarProps) 
       {/* Expand button - shown when collapsed, positioned at sidebar edge */}
       {isCollapsed && (
         <button
+          type="button"
           onClick={toggleCollapsed}
           className="sidebar-expand-button"
           aria-label="Expand sidebar"
           title="Expand sidebar"
         >
-          <PanelLeft size={16} />
+          <PanelLeft size={16} aria-hidden="true" />
         </button>
       )}
 
@@ -92,10 +95,10 @@ export function AppSidebar({ orgId, onOpenChat: _onOpenChat }: AppSidebarProps) 
             }
             end
           >
-            <Home size={18} className="sidebar-nav-item-icon" />
+            <Home size={18} className="sidebar-nav-item-icon" aria-hidden="true" />
             <span className="sidebar-nav-item-label">Home</span>
             {isCollapsed && (
-              <span className="sidebar-tooltip" role="tooltip">
+              <span className="sidebar-tooltip" aria-hidden="true">
                 Home
               </span>
             )}
@@ -129,13 +132,13 @@ export function AppSidebar({ orgId, onOpenChat: _onOpenChat }: AppSidebarProps) 
             {isCollapsed ? (
               /* Collapsed: show clock icon with tooltip */
               <div className="sidebar-product-collapsed">
-                <div className="sidebar-product-indicator" title="Recent">
+                <div className="sidebar-product-indicator" title="Recent" aria-hidden="true">
                   <span className="sidebar-product-indicator-dot" />
                 </div>
                 <div className="sidebar-nav-item" title="Recent items">
-                  <Clock size={18} className="sidebar-nav-item-icon" />
+                  <Clock size={18} className="sidebar-nav-item-icon" aria-hidden="true" />
                   <span className="sidebar-nav-item-label">Recent</span>
-                  <span className="sidebar-tooltip" role="tooltip">
+                  <span className="sidebar-tooltip" aria-hidden="true">
                     Recent
                   </span>
                 </div>
@@ -144,16 +147,18 @@ export function AppSidebar({ orgId, onOpenChat: _onOpenChat }: AppSidebarProps) 
               /* Expanded: collapsible header + recent items list */
               <div className="sidebar-product">
                 <button
+                  type="button"
                   onClick={() => toggleSection('recent')}
                   className="sidebar-product-header w-full"
                   aria-expanded={isRecentExpanded}
                   aria-controls="recent-nav"
                 >
                   <div className="flex items-center gap-2">
-                    <Clock size={16} className="sidebar-nav-item-icon" />
+                    <Clock size={16} className="sidebar-nav-item-icon" aria-hidden="true" />
                     <span className="sidebar-product-label">Recent</span>
                   </div>
                   <svg
+                    aria-hidden="true"
                     className={`sidebar-product-chevron w-3.5 h-3.5 ${isRecentExpanded ? 'sidebar-product-chevron--expanded' : ''}`}
                     fill="none"
                     viewBox="0 0 24 24"
@@ -179,7 +184,7 @@ export function AppSidebar({ orgId, onOpenChat: _onOpenChat }: AppSidebarProps) 
             {isCollapsed ? (
               /* Collapsed: show just nav items with subtle indicator */
               <div className="sidebar-product-collapsed">
-                <div className="sidebar-product-indicator" title="Admin">
+                <div className="sidebar-product-indicator" title="Admin" aria-hidden="true">
                   <span className="sidebar-product-indicator-dot" />
                 </div>
                 <nav aria-label="Admin navigation">
@@ -192,16 +197,18 @@ export function AppSidebar({ orgId, onOpenChat: _onOpenChat }: AppSidebarProps) 
               /* Expanded: show full header with toggle */
               <div className="sidebar-product">
                 <button
+                  type="button"
                   onClick={() => toggleSection('admin')}
                   className="sidebar-product-header w-full"
                   aria-expanded={isAdminExpanded}
                   aria-controls="admin-nav"
                 >
                   <div className="flex items-center gap-2">
-                    <Shield size={16} className="sidebar-nav-item-icon" />
+                    <Shield size={16} className="sidebar-nav-item-icon" aria-hidden="true" />
                     <span className="sidebar-product-label">Admin</span>
                   </div>
                   <svg
+                    aria-hidden="true"
                     className={`sidebar-product-chevron w-3.5 h-3.5 ${isAdminExpanded ? 'sidebar-product-chevron--expanded' : ''}`}
                     fill="none"
                     viewBox="0 0 24 24"
@@ -221,8 +228,6 @@ export function AppSidebar({ orgId, onOpenChat: _onOpenChat }: AppSidebarProps) 
             )}
           </>
         )}
-
-
       </div>
 
       {/* Footer with help and user menu */}

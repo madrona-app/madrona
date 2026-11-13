@@ -93,7 +93,8 @@ export function ProductNavItem({ item, orgId, siblings }: ProductNavItemProps) {
   }, [isExpanded, item.id, item.children]);
 
   // Handle both Lucide icons (as components) and react-icons (as functions)
-  const Icon = item.icon as React.ComponentType<{ size?: number; className?: string }>;
+  const Icon = item.icon as React.ComponentType<{ size?: number; className?: string; 'aria-hidden'?: boolean | 'true' | 'false' }>;
+  const childrenId = `sidebar-nav-children-${item.id}`;
 
   // If item has children, render as expandable section
   if (item.children && item.children.length > 0) {
@@ -108,22 +109,24 @@ export function ProductNavItem({ item, orgId, siblings }: ProductNavItemProps) {
               className={`sidebar-nav-item sidebar-nav-item--parent ${isDirectlyActive ? 'sidebar-nav-item--active' : ''}`}
               aria-current={isDirectlyActive ? 'page' : undefined}
             >
-              <Icon size={16} className="sidebar-nav-item-icon" />
+              <Icon size={16} className="sidebar-nav-item-icon" aria-hidden="true" />
               <span className="sidebar-nav-item-label">{item.label}</span>
               {!isCollapsed && item.badgeId && <NavBadge badgeId={item.badgeId} />}
             </Link>
             {!isCollapsed && (
               <button
+                type="button"
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="sidebar-nav-expand-btn"
                 aria-expanded={isExpanded}
-                aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                aria-controls={isExpanded ? childrenId : undefined}
+                aria-label={`${item.label} subpages`}
               >
-                {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                {isExpanded ? <ChevronDown size={14} aria-hidden="true" /> : <ChevronRight size={14} aria-hidden="true" />}
               </button>
             )}
             {isCollapsed && (
-              <span className="sidebar-tooltip" role="tooltip">
+              <span className="sidebar-tooltip" aria-hidden="true">
                 {item.label}
               </span>
             )}
@@ -136,34 +139,36 @@ export function ProductNavItem({ item, orgId, siblings }: ProductNavItemProps) {
               setIsExpanded(true);
             }}
             className={`sidebar-nav-item ${hasActiveChild ? 'sidebar-nav-item--active' : ''}`}
-            aria-label={`Expand ${item.label}`}
+            aria-label={`Expand ${item.label}${hasActiveChild ? ', contains current page' : ''}`}
           >
-            <Icon size={16} className={`sidebar-nav-item-icon ${item.accent === 'studio' ? 'text-studio' : ''}`} />
+            <Icon size={16} className={`sidebar-nav-item-icon ${item.accent === 'studio' ? 'text-studio' : ''}`} aria-hidden="true" />
             <span className={`sidebar-nav-item-label ${item.accent === 'studio' ? 'text-studio font-medium' : ''}`}>{item.label}</span>
-            <span className="sidebar-tooltip" role="tooltip">
+            <span className="sidebar-tooltip" aria-hidden="true">
               {item.label}
             </span>
           </button>
         ) : (
           // Expanded: section header toggles children visibility
           <button
+            type="button"
             onClick={() => setIsExpanded(!isExpanded)}
             className="sidebar-nav-item sidebar-nav-item--section"
             aria-expanded={isExpanded}
-            aria-label={`Toggle ${item.label || 'section'}`}
+            aria-controls={isExpanded ? childrenId : undefined}
+            aria-label={`Toggle ${item.label || 'section'}${hasActiveChild ? ', contains current page' : ''}`}
           >
-            <Icon size={16} className={`sidebar-nav-item-icon ${item.accent === 'studio' ? 'text-studio' : ''}`} />
+            <Icon size={16} className={`sidebar-nav-item-icon ${item.accent === 'studio' ? 'text-studio' : ''}`} aria-hidden="true" />
             <span className={`sidebar-nav-item-label ${item.accent === 'studio' ? 'text-studio font-medium' : ''}`}>{item.label}</span>
             {item.badgeId && <NavBadge badgeId={item.badgeId} />}
             <span className="sidebar-nav-expand-icon">
-              {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              {isExpanded ? <ChevronDown size={14} aria-hidden="true" /> : <ChevronRight size={14} aria-hidden="true" />}
             </span>
           </button>
         )}
 
         {/* Children */}
         {!isCollapsed && isExpanded && (
-          <div className="sidebar-nav-children">
+          <div id={childrenId} className="sidebar-nav-children">
             {item.children.map(child => (
               <ProductNavItem key={child.id} item={child} orgId={orgId} siblings={item.children} />
             ))}
@@ -185,11 +190,11 @@ export function ProductNavItem({ item, orgId, siblings }: ProductNavItemProps) {
       className={`sidebar-nav-item ${isActive ? 'sidebar-nav-item--active' : ''}`}
       aria-current={isActive ? 'page' : undefined}
     >
-      <Icon size={16} className="sidebar-nav-item-icon" />
+      <Icon size={16} className="sidebar-nav-item-icon" aria-hidden="true" />
       <span className="sidebar-nav-item-label">{item.label}</span>
       {!isCollapsed && item.badgeId && <NavBadge badgeId={item.badgeId} />}
       {isCollapsed && (
-        <span className="sidebar-tooltip" role="tooltip">
+        <span className="sidebar-tooltip" aria-hidden="true">
           {item.label}
         </span>
       )}
@@ -214,7 +219,7 @@ export function AdminNavItem({ item, orgId }: AdminNavItemProps) {
   const path = buildPath(item.path, orgId);
   const isActive = location.pathname.startsWith(path);
 
-  const Icon = item.icon as React.ComponentType<{ size?: number; className?: string }>;
+  const Icon = item.icon as React.ComponentType<{ size?: number; className?: string; 'aria-hidden'?: boolean | 'true' | 'false' }>;
 
   return (
     <Link
@@ -222,10 +227,10 @@ export function AdminNavItem({ item, orgId }: AdminNavItemProps) {
       className={`sidebar-nav-item ${isActive ? 'sidebar-nav-item--active' : ''}`}
       aria-current={isActive ? 'page' : undefined}
     >
-      <Icon size={16} className="sidebar-nav-item-icon" />
+      <Icon size={16} className="sidebar-nav-item-icon" aria-hidden="true" />
       <span className="sidebar-nav-item-label">{item.label}</span>
       {isCollapsed && (
-        <span className="sidebar-tooltip" role="tooltip">
+        <span className="sidebar-tooltip" aria-hidden="true">
           {item.label}
         </span>
       )}
