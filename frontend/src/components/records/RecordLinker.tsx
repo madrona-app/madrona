@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo, type ReactNode } from 'react';
+import { useState, useCallback, useEffect, useMemo, useId, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Plus, ExternalLink, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -26,6 +26,12 @@ interface RecordLinkerProps<TLinked, TSearch> {
   /** Entity ID used for duplicate filtering (defaults to getItemId) */
   getLinkedEntityId?: (item: TLinked) => string;
   renderItem: (item: TLinked) => ReactNode;
+  /**
+   * Plain-text name of a linked item, used to name its row actions for
+   * assistive tech ("Unlink Jane Smith"). When omitted, the actions are
+   * labelled by the rendered item content instead.
+   */
+  getItemLabel?: (item: TLinked) => string;
   getItemHref?: (item: TLinked) => string | null;
   // Grouping (optional)
   getItemGroup?: (item: TLinked) => string;
@@ -67,6 +73,7 @@ export function RecordLinker<TLinked, TSearch>({
   getItemId,
   getLinkedEntityId,
   renderItem,
+  getItemLabel,
   getItemHref,
   getItemGroup,
   groupLabels,
@@ -85,6 +92,7 @@ export function RecordLinker<TLinked, TSearch>({
   onCountChange,
 }: RecordLinkerProps<TLinked, TSearch>) {
   const queryClient = useQueryClient();
+  const baseId = useId();
 
   // Report count to parent for badge display
   useEffect(() => {
@@ -164,45 +172,64 @@ export function RecordLinker<TLinked, TSearch>({
   const renderItemCard = (item: TLinked) => {
     const id = getItemId(item);
     const href = getItemHref?.(item);
+    const itemLabel = getItemLabel?.(item);
+    // ids are space-separated in aria-labelledby, so keep them token-safe
+    const domId = `${baseId}-${String(id).replace(/[^A-Za-z0-9_-]/g, '_')}`;
+    const contentId = `${domId}-content`;
+    // Name each icon action "<action> <item>" so a screen reader user hears
+    // which record it acts on, not a list of identical "Unlink" buttons.
+    const actionProps = (action: string, suffix: string) =>
+      itemLabel
+        ? { 'aria-label': `${action} ${itemLabel}` }
+        : {
+            id: `${domId}-${suffix}`,
+            'aria-label': action,
+            'aria-labelledby': `${domId}-${suffix} ${contentId}`,
+          };
     return (
-      <div
+      <li
         key={id}
         className="flex items-center justify-between p-3 border border-lichen rounded-lg bg-parchment"
       >
-        <div className="flex items-center gap-3 min-w-0 flex-1">
+        <div id={contentId} className="flex items-center gap-3 min-w-0 flex-1">
           {renderItem(item)}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {href && (
             <a
               href={href}
-              className="text-bark hover:text-copper-dark p-1"
+              className="text-bark hover:text-copper-dark p-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
               title="View record"
+              {...actionProps('View record', 'view')}
             >
-              <ExternalLink size={14} />
+              <ExternalLink size={14} aria-hidden="true" />
             </a>
           )}
           {isEditing && editLink && (
             <button
+              type="button"
               onClick={() => setEditingItem(item)}
-              className="text-archive hover:text-ink p-1"
+              className="text-archive hover:text-ink p-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
               title="Edit details"
+              {...actionProps('Edit details of', 'edit')}
             >
-              <ExternalLink size={14} />
+              <ExternalLink size={14} aria-hidden="true" />
             </button>
           )}
           {isEditing && (
             <button
+              type="button"
               onClick={() => handleUnlink(item)}
               disabled={unlinkingId === id}
-              className="text-semantic-error hover:text-semantic-error/80 p-1 disabled:opacity-50"
+              className="text-semantic-error hover:text-semantic-error/80 p-1 rounded disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
               title="Unlink"
+              {...actionProps('Unlink', 'unlink')}
             >
-              <X size={14} />
+              <X size={14} aria-hidden="true" />
             </button>
           )}
         </div>
-      </div>
+      </li>
     );
   };
 
@@ -215,10 +242,12 @@ export function RecordLinker<TLinked, TSearch>({
         </h4>
         {isEditing && (
           <button
+            type="button"
             onClick={() => setShowSlideOver(true)}
-            className="flex items-center gap-1 text-sm text-bark hover:text-copper-dark"
+            aria-haspopup="dialog"
+            className="flex items-center gap-1 text-sm text-bark hover:text-copper-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
           >
-            <Plus size={14} />
+            <Plus size={14} aria-hidden="true" />
             {addLabel}
           </button>
         )}
@@ -232,8 +261,10 @@ export function RecordLinker<TLinked, TSearch>({
           {emptyMessage || 'No items linked.'}
           {isEditing && (
             <button
+              type="button"
               onClick={() => setShowSlideOver(true)}
-              className="block mx-auto mt-2 text-bark hover:text-copper-dark"
+              aria-haspopup="dialog"
+              className="block mx-auto mt-2 text-bark hover:text-copper-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             >
               {addLabel}
             </button>
@@ -249,13 +280,17 @@ export function RecordLinker<TLinked, TSearch>({
                 <h5 className="text-xs font-medium text-archive uppercase tracking-wide mb-2">
                   {groupLabels?.[group] || group}
                 </h5>
-                <div className="space-y-2">{items.map(renderItemCard)}</div>
+                <ul className="space-y-2" aria-label={groupLabels?.[group] || group}>
+                  {items.map(renderItemCard)}
+                </ul>
               </div>
             );
           })}
         </div>
       ) : (
-        <div className="space-y-2">{linkedItems.map(renderItemCard)}</div>
+        <ul className="space-y-2" aria-label={title}>
+          {linkedItems.map(renderItemCard)}
+        </ul>
       )}
 
       {/* Search slide-over */}

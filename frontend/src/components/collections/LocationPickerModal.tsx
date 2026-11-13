@@ -8,7 +8,7 @@
  * - Breadcrumb path display for selected location
  */
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useId } from 'react';
 import { ModalPortal } from '../ModalPortal';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -75,7 +75,6 @@ export function LocationPickerModal({
 }: LocationPickerModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const { modalRef, titleId } = useAccessibleModal({
     isOpen,
@@ -215,12 +214,15 @@ export function LocationPickerModal({
 
   return (
     <ModalPortal>
+    {/* Backdrop: pointer dismiss only; Escape is handled by useAccessibleModal. */}
+    {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- backdrop dismiss, not a control */}
     <div
       className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
       data-modal-layer="1000"
       onMouseDown={(e) => { e.stopPropagation(); onClose(); }}
       onClick={(e) => e.stopPropagation()}
     >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation wrapper so clicks inside the dialog don't dismiss it */}
       <div
         ref={modalRef}
         {...getModalAriaProps(titleId)}
@@ -234,6 +236,7 @@ export function LocationPickerModal({
             {title}
           </h2>
           <button
+            type="button"
             onClick={onClose}
             aria-label="Close"
             className="p-1 text-archive hover:text-ink rounded hover:bg-stone/50"
@@ -245,14 +248,14 @@ export function LocationPickerModal({
         {/* Search */}
         <div className="px-6 py-3 border-b border-lichen">
           <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-archive" />
+            <Search size={16} aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-archive" />
             <input
-              type="text"
+              type="search"
+              aria-label="Search locations"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search locations..."
               className="w-full pl-9 pr-4 py-2 border border-lichen rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
-              autoFocus
             />
           </div>
         </div>
@@ -260,15 +263,16 @@ export function LocationPickerModal({
         {/* Tree */}
         <div className="flex-1 overflow-y-auto px-4 py-3 min-h-[300px]">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 size={24} className="animate-spin text-archive" />
+            <div className="flex items-center justify-center py-12" role="status">
+              <Loader2 size={24} className="animate-spin text-archive" aria-hidden="true" />
+              <span className="sr-only">Loading locations</span>
             </div>
           ) : filteredTree.length === 0 ? (
-            <div className="text-center py-12 text-archive">
+            <div className="text-center py-12 text-archive" role="status">
               {searchQuery ? 'No locations match your search' : 'No locations available'}
             </div>
           ) : (
-            <div className="space-y-0.5">
+            <ul className="space-y-0.5" aria-label="Locations">
               {filteredTree.map(location => (
                 <LocationTreeNode
                   key={location.location_id}
@@ -277,19 +281,18 @@ export function LocationPickerModal({
                   expandedIds={expandedIds}
                   toggleExpanded={toggleExpanded}
                   selectedId={selectedLocationId}
-                  hoveredId={hoveredId}
-                  setHoveredId={setHoveredId}
                   onSelect={handleSelect}
                   searchQuery={searchQuery}
                 />
               ))}
-            </div>
+            </ul>
           )}
         </div>
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-lichen flex justify-end">
           <button
+            type="button"
             onClick={onClose}
             className="px-4 py-2 border border-lichen rounded-lg text-sm text-ink hover:bg-stone/50 transition-colors"
           >
@@ -309,8 +312,6 @@ function LocationTreeNode({
   expandedIds,
   toggleExpanded,
   selectedId,
-  hoveredId,
-  setHoveredId,
   onSelect,
   searchQuery,
 }: {
@@ -319,15 +320,13 @@ function LocationTreeNode({
   expandedIds: Set<string>;
   toggleExpanded: (id: string) => void;
   selectedId?: string | null;
-  hoveredId: string | null;
-  setHoveredId: (id: string | null) => void;
   onSelect: (location: Location) => void;
   searchQuery: string;
 }) {
   const hasChildren = location.children && location.children.length > 0;
   const isExpanded = expandedIds.has(location.location_id);
   const isSelected = selectedId === location.location_id;
-  const isHovered = hoveredId === location.location_id;
+  const childrenId = useId();
 
   // Highlight matching text
   const highlightMatch = (text: string) => {
@@ -345,69 +344,81 @@ function LocationTreeNode({
   };
 
   return (
-    <div>
+    <li>
       <div
-        className={`flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer transition-colors
+        className={`flex items-center gap-2 px-2 py-2 rounded-lg transition-colors
                    ${isSelected
                      ? 'bg-bark/10 ring-1 ring-bark/30'
-                     : isHovered
-                       ? 'bg-stone/50'
-                       : 'hover:bg-stone/30'
+                     : 'hover:bg-stone/50'
                    }`}
         style={{ paddingLeft: `${depth * 24 + 8}px` }}
-        onClick={() => onSelect(location)}
-        onMouseEnter={() => setHoveredId(location.location_id)}
-        onMouseLeave={() => setHoveredId(null)}
       >
-        {/* Expand/Collapse */}
+        {/* Expand/Collapse (disclosure for this location's children) */}
+        {hasChildren ? (
+          <button
+            type="button"
+            onClick={() => toggleExpanded(location.location_id)}
+            aria-expanded={isExpanded}
+            aria-controls={isExpanded ? childrenId : undefined}
+            aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${location.name}`}
+            className="p-0.5 rounded hover:bg-lichen flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+          >
+            {isExpanded ? <ChevronDown size={14} aria-hidden="true" /> : <ChevronRight size={14} aria-hidden="true" />}
+          </button>
+        ) : (
+          <span className="p-0.5 flex-shrink-0 invisible" aria-hidden="true">
+            <ChevronRight size={14} />
+          </span>
+        )}
+
+        {/* Select this location */}
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleExpanded(location.location_id);
-          }}
-          className={`p-0.5 rounded hover:bg-lichen flex-shrink-0 ${
-            hasChildren ? 'visible' : 'invisible'
-          }`}
+          type="button"
+          onClick={() => onSelect(location)}
+          aria-current={isSelected ? 'true' : undefined}
+          className="flex flex-1 min-w-0 items-center gap-2 text-left cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
         >
-          {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        </button>
+          {/* Icon */}
+          <span className="text-archive flex-shrink-0" aria-hidden="true">
+            {LOCATION_TYPE_ICONS[location.location_type] || <MapPin size={16} />}
+          </span>
 
-        {/* Icon */}
-        <span className="text-archive flex-shrink-0">
-          {LOCATION_TYPE_ICONS[location.location_type] || <MapPin size={16} />}
-        </span>
-
-        {/* Name and path */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className={`text-sm font-medium truncate ${
-              location.status !== 'active' ? 'text-archive line-through' : 'text-ink'
-            }`}>
-              {highlightMatch(location.name)}
+          {/* Name and path */}
+          <span className="block flex-1 min-w-0">
+            <span className="flex items-center gap-2">
+              <span className={`text-sm font-medium truncate ${
+                location.status !== 'active' ? 'text-archive line-through' : 'text-ink'
+              }`}>
+                {highlightMatch(location.name)}
+                {location.status !== 'active' && <span className="sr-only"> (inactive)</span>}
+              </span>
+              {location.on_display && (
+                <span className="flex items-center gap-0.5 text-xs px-1.5 py-0.5 bg-meadow/10 text-meadow-dark rounded">
+                  <Eye size={10} aria-hidden="true" />
+                  Display
+                </span>
+              )}
             </span>
-            {location.on_display && (
-              <span className="flex items-center gap-0.5 text-xs px-1.5 py-0.5 bg-meadow/10 text-meadow-dark rounded">
-                <Eye size={10} />
-                Display
+            {depth === 0 && location.code && (
+              <span className="block text-xs text-archive truncate">
+                {location.code}
               </span>
             )}
-          </div>
-          {depth === 0 && location.code && (
-            <div className="text-xs text-archive truncate">
-              {location.code}
-            </div>
-          )}
-        </div>
+          </span>
 
-        {/* Selected indicator */}
-        {isSelected && (
-          <Check size={16} className="text-bark flex-shrink-0" />
-        )}
+          {/* Selected indicator */}
+          {isSelected && (
+            <>
+              <Check size={16} className="text-bark flex-shrink-0" aria-hidden="true" />
+              <span className="sr-only">(selected)</span>
+            </>
+          )}
+        </button>
       </div>
 
       {/* Children */}
       {hasChildren && isExpanded && (
-        <div>
+        <ul id={childrenId} aria-label={`Inside ${location.name}`}>
           {location.children.map((child: LocationWithChildren) => (
             <LocationTreeNode
               key={child.location_id}
@@ -416,15 +427,13 @@ function LocationTreeNode({
               expandedIds={expandedIds}
               toggleExpanded={toggleExpanded}
               selectedId={selectedId}
-              hoveredId={hoveredId}
-              setHoveredId={setHoveredId}
               onSelect={onSelect}
               searchQuery={searchQuery}
             />
           ))}
-        </div>
+        </ul>
       )}
-    </div>
+    </li>
   );
 }
 
@@ -441,6 +450,13 @@ interface LocationPickerButtonProps {
   disabled?: boolean;
   /** Filter to only show display locations */
   displayOnly?: boolean;
+  /** id for the trigger button (so a `<label htmlFor>` can target it) */
+  id?: string;
+  /**
+   * id of the visible label. When given, the trigger's accessible name is
+   * the label followed by the current value ("To location, Gallery A").
+   */
+  labelId?: string;
 }
 
 export function LocationPickerButton({
@@ -451,8 +467,13 @@ export function LocationPickerButton({
   className = '',
   disabled = false,
   displayOnly = false,
+  id,
+  labelId,
 }: LocationPickerButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const generatedId = useId();
+  const buttonId = id ?? `${generatedId}-trigger`;
+  const valueId = `${generatedId}-value`;
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
 
   // Fetch location details if we have a value but no selected location
@@ -478,8 +499,7 @@ export function LocationPickerButton({
     onChange(location.location_id, location);
   };
 
-  const handleClear = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleClear = () => {
     setSelectedLocation(null);
     onChange(null);
   };
@@ -491,32 +511,40 @@ export function LocationPickerButton({
   return (
     <>
       <div
-        role="button"
-        tabIndex={disabled ? -1 : 0}
-        onClick={() => !disabled && setIsOpen(true)}
-        onKeyDown={(e) => { if (!disabled && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setIsOpen(true); } }}
-        aria-disabled={disabled || undefined}
         className={`w-full flex items-center gap-2 px-3 py-2 border border-lichen rounded-lg text-left text-sm
-                   ${disabled ? 'bg-stone/30 cursor-not-allowed' : 'bg-parchment hover:border-archive cursor-pointer'}
-                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark ${className}`}
+                   ${disabled ? 'bg-stone/30 cursor-not-allowed' : 'bg-parchment hover:border-archive'}
+                   focus-within:border-bark ${className}`}
       >
-        <MapPin size={16} className="text-archive flex-shrink-0" />
-        <span className={`flex-1 truncate ${displayValue ? 'text-ink' : 'text-archive'}`}>
-          {displayValue || placeholder}
-        </span>
-        {selectedLocation?.on_display && (
-          <span className="flex items-center gap-0.5 text-xs px-1.5 py-0.5 bg-meadow/10 text-meadow-dark rounded flex-shrink-0">
-            <Eye size={10} />
-            Display
+        <button
+          type="button"
+          id={buttonId}
+          onClick={() => setIsOpen(true)}
+          disabled={disabled}
+          aria-haspopup="dialog"
+          aria-labelledby={labelId ? `${labelId} ${valueId}` : undefined}
+          className={`flex flex-1 min-w-0 items-center gap-2 text-left rounded
+                     ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
+                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2`}
+        >
+          <MapPin size={16} className="text-archive flex-shrink-0" aria-hidden="true" />
+          <span id={valueId} className={`flex-1 truncate ${displayValue ? 'text-ink' : 'text-archive'}`}>
+            {displayValue || placeholder}
           </span>
-        )}
+          {selectedLocation?.on_display && (
+            <span className="flex items-center gap-0.5 text-xs px-1.5 py-0.5 bg-meadow/10 text-meadow-dark rounded flex-shrink-0">
+              <Eye size={10} aria-hidden="true" />
+              Display
+            </span>
+          )}
+        </button>
         {value && !disabled && (
           <button
             type="button"
             onClick={handleClear}
-            className="p-0.5 text-archive hover:text-ink rounded hover:bg-stone/50 flex-shrink-0"
+            aria-label={displayValue ? `Clear location ${displayValue}` : 'Clear location'}
+            className="p-0.5 text-archive hover:text-ink rounded hover:bg-stone/50 flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
           >
-            <X size={14} />
+            <X size={14} aria-hidden="true" />
           </button>
         )}
       </div>
@@ -565,6 +593,9 @@ export function EditableLocationPicker({
   displayOnly = false,
 }: EditableLocationPickerProps) {
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const fieldId = useId();
+  const labelId = `${fieldId}-label`;
+  const triggerId = `${fieldId}-trigger`;
 
   // Fetch location details for display
   const { data: locationsData } = useQuery({
@@ -618,11 +649,18 @@ export function EditableLocationPicker({
   // Edit mode
   return (
     <div className={`space-y-1.5 ${className}`}>
-      <label className="text-sm font-medium text-ink">
+      <label id={labelId} htmlFor={triggerId} className="text-sm font-medium text-ink">
         {label}
-        {required && <span className="text-semantic-error ml-0.5">*</span>}
+        {required && (
+          <>
+            <span className="text-semantic-error ml-0.5" aria-hidden="true">*</span>
+            <span className="sr-only"> (required)</span>
+          </>
+        )}
       </label>
       <LocationPickerButton
+        id={triggerId}
+        labelId={labelId}
         organizationId={organizationId}
         value={value}
         onChange={(locationId, location) => {
