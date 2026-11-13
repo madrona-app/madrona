@@ -283,7 +283,18 @@ export function AnnotationEditorTab({
 
       {isDrawing && !showCreateForm && (
         <div className="p-2 bg-bark/10 border border-bark/20 rounded-lg text-xs text-bark text-center">
-          Click and drag on the image to select a region
+          Click and drag on the image to select a region, or{' '}
+          {/* Keyboard alternative to drawing a region with the pointer */}
+          <button
+            type="button"
+            onClick={() => {
+              setNewRect({ x: 0, y: 0, w: 100, h: 100 });
+              setShowCreateForm(true);
+            }}
+            className="underline font-medium hover:text-bark/80"
+          >
+            annotate the whole image
+          </button>
         </div>
       )}
 
