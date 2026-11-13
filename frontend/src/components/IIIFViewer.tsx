@@ -1,3 +1,4 @@
+import { useAccessibleModal } from '../hooks/useAccessibleModal';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { ModalPortal } from './ModalPortal';
 import {
@@ -51,6 +52,14 @@ export default function IIIFViewer({
 }: IIIFViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<any>(null);
+  // In modal mode: dialog semantics, focus moved in and restored, focus trap,
+  // and Escape to close.
+  const noop = useCallback(() => {}, []);
+  const { modalRef, titleId } = useAccessibleModal({
+    isOpen: modal,
+    onClose: onClose ?? noop,
+    titlePrefix: 'iiif-viewer',
+  });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -482,8 +491,18 @@ export default function IIIFViewer({
   if (modal) {
     return (
       <ModalPortal>
-      {/* eslint-disable-next-line madrona/no-generic-tailwind-colors -- fullscreen image viewer backdrop is true black */}
-      <div className="sidebar-aware-modal fixed inset-0 z-50 bg-black">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        // eslint-disable-next-line madrona/no-generic-tailwind-colors -- fullscreen image viewer backdrop is true black
+        className="sidebar-aware-modal fixed inset-0 z-50 bg-black"
+      >
+        <h2 id={titleId} className="sr-only">
+          Deep zoom image viewer{manifest?.label ? `: ${getLabel(manifest.label)}` : ''}
+        </h2>
         {viewerContent}
       </div>
       </ModalPortal>
