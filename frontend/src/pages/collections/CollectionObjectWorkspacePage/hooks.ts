@@ -314,7 +314,6 @@ export function useFormState(
       current_location_fitness: data.current_location_fitness || null,
       current_location_note: data.current_location_note.trim() || null,
       home_location_id: data.home_location_id || null,
-      is_discoverable: data.is_discoverable,
       acquisition_method: data.acquisition_method || null,
       acquisition_date: data.acquisition_date || null,
       acquisition_source: data.acquisition_source.trim() || null,

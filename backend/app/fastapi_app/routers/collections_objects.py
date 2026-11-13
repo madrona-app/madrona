@@ -89,6 +89,30 @@ from app.fastapi_app.schemas.common import MessageResponse
 from app.services.external_links import ExternalLinkError, normalize_external_links
 
 
+# Publication state is changed only through the publish endpoints in
+# collections_discover.py, which require discover.publish and enforce the NAGPRA
+# display-consent gate. The generic create/update must never set it, or any
+# editor could publish a record (and bypass that gate) by sending the field.
+PUBLISH_CONTROLLED_FIELDS = frozenset({"is_discoverable", "discoverable_at", "discoverable_by"})
+
+
+def _reject_publish_fields(data: dict, obj=None) -> None:
+    for field in PUBLISH_CONTROLLED_FIELDS & set(data):
+        value = data.pop(field)
+        current = getattr(obj, field, None) if obj is not None else None
+        if field == "is_discoverable":
+            requested, current = bool(value), bool(current)
+        else:
+            continue  # timestamps/actors are derived; silently ignored
+        if requested != current:
+            raise HTTPException(status_code=403, detail={
+                "code": "forbidden",
+                "message": "Publishing is a separate action that requires the "
+                           "Publish to Discover permission. Use the publish control.",
+                "field": field,
+            })
+
+
 def _validated_external_links(value):
     try:
         return normalize_external_links(value)
@@ -251,6 +275,7 @@ def create_collection_object(
     from app.services.coerce import coerce_value_for_column
     protected_fields = {'object_id', 'organization_id', 'created_at', 'updated_at', 'created_by', 'updated_by', 'barcode'}
     protected_fields |= get_write_restricted_fields('collection_object', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
+    _reject_publish_fields(data)
     if "external_links" in data:
         data["external_links"] = _validated_external_links(data["external_links"])
     filtered_data = {}
@@ -599,6 +624,7 @@ def update_collection_object(
     # Update allowed fields
     protected_fields = {'object_id', 'organization_id', 'created_at', 'created_by', 'updated_at', 'updated_by'}
     protected_fields |= get_write_restricted_fields('collection_object', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
+    _reject_publish_fields(data, obj)
     if "external_links" in data:
         data["external_links"] = _validated_external_links(data["external_links"])
     from app.services.coerce import coerce_value_for_column
