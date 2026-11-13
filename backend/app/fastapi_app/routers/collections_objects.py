@@ -275,11 +275,78 @@ def _sync_link_tables(obj, data, org_uuid, user_uuid):
                 created_by=user_uuid,
             ))
 
+    if "classifications" in data:
+        warnings += _sync_classifications(obj, data["classifications"] or [], org_uuid, user_uuid)
+
+    return warnings
+
+
+def _sync_classifications(obj, items, org_uuid, user_uuid) -> list[str]:
+    """Replace the object's classification links from the form's list.
+
+    Classifications are stored as links to values in the 'classification'
+    lookup list. The form sends {value_id?, value_key?, term}: each item is
+    matched to the organization's (or the global) value by id, key or label,
+    and a term with no match becomes a new organization value, so a term
+    chosen in the editor is kept rather than silently dropped.
+    """
+    import re as _re
+    from sqlalchemy import func as _func, or_ as _or
+    from sqlalchemy.orm import object_session
+    from app.models import LookupCategory, LookupValue, ObjectClassification
+
+    db = object_session(obj)
+    warnings: list[str] = []
+    category = db.query(LookupCategory).filter(LookupCategory.category_key == "classification").first()
+    if category is None:
+        if items:
+            warnings.append("Classifications were not saved: the classification list is not set up")
+        return warnings
+
+    def _values():
+        return db.query(LookupValue).filter(
+            LookupValue.category_id == category.category_id,
+            _or(LookupValue.organization_id == org_uuid, LookupValue.organization_id.is_(None)),
+        )
+
+    wanted: list = []
+    for i, item in enumerate(items):
+        if not isinstance(item, dict):
+            continue
+        term = (item.get("term") or "").strip()
+        value = None
+        if item.get("value_id"):
+            try:
+                value = _values().filter(LookupValue.value_id == UUID(str(item["value_id"]))).first()
+            except ValueError:
+                value = None
+        if value is None and item.get("value_key"):
+            value = _values().filter(LookupValue.value_key == str(item["value_key"])).first()
+        if value is None and term:
+            # Prefer the organization's own value over a global one.
+            value = _values().filter(_func.lower(LookupValue.label) == term.lower()) \
+                .order_by(LookupValue.organization_id.is_(None)).first()
+        if value is None and term:
+            key = _re.sub(r"[^a-z0-9]+", "_", term.lower()).strip("_")[:100] or "term"
+            value = LookupValue(value_id=uuid4(), category_id=category.category_id, organization_id=org_uuid,
+                                value_key=key, label=term[:255], is_active=True)
+            db.add(value)
+        if value is None:
+            warnings.append(f"Classification at position {i + 1} was skipped (empty term)")
+            continue
+        if value.value_id not in wanted:
+            wanted.append(value.value_id)
+
+    obj.classification_links.clear()
+    for order, value_id in enumerate(wanted):
+        obj.classification_links.append(ObjectClassification(
+            organization_id=org_uuid, value_id=value_id, display_order=order, created_by=user_uuid,
+        ))
     return warnings
 
 
 # Fields that are now link tables, not model columns
-_LINK_TABLE_FIELDS = {'titles', 'other_numbers', 'measurements', 'inscriptions'}
+_LINK_TABLE_FIELDS = {'titles', 'other_numbers', 'measurements', 'inscriptions', 'classifications'}
 
 
 def _enforce_strict_vocabulary(db, organization_id, data, existing_obj, protected_fields) -> None:
