@@ -62,11 +62,45 @@ def _text(el) -> str:
 
 
 def _paragraphs(el) -> str | None:
+    """Text of a note: paragraphs, list items and chronology entries, in order."""
     if el is None:
         return None
-    paras = [_text(p) for p in el.iter() if _local(p.tag) == "p"]
-    paras = [p for p in paras if p]
-    return "\n\n".join(paras) if paras else (_text(el) or None)
+    blocks: list[str] = []
+    for node in el.iter():
+        tag = _local(node.tag)
+        if tag == "p":
+            t = _text(node)
+            if t:
+                blocks.append(t)
+        elif tag == "item":
+            t = _text(node)
+            if t:
+                blocks.append(f"- {t}")
+        elif tag == "chronitem":
+            t = " — ".join(x for x in (_text(_first(node, "date")), _text(_first(node, "event")) or
+                                        _text(_first(node, "eventgrp"))) if x)
+            if t:
+                blocks.append(t)
+    if not blocks:
+        return _text(el) or None
+    out, prev_item = "", False
+    for b in blocks:
+        is_item = b.startswith("- ")
+        sep = "\n" if (is_item and prev_item) else "\n\n"
+        out = b if not out else out + sep + b
+        prev_item = is_item
+    return out
+
+
+# EAD notes we keep by name and write back out on EAD3 export.
+NOTE_ELEMENTS = ("accessrestrict", "userestrict", "prefercite", "otherfindaid", "relatedmaterial",
+                 "separatedmaterial", "processinfo", "appraisal", "accruals", "altformavail",
+                 "originalsloc", "phystech", "odd", "fileplan", "bibliography")
+
+
+def _clean_title(t: str) -> str:
+    # Legacy (MARC-derived) titles often end in ISBD punctuation: "Papers,".
+    return re.sub(r"[\s,;:/]+$", "", t).strip()
 
 
 def _level(el, default="item") -> str:
@@ -91,6 +125,8 @@ class Node:
     subjects: list[tuple[str, str | None]] = field(default_factory=list)   # (term, lcsh id)
     names: list[tuple[str, str, str]] = field(default_factory=list)        # (name, type, role)
     extra: list[str] = field(default_factory=list)
+    notes: dict = field(default_factory=dict)
+    links: list[dict] = field(default_factory=list)
     children: list["Node"] = field(default_factory=list)
 
 
@@ -105,11 +141,20 @@ def _lcsh_id(el) -> str | None:
 
 def _parse_unit(el, default_level: str) -> Node:
     did = _first(el, "did")
-    title = _text(_first(did, "unittitle")) if did is not None else ""
+    unittitle = _first(did, "unittitle") if did is not None else None
+    title = _clean_title(_text(unittitle))
     unitid = _text(_first(did, "unitid")) if did is not None else ""
-    unitdate = _first(did, "unitdate") if did is not None else None
+    dates = _children(did, "unitdate") if did is not None else []
+    if not dates and unittitle is not None:
+        dates = _children(unittitle, "unitdate")
+    main = next((d for d in dates if (d.get("type") or "").lower() != "bulk"), dates[0] if dates else None)
+    bulk = next((d for d in dates if (d.get("type") or "").lower() == "bulk" and d is not main), None)
+    display = _text(main) or None
+    if display and bulk is not None and _text(bulk):
+        b = _text(bulk)
+        display = f"{display}, {b if b.lower().startswith('bulk') else 'bulk ' + b}"
     node = Node(level=_level(el, default_level), number=unitid or None, title=title or "Untitled",
-                date_display=_text(unitdate) or None, date_normal=(unitdate.get("normal") if unitdate is not None else None))
+                date_display=display, date_normal=(main.get("normal") if main is not None else None))
     if did is not None:
         node.physdesc = _text(_first(did, "physdesc")) or None
         for cont in _children(did, "container"):
@@ -132,6 +177,21 @@ def _parse_unit(el, default_level: str) -> Node:
         "arrangement": _paragraphs(_first(el, "arrangement")),
         "credit_line": _paragraphs(_first(el, "acqinfo")),
     }
+    node.notes = {tag: _paragraphs(_first(el, tag)) for tag in NOTE_ELEMENTS if _first(el, tag) is not None}
+    # Digital objects become the record's external links: this unit's own
+    # <dao>/<daogrp><daoloc> (in the component or its <did>), not its children's.
+    own = list(_children(el)) + (list(_children(did)) if did is not None else [])
+    daos = []
+    for x in own:
+        if _local(x.tag) == "dao":
+            daos.append(x)
+        elif _local(x.tag) == "daogrp":
+            daos += [d for d in x.iter() if _local(d.tag) == "daoloc"]
+    for dao in daos:
+        href = dao.get("href") or dao.get("{http://www.w3.org/1999/xlink}href") or ""
+        if href.startswith(("http://", "https://")):
+            label = dao.get("title") or dao.get("{http://www.w3.org/1999/xlink}title") or _text(dao) or "Digital object"
+            node.links.append({"url": href, "label": label[:300], "link_type": "website"})
     # This unit's own <controlaccess> (and ones nested inside it), never its
     # components': those belong to the child records.
     pending = list(_children(el, "controlaccess"))
@@ -147,7 +207,7 @@ def _parse_unit(el, default_level: str) -> Node:
                 node.names.append((_text(term), kind, (term.get("role") or "subject").lower()[:50]))
     for child in _children(el):
         name = _local(child.tag)
-        if name in _MAPPED or name in ("controlaccess",):
+        if name in _MAPPED or name in ("controlaccess", "dao", "daogrp") or name in NOTE_ELEMENTS:
             continue
         node.extra.append(SafeET.tostring(child, encoding="unicode"))
     containers = _first(el, "dsc") if _local(el.tag) == "archdesc" else el
@@ -158,9 +218,42 @@ def _parse_unit(el, default_level: str) -> Node:
     return node
 
 
+_XML_PREDEFINED = {b"amp", b"lt", b"gt", b"quot", b"apos"}
+_NAMED_ENTITY = re.compile(rb"&([A-Za-z][A-Za-z0-9]{1,31});")
+
+
+def _numeric_entities(data: bytes) -> bytes:
+    """Replace HTML named entities (&mdash; &eacute; ...) with numeric references.
+
+    Legacy EAD 2002 files are DTD-based and use entities the EAD DTD defines.
+    We never load DTDs (that is how XML external-entity attacks work), so
+    these would be undefined. Numeric references mean the same characters
+    and need no DTD. Unknown names are left for the parser to report.
+    """
+    import html.entities as he
+
+    def sub(m: re.Match) -> bytes:
+        name = m.group(1)
+        if name in _XML_PREDEFINED:
+            return m.group(0)
+        cp = he.name2codepoint.get(name.decode("ascii"))
+        return f"&#{cp};".encode("ascii") if cp else m.group(0)
+
+    return _NAMED_ENTITY.sub(sub, data)
+
+
 def parse(data: bytes) -> Node:
     if len(data) > MAX_BYTES:
         raise EADImportError(f"The file is larger than {MAX_BYTES // 1_048_576} MB")
+    head = data[:4096]
+    if b"<!ENTITY" in data[: data.find(b"<ead") if b"<ead" in data else 4096]:
+        raise EADImportError("This file declares its own XML entities, which are not accepted for security reasons")
+    if head.startswith((b"\xff\xfe", b"\xfe\xff")):
+        try:
+            data = data.decode("utf-16").encode("utf-8").replace(b'encoding="UTF-16"', b'encoding="UTF-8"', 1)
+        except UnicodeDecodeError:
+            raise EADImportError("This is not a readable XML file: bad UTF-16")
+    data = _numeric_entities(data)
     try:
         root = SafeET.fromstring(data)
     except Exception as e:  # defusedxml raises its own errors for entities/DTD tricks
@@ -302,8 +395,15 @@ def import_ead(db: Session, org_id: UUID, data: bytes, actor: UUID, number_prefi
                     setattr(obj, k, v if k != "credit_line" else v[:2000])
             if node.physdesc:
                 obj.physical_description = node.physdesc
+            ead_meta = {}
+            if node.notes:
+                ead_meta["notes"] = {k: v for k, v in node.notes.items() if v}
             if node.extra:
-                obj.extra_metadata = {"ead": {"unmapped": node.extra}}
+                ead_meta["unmapped"] = node.extra
+            if ead_meta:
+                obj.extra_metadata = {"ead": ead_meta}
+            if node.links:
+                obj.external_links = node.links[:50]
         db.add(obj)
         if len(ids) % 500 == 0:
             db.flush()

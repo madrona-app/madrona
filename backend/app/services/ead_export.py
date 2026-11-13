@@ -27,6 +27,10 @@ XLINK_NS = "http://www.w3.org/1999/xlink"
 _EAD_LEVELS = {"collection", "subcollection", "series", "subseries", "file", "item", "fonds", "recordgrp", "subgrp"}
 _CONTAINER_LEVELS = {"box", "folder"}
 MAX_NODES = 20_000
+# EAD3 descriptive elements with the same name as their EAD 2002 forms.
+_NOTE_TAGS = {"accessrestrict", "userestrict", "prefercite", "otherfindaid", "relatedmaterial",
+              "separatedmaterial", "processinfo", "appraisal", "accruals", "altformavail",
+              "originalsloc", "phystech", "odd", "fileplan", "bibliography"}
 
 
 def _el(parent, tag, text=None, **attrs):
@@ -43,7 +47,13 @@ def _paragraphs(parent, tag, text: str | None, head: str | None = None):
     if head:
         _el(block, "head", head)
     for para in [p.strip() for p in text.split("\n\n") if p.strip()]:
-        _el(block, "p", para)
+        lines = [ln.strip() for ln in para.split("\n") if ln.strip()]
+        if lines and all(ln.startswith("- ") for ln in lines):
+            lst = _el(block, "list", listtype="unordered")
+            for ln in lines:
+                _el(lst, "item", ln[2:])
+        else:
+            _el(block, "p", para)
     return block
 
 
@@ -151,6 +161,11 @@ def _description(db: Session, parent, obj: CollectionObject):
             p = _el(rel, "p")
             ref = _el(p, "ref", link.get("label") or link.get("url"))
             ref.set("href", link.get("url"))
+    # Notes kept by name from an imported finding aid (access, use, citation, ...).
+    ead_meta = (obj.extra_metadata or {}).get("ead") or {}
+    for tag, text in (ead_meta.get("notes") or {}).items():
+        if tag in _NOTE_TAGS:
+            _paragraphs(parent, tag, text)
     subjects = _subjects(db, obj)
     others = [(x, c) for x, c in names if (x, c) not in creators]
     if subjects or others:
