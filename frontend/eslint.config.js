@@ -33,6 +33,13 @@ export default defineConfig([
       ),
       // Disable deprecated label-has-for rule (replaced by label-has-associated-control)
       'jsx-a11y/label-has-for': 'off',
+      // The recommended preset ships these OFF; the map above had switched them
+      // on, without their options. control-has-associated-label cannot see a
+      // <label htmlFor> association, so it flagged correctly labelled inputs
+      // (~800 false positives). Labels are enforced by label-has-associated-control,
+      // and the axe tests check accessible names in the rendered DOM.
+      'jsx-a11y/control-has-associated-label': 'off',
+      'jsx-a11y/anchor-ambiguous-text': 'off',
       // Allow unused vars/args with underscore prefix (common convention)
       '@typescript-eslint/no-unused-vars': ['error', {
         argsIgnorePattern: '^_',
