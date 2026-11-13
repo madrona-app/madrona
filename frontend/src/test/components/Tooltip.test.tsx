@@ -138,7 +138,37 @@ describe('Tooltip', () => {
       const wrapper = container.querySelector('div[style*="inline-block"]')!;
       fireEvent.mouseEnter(wrapper);
       const tooltip = screen.getByRole('tooltip');
-      expect(wrapper).toHaveAttribute('aria-describedby', tooltip.id);
+      // The description goes on the focusable control, not the wrapper.
+      expect(screen.getByRole('button', { name: 'Click me' })).toHaveAttribute('aria-describedby', tooltip.id);
+      expect(wrapper).not.toHaveAttribute('aria-describedby');
+    });
+
+    it('keeps an existing aria-describedby on the child', () => {
+      const { container } = render(
+        <Tooltip content="Accessible tooltip" disabled={false}>
+          <button aria-describedby="hint">Click me</button>
+        </Tooltip>
+      );
+      const wrapper = container.querySelector('div[style*="inline-block"]')!;
+      fireEvent.mouseEnter(wrapper);
+      const tooltip = screen.getByRole('tooltip');
+      expect(screen.getByRole('button', { name: 'Click me' })).toHaveAttribute(
+        'aria-describedby',
+        `hint ${tooltip.id}`,
+      );
+    });
+
+    it('Escape dismisses a visible tooltip', () => {
+      const { container } = render(
+        <Tooltip content="Accessible tooltip" disabled={false}>
+          <button>Click me</button>
+        </Tooltip>
+      );
+      const wrapper = container.querySelector('div[style*="inline-block"]')!;
+      fireEvent.focus(wrapper);
+      expect(screen.getByRole('tooltip')).toBeInTheDocument();
+      fireEvent.keyDown(document, { key: 'Escape' });
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
     });
 
     it('removes aria-describedby when tooltip is hidden', () => {
@@ -151,6 +181,7 @@ describe('Tooltip', () => {
       fireEvent.mouseEnter(wrapper);
       fireEvent.mouseLeave(wrapper);
       expect(wrapper).not.toHaveAttribute('aria-describedby');
+      expect(screen.getByRole('button', { name: 'Click me' })).not.toHaveAttribute('aria-describedby');
     });
 
     it('tooltip has role tooltip', () => {

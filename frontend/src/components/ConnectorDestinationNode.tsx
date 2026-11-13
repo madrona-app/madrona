@@ -19,12 +19,31 @@ export default function ConnectorDestinationNode({ data }: NodeProps<ConnectorDe
     }
   };
 
+  // A React Flow node contains Handle divs, which cannot live inside a native
+  // <button>, so a clickable node is a role="button" div with Enter/Space
+  // support. Props are applied together so a static node has none of them.
+  const buttonProps = data.onClick
+    ? {
+        role: 'button' as const,
+        tabIndex: 0,
+        onClick: data.onClick,
+        onKeyDown: handleKeyDown,
+        onMouseEnter: (e: React.MouseEvent<HTMLDivElement>) => {
+          if (!isPlaceholder) {
+            e.currentTarget.style.borderColor = '#C5C0B8';
+            e.currentTarget.style.opacity = '1';
+          }
+        },
+        onMouseLeave: (e: React.MouseEvent<HTMLDivElement>) => {
+          e.currentTarget.style.borderColor = defaultBorderColor;
+          e.currentTarget.style.opacity = '0.75';
+        },
+      }
+    : {};
+
   return (
     <div
-      onClick={data.onClick}
-      onKeyDown={handleKeyDown}
-      role={data.onClick ? 'button' : undefined}
-      tabIndex={data.onClick ? 0 : undefined}
+      {...buttonProps}
       title={!isPlaceholder ? data.name : undefined}
       style={{
         background: '#FCFCFB', // Very light, neutral background
@@ -36,16 +55,6 @@ export default function ConnectorDestinationNode({ data }: NodeProps<ConnectorDe
         cursor: data.onClick ? 'pointer' : 'default',
         transition: 'border-color 0.15s ease, opacity 0.15s ease',
         opacity: 0.75, // More de-emphasis (was 0.85)
-      }}
-      onMouseEnter={(e) => {
-        if (!isPlaceholder && data.onClick) {
-          e.currentTarget.style.borderColor = '#C5C0B8';
-          e.currentTarget.style.opacity = '1';
-        }
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = defaultBorderColor;
-        e.currentTarget.style.opacity = '0.75';
       }}
     >
       {/* Handle positioned on left - receives data FROM dataset */}

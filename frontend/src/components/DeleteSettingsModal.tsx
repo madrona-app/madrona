@@ -69,7 +69,7 @@ export default function DeleteSettingsModal({
 
   return (
     <ModalPortal>
-    { }
+    {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- backdrop click-to-dismiss; Escape closes via useAccessibleModal */}
     <div
       className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
       onClick={(e) => {
@@ -112,16 +112,18 @@ export default function DeleteSettingsModal({
               {/* Enable/Disable Toggle */}
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <label htmlFor="delete-settings-enabled" className="block text-sm font-medium text-ink mb-1">
                     Enable Delete Detection
                   </label>
-                  <p className="text-xs text-archive">
+                  <p id="delete-settings-enabled-description" className="text-xs text-archive">
                     Automatically detect and handle deleted records
                   </p>
                 </div>
                 <button
+                  id="delete-settings-enabled"
                   type="button"
                   role="switch"
+                  aria-describedby="delete-settings-enabled-description"
                   aria-checked={enabled}
                   onClick={() => setEnabled(!enabled)}
                   className={`
@@ -143,107 +145,117 @@ export default function DeleteSettingsModal({
               {enabled && (
                 <>
                   {/* Detection Method */}
-                  <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
+                  <fieldset>
+                    <legend className="block text-sm font-medium text-ink mb-1">
                       Detection Method
-                    </label>
+                    </legend>
                     <div className="space-y-2">
-                      <label className="flex items-start">
+                      <div className="flex items-start">
                         <input
+                          id="delete-settings-method-full-sync"
                           type="radio"
                           name="method"
                           value="full_sync"
                           checked={method === 'full_sync'}
                           onChange={() => setMethod('full_sync')}
                           className="mt-1 h-4 w-4 text-bark border-stone focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+                          aria-describedby="delete-settings-method-full-sync-description"
                         />
                         <div className="ml-3">
-                          <span className="text-sm font-medium text-ink">Full Sync Comparison</span>
-                          <p className="text-xs text-archive">
+                          <label htmlFor="delete-settings-method-full-sync" className="text-sm font-medium text-ink">Full Sync Comparison</label>
+                          <p id="delete-settings-method-full-sync-description" className="text-xs text-archive">
                             Compare extracted entities against known records. Entities not seen during
                             a full sync are considered deleted.
                           </p>
                         </div>
-                      </label>
-                      <label className="flex items-start">
+                      </div>
+                      <div className="flex items-start">
                         <input
+                          id="delete-settings-method-incremental"
                           type="radio"
                           name="method"
                           value="incremental"
                           checked={method === 'incremental'}
                           onChange={() => setMethod('incremental')}
                           className="mt-1 h-4 w-4 text-bark border-stone focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+                          aria-describedby="delete-settings-method-incremental-description"
                         />
                         <div className="ml-3">
-                          <span className="text-sm font-medium text-ink">Incremental Markers</span>
-                          <p className="text-xs text-archive">
+                          <label htmlFor="delete-settings-method-incremental" className="text-sm font-medium text-ink">Incremental Markers</label>
+                          <p id="delete-settings-method-incremental-description" className="text-xs text-archive">
                             Process explicit delete events from the source (CDC, webhooks). Requires
                             source system to emit delete markers.
                           </p>
                         </div>
-                      </label>
+                      </div>
                     </div>
-                  </div>
+                  </fieldset>
 
                   {/* Delete Strategy */}
-                  <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
+                  <fieldset>
+                    <legend className="block text-sm font-medium text-ink mb-1">
                       Delete Strategy
-                    </label>
+                    </legend>
                     <div className="space-y-2">
-                      <label className="flex items-start">
+                      <div className="flex items-start">
                         <input
+                          id="delete-settings-strategy-remove"
                           type="radio"
                           name="strategy"
                           value="remove"
                           checked={strategy === 'remove'}
                           onChange={() => setStrategy('remove')}
                           className="mt-1 h-4 w-4 text-bark border-stone focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+                          aria-describedby="delete-settings-strategy-remove-description"
                         />
                         <div className="ml-3">
-                          <span className="text-sm font-medium text-ink">Remove</span>
-                          <p className="text-xs text-archive">
+                          <label htmlFor="delete-settings-strategy-remove" className="text-sm font-medium text-ink">Remove</label>
+                          <p id="delete-settings-strategy-remove-description" className="text-xs text-archive">
                             Soft-delete entities from the canonical store. They won't appear in
                             queries or be published to destinations.
                           </p>
                         </div>
-                      </label>
-                      <label className="flex items-start">
+                      </div>
+                      <div className="flex items-start">
                         <input
+                          id="delete-settings-strategy-mark"
                           type="radio"
                           name="strategy"
                           value="mark"
                           checked={strategy === 'mark'}
                           onChange={() => setStrategy('mark')}
                           className="mt-1 h-4 w-4 text-bark border-stone focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+                          aria-describedby="delete-settings-strategy-mark-description"
                         />
                         <div className="ml-3">
-                          <span className="text-sm font-medium text-ink">Mark</span>
-                          <p className="text-xs text-archive">
+                          <label htmlFor="delete-settings-strategy-mark" className="text-sm font-medium text-ink">Mark</label>
+                          <p id="delete-settings-strategy-mark-description" className="text-xs text-archive">
                             Flag entities as deleted but keep them visible. Useful when you want
                             to review deletions before removing them.
                           </p>
                         </div>
-                      </label>
-                      <label className="flex items-start">
+                      </div>
+                      <div className="flex items-start">
                         <input
+                          id="delete-settings-strategy-archive"
                           type="radio"
                           name="strategy"
                           value="archive"
                           checked={strategy === 'archive'}
                           onChange={() => setStrategy('archive')}
                           className="mt-1 h-4 w-4 text-bark border-stone focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+                          aria-describedby="delete-settings-strategy-archive-description"
                         />
                         <div className="ml-3">
-                          <span className="text-sm font-medium text-ink">Archive</span>
-                          <p className="text-xs text-archive">
+                          <label htmlFor="delete-settings-strategy-archive" className="text-sm font-medium text-ink">Archive</label>
+                          <p id="delete-settings-strategy-archive-description" className="text-xs text-archive">
                             Move deleted entities to an archive with full metadata. Supports
                             restoration if needed later.
                           </p>
                         </div>
-                      </label>
+                      </div>
                     </div>
-                  </div>
+                  </fieldset>
                 </>
               )}
             </>

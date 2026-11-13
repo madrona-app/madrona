@@ -38,7 +38,7 @@ export default function ConfirmDialog({
 
   return (
     <ModalPortal>
-    { }
+    {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- backdrop click-to-dismiss; Escape closes via useAccessibleModal */}
     <div
       className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
       data-modal-layer="1000"
@@ -74,12 +74,14 @@ export default function ConfirmDialog({
         {/* Footer */}
         <div className="px-6 py-4 border-t border-lichen flex justify-end gap-3">
           <button
+            type="button"
             onClick={onClose}
             className="px-4 py-2 border border-stone rounded-sm bg-parchment text-sm font-serif text-ink cursor-pointer hover:bg-stone/20 transition-colors"
           >
             {cancelText}
           </button>
           <button
+            type="button"
             onClick={handleConfirm}
             className={`px-4 py-2 border-none rounded-sm text-sm font-serif text-parchment cursor-pointer transition-colors ${
               confirmStyle === 'danger'

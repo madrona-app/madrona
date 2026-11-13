@@ -12,7 +12,7 @@
  * from a customer's database.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useId } from 'react';
 import Checkbox from './Checkbox';
 import {
   type ExtractionConfig,
@@ -55,6 +55,7 @@ export function ExtractionConfigForm({
   disabled = false,
 }: ExtractionConfigFormProps) {
   const { schema: _schema, isLoading, hasExtractionSchema } = useExtractionSchema(definitionKey);
+  const continueOnErrorId = useId();
   const [config, setConfig] = useState<ExtractionConfig>(
     initialConfig || createEmptyExtractionConfig()
   );
@@ -140,7 +141,7 @@ export function ExtractionConfigForm({
   if (!hasExtractionSchema) {
     return (
       <div style={styles.noSchema}>
-        <FaDatabase size={24} style={{ opacity: 0.5 }} />
+        <FaDatabase size={24} style={{ opacity: 0.5 }} aria-hidden="true" />
         <p>Extraction configuration is not available for this connector type.</p>
       </div>
     );
@@ -151,7 +152,7 @@ export function ExtractionConfigForm({
       {/* Global Settings */}
       <div style={styles.section}>
         <h3 style={styles.sectionTitle}>
-          <FaDatabase size={18} />
+          <FaDatabase size={18} aria-hidden="true" />
           Extraction Settings
         </h3>
 
@@ -214,12 +215,12 @@ export function ExtractionConfigForm({
           </div>
 
           <div style={styles.field}>
-            <label style={styles.checkboxLabel}>
+            <label htmlFor={continueOnErrorId} style={styles.checkboxLabel}>
               <Checkbox
+                id={continueOnErrorId}
                 checked={config.continueOnError || false}
                 onChange={(e) => updateConfig({ ...config, continueOnError: e.target.checked })}
                 disabled={disabled}
-                aria-label="Continue on error"
               />
               Continue on error
             </label>
@@ -411,7 +412,6 @@ function ExtractionObjectCard({
               />
               <datalist id={`columns-${index}`}>
                 {availableColumns.map((col) => (
-                  // eslint-disable-next-line jsx-a11y/control-has-associated-label -- datalist options are suggestions, not interactive controls
                   <option key={col} value={col} />
                 ))}
               </datalist>

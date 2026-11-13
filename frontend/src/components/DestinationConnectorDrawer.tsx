@@ -107,6 +107,7 @@ export default function DestinationConnectorDrawer({
       <div
         className="drawer-backdrop"
         onClick={onClose}
+        aria-hidden="true"
         style={{
           position: 'fixed',
           top: 0,

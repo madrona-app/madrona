@@ -24,12 +24,16 @@ export default function DatasetNode({ data }: NodeProps<DatasetNodeData>) {
     }
   };
 
+  // A React Flow node contains Handle divs, which cannot live inside a native
+  // <button>, so a clickable node is a role="button" div with Enter/Space
+  // support. Props are applied together so a static node has none of them.
+  const buttonProps = data.onClick
+    ? { role: 'button' as const, tabIndex: 0, onClick: data.onClick, onKeyDown: handleKeyDown }
+    : {};
+
   return (
     <div
-      onClick={data.onClick}
-      onKeyDown={handleKeyDown}
-      role={data.onClick ? 'button' : undefined}
-      tabIndex={data.onClick ? 0 : undefined}
+      {...buttonProps}
       title={data.name}
       style={{
         background: 'linear-gradient(135deg, #FEFDFB 0%, #F9F7F4 100%)', // Subtle gradient for depth

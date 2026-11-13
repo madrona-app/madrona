@@ -24,12 +24,23 @@ export default function ConnectorSourceNode({ data }: NodeProps<ConnectorSourceN
     }
   };
 
+  // A React Flow node contains Handle divs, which cannot live inside a native
+  // <button>, so a clickable node is a role="button" div with Enter/Space
+  // support. Props are applied together so a static node has none of them.
+  const buttonProps = data.onClick
+    ? {
+        role: 'button' as const,
+        tabIndex: 0,
+        onClick: data.onClick,
+        onKeyDown: handleKeyDown,
+        onMouseEnter: () => setHovered(true),
+        onMouseLeave: () => setHovered(false),
+      }
+    : {};
+
   return (
     <div
-      onClick={data.onClick}
-      onKeyDown={handleKeyDown}
-      role={data.onClick ? 'button' : undefined}
-      tabIndex={data.onClick ? 0 : undefined}
+      {...buttonProps}
       title={!isPlaceholder ? data.name : undefined}
       style={{
         background: 'rgb(var(--color-parchment))',
@@ -43,8 +54,6 @@ export default function ConnectorSourceNode({ data }: NodeProps<ConnectorSourceN
         cursor: data.onClick ? 'pointer' : 'default',
         transition: 'border-color 0.15s ease',
       }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>        
         <div style={{ 

@@ -198,7 +198,7 @@ export default function ChangePasswordModal({
   if (mfaState?.required && !success) {
     return (
       <ModalPortal>
-      { }
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- backdrop click-to-dismiss; Escape closes via useAccessibleModal */}
       <div
         className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
         onClick={handleClose}
@@ -304,7 +304,7 @@ export default function ChangePasswordModal({
   // Password entry step
   return (
     <ModalPortal>
-    { }
+    {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- backdrop click-to-dismiss; Escape closes via useAccessibleModal */}
     <div
       className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
       onClick={handleClose}

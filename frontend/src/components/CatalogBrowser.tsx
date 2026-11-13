@@ -31,7 +31,7 @@ function TreeNode({ object, level, instanceId, onPreview }: TreeNodeProps) {
   const getIcon = () => {
     switch (object.type) {
       case 'database':
-        return <FaDatabase size={16} className="text-semantic-info" />;
+        return <FaDatabase size={16} className="text-semantic-info" aria-hidden="true" />;
       case 'schema':
         return <Layers size={16} className="text-forest" />;
       case 'table':
@@ -210,7 +210,7 @@ export default function CatalogBrowser({ instanceId, onPreview }: CatalogBrowser
   if (!hasLoaded && !loading) {
     return (
       <div className="border border-lichen rounded-lg p-6 text-center">
-        <FaDatabase size={32} className="mx-auto text-archive mb-3" />
+        <FaDatabase size={32} className="mx-auto text-archive mb-3" aria-hidden="true" />
         <p className="text-accessible-gray mb-4">
           Browse database schemas, tables, and columns
         </p>
@@ -253,7 +253,7 @@ export default function CatalogBrowser({ instanceId, onPreview }: CatalogBrowser
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-lichen bg-stone">
         <div className="flex items-center gap-2">
-          <FaDatabase size={18} className="text-accessible-gray" />
+          <FaDatabase size={18} className="text-accessible-gray" aria-hidden="true" />
           <span className="font-medium text-ink">Database Catalog</span>
           {catalog?.objects && (
             <span className="text-sm text-archive">
