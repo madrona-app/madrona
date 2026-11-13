@@ -61,6 +61,7 @@ export const DeaccessionsPage = React.lazy(() => import('../pages/collections/De
 export const DiscoverSettingsPage = React.lazy(() => import('../pages/collections/DiscoverSettingsPage'));
 export const ProcedureEnforcementSettingsPage = React.lazy(() => import('../pages/collections/ProcedureEnforcementSettingsPage'));
 export const RecordRulesSettingsPage = React.lazy(() => import('../pages/collections/RecordRulesSettingsPage'));
+export const VocabularyValidationSettingsPage = React.lazy(() => import('../pages/collections/VocabularyValidationSettingsPage'));
 export const MediaRightsEnforcementSettingsPage = React.lazy(() => import('../pages/media/MediaRightsEnforcementSettingsPage'));
 export const DocumentationPlansPage = React.lazy(() => import('../pages/collections/DocumentationPlansPage'));
 export const EmergencyPlansPage = React.lazy(() => import('../pages/collections/EmergencyPlansPage'));

@@ -410,6 +410,7 @@ def parse_authority_uri(uri: str) -> tuple[Optional[AuthoritySource], Optional[s
         (AuthoritySource.TGN, r"vocab\.getty\.edu/tgn/(\d+)"),
         (AuthoritySource.WIKIDATA, r"wikidata\.org/entity/(Q\d+)"),
         (AuthoritySource.LCNAF, r"id\.loc\.gov/authorities/names/(\w+)"),
+        (AuthoritySource.LOC_SUBJECTS, r"id\.loc\.gov/authorities/subjects/(\w+)"),
         (AuthoritySource.ORCID, r"orcid\.org/([\d-]+)"),
         (AuthoritySource.ROR, r"ror\.org/([\w\d]+)"),
         (AuthoritySource.GEONAMES, r"geonames\.org/(\d+)"),

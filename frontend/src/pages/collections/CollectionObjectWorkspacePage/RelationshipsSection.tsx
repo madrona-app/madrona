@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Users, MapPin, ArrowRightLeft, BookOpen, Tag, Calendar, Plus, X } from 'lucide-react';
 import { WorkspaceSection } from '../../../components/workspace';
 import { ConstituentLinker } from '../../../components/collections/ConstituentLinker';
@@ -8,6 +8,7 @@ import { SubjectLinker } from '../../../components/collections/SubjectLinker';
 import { AuthorityAutocomplete } from '../../../components/collections/AuthorityAutocomplete';
 import type { AuthorityBackedValue } from '../../../components/collections/AuthorityAutocomplete';
 import type { FieldType } from '../../../components/collections/AuthorityAutocomplete/types';
+import type { StrictVocabularyField } from '../../../hooks/useVocabularyValidation';
 import { ObjectRelationshipsManager } from '../../../components/collections/ObjectRelationshipsManager';
 import { ObjectCitationsManager } from '../../../components/collections/ObjectCitationsManager';
 import { ObjectEventLinker } from '../../../components/collections/ObjectEventLinker';
@@ -27,6 +28,7 @@ function AuthorityStringListField({
   onSave,
   placeholder,
   fieldType,
+  strictField,
 }: {
   label: string;
   items: string[];
@@ -35,7 +37,24 @@ function AuthorityStringListField({
   onSave: () => void;
   placeholder?: string;
   fieldType: FieldType;
+  strictField: StrictVocabularyField;
 }) {
+  const groupLabelId = useId();
+  const singular = label.endsWith('ies') ? `${label.slice(0, -3)}y` : label.replace(/s$/, '');
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const addButtonRef = useRef<HTMLButtonElement>(null);
+  const pendingFocus = useRef<number | 'add' | null>(null);
+
+  // Move focus deliberately after add/remove so keyboard and screen-reader
+  // users are not dropped to the top of the page.
+  useEffect(() => {
+    const target = pendingFocus.current;
+    if (target === null) return;
+    pendingFocus.current = null;
+    if (target === 'add') addButtonRef.current?.focus();
+    else inputRefs.current[target]?.focus();
+  }, [items.length]);
+
   if (!isEditing) {
     if (!items || items.length === 0) {
       return (
@@ -60,15 +79,20 @@ function AuthorityStringListField({
   }
 
   return (
-    <div>
+    <div role="group" aria-labelledby={groupLabelId}>
       <div className="flex items-center justify-between mb-2">
-        <label className="text-sm font-medium text-ink">{label}</label>
+        <span id={groupLabelId} className="text-sm font-medium text-ink">{label}</span>
         <button
+          ref={addButtonRef}
           type="button"
-          onClick={() => onChange([...items, ''])}
-          className="text-sm text-bark hover:text-copper-dark flex items-center gap-1"
+          onClick={() => {
+            pendingFocus.current = items.length;
+            onChange([...items, '']);
+          }}
+          aria-label={`Add ${singular.toLowerCase()}`}
+          className="min-h-11 px-2 text-sm text-bark hover:text-copper-dark flex items-center gap-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
         >
-          <Plus size={14} />
+          <Plus size={14} aria-hidden="true" />
           Add
         </button>
       </div>
@@ -77,6 +101,7 @@ function AuthorityStringListField({
           <div key={i} className="flex items-center gap-2">
             <div className="flex-1">
               <AuthorityAutocomplete
+                ref={(el) => { inputRefs.current[i] = el; }}
                 fieldType={fieldType}
                 value={item ? { value: item } : null}
                 onChange={(val: AuthorityBackedValue | null) => {
@@ -87,18 +112,23 @@ function AuthorityStringListField({
                 }}
                 placeholder={placeholder}
                 allowCreate={true}
+                strictField={strictField}
+                ariaLabel={`${singular} ${i + 1}`}
                 showVerifiedBadge={false}
               />
             </div>
             <button
               type="button"
               onClick={() => {
-                onChange(items.filter((_, idx) => idx !== i));
+                const next = items.filter((_, idx) => idx !== i);
+                pendingFocus.current = next.length === 0 ? 'add' : Math.min(i, next.length - 1);
+                onChange(next);
                 onSave();
               }}
-              className="p-1 text-archive hover:text-semantic-error transition-colors"
+              aria-label={`Remove ${singular.toLowerCase()} ${i + 1}${item ? `, ${item}` : ''}`}
+              className="min-h-11 min-w-11 inline-flex items-center justify-center rounded text-archive hover:text-semantic-error transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             >
-              <X size={16} />
+              <X size={16} aria-hidden="true" />
             </button>
           </div>
         ))}
@@ -314,6 +344,7 @@ export function SubjectsSection({
 
         <AuthorityStringListField
           label="Depicted Activities"
+          strictField="depicted_activities"
           items={isEditing ? (formData?.depicted_activities || []) : (object?.depicted_activities || [])}
           isEditing={isEditing}
           onChange={(items) => updateField('depicted_activities', items)}
@@ -323,6 +354,7 @@ export function SubjectsSection({
         />
         <AuthorityStringListField
           label="Depicted Concepts"
+          strictField="depicted_concepts"
           items={isEditing ? (formData?.depicted_concepts || []) : (object?.depicted_concepts || [])}
           isEditing={isEditing}
           onChange={(items) => updateField('depicted_concepts', items)}
@@ -332,6 +364,7 @@ export function SubjectsSection({
         />
         <AuthorityStringListField
           label="Associated Concepts"
+          strictField="associated_concepts"
           items={isEditing ? (formData?.associated_concepts || []) : (object?.associated_concepts || [])}
           isEditing={isEditing}
           onChange={(items) => updateField('associated_concepts', items)}

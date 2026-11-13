@@ -60,4 +60,5 @@ export {
   AUTOCOMPLETE_ENDPOINTS,
   FIELD_TYPE_CONFIG,
   getMockSuggestions,
+  referenceSourceForUri,
 } from './api';

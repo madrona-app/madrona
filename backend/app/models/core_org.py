@@ -75,6 +75,18 @@ class Organization(Base):
         comment="Per-procedure enforcement toggles. Key = procedure_type, value = boolean."
     )
 
+    # Strict vocabulary validation — per object field.
+    # Shape: {"materials": true, "subjects": false, ...}
+    # Missing key = lenient (default), so migrated free-text data is never blocked.
+    # Field keys are defined in app/services/vocabulary_validation.py.
+    vocabulary_strict_fields: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONType,
+        nullable=True,
+        default=dict,
+        server_default="{}",
+        comment="Per-field strict vocabulary validation toggles. Key = object field, value = boolean."
+    )
+
     # Media-rights download enforcement.
     # When False (default): the /media/{id}/download endpoint serves any media
     # the user can MEDIA_VIEW, no rights check, no unpublished-perm check,

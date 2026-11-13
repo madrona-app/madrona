@@ -125,10 +125,10 @@ export const FIELD_TYPE_CONFIG: Record<FieldType, {
     description: 'Geographic and historical locations (Getty TGN)',
   },
   subject: {
-    sources: ['AAT', 'Iconclass', 'Wikidata', 'Local'],
+    sources: ['AAT', 'LCSH', 'Iconclass', 'Wikidata', 'Local'],
     placeholder: 'Search for subject...',
     example: 'e.g., landscapes, Madonna and Child',
-    description: 'Subject matter and iconography (Getty AAT, Iconclass)',
+    description: 'Subject matter and iconography (Getty AAT, Library of Congress Subject Headings, Iconclass)',
   },
   classification: {
     sources: ['AAT', 'Local'],
@@ -143,6 +143,39 @@ export const FIELD_TYPE_CONFIG: Record<FieldType, {
     description: 'Museums, galleries, and institutions (VIAF)',
   },
 };
+
+/**
+ * VocabularyTerm.vocabulary key for each reference source, used when a chosen
+ * suggestion is cached into the organization's vocabulary.
+ */
+export const REFERENCE_SOURCE_VOCABULARY: Partial<Record<ReferenceSource, string>> = {
+  AAT: 'aat',
+  ULAN: 'ulan',
+  TGN: 'tgn',
+  LCSH: 'lcsh',
+  LCNAF: 'lcnaf',
+  Iconclass: 'iconclass',
+  Wikidata: 'wikidata',
+  Nomenclature: 'nomenclature',
+  VIAF: 'viaf',
+};
+
+/**
+ * Identify the reference source of a stored authority URI, so a value saved
+ * with only its URI (e.g. Subject.vocabulary_term_id) shows the right source.
+ */
+export function referenceSourceForUri(uri: string | null | undefined): ReferenceSource | undefined {
+  if (!uri) return undefined;
+  if (/^https?:\/\/id\.loc\.gov\/authorities\/subjects\//.test(uri)) return 'LCSH';
+  if (/^https?:\/\/id\.loc\.gov\/authorities\/names\//.test(uri)) return 'LCNAF';
+  if (/^https?:\/\/vocab\.getty\.edu\/(page\/)?aat\//.test(uri)) return 'AAT';
+  if (/^https?:\/\/vocab\.getty\.edu\/(page\/)?ulan\//.test(uri)) return 'ULAN';
+  if (/^https?:\/\/vocab\.getty\.edu\/(page\/)?tgn\//.test(uri)) return 'TGN';
+  if (/^https?:\/\/(www\.)?wikidata\.org\//.test(uri)) return 'Wikidata';
+  if (/^https?:\/\/(www\.)?iconclass\.org\//.test(uri)) return 'Iconclass';
+  if (/^https?:\/\/(www\.)?viaf\.org\//.test(uri)) return 'VIAF';
+  return undefined;
+}
 
 // ============================================================================
 // API CLIENT
@@ -308,6 +341,39 @@ export class AutocompleteApiClient {
       return await response.json();
     } catch {
       return null;
+    }
+  }
+
+  /**
+   * Save a chosen reference-source suggestion into the organization's
+   * vocabulary (POST /autocomplete/select). Used for strict fields whose
+   * stored value is plain text, so the API can recognise the term later.
+   * Throws when the request fails.
+   */
+  async select(suggestion: AutocompleteSuggestion, applicableField?: string): Promise<void> {
+    const url = AUTOCOMPLETE_ENDPOINTS.select(this.organizationId);
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken;
+    }
+    const source = suggestion.reference?.source;
+    const response = await fetch(`${this.baseUrl}${url}`, {
+      method: 'POST',
+      headers,
+      credentials: 'include',
+      body: JSON.stringify({
+        suggestion_id: suggestion.id,
+        label: suggestion.label,
+        description: suggestion.description,
+        organization_id: this.organizationId,
+        vocabulary: source ? REFERENCE_SOURCE_VOCABULARY[source] : undefined,
+        external_uri: suggestion.reference?.uri,
+        applicable_fields: applicableField ? [applicableField] : undefined,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`Saving the term failed: ${response.statusText}`);
     }
   }
 

@@ -89,6 +89,8 @@ export function MaterialsField({
                 placeholder="Material name (e.g., oil paint, canvas)"
                 showVerifiedBadge={true}
                 allowCreate={true}
+                strictField="materials"
+                ariaLabel={`Material ${i + 1}`}
               />
             </div>
             <input
@@ -109,9 +111,10 @@ export function MaterialsField({
                 onChange(materials.filter((_, idx) => idx !== i));
                 onSave();
               }}
-              className="p-1 text-archive hover:text-semantic-error"
+              aria-label={`Remove material ${i + 1}${m.name ? `, ${m.name}` : ''}`}
+              className="min-h-11 min-w-11 inline-flex items-center justify-center rounded text-archive hover:text-semantic-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             >
-              <X size={16} />
+              <X size={16} aria-hidden="true" />
             </button>
           </div>
         ))}

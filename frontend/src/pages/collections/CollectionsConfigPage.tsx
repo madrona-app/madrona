@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Outlet, useNavigate, useLocation, useParams } from 'react-router-dom';
-import { MapPin, Settings, List, Palette, Globe, FileText, Shield, Library, Flag } from 'lucide-react';
+import { MapPin, Settings, List, ListChecks, Palette, Globe, FileText, Shield, Library, Flag } from 'lucide-react';
 import { useOrganization } from '../../contexts/useOrganization';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -68,6 +68,12 @@ export default function CollectionsConfigPage() {
           label: 'Flags & Completeness',
           path: `/organizations/${organizationId}/collections/config/record-rules`,
           icon: Flag,
+        },
+        {
+          id: 'vocabulary-validation',
+          label: 'Vocabulary Validation',
+          path: `/organizations/${organizationId}/collections/config/vocabulary-validation`,
+          icon: ListChecks,
         },
       ],
     },
