@@ -427,6 +427,7 @@ function CrateWorkspacePageContent() {
                   <span id={`${uid}-current-location`} className="block text-sm font-medium text-ink mb-1">Current Location</span>
                   {isEditing ? (
                     <LocationPickerButton
+                      labelId={`${uid}-current-location`}
                       organizationId={orgId}
                       value={formData.location_id}
                       onChange={(locId) => updateField('location_id', locId || '')}
@@ -436,6 +437,7 @@ function CrateWorkspacePageContent() {
                     <div className="text-sm text-ink">
                       {formData.location_id ? (
                         <LocationPickerButton
+                      labelId={`${uid}-current-location`}
                           organizationId={orgId}
                           value={formData.location_id}
                           onChange={() => {}}
@@ -451,6 +453,7 @@ function CrateWorkspacePageContent() {
                   <span id={`${uid}-home-location`} className="block text-sm font-medium text-ink mb-1">Home Location</span>
                   {isEditing ? (
                     <LocationPickerButton
+                      labelId={`${uid}-home-location`}
                       organizationId={orgId}
                       value={formData.home_location_id}
                       onChange={(locId) => updateField('home_location_id', locId || '')}
@@ -460,6 +463,7 @@ function CrateWorkspacePageContent() {
                     <div className="text-sm text-ink">
                       {formData.home_location_id ? (
                         <LocationPickerButton
+                      labelId={`${uid}-home-location`}
                           organizationId={orgId}
                           value={formData.home_location_id}
                           onChange={() => {}}

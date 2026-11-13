@@ -446,6 +446,7 @@ export default function CollectionObjectsPage() {
                   Location
                 </span>
                 <LocationPickerButton
+                      labelId="objects-filter-location-label"
                   organizationId={orgId!}
                   value={filters.location_id?.[0] || null}
                   onChange={(locationId) => handleFilterChange('location_id', locationId ? [locationId] : undefined)}

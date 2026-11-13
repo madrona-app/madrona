@@ -325,6 +325,7 @@ export default function BulkActionDialog({
                       <span className="sr-only"> (required)</span>
                     </span>
                     <LocationPickerButton
+                      labelId="bulk-action-destination-label"
                       organizationId={orgId!}
                       value={(actionParams.to_location_id as string) || null}
                       onChange={(locationId) =>
