@@ -735,7 +735,7 @@ async def update_media(
     data = await request.json()
 
     allowed_fields = [
-        'title', 'description', 'alt_text', 'credit', 'creator', 'source',
+        'title', 'description', 'alt_text', 'credit', 'preferred_citation', 'creator', 'source',
         'date_created', 'copyright_status', 'rights_statement', 'license',
         'folder',
     ]

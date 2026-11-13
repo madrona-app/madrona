@@ -118,6 +118,7 @@ class DiscoverMediaOut(BaseModel):
     height: int | None = None
     alt_text: str | None = None
     credit: str | None = None
+    preferred_citation: str | None = None
     is_primary: bool | None = None
     caption: str | None = None
 

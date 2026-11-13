@@ -92,7 +92,7 @@ export default function MediaDetailPage() {
   const dropZoneRef = useRef<HTMLDivElement>(null);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState<Partial<{ title: string; description: string; alt_text: string; caption: string; credit: string; copyright_notice: string }>>({});
+  const [editForm, setEditForm] = useState<Partial<{ title: string; description: string; alt_text: string; caption: string; credit: string; preferred_citation: string; copyright_notice: string }>>({});
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
@@ -175,7 +175,7 @@ export default function MediaDetailPage() {
 
   // --- Mutations ---
   const updateMutation = useMutation({
-    mutationFn: (updates: Partial<{ title?: string; description?: string; alt_text?: string; caption?: string; credit?: string; copyright_notice?: string; metadata?: Record<string, any>; iptc_metadata?: Record<string, string | null>; dublin_core?: Record<string, string | null> }>) => updateMedia(orgId!, mediaId!, updates),
+    mutationFn: (updates: Partial<{ title?: string; description?: string; alt_text?: string; caption?: string; credit?: string; preferred_citation?: string; copyright_notice?: string; metadata?: Record<string, any>; iptc_metadata?: Record<string, string | null>; dublin_core?: Record<string, string | null> }>) => updateMedia(orgId!, mediaId!, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['media', orgId, mediaId] });
       setIsEditing(false);
@@ -310,7 +310,7 @@ export default function MediaDetailPage() {
   }, [showToast, goToTab]);
 
   const handleEdit = () => {
-    setEditForm({ title: media?.title || '', description: media?.description || '', alt_text: media?.alt_text || '', caption: media?.caption || '', credit: media?.credit || '', copyright_notice: media?.copyright_notice || '' });
+    setEditForm({ title: media?.title || '', description: media?.description || '', alt_text: media?.alt_text || '', caption: media?.caption || '', credit: media?.credit || '', preferred_citation: media?.preferred_citation || '', copyright_notice: media?.copyright_notice || '' });
     setIsEditing(true);
   };
   const handleSave = () => { updateMutation.mutate(editForm); };
@@ -675,12 +675,13 @@ export default function MediaDetailPage() {
                         {isEditing ? (
                           <div className="bg-stone/20 rounded-lg p-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-                              <div className="sm:col-span-2"><label className="block text-xs font-medium text-archive mb-1">Title</label><input type="text" value={editForm.title || ''} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" /></div>
-                              <div className="sm:col-span-2"><label className="block text-xs font-medium text-archive mb-1">Description</label><textarea value={editForm.description || ''} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} rows={2} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" /></div>
-                              <div className="sm:col-span-2"><label className="block text-xs font-medium text-archive mb-1">Alt Text</label><input type="text" value={editForm.alt_text || ''} onChange={(e) => setEditForm({ ...editForm, alt_text: e.target.value })} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" placeholder="Describe image for accessibility" /></div>
-                              <div><label className="block text-xs font-medium text-archive mb-1">Caption</label><input type="text" value={editForm.caption || ''} onChange={(e) => setEditForm({ ...editForm, caption: e.target.value })} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" /></div>
-                              <div><label className="block text-xs font-medium text-archive mb-1">Credit</label><input type="text" value={editForm.credit || ''} onChange={(e) => setEditForm({ ...editForm, credit: e.target.value })} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" placeholder="Photographer or source" /></div>
-                              <div className="sm:col-span-2"><label className="block text-xs font-medium text-archive mb-1">Copyright Notice</label><input type="text" value={editForm.copyright_notice || ''} onChange={(e) => setEditForm({ ...editForm, copyright_notice: e.target.value })} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" placeholder="© 2024 Organization Name" /></div>
+                              <div className="sm:col-span-2"><label htmlFor="media-edit-title" className="block text-xs font-medium text-archive mb-1">Title</label><input type="text" id="media-edit-title" value={editForm.title || ''} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" /></div>
+                              <div className="sm:col-span-2"><label htmlFor="media-edit-description" className="block text-xs font-medium text-archive mb-1">Description</label><textarea id="media-edit-description" value={editForm.description || ''} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} rows={2} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" /></div>
+                              <div className="sm:col-span-2"><label htmlFor="media-edit-alt_text" className="block text-xs font-medium text-archive mb-1">Alt Text</label><input type="text" id="media-edit-alt_text" value={editForm.alt_text || ''} onChange={(e) => setEditForm({ ...editForm, alt_text: e.target.value })} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" placeholder="Describe image for accessibility" /></div>
+                              <div><label htmlFor="media-edit-caption" className="block text-xs font-medium text-archive mb-1">Caption</label><input type="text" id="media-edit-caption" value={editForm.caption || ''} onChange={(e) => setEditForm({ ...editForm, caption: e.target.value })} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" /></div>
+                              <div><label htmlFor="media-edit-credit" className="block text-xs font-medium text-archive mb-1">Credit</label><input type="text" id="media-edit-credit" value={editForm.credit || ''} onChange={(e) => setEditForm({ ...editForm, credit: e.target.value })} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" placeholder="Photographer or source" /></div>
+                              <div className="sm:col-span-2"><label htmlFor="media-edit-copyright_notice" className="block text-xs font-medium text-archive mb-1">Copyright Notice</label><input type="text" id="media-edit-copyright_notice" value={editForm.copyright_notice || ''} onChange={(e) => setEditForm({ ...editForm, copyright_notice: e.target.value })} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" placeholder="© 2024 Organization Name" /></div>
+                              <div className="sm:col-span-2"><label htmlFor="media-edit-preferred_citation" className="block text-xs font-medium text-archive mb-1">Preferred Citation</label><textarea id="media-edit-preferred_citation" aria-describedby="media-edit-preferred_citation-hint" value={editForm.preferred_citation || ''} onChange={(e) => setEditForm({ ...editForm, preferred_citation: e.target.value })} rows={2} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" /><p id="media-edit-preferred_citation-hint" className="mt-1 text-xs text-accessible-gray">How researchers should cite this file.</p></div>
                             </div>
                           </div>
                         ) : (
@@ -691,7 +692,8 @@ export default function MediaDetailPage() {
                             {media.caption && <div><dt className="text-archive">Caption</dt><dd className="text-ink mt-0.5">{media.caption}</dd></div>}
                             {media.credit && <div><dt className="text-archive">Credit</dt><dd className="text-ink mt-0.5">{media.credit}</dd></div>}
                             {media.copyright_notice && <div className="sm:col-span-2"><dt className="text-archive">Copyright</dt><dd className="text-ink mt-0.5">{media.copyright_notice}</dd></div>}
-                            {!media.title && !media.description && !media.alt_text && !media.caption && !media.credit && !media.copyright_notice && (
+                            {media.preferred_citation && <div className="sm:col-span-2"><dt className="text-archive">Preferred Citation</dt><dd className="text-ink mt-0.5">{media.preferred_citation}</dd></div>}
+                            {!media.title && !media.description && !media.alt_text && !media.caption && !media.credit && !media.preferred_citation && !media.copyright_notice && (
                               <div className="sm:col-span-2 text-archive text-xs py-2">No details added yet. Click Edit to add title, description, and more.</div>
                             )}
                           </dl>

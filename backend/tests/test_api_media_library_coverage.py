@@ -391,6 +391,21 @@ class TestUpdateMediaValidation:
         assert resp.get_json()["error"]["code"] == "validation_error"
 
     @patch("app.serializers.media.get_org_media_url", return_value="https://s3/u")
+    def test_update_preferred_citation_round_trips(self, mock_url, auth_setup, db_session):
+        auth_client, org, _ = auth_setup
+        media = _make_media(db_session, org.organization_id)
+        url = f"/api/organizations/{org.organization_id}/media/{media.media_id}"
+        citation = "Jacobus tenBroek papers, Box 4, Folder 2. National Federation of the Blind."
+
+        resp = auth_client.put(url, data=json.dumps({"preferred_citation": citation}), content_type="application/json")
+        assert resp.status_code == 200
+        assert resp.get_json()["preferred_citation"] == citation
+
+        resp2 = auth_client.get(url)
+        assert resp2.status_code == 200
+        assert resp2.get_json()["preferred_citation"] == citation
+
+    @patch("app.serializers.media.get_org_media_url", return_value="https://s3/u")
     def test_update_dublin_core_mirrors_to_columns(self, mock_url, auth_setup, db_session):
         auth_client, org, _ = auth_setup
         media = _make_media(db_session, org.organization_id, title="Old")

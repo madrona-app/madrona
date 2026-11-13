@@ -390,6 +390,15 @@ export function DiscoverObjectPage() {
           )}
         </div>
 
+        {currentMedia?.preferred_citation && (
+          <div className="max-w-7xl mx-auto px-4 pb-4">
+            <p className="text-sm text-ink">
+              <span className="font-medium">Preferred citation: </span>
+              {currentMedia.preferred_citation}
+            </p>
+          </div>
+        )}
+
         {/* Thumbnail strip */}
         {obj.media.length > 1 && (
           <div className="max-w-7xl mx-auto px-4 pb-6">

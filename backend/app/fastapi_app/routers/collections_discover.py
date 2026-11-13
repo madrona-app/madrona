@@ -906,6 +906,7 @@ def get_discover_preview(
                 "height": media.height,
                 "alt_text": media.alt_text,
                 "credit": media.credit,
+                "preferred_citation": media.preferred_citation,
                 "is_primary": link.is_primary,
                 "caption": link.caption_override,
             })

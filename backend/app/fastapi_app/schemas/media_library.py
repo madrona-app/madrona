@@ -29,6 +29,7 @@ class MediaOut(BaseModel):
     caption: str | None = None
     copyright_notice: str | None = None
     credit: str | None = None
+    preferred_citation: str | None = None
     creator: str | None = None
     source: str | None = None
     date_created: str | None = None

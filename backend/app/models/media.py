@@ -150,6 +150,9 @@ class Media(Base):
 
     # Attribution
     credit: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # How researchers should cite this digital asset (free text, e.g. a full
+    # archival citation). Distinct from `credit`, which is a short credit line.
+    preferred_citation: Mapped[str | None] = mapped_column(Text, nullable=True)
     creator: Mapped[str | None] = mapped_column(String(255), nullable=True)
     source: Mapped[str | None] = mapped_column(String(500), nullable=True)
     date_created: Mapped[date | None] = mapped_column(Date, nullable=True)  # When media was created (not uploaded)

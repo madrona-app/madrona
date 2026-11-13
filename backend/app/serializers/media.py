@@ -121,6 +121,7 @@ def _serialize_media(
         "caption": (media.iptc_metadata or {}).get("caption"),
         "copyright_notice": (media.iptc_metadata or {}).get("copyright_notice"),
         "credit": media.credit,
+        "preferred_citation": media.preferred_citation,
         "creator": media.creator,
         "source": media.source,
         "date_created": media.date_created.isoformat() if media.date_created else None,

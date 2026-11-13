@@ -150,6 +150,7 @@ export interface DiscoverMediaItem {
   height: number | null;
   alt_text: string | null;
   attribution: string | null;
+  preferred_citation?: string | null;
   is_primary: boolean;
   caption: string | null;
   srcset: SrcSetData | null;
