@@ -81,6 +81,8 @@ export const RightsPage = React.lazy(() => import('../pages/collections/RightsPa
 export const RiskOverviewPage = React.lazy(() => import('../pages/collections/RiskOverviewPage'));
 export const ShipmentsPage = React.lazy(() => import('../pages/collections/ShipmentsPage'));
 export const UseRequestsPage = React.lazy(() => import('../pages/collections/UseRequestsPage'));
+export const ResearchVisitsPage = React.lazy(() => import('../pages/collections/ResearchVisitsPage'));
+export const ResearchVisitPage = React.lazy(() => import('../pages/collections/ResearchVisitPage'));
 export const ValuationsPage = React.lazy(() => import('../pages/collections/ValuationsPage'));
 export const VocabularyExplorerPage = React.lazy(() => import('../pages/collections/VocabularyExplorerPage'));
 

@@ -735,6 +735,31 @@
       "appKey": "collections"
     },
     {
+      "id": "collections:research-visits",
+      "product": "collections",
+      "label": "Research Visits",
+      "pathPattern": "/organizations/:orgId/collections/research-visits",
+      "breadcrumb": [
+        "Rights & Reproduction",
+        "Research Visits"
+      ],
+      "keywords": [
+        "collections",
+        "object handling",
+        "reading room",
+        "reproduction",
+        "research",
+        "research visits",
+        "researcher",
+        "rights",
+        "rights & reproduction",
+        "visit log",
+        "visits"
+      ],
+      "permission": "use_requests.view",
+      "appKey": "collections"
+    },
+    {
       "id": "collections:reviews",
       "product": "collections",
       "label": "Collections Reviews",

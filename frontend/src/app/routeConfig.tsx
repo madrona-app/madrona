@@ -124,6 +124,8 @@ import {
   ReproductionRequestsPage,
   RiskOverviewPage,
   UseRequestsPage,
+  ResearchVisitsPage,
+  ResearchVisitPage,
   ValuationsPage,
   VocabularyExplorerPage,
   // Collections — workspace (detail)
@@ -485,6 +487,9 @@ export function AppRoutes() {
         <Route path="/organizations/:orgId/collections/use-requests/create" element={<RemountOnParams><UseRequestWorkspacePage /></RemountOnParams>} />
         <Route path="/organizations/:orgId/collections/use-requests/:requestId" element={<RemountOnParams><UseRequestWorkspacePage /></RemountOnParams>} />
         <Route path="/organizations/:orgId/collections/use-requests/:requestId/edit" element={<RemountOnParams><UseRequestWorkspacePage /></RemountOnParams>} />
+        <Route path="/organizations/:orgId/collections/research-visits" element={<ResearchVisitsPage />} />
+        <Route path="/organizations/:orgId/collections/research-visits/create" element={<RemountOnParams><ResearchVisitPage /></RemountOnParams>} />
+        <Route path="/organizations/:orgId/collections/research-visits/:visitId" element={<RemountOnParams><ResearchVisitPage /></RemountOnParams>} />
         {/* Valuations */}
         <Route path="/organizations/:orgId/collections/valuations" element={<ValuationsPage />} />
         <Route path="/organizations/:orgId/collections/valuations/create" element={<RemountOnParams><ValuationWorkspacePage /></RemountOnParams>} />

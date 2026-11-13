@@ -129,6 +129,7 @@ def create_app() -> FastAPI:
     from app.fastapi_app.routers.collections_procedure_incidents import router as procedure_incidents_router
     from app.fastapi_app.routers.collections_procedure_compliance import router as procedure_compliance_router
     from app.fastapi_app.routers.collections_procedure_rights import router as procedure_rights_router
+    from app.fastapi_app.routers.collections_research_visits import router as research_visits_router
     from app.fastapi_app.routers.collections_procedure_value import router as procedure_value_router
     from app.fastapi_app.routers.media_collections import router as media_collections_router
     from app.fastapi_app.routers.media_tags import router as media_tags_router
@@ -246,6 +247,7 @@ def create_app() -> FastAPI:
     app.include_router(roles_router)
     app.include_router(approvals_router)
     app.include_router(procedure_rights_router)
+    app.include_router(research_visits_router)
     app.include_router(procedure_value_router)
     app.include_router(media_collections_router)
     app.include_router(media_tags_router)
