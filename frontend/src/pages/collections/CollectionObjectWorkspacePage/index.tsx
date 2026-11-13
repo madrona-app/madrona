@@ -1,5 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useMemo, Fragment, type ReactNode } from 'react';
 import { RecordWorkflowPanel } from '../../../components/collections/RecordWorkflowPanel';
+import { ArchivalHierarchyPanel } from '../../../components/collections/ArchivalHierarchyPanel';
+import { CustomFieldsPanel } from '../../../components/collections/CustomFieldsPanel';
 import { useNavigate, useSearchParams, useLocation, useParams } from 'react-router-dom';
 import { formatDateTime } from '@/lib/formatters';
 import {
@@ -768,6 +770,12 @@ function CollectionObjectWorkspacePageContent() {
       {!isCreateMode && orgId && objectId && (
         <div className="mb-4">
           <RecordWorkflowPanel orgId={orgId} objectId={objectId} canEdit={canEdit} />
+          <div className="mt-4">
+            <ArchivalHierarchyPanel orgId={orgId} objectId={objectId} canEdit={canEdit} />
+          </div>
+          <div className="mt-4">
+            <CustomFieldsPanel orgId={orgId} objectId={objectId} canEdit={canEdit} values={object?.custom_fields as Record<string, never> | undefined} />
+          </div>
         </div>
       )}
 
