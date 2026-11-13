@@ -103,6 +103,7 @@ import {
   DeaccessionsPage,
   DiscoverSettingsPage,
   ProcedureEnforcementSettingsPage,
+  RecordRulesSettingsPage,
   MediaRightsEnforcementSettingsPage,
   EmergencyPlansPage,
   EventsPage,
@@ -386,6 +387,7 @@ export function AppRoutes() {
           <Route path="report-templates" element={<ReportTemplatesSettingsPage />} />
           <Route path="discover" element={<DiscoverSettingsPage />} />
           <Route path="procedure" element={<ProcedureEnforcementSettingsPage />} />
+          <Route path="record-rules" element={<RecordRulesSettingsPage />} />
         </Route>
         {/* Media Library (DAM) */}
         <Route path="/organizations/:orgId/collections/media" element={<MediaLibraryPage />} />

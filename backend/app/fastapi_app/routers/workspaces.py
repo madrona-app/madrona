@@ -2001,16 +2001,43 @@ async def execute_bulk_action(
                 success_count += 1
 
         elif action == "set_cataloging_status":
+            from app.services import record_workflow as _wf
             status = action_params["cataloging_status"]
             notes = action_params.get("cataloging_notes")
+            assignee = action_params.get("assigned_to_user_id")
+            if status not in _wf.CATALOGING_STATUSES:
+                raise HTTPException(status_code=422, detail=f"Unknown cataloging status: {status}")
+            reviewer_uuid = None
+            if status == "pending_review":
+                # Putting records in review assigns and notifies a reviewer and
+                # documents the review, exactly as Submit for review does.
+                try:
+                    reviewer_uuid = UUID(str(assignee))
+                except (TypeError, ValueError):
+                    raise HTTPException(status_code=422, detail="Choose a reviewer (assigned_to_user_id) to put records in review")
             for item, obj in items:
                 result = {"object_id": str(obj.object_id), "accession_number": obj.object_number}
-                obj_metadata = obj.extra_metadata or {}
-                obj_metadata["cataloging_status"] = status
+                if status == "pending_review":
+                    try:
+                        _wf.submit_for_review(db, org_id, obj, user_id, reviewer_uuid, notes)
+                    except _wf.WorkflowError as e:
+                        result["status"] = "skipped"
+                        result["message"] = str(e)
+                        results.append(result)
+                        continue
+                else:
+                    if obj.cataloging_status == "pending_review" and _wf.pending_review(db, obj.object_id):
+                        result["status"] = "skipped"
+                        result["message"] = "In review: the reviewer decides, or the review is cancelled first."
+                        results.append(result)
+                        continue
+                    obj.cataloging_status = status
+                obj_metadata = dict(obj.extra_metadata or {})
+                obj_metadata.pop("cataloging_status", None)
                 if notes:
                     obj_metadata["cataloging_notes"] = notes
-                if action_params.get("assigned_to_user_id"):
-                    obj_metadata["cataloging_assigned_to"] = action_params["assigned_to_user_id"]
+                if assignee:
+                    obj_metadata["cataloging_assigned_to"] = assignee
                 if action_params.get("due_date"):
                     obj_metadata["cataloging_due_date"] = action_params["due_date"]
                 obj.extra_metadata = obj_metadata
@@ -2180,10 +2207,13 @@ async def execute_bulk_action(
             # Restricted objects are reported per-row rather than failing the
             # whole batch, so the rest of the selection still applies.
             restricted_ids: set = set()
+            incomplete_ids: set = set()
             if is_discoverable:
                 restricted_ids = display_restricted_ids(
                     db, org_id, [obj.object_id for _, obj in items]
                 )
+                from app.services.record_workflow import incomplete_for_publication_ids
+                incomplete_ids = incomplete_for_publication_ids(db, org_id, [obj.object_id for _, obj in items])
 
             for item, obj in items:
                 result = {"object_id": str(obj.object_id), "accession_number": obj.object_number}
@@ -2193,6 +2223,11 @@ async def execute_bulk_action(
                         "NAGPRA action without granted display consent; "
                         "cannot be made publicly discoverable."
                     )
+                    results.append(result)
+                    continue
+                if is_discoverable and obj.object_id in incomplete_ids:
+                    result["status"] = "skipped"
+                    result["message"] = "Does not meet the completeness rules required for publication."
                     results.append(result)
                     continue
                 if obj.is_discoverable == is_discoverable:

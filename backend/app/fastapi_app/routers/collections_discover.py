@@ -304,6 +304,17 @@ def toggle_object_discoverable(
             ),
         })
 
+    # Completeness rules the organization marked as required for publication.
+    if new_val:
+        from app.services.record_workflow import publication_blockers
+        blockers = publication_blockers(db, organization_id, obj)
+        if blockers:
+            raise HTTPException(status_code=409, detail={
+                "code": "incomplete_for_publication",
+                "message": "This record does not yet meet the rules required for publication. " + " ".join(blockers),
+                "blockers": blockers,
+            })
+
     obj.is_discoverable = new_val
 
     if new_val:
@@ -383,6 +394,11 @@ def bulk_toggle_discoverable(
                 for oid in restricted_ids
             ]
             objects = [o for o in objects if o.object_id not in restricted_ids]
+        from app.services.record_workflow import incomplete_for_publication_ids
+        incomplete = incomplete_for_publication_ids(db, organization_id, [o.object_id for o in objects])
+        if incomplete:
+            skipped += [{"object_id": str(oid), "reason": "incomplete_for_publication"} for oid in incomplete]
+            objects = [o for o in objects if o.object_id not in incomplete]
 
     now = datetime.now(timezone.utc)
 
@@ -1130,6 +1146,11 @@ def publish_by_criteria(
         if restricted_ids:
             skipped_restricted = len(restricted_ids)
             objects = [o for o in objects if o.object_id not in restricted_ids]
+        from app.services.record_workflow import incomplete_for_publication_ids
+        incomplete = incomplete_for_publication_ids(db, organization_id, [o.object_id for o in objects])
+        if incomplete:
+            skipped_restricted += len(incomplete)
+            objects = [o for o in objects if o.object_id not in incomplete]
 
     updated_count = 0
 

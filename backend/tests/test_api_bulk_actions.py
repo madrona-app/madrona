@@ -239,7 +239,10 @@ class TestWorkspaceBulkActionPreview:
         db_session.expire_all()
         refreshed = db_session.get(type(obj), obj.object_id)
         assert refreshed.extra_metadata is not None, "nothing was written"
-        assert refreshed.extra_metadata["cataloging_status"] == "cataloged"
+        # cataloging_status is a real column now (it was an extra_metadata key);
+        # the notes still live in extra_metadata.
+        assert refreshed.cataloging_status == "cataloged"
+        assert "cataloging_status" not in refreshed.extra_metadata
         assert (
             refreshed.extra_metadata["cataloging_notes"]
             == "checked against the accession register"

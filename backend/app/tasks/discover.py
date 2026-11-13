@@ -133,6 +133,15 @@ def check_due_publish_schedules_task() -> dict[str, Any]:
                             "Publish schedule %s: skipped %d NAGPRA display-restricted objects",
                             schedule.schedule_id, skipped_restricted,
                         )
+                    from app.services.record_workflow import incomplete_for_publication_ids
+                    incomplete = incomplete_for_publication_ids(current_session(), org_id, [o.object_id for o in objects])
+                    if incomplete:
+                        skipped_restricted += len(incomplete)
+                        objects = [o for o in objects if o.object_id not in incomplete]
+                        logger.info(
+                            "Publish schedule %s: skipped %d records that fail completeness rules required for publication",
+                            schedule.schedule_id, len(incomplete),
+                        )
 
                 for obj in objects:
                     if obj.is_discoverable == is_discoverable:

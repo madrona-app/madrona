@@ -113,6 +113,52 @@ def _reject_publish_fields(data: dict, obj=None) -> None:
             })
 
 
+def _check_cataloging_status(data: dict, obj=None) -> None:
+    """Keep "In review" under the review workflow.
+
+    Entering review must assign and notify a reviewer, and leaving it must
+    record a decision; editing the field directly would skip both.
+    """
+    if "cataloging_status" not in data:
+        return
+    from app.services.record_workflow import CATALOGING_STATUSES, pending_review
+    new = data["cataloging_status"] or None
+    current = getattr(obj, "cataloging_status", None) if obj is not None else None
+    if new == current:
+        return
+    if new is not None and new not in CATALOGING_STATUSES:
+        raise HTTPException(status_code=422, detail={
+            "code": "validation_error", "field": "cataloging_status",
+            "message": f"Cataloguing status must be one of: {', '.join(CATALOGING_STATUSES)}",
+        })
+    if new == "pending_review":
+        raise HTTPException(status_code=422, detail={
+            "code": "validation_error", "field": "cataloging_status",
+            "message": "Use Submit for review to put a record in review, so a reviewer is assigned and notified.",
+        })
+    if obj is not None and current == "pending_review" and pending_review(obj_session(obj), obj.object_id):
+        raise HTTPException(status_code=422, detail={
+            "code": "validation_error", "field": "cataloging_status",
+            "message": "This record is in review. The reviewer approves it or requests changes, or the review can be cancelled.",
+        })
+
+
+def obj_session(obj):
+    from sqlalchemy.orm import object_session
+    return object_session(obj)
+
+
+def _sync_completeness_flags(db: Session, organization_id: UUID, obj) -> None:
+    """Set/clear completeness-rule flags on obj. Never blocks the save."""
+    try:
+        from app.services.record_workflow import sync_rule_flags
+        db.flush()
+        db.expire(obj, ["title_links", "measurement_links", "material_links", "constituent_xrefs", "media_links"])
+        sync_rule_flags(db, organization_id, obj)
+    except Exception:
+        logger.exception("Completeness rule evaluation failed for object %s", getattr(obj, "object_id", None))
+
+
 def _validated_external_links(value):
     try:
         return normalize_external_links(value)
@@ -276,6 +322,7 @@ def create_collection_object(
     protected_fields = {'object_id', 'organization_id', 'created_at', 'updated_at', 'created_by', 'updated_by', 'barcode'}
     protected_fields |= get_write_restricted_fields('collection_object', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
     _reject_publish_fields(data)
+    _check_cataloging_status(data)
     if "external_links" in data:
         data["external_links"] = _validated_external_links(data["external_links"])
     filtered_data = {}
@@ -294,6 +341,7 @@ def create_collection_object(
 
     # Create link table records
     sync_warnings = _sync_link_tables(obj, link_data, organization_id, user_uuid)
+    _sync_completeness_flags(db, organization_id, obj)
 
     try:
         db.commit()
@@ -625,6 +673,7 @@ def update_collection_object(
     protected_fields = {'object_id', 'organization_id', 'created_at', 'created_by', 'updated_at', 'updated_by'}
     protected_fields |= get_write_restricted_fields('collection_object', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
     _reject_publish_fields(data, obj)
+    _check_cataloging_status(data, obj)
     if "external_links" in data:
         data["external_links"] = _validated_external_links(data["external_links"])
     from app.services.coerce import coerce_value_for_column
@@ -638,6 +687,7 @@ def update_collection_object(
 
     obj.updated_by = user_uuid
     obj.updated_at = datetime.now(timezone.utc)
+    _sync_completeness_flags(db, organization_id, obj)
 
     try:
         db.commit()

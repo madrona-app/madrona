@@ -145,6 +145,11 @@ def review_approval(
     if request.status != 'pending':
         raise ValueError(f"Request already {request.status}")
 
+    # Catalogue record reviews have separation of duties, on every path that
+    # decides them (record page or Approvals page).
+    from app.services.record_workflow import assert_can_decide_review
+    assert_can_decide_review(session, request, reviewer_id)
+
     request.status = decision
     request.reviewed_by = reviewer_id
     request.reviewed_at = datetime.now(timezone.utc)
@@ -167,6 +172,18 @@ def review_approval(
         logger.exception(
             "agent_plan_service.handle_approval_decision raised; "
             "approval_id=%s — approval recorded, plan signal skipped",
+            request_id,
+        )
+
+    # Catalogue record reviews (intern review workflow): move the record's
+    # cataloguing status and notify the cataloguer. Best-effort.
+    try:
+        from app.services.record_workflow import handle_review_decision
+        handle_review_decision(request_id, session)
+    except Exception:  # noqa: BLE001
+        logger.exception(
+            "record_workflow.handle_review_decision raised; approval_id=%s — "
+            "approval recorded, record status not updated",
             request_id,
         )
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useMemo, Fragment, type ReactNode } from 'react';
+import { RecordWorkflowPanel } from '../../../components/collections/RecordWorkflowPanel';
 import { useNavigate, useSearchParams, useLocation, useParams } from 'react-router-dom';
 import { formatDateTime } from '@/lib/formatters';
 import {
@@ -256,10 +257,12 @@ function CollectionObjectWorkspacePageContent() {
   const [showUseRequestSlideOver, setShowUseRequestSlideOver] = useState(false);
   const [showDiscoverPreview, setShowDiscoverPreview] = useState(false);
   const [togglingDiscoverable, setTogglingDiscoverable] = useState(false);
+  const [publishMessage, setPublishMessage] = useState('');
 
   const handleToggleDiscoverable = useCallback(async () => {
     if (togglingDiscoverable || !orgId || !objectId || !object) return;
     setTogglingDiscoverable(true);
+    setPublishMessage('');
     const newValue = !object.is_discoverable;
     // Optimistic update
     queryClient.setQueryData(['collection-object', orgId, objectId], (old: any) =>
@@ -271,7 +274,10 @@ function CollectionObjectWorkspacePageContent() {
       queryClient.setQueryData(['collection-object', orgId, objectId], (old: any) =>
         old ? { ...old, is_discoverable: result.is_discoverable, discoverable_at: result.discoverable_at } : old
       );
-    } catch {
+      setPublishMessage(result.is_discoverable ? 'Published to the public portal' : 'Removed from the public portal');
+    } catch (err) {
+      const detail = err instanceof Error && err.message ? `: ${err.message}` : '';
+      setPublishMessage(`Publication status was not changed${detail}`);
       // Revert on error
       queryClient.setQueryData(['collection-object', orgId, objectId], (old: any) =>
         old ? { ...old, is_discoverable: !newValue } : old
@@ -578,35 +584,62 @@ function CollectionObjectWorkspacePageContent() {
             Create Task
           </button>
 
-          {/* Public Discovery Toggle - compact inline version */}
+          {/* Public Discovery Toggle - compact inline version.
+              Publishing requires discover.publish (the API enforces it); users
+              without it see the state as text, not a control they cannot use. */}
           {hasDiscoverApp && (
             <div className="ml-auto flex items-center gap-2 text-sm">
-              <Globe size={16} className={object.is_discoverable ? 'text-bark' : 'text-archive'} />
-              <span className="text-archive">Public</span>
+              <Globe size={16} aria-hidden="true" className={object.is_discoverable ? 'text-bark' : 'text-archive'} />
               <button
+                type="button"
                 onClick={() => setShowDiscoverPreview(true)}
-                className="p-1 text-archive hover:text-bark transition-colors rounded"
+                className="min-h-[24px] min-w-[24px] p-1 text-archive hover:text-bark transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+                aria-label="Preview public view"
                 title="Preview public view"
               >
-                <Eye size={14} />
+                <Eye size={14} aria-hidden="true" />
               </button>
-              <button
-                onClick={handleToggleDiscoverable}
-                disabled={togglingDiscoverable}
-                className={cn(
-                  'relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2',
-                  togglingDiscoverable && 'opacity-50',
-                  object.is_discoverable ? 'bg-bark' : 'bg-stone'
-                )}
-                title={object.is_discoverable ? 'Visible on public collection page' : 'Hidden from public collection page'}
-              >
-                <span
-                  className={cn(
-                    'inline-block h-3.5 w-3.5 transform rounded-full bg-parchment transition-transform shadow-sm',
-                    object.is_discoverable ? 'translate-x-5' : 'translate-x-0.5'
-                  )}
-                />
-              </button>
+              {hasPermission('discover.publish') ? (
+                <>
+                  <span id="object-publish-label" className="text-archive">Published to public portal</span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={!!object.is_discoverable}
+                    aria-labelledby="object-publish-label"
+                    aria-describedby="object-publish-hint"
+                    onClick={handleToggleDiscoverable}
+                    disabled={togglingDiscoverable}
+                    className={cn(
+                      'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2',
+                      togglingDiscoverable && 'opacity-50',
+                      object.is_discoverable ? 'bg-bark' : 'bg-stone'
+                    )}
+                    title={object.is_discoverable ? 'Visible on public collection page' : 'Hidden from public collection page'}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        'inline-block h-4 w-4 transform rounded-full bg-parchment transition-transform shadow-sm',
+                        object.is_discoverable ? 'translate-x-6' : 'translate-x-1'
+                      )}
+                    />
+                  </button>
+                  <span id="object-publish-hint" className="sr-only">
+                    {object.is_discoverable ? 'Visible on the public collection page' : 'Hidden from the public collection page'}
+                  </span>
+                </>
+              ) : (
+                <span className="text-archive">
+                  Public portal: <span className="text-ink">{object.is_discoverable ? 'Published' : 'Not published'}</span>
+                </span>
+              )}
+              <span role="status" aria-live="polite" className="sr-only">
+                {togglingDiscoverable ? 'Saving publication status' : publishMessage}
+              </span>
+              {publishMessage.startsWith('Publication status was not changed') && (
+                <span className="text-xs text-semantic-error">{publishMessage}</span>
+              )}
             </div>
           )}
         </div>
@@ -730,6 +763,12 @@ function CollectionObjectWorkspacePageContent() {
       )}
 
       {/* Sections Container */}
+      {!isCreateMode && orgId && objectId && (
+        <div className="mb-4">
+          <RecordWorkflowPanel orgId={orgId} objectId={objectId} canEdit={canEdit} />
+        </div>
+      )}
+
       <div className="flex flex-col gap-4">
         {effectiveGroups.map((group, groupIndex) => (
           <Fragment key={group.id}>

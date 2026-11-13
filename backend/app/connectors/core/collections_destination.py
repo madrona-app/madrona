@@ -262,12 +262,12 @@ def _import_one(
     # clear the NAGPRA display gate (43 CFR 10 duty of care).
     if "public_access" in props:
         wants_discoverable = bool(props.get("public_access"))
-        if wants_discoverable and not is_new and display_restricted_ids(
+        if wants_discoverable and not is_new and (display_restricted_ids(
             db, organization_id, [obj.object_id]
-        ):
+        ) or _incomplete_for_publication(db, organization_id, obj.object_id)):
             logger.warning(
-                "Import left object %s undiscoverable: NAGPRA action without "
-                "granted display consent overrides the source's public_access",
+                "Import left object %s undiscoverable: NAGPRA display consent or a "
+                "completeness rule required for publication overrides the source's public_access",
                 obj.object_id,
             )
         else:
@@ -426,3 +426,8 @@ def _import_one(
         ))
 
     db.flush()
+
+
+def _incomplete_for_publication(db, organization_id, object_id) -> bool:
+    from app.services.record_workflow import incomplete_for_publication_ids
+    return bool(incomplete_for_publication_ids(db, organization_id, [object_id]))

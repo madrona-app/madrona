@@ -243,6 +243,12 @@ class CollectionObject(Base):
 
     object_status: Mapped[str] = mapped_column(String(50), nullable=False, default="pending")
 
+    # Cataloguing workflow status, separate from the object's lifecycle status.
+    # 'pending_review' ("In review") is entered and left only through the review
+    # workflow (app.services.record_review), which notifies the assigned reviewer
+    # and documents the decision on an approval request (approval_service).
+    cataloging_status: Mapped[str | None] = mapped_column(String(30), nullable=True)
+
     # ══════════════════════════════════════════════════════════════════════
     # BARCODE & INVENTORY
     # ══════════════════════════════════════════════════════════════════════
@@ -478,6 +484,11 @@ class CollectionObject(Base):
         CheckConstraint(
             "object_status IN ('pending', 'accessioned', 'on_loan', 'deaccessioned', 'missing', 'destroyed')",
             name="check_object_status",
+        ),
+        CheckConstraint(
+            "cataloging_status IS NULL OR cataloging_status IN "
+            "('not_started', 'in_progress', 'pending_review', 'needs_research', 'cataloged')",
+            name="check_cataloging_status",
         ),
         CheckConstraint(
             "conservation_priority IS NULL OR conservation_priority IN ('urgent', 'high', 'medium', 'low', 'none')",
