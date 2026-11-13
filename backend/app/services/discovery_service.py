@@ -136,6 +136,7 @@ def resolve_discover_object(db: Session, org: Organization, identifier: str) -> 
             CollectionObject.object_id == obj_uuid,
             CollectionObject.organization_id == org.organization_id,
             CollectionObject.is_discoverable == True,  # noqa: E712
+        CollectionObject.is_deleted == False,  # noqa: E712
         ).first()
         if obj:
             return obj
@@ -146,6 +147,7 @@ def resolve_discover_object(db: Session, org: Organization, identifier: str) -> 
         CollectionObject.organization_id == org.organization_id,
         CollectionObject.object_number == identifier,
         CollectionObject.is_discoverable == True,  # noqa: E712
+        CollectionObject.is_deleted == False,  # noqa: E712
     ).first()
 
 
