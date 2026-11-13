@@ -55,6 +55,8 @@ export interface FormData {
   installation_instructions: string;
   // Physical — JSONB arrays
   watermarks: Record<string, any>[];
+  // Links to outside sources (e.g. Wikipedia) — validated http(s) by the API
+  external_links: { url: string; label: string; link_type?: string }[];
   technical_attributes: Record<string, any>[];
   // Subject — string lists (no authority backing)
   depicted_activities: string[];

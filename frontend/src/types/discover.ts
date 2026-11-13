@@ -190,6 +190,7 @@ export interface DiscoverObjectDetail {
   style_period: string | null;
   provenance: string | null;
   credit_line: string | null;
+  external_links?: { url: string; label: string }[];
   media: DiscoverMediaItem[];
   has_image: boolean;
 }

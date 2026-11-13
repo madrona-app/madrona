@@ -147,6 +147,7 @@ class DiscoverObjectDetailOut(BaseModel):
     style_period: str | None = None
     provenance: str | None = None
     credit_line: str | None = None
+    external_links: list[dict[str, str]] = []
     media: list[DiscoverMediaOut] | None = None
     has_image: bool = False
 

@@ -307,6 +307,11 @@ class CollectionObject(Base):
     # Array of {identification, description, date_earliest, date_latest, briquet_number, location_on_work}
     watermarks: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True)
 
+    # Links to outside sources about this object, such as a Wikipedia page.
+    # Array of {url, label, link_type}; url is http(s) only, validated in
+    # app.services.external_links on every write.
+    external_links: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True)
+
     # Free-form key/value store for facts that have no column of their own —
     # bulk-action outputs such as cataloging status, loan availability and the
     # notes that accompany a status change. Named extra_metadata rather than

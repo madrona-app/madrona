@@ -11,6 +11,7 @@ import type { FieldType } from '../../../components/collections/AuthorityAutocom
 import { ObjectRelationshipsManager } from '../../../components/collections/ObjectRelationshipsManager';
 import { ObjectCitationsManager } from '../../../components/collections/ObjectCitationsManager';
 import { ObjectEventLinker } from '../../../components/collections/ObjectEventLinker';
+import { ExternalLinksField } from '../../../components/collections/ExternalLinksField';
 import type { CollectionObject } from '../../../lib/schemas';
 import type { FormData } from './types';
 
@@ -384,16 +385,22 @@ export function RelatedObjectsSection({
 export function CitationsSection({
   orgId,
   objectId,
-  object: _object,
+  object,
+  formData,
   isEditing,
+  updateField,
+  handleFieldBlur,
   expandedSections,
   toggleSection,
   sectionRefs,
   getSectionOrder,
   isEmpty,
   sectionSummaries,
-}: RelationshipsSectionProps) {
+}: SubjectsSectionProps) {
   const [count, setCount] = useState(0);
+  const externalLinks = isEditing
+    ? formData?.external_links || []
+    : (object?.external_links || []).map((l) => ({ url: l.url, label: l.label || '', link_type: l.link_type }));
   return (
     <WorkspaceSection
       id="citations"
@@ -415,6 +422,14 @@ export function CitationsSection({
         embedded
         onCountChange={setCount}
       />
+      <div className="mt-6 pt-4 border-t border-lichen">
+        <ExternalLinksField
+          links={externalLinks}
+          isEditing={isEditing}
+          onChange={(links) => updateField('external_links', links)}
+          onSave={handleFieldBlur}
+        />
+      </div>
     </WorkspaceSection>
   );
 }

@@ -489,6 +489,25 @@ export function DiscoverObjectPage() {
               <MetadataRow label="Style / Period">{obj.style_period}</MetadataRow>
               <MetadataRow label="Inscriptions">{inscriptionsDisplay}</MetadataRow>
               <MetadataRow label="Credit Line">{obj.credit_line}</MetadataRow>
+              <MetadataRow label="External Links">
+                {obj.external_links && obj.external_links.length > 0 ? (
+                  <ul className="space-y-1">
+                    {obj.external_links.map((link, i) => (
+                      <li key={`${link.url}-${i}`}>
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-bark hover:text-copper-dark underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 rounded"
+                        >
+                          {link.label || link.url}
+                          <span className="sr-only">, opens in a new tab</span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </MetadataRow>
             </dl>
 
             {/* Attribution */}

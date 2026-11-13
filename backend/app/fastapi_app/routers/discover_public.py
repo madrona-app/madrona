@@ -562,6 +562,11 @@ def get_discover_object(
         "style_period": obj.style_period,
         "provenance": obj.provenance,
         "credit_line": obj.credit_line,
+        "external_links": [
+            {"url": l.get("url"), "label": l.get("label") or ""}
+            for l in (obj.external_links or [])
+            if isinstance(l, dict) and str(l.get("url", "")).startswith(("http://", "https://"))
+        ],
         "media": media_items,
         "has_image": len(media_items) > 0,
     }

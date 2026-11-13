@@ -86,6 +86,18 @@ from app.fastapi_app.schemas.collections_objects import (
     OtherNumberTypeDeleteResponse,
 )
 from app.fastapi_app.schemas.common import MessageResponse
+from app.services.external_links import ExternalLinkError, normalize_external_links
+
+
+def _validated_external_links(value):
+    try:
+        return normalize_external_links(value)
+    except ExternalLinkError as e:
+        raise HTTPException(status_code=422, detail={
+            "code": "validation_error",
+            "message": str(e),
+            "field": "external_links",
+        })
 
 logger = logging.getLogger(__name__)
 
@@ -239,6 +251,8 @@ def create_collection_object(
     from app.services.coerce import coerce_value_for_column
     protected_fields = {'object_id', 'organization_id', 'created_at', 'updated_at', 'created_by', 'updated_by', 'barcode'}
     protected_fields |= get_write_restricted_fields('collection_object', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
+    if "external_links" in data:
+        data["external_links"] = _validated_external_links(data["external_links"])
     filtered_data = {}
     for k, v in data.items():
         if hasattr(CollectionObject, k) and k not in protected_fields:
@@ -585,6 +599,8 @@ def update_collection_object(
     # Update allowed fields
     protected_fields = {'object_id', 'organization_id', 'created_at', 'created_by', 'updated_at', 'updated_by'}
     protected_fields |= get_write_restricted_fields('collection_object', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
+    if "external_links" in data:
+        data["external_links"] = _validated_external_links(data["external_links"])
     from app.services.coerce import coerce_value_for_column
     for key, value in data.items():
         if hasattr(obj, key) and key not in protected_fields:

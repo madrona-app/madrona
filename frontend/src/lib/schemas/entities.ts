@@ -126,6 +126,7 @@ export const CollectionObjectSchema = z.object({
   technical_attributes: z.any().nullable().optional(),
   facture_description: z.string().nullable().optional(),
   watermarks: z.any().nullable().optional(),
+  external_links: z.array(z.object({ url: z.string(), label: z.string().optional().default(''), link_type: z.string().optional() })).nullable().optional(),
   components: z.any().nullable().optional(),
   condition_rating: z.string().nullable().optional(),  // derived from latest condition report
   condition_date: z.string().nullable().optional(),    // derived from latest condition report
