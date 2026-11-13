@@ -210,6 +210,24 @@ def _filter_custom_fields(db, organization_id, auth, serialized: dict) -> dict:
     return serialized
 
 
+def _parse_custom_field_filters(db, organization_id, auth, raw: list[str]) -> list[tuple[str, str, str]]:
+    """Parse ?custom_field=key:value into (key, type, value) for searchable fields the caller may view."""
+    if not raw:
+        return []
+    from app.services import custom_fields as cf
+    ctx = cf.role_context(db, organization_id, auth.user_id, auth.role_override)
+    defs = {d.key: d for d in cf.definitions(db, organization_id)}
+    out = []
+    for item in raw:
+        key, sep, value = item.partition(":")
+        d = defs.get(key.strip())
+        if not sep or d is None or not d.is_searchable or not cf.can_view(d, ctx) or not value.strip():
+            raise HTTPException(status_code=422, detail={"code": "validation_error", "field": "custom_field",
+                                                         "message": f"Cannot filter on “{key}”"})
+        out.append((d.key, d.field_type, value.strip()))
+    return out
+
+
 def _validated_external_links(value):
     try:
         return normalize_external_links(value)
@@ -533,6 +551,7 @@ def list_collection_objects(
     include_location: bool = Query(False),
     sort_by: str = Query("created_at"),
     sort_order: str = Query("desc"),
+    custom_field: list[str] = Query(default=[], description="key:value filters on user-defined fields (repeatable)"),
     auth: AuthContext = Depends(require_permission(Permission.COLLECTIONS_VIEW)),
     db: Session = Depends(get_db),
 ):
@@ -544,8 +563,11 @@ def list_collection_objects(
     if sort_order not in ("asc", "desc"):
         sort_order = "desc"
 
-    # Try OpenSearch first when search term is provided
-    if search:
+    custom_filters = _parse_custom_field_filters(db, organization_id, auth, custom_field)
+
+    # Try OpenSearch first when search term is provided (user-defined field
+    # filters run on the database path).
+    if search and not custom_filters:
         from app.search.collections.service import (
             CollectionsSearchService,
             get_collections_search_service,
@@ -671,6 +693,16 @@ def list_collection_objects(
 
     if location_id:
         query = query.filter(CollectionObject.current_location_id == UUID(location_id))
+
+    for key, field_type, value in custom_filters:
+        if field_type == "multi_select":
+            query = query.filter(CollectionObject.custom_fields.contains({key: [value]}))
+        elif field_type in ("text", "long_text", "url"):
+            query = query.filter(CollectionObject.custom_fields[key].astext.ilike(f"%{escape_ilike(value)}%", escape="\\"))
+        elif field_type == "boolean":
+            query = query.filter(CollectionObject.custom_fields.contains({key: value.lower() in ("true", "yes", "1")}))
+        else:  # select, number, date: exact (case-insensitive for text forms)
+            query = query.filter(func.lower(CollectionObject.custom_fields[key].astext) == value.lower())
 
     # Always load linked entity counts for indicators
     query = query.options(

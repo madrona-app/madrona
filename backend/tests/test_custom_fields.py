@@ -117,3 +117,18 @@ def test_public_portal_shows_only_public_fields(setup, db_session):
         "braille_grade": "Grade 1", "donor_contact_notes": "private", "pages": 3}}))["object_id"]
     obj = db_session.get(CollectionObject, _uuid.UUID(oid))
     assert _public_custom_fields(obj) == [{"label": "Braille grade", "value": "Grade 1"}]
+
+
+def test_search_by_custom_field(setup):
+    admin, intern, org = setup
+    a = _j(_post(admin, _objs(org), {"object_number": "S.1", "object_name": "a", "custom_fields": {
+        "braille_grade": "Grade 2", "accessible_format": ["Braille", "Audio"], "donor_contact_notes": "secret"}}))["object_id"]
+    _post(admin, _objs(org), {"object_number": "S.2", "object_name": "b", "custom_fields": {"braille_grade": "Grade 1"}})
+    def nums(r):
+        body = _j(r)
+        return [o["object_number"] for o in body.get("items", body.get("objects", []))]
+    assert nums(admin.get(f"{_objs(org)}?custom_field=braille_grade:grade%202")) == ["S.1"]
+    assert nums(admin.get(f"{_objs(org)}?custom_field=accessible_format:Audio")) == ["S.1"]
+    # A field hidden from the caller cannot be used to probe values.
+    assert intern.get(f"{_objs(org)}?custom_field=donor_contact_notes:secret").status_code == 422
+    assert admin.get(f"{_objs(org)}?custom_field=nope:x").status_code == 422
