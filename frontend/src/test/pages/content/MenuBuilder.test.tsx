@@ -4,6 +4,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MenuBuilder } from '../../../pages/content/components/MenuBuilder';
 import * as contentApi from '../../../lib/api/content';
+import { checkA11y, formatViolations } from '../../a11y';
 
 vi.mock('../../../lib/api/content', () => ({
   getMenu: vi.fn(),
@@ -111,6 +112,38 @@ describe('MenuBuilder', () => {
 
     await waitFor(() => {
       expect(mockSaveMenu).toHaveBeenCalled();
+    });
+  });
+
+  describe('accessibility', () => {
+    const twoItems = {
+      data: {
+        items: [
+          { menu_item_id: 'mi-1', label: 'About', link_type: 'url', url: '/about', highlight: false },
+          { menu_item_id: 'mi-2', label: 'Visit', link_type: 'url', url: '/visit', highlight: true },
+        ],
+      },
+    } as never;
+
+    it('has no axe violations with items rendered', async () => {
+      mockGetMenu.mockResolvedValue(twoItems);
+      const { container } = renderBuilder();
+      await waitFor(() => screen.getByDisplayValue('Visit'));
+      const results = await checkA11y(container);
+      expect(results.violations, formatViolations(results)).toEqual([]);
+    });
+
+    it('reorders top-level items with move buttons (no drag needed)', async () => {
+      mockGetMenu.mockResolvedValue(twoItems);
+      renderBuilder();
+      await waitFor(() => screen.getByDisplayValue('Visit'));
+      expect(screen.getByRole('button', { name: 'Move About up' })).toBeDisabled();
+      fireEvent.click(screen.getByRole('button', { name: 'Move About down' }));
+      const labels = screen.getAllByRole('textbox', { name: 'Menu label' }).map(
+        (el) => (el as HTMLInputElement).value,
+      );
+      expect(labels).toEqual(['Visit', 'About']);
+      expect(screen.getByRole('button', { name: /Save Menu/i })).toBeEnabled();
     });
   });
 });

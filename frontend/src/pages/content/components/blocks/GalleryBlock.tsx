@@ -2,7 +2,7 @@
  * Gallery Block — CSS grid gallery of media assets.
  */
 
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { X, FolderOpen } from 'lucide-react';
 import { cn } from '../../../../lib/utils';
 import { MediaPickerModal } from '../../../../components/content/MediaPickerModal';
@@ -62,6 +62,7 @@ function serializeMediaIds(ids: string[]): string[] {
 // =============================================================================
 
 export function GalleryEditor({ content, onChange, organizationId }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const mediaIds = parseMediaIds(content);
   const columns = (content.columns as ColumnCount) || 3;
   const caption = (content.caption as string) || '';
@@ -74,10 +75,10 @@ export function GalleryEditor({ content, onChange, organizationId }: BlockEditor
 
   return (
     <div className="space-y-3">
-      <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+      <div role="group" aria-labelledby={`${fieldId}-images-group`}>
+        <span id={`${fieldId}-images-group`} className="block text-sm font-medium text-ink mb-1">
           Images
-        </label>
+        </span>
 
         {/* Thumbnail preview grid */}
         {mediaIds.length > 0 && (
@@ -115,10 +116,10 @@ export function GalleryEditor({ content, onChange, organizationId }: BlockEditor
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-columns`} className="block text-sm font-medium text-ink mb-1">
           Columns
         </label>
-        <select
+        <select id={`${fieldId}-columns`}
           value={columns}
           onChange={(e) => onChange({ ...content, columns: Number(e.target.value) })}
           className="input w-full text-sm"
@@ -132,10 +133,10 @@ export function GalleryEditor({ content, onChange, organizationId }: BlockEditor
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-caption`} className="block text-sm font-medium text-ink mb-1">
           Caption
         </label>
-        <input
+        <input id={`${fieldId}-caption`}
           type="text"
           value={caption}
           onChange={(e) => onChange({ ...content, caption: e.target.value })}

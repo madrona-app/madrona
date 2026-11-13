@@ -9,7 +9,7 @@
  * - Save triggers PUT to menu endpoint
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useId } from 'react';
 import Checkbox from '../../../components/Checkbox';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -170,6 +170,10 @@ interface SortableItemProps {
   onUpdateChild: (parentId: string, childId: string, updates: Partial<LocalMenuItem>) => void;
   onToggleExpand: (id: string) => void;
   onReorderChildren: (parentId: string, oldIndex: number, newIndex: number) => void;
+  /** Position among top-level items, for the keyboard move up/down buttons */
+  index?: number;
+  total?: number;
+  onMove?: (id: string, direction: -1 | 1) => void;
 }
 
 function SortableMenuItem({
@@ -186,7 +190,12 @@ function SortableMenuItem({
   onUpdateChild,
   onToggleExpand,
   onReorderChildren,
+  index = 0,
+  total = 1,
+  onMove,
 }: SortableItemProps) {
+  const fieldId = useId();
+  const itemName = item.label.trim() || 'untitled item';
   const [showImagePicker, setShowImagePicker] = useState(false);
   const [childImagePickerId, setChildImagePickerId] = useState<string | null>(null);
   const {
@@ -207,15 +216,42 @@ function SortableMenuItem({
   return (
     <div ref={setNodeRef} style={style} className={isChild ? 'ml-8' : ''}>
       <div className="flex items-start gap-2 p-3 bg-parchment border border-lichen rounded-lg mb-2">
-        {/* Drag handle */}
-        <button
-          {...attributes}
-          {...listeners}
-          className="mt-1 p-1 text-archive hover:text-ink cursor-grab active:cursor-grabbing"
-          aria-label="Drag to reorder"
-        >
-          <GripVertical size={16} />
-        </button>
+        {/* Drag handle (pointer, or Space + arrow keys via the dnd-kit keyboard sensor) */}
+        <div className="flex flex-col items-center gap-0.5">
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            className="mt-1 p-1 text-archive hover:text-ink cursor-grab active:cursor-grabbing"
+            aria-label={`Drag to reorder ${itemName}`}
+          >
+            <GripVertical size={16} aria-hidden="true" />
+          </button>
+          {onMove && (
+            <>
+              <button
+                type="button"
+                onClick={() => onMove(item.id, -1)}
+                disabled={index === 0}
+                className="p-0.5 text-archive hover:text-ink disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                aria-label={`Move ${itemName} up`}
+                title="Move up"
+              >
+                <ChevronUp size={12} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onMove(item.id, 1)}
+                disabled={index === total - 1}
+                className="p-0.5 text-archive hover:text-ink disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                aria-label={`Move ${itemName} down`}
+                title="Move down"
+              >
+                <ChevronDown size={12} aria-hidden="true" />
+              </button>
+            </>
+          )}
+        </div>
 
         {/* Main content */}
         <div className="flex-1 space-y-2">
@@ -225,6 +261,7 @@ function SortableMenuItem({
               type="text"
               value={item.label}
               onChange={(e) => onUpdate(item.id, { label: e.target.value })}
+              aria-label="Menu label"
               placeholder="Menu label"
               className="flex-1 border border-lichen rounded px-2 py-1.5 text-sm text-ink placeholder:text-archive/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
             />
@@ -232,6 +269,7 @@ function SortableMenuItem({
             {/* Link type selector */}
             <select
               value={item.link_type}
+              aria-label={`Link type for ${itemName}`}
               onChange={(e) => {
                 const lt = e.target.value as MenuItemLinkType;
                 onUpdate(item.id, {
@@ -251,11 +289,12 @@ function SortableMenuItem({
 
             {/* Delete */}
             <button
+              type="button"
               onClick={() => onRemove(item.id)}
               className="p-1.5 text-archive hover:text-semantic-error transition-colors"
-              aria-label="Remove item"
+              aria-label={`Remove ${itemName}`}
             >
-              <Trash2 size={14} />
+              <Trash2 size={14} aria-hidden="true" />
             </button>
           </div>
 
@@ -263,6 +302,7 @@ function SortableMenuItem({
           {item.link_type === 'page' && (
             <select
               value={item.page_id ?? ''}
+              aria-label={`Page for ${itemName}`}
               onChange={(e) => onUpdate(item.id, { page_id: e.target.value || null })}
               className="w-full border border-lichen rounded px-2 py-1.5 text-sm text-ink bg-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             >
@@ -337,8 +377,8 @@ function SortableMenuItem({
               placeholder="Description (mega menu)"
               className="flex-1 border border-lichen rounded px-2 py-1.5 text-xs text-ink placeholder:text-archive/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             />
-            <label className="inline-flex items-center gap-1 text-xs text-archive cursor-pointer select-none">
-              <Checkbox
+            <label htmlFor={`${fieldId}-highlight`} className="inline-flex items-center gap-1 text-xs text-archive cursor-pointer select-none">
+              <Checkbox id={`${fieldId}-highlight`}
                 checked={item.highlight}
                 onChange={(e) => onUpdate(item.id, { highlight: e.target.checked })}
               />
@@ -401,24 +441,26 @@ function SortableMenuItem({
               {/* Child reorder buttons */}
               <div className="flex flex-col gap-0.5 mt-1">
                 <button
+                  type="button"
                   onClick={() => {
                     if (childIndex > 0) onReorderChildren(item.id, childIndex, childIndex - 1);
                   }}
                   disabled={childIndex === 0}
                   className="p-0.5 text-archive hover:text-ink disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Move up"
+                  aria-label={`Move ${child.label.trim() || 'untitled child'} up`}
                 >
-                  <ChevronUp size={12} />
+                  <ChevronUp size={12} aria-hidden="true" />
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     if (childIndex < item.children.length - 1) onReorderChildren(item.id, childIndex, childIndex + 1);
                   }}
                   disabled={childIndex === item.children.length - 1}
                   className="p-0.5 text-archive hover:text-ink disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Move down"
+                  aria-label={`Move ${child.label.trim() || 'untitled child'} down`}
                 >
-                  <ChevronDown size={12} />
+                  <ChevronDown size={12} aria-hidden="true" />
                 </button>
               </div>
               <div className="flex-1 space-y-2">
@@ -427,11 +469,13 @@ function SortableMenuItem({
                     type="text"
                     value={child.label}
                     onChange={(e) => onUpdateChild(item.id, child.id, { label: e.target.value })}
+                    aria-label="Child menu label"
                     placeholder="Child label"
                     className="flex-1 border border-lichen rounded px-2 py-1.5 text-sm text-ink placeholder:text-archive/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
                   />
                   <select
                     value={child.link_type}
+                    aria-label={`Link type for ${child.label.trim() || 'untitled child'}`}
                     onChange={(e) => {
                       const lt = e.target.value as MenuItemLinkType;
                       onUpdateChild(item.id, child.id, {
@@ -447,11 +491,12 @@ function SortableMenuItem({
                     ))}
                   </select>
                   <button
+                    type="button"
                     onClick={() => onRemoveChild(item.id, child.id)}
                     className="p-1.5 text-archive hover:text-semantic-error transition-colors"
-                    aria-label="Remove child"
+                    aria-label={`Remove ${child.label.trim() || 'untitled child'}`}
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={14} aria-hidden="true" />
                   </button>
                 </div>
 
@@ -526,8 +571,8 @@ function SortableMenuItem({
                     placeholder="Description (mega menu)"
                     className="flex-1 border border-lichen rounded px-2 py-1.5 text-xs text-ink placeholder:text-archive/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                   />
-                  <label className="inline-flex items-center gap-1 text-xs text-archive cursor-pointer select-none">
-                    <Checkbox
+                  <label htmlFor={`${fieldId}-highlight-2-${childIndex}`} className="inline-flex items-center gap-1 text-xs text-archive cursor-pointer select-none">
+                    <Checkbox id={`${fieldId}-highlight-2-${childIndex}`}
                       checked={child.highlight ?? false}
                       onChange={(e) => onUpdateChild(item.id, child.id, { highlight: e.target.checked })}
                     />
@@ -761,6 +806,16 @@ export function MenuBuilder({ location, orgSlug }: MenuBuilderProps) {
     [],
   );
 
+  const moveItem = useCallback((id: string, direction: -1 | 1) => {
+    setItems((prev) => {
+      const oldIndex = prev.findIndex((i) => i.id === id);
+      const newIndex = oldIndex + direction;
+      if (oldIndex === -1 || newIndex < 0 || newIndex >= prev.length) return prev;
+      return arrayMove(prev, oldIndex, newIndex);
+    });
+    setIsDirty(true);
+  }, []);
+
   const reorderChildren = useCallback(
     (parentId: string, oldIndex: number, newIndex: number) => {
       setItems((prev) =>
@@ -795,10 +850,13 @@ export function MenuBuilder({ location, orgSlug }: MenuBuilderProps) {
           items={items.map((i) => i.id)}
           strategy={verticalListSortingStrategy}
         >
-          {items.map((item) => (
+          {items.map((item, index) => (
             <SortableMenuItem
               key={item.id}
               item={item}
+              index={index}
+              total={items.length}
+              onMove={moveItem}
               pages={pages}
               categories={categories}
               orgSlug={orgSlug}

@@ -2,7 +2,7 @@
  * Sponsor Grid Block — Grid of sponsor logos with optional links.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useId } from 'react';
 import { Plus, Trash2, ChevronDown, GripVertical } from 'lucide-react';
 import { cn } from '../../../../lib/utils';
 
@@ -32,6 +32,7 @@ const COLUMN_OPTIONS = [2, 3, 4, 6] as const;
 // =============================================================================
 
 export function SponsorGridEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const heading = (content.heading as string) || '';
   const logos = (content.logos as SponsorLogo[]) || [];
   const columns = (content.columns as number) ?? 4;
@@ -74,10 +75,10 @@ export function SponsorGridEditor({ content, onChange }: BlockEditorComponentPro
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-heading`} className="block text-sm font-medium text-ink mb-1">
           Heading
         </label>
-        <input
+        <input id={`${fieldId}-heading`}
           type="text"
           value={heading}
           onChange={(e) => onChange({ ...content, heading: e.target.value })}
@@ -87,14 +88,15 @@ export function SponsorGridEditor({ content, onChange }: BlockEditorComponentPro
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <span id={`${fieldId}-columns-group`} className="block text-sm font-medium text-ink mb-1">
           Columns
-        </label>
-        <div className="flex gap-2">
+        </span>
+        <div role="group" aria-labelledby={`${fieldId}-columns-group`} className="flex gap-2">
           {COLUMN_OPTIONS.map((n) => (
             <button
               key={n}
               type="button"
+              aria-pressed={columns === n}
               onClick={() => onChange({ ...content, columns: n })}
               className={cn(
                 'px-3 py-1.5 text-sm rounded-lg border transition-colors',
@@ -110,10 +112,10 @@ export function SponsorGridEditor({ content, onChange }: BlockEditorComponentPro
       </div>
 
       {/* Logos */}
-      <div>
-        <label className="block text-sm font-medium text-ink mb-2">
+      <div role="group" aria-labelledby={`${fieldId}-sponsor-logos-group`}>
+        <span id={`${fieldId}-sponsor-logos-group`} className="block text-sm font-medium text-ink mb-2">
           Sponsor Logos
-        </label>
+        </span>
 
         {logos.length === 0 && (
           <p className="text-sm text-archive italic">

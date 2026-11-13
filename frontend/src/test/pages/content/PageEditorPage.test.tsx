@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import PageEditorPage from '../../../pages/content/PageEditorPage';
 import * as contentApi from '../../../lib/api/content';
 import * as useAuthHook from '../../../hooks/useAuth';
+import { checkA11y, formatViolations } from '../../a11y';
 
 vi.mock('../../../lib/api/content', () => ({
   getPage: vi.fn(),
@@ -223,6 +224,19 @@ describe('PageEditorPage', () => {
       await waitFor(() => {
         expect(mockPublishPage).toHaveBeenCalledWith('org-1', 'p-1');
       });
+    });
+  });
+
+  describe('accessibility', () => {
+    it('has no axe violations in create mode', async () => {
+      const { container } = renderEditor(
+        '/organizations/org-1/content/pages/create',
+        '/organizations/:orgId/content/pages/create',
+      );
+      expect(screen.getByRole('group', { name: 'Featured Image' })).toBeInTheDocument();
+      expect(screen.getByRole('group', { name: 'OG Image' })).toBeInTheDocument();
+      const results = await checkA11y(container);
+      expect(results.violations, formatViolations(results)).toEqual([]);
     });
   });
 });

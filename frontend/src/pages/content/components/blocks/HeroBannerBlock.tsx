@@ -2,7 +2,7 @@
  * Hero Banner Block — Full-width banner with overlay text and optional CTA.
  */
 
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { FolderOpen } from 'lucide-react';
 import { MediaPickerModal } from '../../../../components/content/MediaPickerModal';
 import { ResponsiveImage } from '../../../../components/ui/ResponsiveImage';
@@ -27,6 +27,7 @@ interface BlockRendererComponentProps {
 // =============================================================================
 
 export function HeroBannerEditor({ content, onChange, organizationId }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const title = (content.title as string) || '';
   const subtitle = (content.subtitle as string) || '';
   const ctaText = (content.cta_text as string) || '';
@@ -37,10 +38,10 @@ export function HeroBannerEditor({ content, onChange, organizationId }: BlockEdi
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-title`} className="block text-sm font-medium text-ink mb-1">
           Title <span className="text-semantic-error">*</span>
         </label>
-        <input
+        <input id={`${fieldId}-title`}
           type="text"
           value={title}
           onChange={(e) => onChange({ ...content, title: e.target.value })}
@@ -50,10 +51,10 @@ export function HeroBannerEditor({ content, onChange, organizationId }: BlockEdi
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-subtitle`} className="block text-sm font-medium text-ink mb-1">
           Subtitle
         </label>
-        <input
+        <input id={`${fieldId}-subtitle`}
           type="text"
           value={subtitle}
           onChange={(e) => onChange({ ...content, subtitle: e.target.value })}
@@ -62,10 +63,10 @@ export function HeroBannerEditor({ content, onChange, organizationId }: BlockEdi
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+      <div role="group" aria-labelledby={`${fieldId}-background-image-group`}>
+        <span id={`${fieldId}-background-image-group`} className="block text-sm font-medium text-ink mb-1">
           Background Image
-        </label>
+        </span>
         {mediaId ? (
           <div className="flex items-center gap-3">
             <div className="w-20 h-12 rounded overflow-hidden bg-stone/30 shrink-0">
@@ -106,10 +107,10 @@ export function HeroBannerEditor({ content, onChange, organizationId }: BlockEdi
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-cta-button-text`} className="block text-sm font-medium text-ink mb-1">
             CTA Button Text
           </label>
-          <input
+          <input id={`${fieldId}-cta-button-text`}
             type="text"
             value={ctaText}
             onChange={(e) => onChange({ ...content, cta_text: e.target.value })}
@@ -118,10 +119,10 @@ export function HeroBannerEditor({ content, onChange, organizationId }: BlockEdi
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-cta-button-url`} className="block text-sm font-medium text-ink mb-1">
             CTA Button URL
           </label>
-          <input
+          <input id={`${fieldId}-cta-button-url`}
             type="text"
             value={ctaUrl}
             onChange={(e) => onChange({ ...content, cta_url: e.target.value })}

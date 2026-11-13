@@ -5,6 +5,7 @@
  * Renderer: fetches from public Gallery API and renders a preview card.
  */
 
+import { useId } from 'react';
 import Checkbox from '../../../../components/Checkbox';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -46,6 +47,7 @@ function formatDateRange(start?: string | null, end?: string | null): string | n
 // =============================================================================
 
 export function ExhibitionPreviewEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const exhibitionSlug = (content.exhibition_slug as string) || '';
   const showDates = (content.show_dates as boolean) ?? true;
   const showDescription = (content.show_description as boolean) ?? true;
@@ -53,10 +55,10 @@ export function ExhibitionPreviewEditor({ content, onChange }: BlockEditorCompon
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-exhibition-url-slug`} className="block text-sm font-medium text-ink mb-1">
           Exhibition URL Slug <span className="text-semantic-error">*</span>
         </label>
-        <input
+        <input id={`${fieldId}-exhibition-url-slug`}
           type="text"
           value={exhibitionSlug}
           onChange={(e) => onChange({ ...content, exhibition_slug: e.target.value })}
@@ -69,15 +71,15 @@ export function ExhibitionPreviewEditor({ content, onChange }: BlockEditorCompon
       </div>
 
       <div className="flex gap-4">
-        <label className="flex items-center gap-2 text-sm text-ink cursor-pointer">
-          <Checkbox
+        <label htmlFor={`${fieldId}-show-dates`} className="flex items-center gap-2 text-sm text-ink cursor-pointer">
+          <Checkbox id={`${fieldId}-show-dates`}
             checked={showDates}
             onChange={(e) => onChange({ ...content, show_dates: e.target.checked })}
           />
           Show Dates
         </label>
-        <label className="flex items-center gap-2 text-sm text-ink cursor-pointer">
-          <Checkbox
+        <label htmlFor={`${fieldId}-show-description`} className="flex items-center gap-2 text-sm text-ink cursor-pointer">
+          <Checkbox id={`${fieldId}-show-description`}
             checked={showDescription}
             onChange={(e) => onChange({ ...content, show_description: e.target.checked })}
           />

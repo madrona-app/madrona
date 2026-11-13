@@ -2,6 +2,7 @@
  * Venue Card Block — Display a venue by its slug (fetched from API).
  */
 
+import { useId } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, MapPin, Clock, Globe, Phone } from 'lucide-react';
@@ -25,15 +26,16 @@ interface BlockRendererComponentProps {
 // =============================================================================
 
 export function VenueCardEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const venueSlug = (content.venue_slug as string) || '';
 
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-venue-slug`} className="block text-sm font-medium text-ink mb-1">
           Venue Slug <span className="text-semantic-error">*</span>
         </label>
-        <input
+        <input id={`${fieldId}-venue-slug`}
           type="text"
           value={venueSlug}
           onChange={(e) => onChange({ ...content, venue_slug: e.target.value })}

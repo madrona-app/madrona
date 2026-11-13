@@ -8,7 +8,7 @@
  * to avoid deep nesting complexity.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useId } from 'react';
 import { cn } from '../../../../lib/utils';
 import { sanitizeRichHtml } from '../../../../lib/sanitize';
 
@@ -37,6 +37,7 @@ interface NestedBlock {
 // =============================================================================
 
 export function ColumnsEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const columnCount = (content.column_count as ColumnCount) ?? 2;
   const columnBlocks = (content.column_blocks as NestedBlock[][]) || initColumns(columnCount);
 
@@ -94,14 +95,15 @@ export function ColumnsEditor({ content, onChange }: BlockEditorComponentProps) 
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <span id={`${fieldId}-number-of-columns-group`} className="block text-sm font-medium text-ink mb-1">
           Number of Columns
-        </label>
-        <div className="flex gap-2">
+        </span>
+        <div role="group" aria-labelledby={`${fieldId}-number-of-columns-group`} className="flex gap-2">
           {([2, 3] as const).map((n) => (
             <button
               key={n}
               type="button"
+              aria-pressed={columnCount === n}
               onClick={() => setColumnCount(n)}
               className={cn(
                 'px-3 py-1.5 text-sm rounded-lg border transition-colors',

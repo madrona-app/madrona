@@ -2,7 +2,7 @@
  * Social Embed Block — Embed YouTube, Vimeo, Instagram, or TikTok content.
  */
 
-import { useMemo } from 'react';
+import { useMemo, useId } from 'react';
 
 // =============================================================================
 // Shared Types
@@ -31,6 +31,7 @@ const EMBED_TYPE_OPTIONS: { value: EmbedType; label: string }[] = [
 // =============================================================================
 
 export function SocialEmbedEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const embedType = (content.embed_type as EmbedType) || 'youtube';
   const embedUrl = (content.embed_url as string) || '';
   const caption = (content.caption as string) || '';
@@ -38,10 +39,10 @@ export function SocialEmbedEditor({ content, onChange }: BlockEditorComponentPro
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-platform`} className="block text-sm font-medium text-ink mb-1">
           Platform
         </label>
-        <select
+        <select id={`${fieldId}-platform`}
           value={embedType}
           onChange={(e) => onChange({ ...content, embed_type: e.target.value })}
           className="border border-lichen rounded-lg px-3 py-2 text-sm text-ink focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -55,10 +56,10 @@ export function SocialEmbedEditor({ content, onChange }: BlockEditorComponentPro
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-embed-url`} className="block text-sm font-medium text-ink mb-1">
           Embed URL <span className="text-semantic-error">*</span>
         </label>
-        <input
+        <input id={`${fieldId}-embed-url`}
           type="text"
           value={embedUrl}
           onChange={(e) => onChange({ ...content, embed_url: e.target.value })}
@@ -76,10 +77,10 @@ export function SocialEmbedEditor({ content, onChange }: BlockEditorComponentPro
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-caption`} className="block text-sm font-medium text-ink mb-1">
           Caption
         </label>
-        <input
+        <input id={`${fieldId}-caption`}
           type="text"
           value={caption}
           onChange={(e) => onChange({ ...content, caption: e.target.value })}

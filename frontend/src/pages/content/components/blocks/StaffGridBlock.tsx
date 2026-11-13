@@ -5,6 +5,7 @@
  * Renderer: fetches from public staff API and renders a card grid.
  */
 
+import { useId } from 'react';
 import Checkbox from '../../../../components/Checkbox';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -32,6 +33,7 @@ const COLUMN_OPTIONS = [2, 3, 4] as const;
 // =============================================================================
 
 export function StaffGridEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const constituentIds = (content.constituent_ids as string[]) || [];
   const departmentFilter = (content.department_filter as string) || '';
   const columns = (content.columns as number) ?? 3;
@@ -40,10 +42,10 @@ export function StaffGridEditor({ content, onChange }: BlockEditorComponentProps
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-department-filter`} className="block text-sm font-medium text-ink mb-1">
           Department Filter
         </label>
-        <input
+        <input id={`${fieldId}-department-filter`}
           type="text"
           value={departmentFilter}
           onChange={(e) => onChange({ ...content, department_filter: e.target.value })}
@@ -56,10 +58,10 @@ export function StaffGridEditor({ content, onChange }: BlockEditorComponentProps
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-specific-people-optional`} className="block text-sm font-medium text-ink mb-1">
           Specific People (optional)
         </label>
-        <textarea
+        <textarea id={`${fieldId}-specific-people-optional`}
           value={constituentIds.join('\n')}
           onChange={(e) => {
             const ids = e.target.value
@@ -79,14 +81,15 @@ export function StaffGridEditor({ content, onChange }: BlockEditorComponentProps
 
       <div className="flex items-end gap-4">
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <span id={`${fieldId}-columns-group`} className="block text-sm font-medium text-ink mb-1">
             Columns
-          </label>
-          <div className="flex gap-2">
+          </span>
+          <div role="group" aria-labelledby={`${fieldId}-columns-group`} className="flex gap-2">
             {COLUMN_OPTIONS.map((n) => (
               <button
                 key={n}
                 type="button"
+                aria-pressed={columns === n}
                 onClick={() => onChange({ ...content, columns: n })}
                 className={cn(
                   'px-3 py-1.5 text-sm rounded-lg border transition-colors',
@@ -101,8 +104,8 @@ export function StaffGridEditor({ content, onChange }: BlockEditorComponentProps
           </div>
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-ink cursor-pointer pb-1">
-          <Checkbox
+        <label htmlFor={`${fieldId}-show-biography`} className="flex items-center gap-2 text-sm text-ink cursor-pointer pb-1">
+          <Checkbox id={`${fieldId}-show-biography`}
             checked={showBio}
             onChange={(e) => onChange({ ...content, show_bio: e.target.checked })}
           />

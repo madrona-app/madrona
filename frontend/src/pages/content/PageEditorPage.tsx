@@ -8,7 +8,7 @@
  * Top bar: title, status badge, Save Draft, Publish / Unpublish
  */
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useId, useRef } from 'react';
 import Checkbox from '../../components/Checkbox';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -81,6 +81,7 @@ const TEMPLATE_OPTIONS: Array<{ value: PageTemplate; label: string }> = [
 // =============================================================================
 
 export default function PageEditorPage() {
+  const fieldId = useId();
   const { orgId, pageId } = useParams<{ orgId: string; pageId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -111,6 +112,11 @@ export default function PageEditorPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showPublishMenu, setShowPublishMenu] = useState(false);
+  const publishMenuTriggerRef = useRef<HTMLButtonElement>(null);
+  const publishMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (showPublishMenu) publishMenuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+  }, [showPublishMenu]);
   const [showSchedulePicker, setShowSchedulePicker] = useState(false);
   const [showFeaturedImagePicker, setShowFeaturedImagePicker] = useState(false);
   const [showOgImagePicker, setShowOgImagePicker] = useState(false);
@@ -577,40 +583,80 @@ export default function PageEditorPage() {
                   Publish
                 </button>
                 <button
+                  ref={publishMenuTriggerRef}
+                  type="button"
                   onClick={() => setShowPublishMenu((prev) => !prev)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      setShowPublishMenu(true);
+                    }
+                  }}
                   disabled={!title.trim() || isAnyPending}
+                  aria-label="More publish options"
+                  aria-haspopup="menu"
+                  aria-expanded={showPublishMenu}
                   className="inline-flex items-center px-2 py-2 text-sm bg-bark text-parchment rounded-r-lg border-l border-parchment/20 hover:bg-copper-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  <ChevronDown size={14} />
+                  <ChevronDown size={14} aria-hidden="true" />
                 </button>
               </div>
               {showPublishMenu && (
-                <div className="absolute right-0 mt-1 w-56 bg-parchment border border-lichen rounded-lg shadow-lg z-50">
+                <div
+                  role="menu"
+                  aria-label="Publish options"
+                  tabIndex={-1}
+                  ref={publishMenuRef}
+                  onKeyDown={(e) => {
+                    const items = Array.from(
+                      e.currentTarget.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+                    );
+                    const idx = items.indexOf(document.activeElement as HTMLElement);
+                    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      const step = e.key === 'ArrowDown' ? 1 : -1;
+                      items[(idx + step + items.length) % items.length]?.focus();
+                    } else if (e.key === 'Escape') {
+                      e.preventDefault();
+                      setShowPublishMenu(false);
+                      publishMenuTriggerRef.current?.focus();
+                    } else if (e.key === 'Tab') {
+                      setShowPublishMenu(false);
+                    }
+                  }}
+                  className="absolute right-0 mt-1 w-56 bg-parchment border border-lichen rounded-lg shadow-lg z-50"
+                >
                   <button
+                    type="button"
+                    role="menuitem"
+                    tabIndex={-1}
                     onClick={() => {
                       setShowPublishMenu(false);
                       handlePublish();
                     }}
                     className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-ink hover:bg-stone/50 transition-colors rounded-t-lg"
                   >
-                    <Globe size={14} />
+                    <Globe size={14} aria-hidden="true" />
                     Publish Now
                   </button>
                   <button
+                    type="button"
+                    role="menuitem"
+                    tabIndex={-1}
                     onClick={() => {
                       setShowPublishMenu(false);
                       setShowSchedulePicker(true);
                     }}
                     className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-ink hover:bg-stone/50 transition-colors rounded-b-lg"
                   >
-                    <Clock size={14} />
+                    <Clock size={14} aria-hidden="true" />
                     Schedule...
                   </button>
                 </div>
               )}
               {showSchedulePicker && (
                 <div className="absolute right-0 mt-1 w-72 bg-parchment border border-lichen rounded-lg shadow-lg z-50 p-4">
-                  <h4 className="text-sm font-medium text-ink mb-3">Schedule Publication</h4>
+                  <label htmlFor="schedule-datetime" className="block text-sm font-medium text-ink mb-3">Schedule Publication</label>
                   <input
                     type="datetime-local"
                     defaultValue={publishAt ? new Date(publishAt).toISOString().slice(0, 16) : ''}
@@ -661,9 +707,9 @@ export default function PageEditorPage() {
         <div className="lg:w-1/3 shrink-0 space-y-6">
           {/* Title */}
           <div className="bg-parchment border border-lichen rounded-lg p-4 space-y-4">
-            <h3 className="text-sm font-semibold text-ink uppercase tracking-wide">
+            <h2 className="text-sm font-semibold text-ink uppercase tracking-wide">
               {entityLabel} Settings
-            </h3>
+            </h2>
 
             <div>
               <label
@@ -744,10 +790,10 @@ export default function PageEditorPage() {
             </div>
 
             {/* Featured Image */}
-            <div>
-              <label className="block text-xs font-medium text-ink mb-1">
+            <div role="group" aria-labelledby={`${fieldId}-featured-image-group`}>
+              <span id={`${fieldId}-featured-image-group`} className="block text-xs font-medium text-ink mb-1">
                 Featured Image
-              </label>
+              </span>
               {featuredImageMediaId ? (
                 <div className="flex items-start gap-3">
                   <div className="w-20 h-20 rounded-lg overflow-hidden bg-stone/30 shrink-0">
@@ -789,9 +835,9 @@ export default function PageEditorPage() {
 
           {/* SEO section */}
           <div className="bg-parchment border border-lichen rounded-lg p-4 space-y-4">
-            <h3 className="text-sm font-semibold text-ink uppercase tracking-wide">
+            <h2 className="text-sm font-semibold text-ink uppercase tracking-wide">
               SEO
-            </h3>
+            </h2>
 
             <div>
               <label
@@ -834,10 +880,10 @@ export default function PageEditorPage() {
             </div>
 
             {/* OG Image Override */}
-            <div>
-              <label className="block text-xs font-medium text-ink mb-1">
+            <div role="group" aria-labelledby={`${fieldId}-og-image-group`}>
+              <span id={`${fieldId}-og-image-group`} className="block text-xs font-medium text-ink mb-1">
                 OG Image
-              </label>
+              </span>
               <p className="text-xs text-archive mb-2">
                 Social sharing image. Falls back to featured image if not set.
               </p>
@@ -846,7 +892,7 @@ export default function PageEditorPage() {
                   <div className="w-16 h-10 rounded overflow-hidden bg-stone/30 shrink-0">
                     <img
                       src={`/api/media/${ogImageMediaId}/thumbnail?size=200`}
-                      alt="OG image"
+                      alt="Current social sharing selection"
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -883,9 +929,9 @@ export default function PageEditorPage() {
           {/* Parent Page (pages only) */}
           {!isPost && (
             <div className="bg-parchment border border-lichen rounded-lg p-4 space-y-4">
-              <h3 className="text-sm font-semibold text-ink uppercase tracking-wide">
+              <h2 className="text-sm font-semibold text-ink uppercase tracking-wide">
                 Page Hierarchy
-              </h3>
+              </h2>
               <div>
                 <label
                   htmlFor="parent-page"
@@ -913,9 +959,9 @@ export default function PageEditorPage() {
           {/* Categories (posts only) */}
           {isPost && categories.length > 0 && (
             <div className="bg-parchment border border-lichen rounded-lg p-4 space-y-4">
-              <h3 className="text-sm font-semibold text-ink uppercase tracking-wide">
+              <h2 className="text-sm font-semibold text-ink uppercase tracking-wide">
                 Categories
-              </h3>
+              </h2>
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {categories.map((cat) => (
                   <label
@@ -936,9 +982,9 @@ export default function PageEditorPage() {
           {/* Danger zone (edit mode only) */}
           {isEditMode && savedPageId && (
             <div className="bg-parchment border border-semantic-error/20 rounded-lg p-4 space-y-3">
-              <h3 className="text-sm font-semibold text-semantic-error uppercase tracking-wide">
+              <h2 className="text-sm font-semibold text-semantic-error uppercase tracking-wide">
                 Danger Zone
-              </h3>
+              </h2>
               {showDeleteConfirm ? (
                 <div className="space-y-3">
                   <p className="text-sm text-ink">
