@@ -42,6 +42,7 @@ import {
 } from '../../lib/api';
 import { LocationPickerButton } from '../collections/LocationPickerModal';
 import { ModalPortal } from '../ModalPortal';
+import { useStableCallback } from '../workspace/useStableCallback';
 
 interface BulkActionDialogProps {
   isOpen: boolean;
@@ -52,6 +53,17 @@ interface BulkActionDialogProps {
 }
 
 type Step = 'select' | 'configure' | 'preview' | 'validate' | 'execute' | 'results';
+
+const STEPS: Step[] = ['select', 'configure', 'preview', 'validate', 'execute', 'results'];
+
+const STEP_LABELS: Record<Step, string> = {
+  select: 'Select an action',
+  configure: 'Configure',
+  preview: 'Preview',
+  validate: 'Validate',
+  execute: 'Confirm',
+  results: 'Results',
+};
 
 const actionIcons: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   record_movement: MapPin,
@@ -77,9 +89,10 @@ export default function BulkActionDialog({
   const { activeOrganization } = useOrganization();
   const orgId = activeOrganization?.organization_id;
 
+  const stableOnClose = useStableCallback(onClose);
   const { modalRef, titleId, descriptionId } = useAccessibleModal({
     isOpen,
-    onClose,
+    onClose: stableOnClose,
     titlePrefix: 'bulk-action-dialog',
   });
 
@@ -191,15 +204,13 @@ export default function BulkActionDialog({
 
   return (
     <ModalPortal>
-    <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center">
+      {/* Backdrop: mouse dismiss only; Escape closes via useAccessibleModal */}
+      <div aria-hidden="true" className="absolute inset-0 bg-ink/50" onClick={onClose} />
       <div
         ref={modalRef}
         {...getModalAriaProps(titleId, descriptionId)}
-        onClick={(e) => e.stopPropagation()}
-        className="bg-parchment rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col"
+        className="relative bg-parchment rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col"
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-lichen">
@@ -213,15 +224,23 @@ export default function BulkActionDialog({
                 {workspaceName} ({objectCount} objects)
               </p>
             </div>
-            <button onClick={onClose} className="p-1 text-archive hover:text-ink rounded">
-              <X size={20} />
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close bulk action dialog"
+              className="p-1 text-archive hover:text-ink rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+            >
+              <X size={20} aria-hidden="true" />
             </button>
           </div>
         </div>
 
-        {/* Progress indicator */}
-        <div className="flex items-center gap-1 px-6 py-2 bg-stone/30 border-b border-lichen">
-          {(['select', 'configure', 'preview', 'validate', 'execute', 'results'] as Step[]).map(
+        {/* Progress indicator (visual dots; the step is announced as text) */}
+        <p className="sr-only" aria-live="polite">
+          Step {STEPS.indexOf(step) + 1} of {STEPS.length}: {STEP_LABELS[step]}
+        </p>
+        <div aria-hidden="true" className="flex items-center gap-1 px-6 py-2 bg-stone/30 border-b border-lichen">
+          {STEPS.map(
             (s, idx) => (
               <div key={s} className="flex items-center">
                 <div
@@ -229,9 +248,7 @@ export default function BulkActionDialog({
                     'w-2 h-2 rounded-full',
                     step === s
                       ? 'bg-bark'
-                      : ['select', 'configure', 'preview', 'validate', 'execute', 'results'].indexOf(
-                          step
-                        ) > idx
+                      : STEPS.indexOf(step) > idx
                       ? 'bg-bark/50'
                       : 'bg-lichen'
                   )}
@@ -245,8 +262,11 @@ export default function BulkActionDialog({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {error && (
-            <div className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-sm text-sm text-semantic-error flex items-start gap-2">
-              <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
+            <div
+              role="alert"
+              className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-sm text-sm text-semantic-error flex items-start gap-2"
+            >
+              <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" aria-hidden="true" />
               {error}
             </div>
           )}
@@ -267,18 +287,19 @@ export default function BulkActionDialog({
                     const Icon = actionIcons[action.key] || Zap;
                     return (
                       <button
+                        type="button"
                         key={action.key}
                         onClick={() => handleSelectAction(action)}
                         className="w-full flex items-center gap-3 p-4 border border-lichen rounded-sm text-left hover:border-bark/50 hover:bg-bark/5 transition-colors"
                       >
                         <div className="p-2 bg-bark/10 rounded-sm">
-                          <Icon size={20} className="text-bark" />
+                          <Icon size={20} className="text-bark" aria-hidden="true" />
                         </div>
                         <div className="flex-1">
                           <div className="font-medium text-ink">{action.label}</div>
                           <div className="text-sm text-archive">{action.description}</div>
                         </div>
-                        <ChevronRight size={16} className="text-archive" />
+                        <ChevronRight size={16} className="text-archive" aria-hidden="true" />
                       </button>
                     );
                   })}
@@ -294,10 +315,15 @@ export default function BulkActionDialog({
 
               {selectedAction.key === 'record_movement' && (
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
-                      Destination Location <span className="text-semantic-error">*</span>
-                    </label>
+                  {/* LocationPickerButton takes no id, so the visible label names a group around it */}
+                  <div role="group" aria-labelledby="bulk-action-destination-label">
+                    <span
+                      id="bulk-action-destination-label"
+                      className="block text-sm font-medium text-ink mb-1"
+                    >
+                      Destination Location <span className="text-semantic-error" aria-hidden="true">*</span>
+                      <span className="sr-only"> (required)</span>
+                    </span>
                     <LocationPickerButton
                       organizationId={orgId!}
                       value={(actionParams.to_location_id as string) || null}
@@ -308,10 +334,12 @@ export default function BulkActionDialog({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
-                      Reason <span className="text-semantic-error">*</span>
+                    <label htmlFor="bulk-action-reason-2" className="block text-sm font-medium text-ink mb-1">
+                      Reason <span className="text-semantic-error" aria-hidden="true">*</span>
                     </label>
                     <select
+                      id="bulk-action-reason-2"
+                      aria-required="true"
                       value={(actionParams.reason as string) || ''}
                       onChange={(e) => setActionParams({ ...actionParams, reason: e.target.value })}
                       className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -327,8 +355,9 @@ export default function BulkActionDialog({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">Note (optional)</label>
+                    <label htmlFor="bulk-action-note" className="block text-sm font-medium text-ink mb-1">Note (optional)</label>
                     <textarea
+                      id="bulk-action-note"
                       value={(actionParams.movement_note as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, movement_note: e.target.value })
@@ -344,10 +373,12 @@ export default function BulkActionDialog({
               {selectedAction.key === 'create_condition_report' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
-                      Report Type <span className="text-semantic-error">*</span>
+                    <label htmlFor="bulk-action-report-type" className="block text-sm font-medium text-ink mb-1">
+                      Report Type <span className="text-semantic-error" aria-hidden="true">*</span>
                     </label>
                     <select
+                      id="bulk-action-report-type"
+                      aria-required="true"
                       value={(actionParams.report_type as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, report_type: e.target.value })
@@ -367,10 +398,11 @@ export default function BulkActionDialog({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
+                    <label htmlFor="bulk-action-overall-condition" className="block text-sm font-medium text-ink mb-1">
                       Overall Condition (optional)
                     </label>
                     <select
+                      id="bulk-action-overall-condition"
                       value={(actionParams.overall_condition as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, overall_condition: e.target.value })
@@ -386,10 +418,11 @@ export default function BulkActionDialog({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
+                    <label htmlFor="bulk-action-summary" className="block text-sm font-medium text-ink mb-1">
                       Summary (optional)
                     </label>
                     <textarea
+                      id="bulk-action-summary"
                       value={(actionParams.condition_summary as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, condition_summary: e.target.value })
@@ -405,10 +438,12 @@ export default function BulkActionDialog({
               {selectedAction.key === 'report_incident' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
-                      Incident Type <span className="text-semantic-error">*</span>
+                    <label htmlFor="bulk-action-incident-type" className="block text-sm font-medium text-ink mb-1">
+                      Incident Type <span className="text-semantic-error" aria-hidden="true">*</span>
                     </label>
                     <select
+                      id="bulk-action-incident-type"
+                      aria-required="true"
                       value={(actionParams.incident_type as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, incident_type: e.target.value })
@@ -428,10 +463,12 @@ export default function BulkActionDialog({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
-                      Description <span className="text-semantic-error">*</span>
+                    <label htmlFor="bulk-action-description-2" className="block text-sm font-medium text-ink mb-1">
+                      Description <span className="text-semantic-error" aria-hidden="true">*</span>
                     </label>
                     <textarea
+                      id="bulk-action-description-2"
+                      aria-required="true"
                       value={(actionParams.incident_description as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, incident_description: e.target.value })
@@ -447,10 +484,12 @@ export default function BulkActionDialog({
               {selectedAction.key === 'set_cataloging_status' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
-                      Cataloging Status <span className="text-semantic-error">*</span>
+                    <label htmlFor="bulk-action-cataloging-status" className="block text-sm font-medium text-ink mb-1">
+                      Cataloging Status <span className="text-semantic-error" aria-hidden="true">*</span>
                     </label>
                     <select
+                      id="bulk-action-cataloging-status"
+                      aria-required="true"
                       value={(actionParams.cataloging_status as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, cataloging_status: e.target.value })
@@ -466,8 +505,9 @@ export default function BulkActionDialog({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">Notes (optional)</label>
+                    <label htmlFor="bulk-action-notes-3" className="block text-sm font-medium text-ink mb-1">Notes (optional)</label>
                     <textarea
+                      id="bulk-action-notes-3"
                       value={(actionParams.cataloging_notes as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, cataloging_notes: e.target.value })
@@ -483,10 +523,12 @@ export default function BulkActionDialog({
               {selectedAction.key === 'set_object_status' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
-                      Object Status <span className="text-semantic-error">*</span>
+                    <label htmlFor="bulk-action-object-status" className="block text-sm font-medium text-ink mb-1">
+                      Object Status <span className="text-semantic-error" aria-hidden="true">*</span>
                     </label>
                     <select
+                      id="bulk-action-object-status"
+                      aria-required="true"
                       value={(actionParams.object_status as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, object_status: e.target.value })
@@ -502,8 +544,9 @@ export default function BulkActionDialog({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">Status Notes (optional)</label>
+                    <label htmlFor="bulk-action-status-notes" className="block text-sm font-medium text-ink mb-1">Status Notes (optional)</label>
                     <textarea
+                      id="bulk-action-status-notes"
                       value={(actionParams.status_notes as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, status_notes: e.target.value })
@@ -542,10 +585,12 @@ export default function BulkActionDialog({
               {selectedAction.key === 'add_to_loan' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
-                      Loan ID <span className="text-semantic-error">*</span>
+                    <label htmlFor="bulk-action-loan-id" className="block text-sm font-medium text-ink mb-1">
+                      Loan ID <span className="text-semantic-error" aria-hidden="true">*</span>
                     </label>
                     <input
+                      id="bulk-action-loan-id"
+                      aria-required="true"
                       type="text"
                       value={(actionParams.loan_id as string) || ''}
                       onChange={(e) =>
@@ -557,8 +602,9 @@ export default function BulkActionDialog({
                     <p className="text-xs text-archive mt-1">Enter the ID of an existing outgoing loan</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">Notes (optional)</label>
+                    <label htmlFor="bulk-action-notes-2" className="block text-sm font-medium text-ink mb-1">Notes (optional)</label>
                     <textarea
+                      id="bulk-action-notes-2"
                       value={(actionParams.loan_notes as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, loan_notes: e.target.value })
@@ -574,10 +620,12 @@ export default function BulkActionDialog({
               {selectedAction.key === 'set_loan_availability' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
-                      Loan Availability <span className="text-semantic-error">*</span>
+                    <label htmlFor="bulk-action-loan-availability" className="block text-sm font-medium text-ink mb-1">
+                      Loan Availability <span className="text-semantic-error" aria-hidden="true">*</span>
                     </label>
                     <select
+                      id="bulk-action-loan-availability"
+                      aria-required="true"
                       value={(actionParams.loan_availability as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, loan_availability: e.target.value })
@@ -592,8 +640,9 @@ export default function BulkActionDialog({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">Reason (optional)</label>
+                    <label htmlFor="bulk-action-reason" className="block text-sm font-medium text-ink mb-1">Reason (optional)</label>
                     <textarea
+                      id="bulk-action-reason"
                       value={(actionParams.availability_reason as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, availability_reason: e.target.value })
@@ -604,8 +653,9 @@ export default function BulkActionDialog({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">Review Date (optional)</label>
+                    <label htmlFor="bulk-action-review-date" className="block text-sm font-medium text-ink mb-1">Review Date (optional)</label>
                     <input
+                      id="bulk-action-review-date"
                       type="date"
                       value={(actionParams.review_date as string) || ''}
                       onChange={(e) =>
@@ -620,10 +670,12 @@ export default function BulkActionDialog({
               {selectedAction.key === 'schedule_condition_check' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
-                      Check Type <span className="text-semantic-error">*</span>
+                    <label htmlFor="bulk-action-check-type" className="block text-sm font-medium text-ink mb-1">
+                      Check Type <span className="text-semantic-error" aria-hidden="true">*</span>
                     </label>
                     <select
+                      id="bulk-action-check-type"
+                      aria-required="true"
                       value={(actionParams.check_type as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, check_type: e.target.value })
@@ -639,10 +691,12 @@ export default function BulkActionDialog({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
-                      Due Date <span className="text-semantic-error">*</span>
+                    <label htmlFor="bulk-action-due-date" className="block text-sm font-medium text-ink mb-1">
+                      Due Date <span className="text-semantic-error" aria-hidden="true">*</span>
                     </label>
                     <input
+                      id="bulk-action-due-date"
+                      aria-required="true"
                       type="date"
                       value={(actionParams.due_date as string) || ''}
                       onChange={(e) =>
@@ -652,8 +706,9 @@ export default function BulkActionDialog({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">Priority</label>
+                    <label htmlFor="bulk-action-priority" className="block text-sm font-medium text-ink mb-1">Priority</label>
                     <select
+                      id="bulk-action-priority"
                       value={(actionParams.priority as string) || 'normal'}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, priority: e.target.value })
@@ -667,8 +722,9 @@ export default function BulkActionDialog({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">Notes (optional)</label>
+                    <label htmlFor="bulk-action-notes" className="block text-sm font-medium text-ink mb-1">Notes (optional)</label>
                     <textarea
+                      id="bulk-action-notes"
                       value={(actionParams.notes as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, notes: e.target.value })
@@ -684,10 +740,12 @@ export default function BulkActionDialog({
               {selectedAction.key === 'flag_for_conservation' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
-                      Urgency <span className="text-semantic-error">*</span>
+                    <label htmlFor="bulk-action-urgency" className="block text-sm font-medium text-ink mb-1">
+                      Urgency <span className="text-semantic-error" aria-hidden="true">*</span>
                     </label>
                     <select
+                      id="bulk-action-urgency"
+                      aria-required="true"
                       value={(actionParams.urgency as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, urgency: e.target.value })
@@ -702,10 +760,12 @@ export default function BulkActionDialog({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
-                      Concern Type <span className="text-semantic-error">*</span>
+                    <label htmlFor="bulk-action-concern-type" className="block text-sm font-medium text-ink mb-1">
+                      Concern Type <span className="text-semantic-error" aria-hidden="true">*</span>
                     </label>
                     <select
+                      id="bulk-action-concern-type"
+                      aria-required="true"
                       value={(actionParams.concern_type as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, concern_type: e.target.value })
@@ -725,8 +785,9 @@ export default function BulkActionDialog({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">Description (optional)</label>
+                    <label htmlFor="bulk-action-description" className="block text-sm font-medium text-ink mb-1">Description (optional)</label>
                     <textarea
+                      id="bulk-action-description"
                       value={(actionParams.concern_description as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, concern_description: e.target.value })
@@ -741,10 +802,11 @@ export default function BulkActionDialog({
 
               {selectedAction.key === 'set_handling_requirements' && (
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
-                      Handling Requirements <span className="text-semantic-error">*</span>
-                    </label>
+                  <fieldset>
+                    <legend className="block text-sm font-medium text-ink mb-1">
+                      Handling Requirements <span className="text-semantic-error" aria-hidden="true">*</span>
+                      <span className="sr-only"> (required)</span>
+                    </legend>
                     <div className="space-y-2">
                       {[
                         { value: 'gloves_required', label: 'Gloves Required' },
@@ -756,8 +818,13 @@ export default function BulkActionDialog({
                         { value: 'no_vibration', label: 'Avoid Vibration' },
                         { value: 'conservation_mount', label: 'Use Conservation Mount' },
                       ].map((req) => (
-                        <label key={req.value} className="flex items-center gap-2">
+                        <label
+                          key={req.value}
+                          htmlFor={`bulk-action-handling-${req.value}`}
+                          className="flex items-center gap-2"
+                        >
                           <Checkbox
+                            id={`bulk-action-handling-${req.value}`}
                             checked={(actionParams.handling_requirements as string[] || []).includes(req.value)}
                             onChange={(e) => {
                               const current = (actionParams.handling_requirements as string[]) || [];
@@ -772,10 +839,11 @@ export default function BulkActionDialog({
                         </label>
                       ))}
                     </div>
-                  </div>
+                  </fieldset>
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">Additional Notes (optional)</label>
+                    <label htmlFor="bulk-action-additional-notes" className="block text-sm font-medium text-ink mb-1">Additional Notes (optional)</label>
                     <textarea
+                      id="bulk-action-additional-notes"
                       value={(actionParams.handling_notes as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, handling_notes: e.target.value })
@@ -804,7 +872,13 @@ export default function BulkActionDialog({
                   </span>
                 )}
               </div>
-              <div className="max-h-64 overflow-y-auto border border-lichen rounded-sm">
+              <div
+                role="region"
+                aria-label="Objects to be affected"
+                // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- scrollable region must take keyboard focus to scroll
+                tabIndex={0}
+                className="max-h-64 overflow-y-auto border border-lichen rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30"
+              >
                 {previewData.objects.map((obj) => (
                   <div
                     key={obj.object_id}
@@ -866,7 +940,13 @@ export default function BulkActionDialog({
                   <h4 className="text-xs font-medium text-archive uppercase mb-2">
                     Blocked Objects
                   </h4>
-                  <div className="max-h-32 overflow-y-auto border border-lichen rounded-sm">
+                  <div
+                role="region"
+                aria-label="Blocked objects"
+                // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- scrollable region must take keyboard focus to scroll
+                tabIndex={0}
+                className="max-h-32 overflow-y-auto border border-lichen rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30"
+              >
                     {validateData.blocked.map((obj) => (
                       <div
                         key={obj.object_id}
@@ -881,8 +961,9 @@ export default function BulkActionDialog({
                       </div>
                     ))}
                   </div>
-                  <label className="flex items-center gap-2 mt-2 text-sm">
+                  <label htmlFor="bulk-action-skip-blocked" className="flex items-center gap-2 mt-2 text-sm">
                     <Checkbox
+                      id="bulk-action-skip-blocked"
                       checked={skipBlocked}
                       onChange={(e) => setSkipBlocked(e.target.checked)}
                     />
@@ -938,7 +1019,13 @@ export default function BulkActionDialog({
               </div>
 
               <h4 className="text-xs font-medium text-archive uppercase mb-2">Results</h4>
-              <div className="max-h-48 overflow-y-auto border border-lichen rounded-sm">
+              <div
+                role="region"
+                aria-label="Results by object"
+                // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- scrollable region must take keyboard focus to scroll
+                tabIndex={0}
+                className="max-h-48 overflow-y-auto border border-lichen rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30"
+              >
                 {executeData.results.map((result) => (
                   <div
                     key={result.object_id}

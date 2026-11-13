@@ -16,6 +16,8 @@ import { cn } from '../../lib/utils';
 import { searchCollections, addWorkspaceItems } from '../../lib/api';
 import type { CollectionsSearchHit } from '../../lib/schemas';
 import { ModalPortal } from '../ModalPortal';
+import { useFocusWhen } from '../workspace/useFocusWhen';
+import { useStableCallback } from '../workspace/useStableCallback';
 
 interface SearchAndAddObjectsDialogProps {
   isOpen: boolean;
@@ -36,11 +38,14 @@ export default function SearchAndAddObjectsDialog({
   const orgId = activeOrganization?.organization_id;
   const queryClient = useQueryClient();
 
+  const stableOnClose = useStableCallback(onClose);
   const { modalRef, titleId, descriptionId } = useAccessibleModal({
     isOpen,
-    onClose,
+    onClose: stableOnClose,
     titlePrefix: 'search-add-objects-dialog',
   });
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  useFocusWhen(searchInputRef, isOpen);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -136,14 +141,14 @@ export default function SearchAndAddObjectsDialog({
   return (
     <ModalPortal>
     <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
-      onClick={handleClose}
+      className="fixed inset-0 z-[1000] flex items-center justify-center"
     >
+      {/* Backdrop: mouse dismiss only; Escape closes the dialog */}
+      <div aria-hidden="true" className="absolute inset-0 bg-ink/50" onClick={handleClose} />
       <div
         ref={modalRef}
         {...getModalAriaProps(titleId, descriptionId)}
-        onClick={(e) => e.stopPropagation()}
-        className="bg-parchment rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col"
+        className="relative bg-parchment rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col"
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-lichen">
@@ -153,10 +158,12 @@ export default function SearchAndAddObjectsDialog({
               <p id={descriptionId} className="text-sm text-archive">to {workspaceName}</p>
             </div>
             <button
+              type="button"
               onClick={handleClose}
-              className="p-1 text-archive hover:text-ink rounded"
+              aria-label="Close"
+              className="p-1 text-archive hover:text-ink rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             >
-              <X size={20} />
+              <X size={20} aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -175,7 +182,7 @@ export default function SearchAndAddObjectsDialog({
           ) : (
             <>
               {error && (
-                <div className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-sm text-sm text-semantic-error">
+                <div role="alert" className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-sm text-sm text-semantic-error">
                   {error}
                 </div>
               )}
@@ -184,15 +191,17 @@ export default function SearchAndAddObjectsDialog({
               <div className="relative">
                 <Search
                   size={16}
+                  aria-hidden="true"
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-archive"
                 />
                 <input
-                  type="text"
+                  ref={searchInputRef}
+                  type="search"
+                  aria-label="Search objects"
                   placeholder="Search by accession number, title, or keyword..."
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   className="w-full pl-9 pr-4 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
-                  autoFocus
                 />
               </div>
 
@@ -218,10 +227,12 @@ export default function SearchAndAddObjectsDialog({
                       >
                         {obj.object_number || obj.title || 'Object'}
                         <button
+                          type="button"
                           onClick={() => toggleSelect(obj)}
+                          aria-label={`Remove ${obj.object_number || obj.title || 'object'} from selection`}
                           className="text-archive hover:text-ink"
                         >
-                          <X size={12} />
+                          <X size={12} aria-hidden="true" />
                         </button>
                       </span>
                     ))}
@@ -248,7 +259,9 @@ export default function SearchAndAddObjectsDialog({
                     {filteredResults.map((hit) => (
                       <button
                         key={hit.object_id}
+                        type="button"
                         onClick={() => toggleSelect(hit)}
+                        aria-pressed={selectedObjects.has(hit.object_id)}
                         className={cn(
                           'w-full flex items-center gap-3 p-3 border rounded-sm text-left transition-colors',
                           selectedObjects.has(hit.object_id)
@@ -284,6 +297,7 @@ export default function SearchAndAddObjectsDialog({
 
                         {/* Selection indicator */}
                         <div
+                          aria-hidden="true"
                           className={cn(
                             'w-6 h-6 rounded-full border-2 flex items-center justify-center',
                             selectedObjects.has(hit.object_id)
