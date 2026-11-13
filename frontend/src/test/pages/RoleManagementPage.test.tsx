@@ -218,16 +218,7 @@ describe('RoleManagementPage accessibility', () => {
   it('role assignment board has no axe violations', async () => {
     const { container } = renderRoleManagementPage();
     await screen.findByText('Admin User');
-    // Known issues in shared components outside this page (components/roles):
-    // UserRoleCard's drag handle has no accessible name, and RoleColumn titles
-    // are h3 directly under the page h1. Reported to that component's owner.
-    const results = await checkA11y(container, {
-      rules: {
-        ...defaultAxeConfig.rules,
-        'aria-command-name': { enabled: false },
-        'heading-order': { enabled: false },
-      },
-    });
+    const results = await checkA11y(container);
     expect(results.violations, formatViolations(results)).toEqual([]);
   });
 });
