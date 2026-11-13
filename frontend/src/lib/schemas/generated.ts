@@ -4086,6 +4086,7 @@ export const DiscoverObjectDetailOutSchema = z.object({
   provenance: z.string().nullable().optional(),
   credit_line: z.string().nullable().optional(),
   external_links: z.array(z.record(z.string(), z.string())).optional(),
+  additional_fields: z.array(z.record(z.string(), z.string())).optional(),
   media: z.array(DiscoverMediaOutSchema).nullable().optional(),
   has_image: z.boolean().optional(),
 }).passthrough();
