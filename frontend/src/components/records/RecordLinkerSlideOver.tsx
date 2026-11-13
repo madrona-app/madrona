@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useId } from 'react';
+import { useState, useCallback, useMemo, useId, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Search, Loader2, Plus, ArrowLeft } from 'lucide-react';
 import SlideOver from '../ui/SlideOver';
@@ -49,6 +49,29 @@ export function RecordLinkerSlideOver<TSearch>({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const minSearchLength = search.minSearchLength ?? 2;
+
+  // Switching between search and create replaces the panel content, which
+  // would drop keyboard focus on the removed button. Move it to the first
+  // field of the view that was just shown instead.
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const createPanelRef = useRef<HTMLDivElement>(null);
+  const previousMode = useRef(mode);
+  useEffect(() => {
+    if (previousMode.current === mode) return;
+    previousMode.current = mode;
+    if (!isOpen) return;
+    if (mode === 'create') {
+      const panel = createPanelRef.current;
+      const target =
+        panel?.querySelector<HTMLElement>(
+          'input:not([type=hidden]):not([type=radio]):not([type=checkbox]):not([disabled]), textarea:not([disabled])'
+        ) ??
+        panel?.querySelector<HTMLElement>('input:not([disabled]), select:not([disabled]), button:not([disabled])');
+      target?.focus();
+    } else {
+      searchInputRef.current?.focus();
+    }
+  }, [mode, isOpen]);
 
   // Search query
   const { data: searchResults, isLoading: isSearching } = useQuery({
@@ -285,6 +308,7 @@ export function RecordLinkerSlideOver<TSearch>({
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-archive"
                 />
                 <input
+                  ref={searchInputRef}
                   id={searchInputId}
                   type="search"
                   aria-controls={resultsId}
@@ -417,7 +441,7 @@ export function RecordLinkerSlideOver<TSearch>({
             )}
           </>
         ) : create ? (
-          <>
+          <div ref={createPanelRef} className="space-y-5">
             <button
               type="button"
               onClick={() => setMode('search')}
@@ -432,7 +456,7 @@ export function RecordLinkerSlideOver<TSearch>({
               setFormData: setCreateFormData,
               metadata,
             })}
-          </>
+          </div>
         ) : null}
       </div>
     </SlideOver>

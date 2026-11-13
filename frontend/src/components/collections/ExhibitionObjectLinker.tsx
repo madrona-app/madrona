@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
@@ -290,10 +290,11 @@ function ConditionReportSelector({
           <button
             type="button"
             onClick={() => onChange(null)}
-            className="text-archive hover:text-semantic-error p-0.5"
+            className="text-archive hover:text-semantic-error p-0.5 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             title="Unlink report"
+            aria-label={`Unlink ${label} report`}
           >
-            <X size={14} />
+            <X size={14} aria-hidden="true" />
           </button>
         )}
       </div>
@@ -310,9 +311,10 @@ function ConditionReportSelector({
           <Link
             to={`/organizations/${organizationId}/collections/condition-reports/${selectedReport.report_id}`}
             className="text-sm text-bark hover:text-copper-dark flex items-center gap-1"
+            aria-label={`View ${label} report ${selectedReport.report_number}`}
           >
             View
-            <ExternalLink size={12} />
+            <ExternalLink size={12} aria-hidden="true" />
           </Link>
         </div>
       ) : (
@@ -336,6 +338,7 @@ function ConditionReportSelector({
             <div className="relative">
               <select
                 value=""
+                aria-label={`${label} report`}
                 onChange={(e) => onChange(e.target.value || null)}
                 className="w-full appearance-none bg-parchment border border-lichen rounded-lg px-3 py-1.5 pr-8 text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
               >
@@ -378,6 +381,7 @@ function EditObjectSlideOver({
   onClose,
   onSuccess,
 }: EditObjectSlideOverProps) {
+  const fid = useId();
   const [section, setSection] = useState(exhibitionObject.section || '');
   const [objectStatus, setObjectStatus] = useState(
     exhibitionObject.object_status
@@ -459,26 +463,28 @@ function EditObjectSlideOver({
     >
       <div className="space-y-4">
         {error && (
-          <div className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-lg text-sm text-semantic-error">
+          <div role="alert" className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-lg text-sm text-semantic-error">
             {error}
           </div>
         )}
 
-        <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+        <fieldset>
+          <legend className="block text-sm font-medium text-ink mb-1.5">
             Status
-          </label>
+          </legend>
           <div className="space-y-2">
             {STATUS_OPTIONS.map((option) => (
               <label
                 key={option.value}
-                className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                htmlFor={`${fid}-status-${option.value}`}
+                className={`grid grid-cols-[auto_1fr] items-start gap-x-3 p-3 border rounded-lg cursor-pointer transition-colors ${
                   objectStatus === option.value
                     ? 'border-bark bg-bark/5'
                     : 'border-lichen hover:border-bark/30'
                 }`}
               >
                 <input
+                  id={`${fid}-status-${option.value}`}
                   type="radio"
                   name="status"
                   value={option.value}
@@ -488,22 +494,21 @@ function EditObjectSlideOver({
                       e.target.value as ExhibitionObject['object_status']
                     )
                   }
-                  className="mt-0.5"
+                  className="mt-0.5 row-span-2"
                 />
-                <div>
-                  <p className="text-sm font-medium text-ink">{option.label}</p>
-                  <p className="text-xs text-archive">{option.description}</p>
-                </div>
+                <span className="col-start-2 text-sm font-medium text-ink">{option.label}</span>
+                <span className="col-start-2 text-xs text-archive">{option.description}</span>
               </label>
             ))}
           </div>
-        </div>
+        </fieldset>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fid}-section`} className="block text-sm font-medium text-ink mb-1.5">
             Section
           </label>
           <input
+            id={`${fid}-section`}
             type="text"
             value={section}
             onChange={(e) => setSection(e.target.value)}
@@ -513,10 +518,11 @@ function EditObjectSlideOver({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fid}-credit-line-override`} className="block text-sm font-medium text-ink mb-1.5">
             Credit Line Override
           </label>
           <input
+            id={`${fid}-credit-line-override`}
             type="text"
             value={creditLineOverride}
             onChange={(e) => setCreditLineOverride(e.target.value)}
@@ -526,10 +532,11 @@ function EditObjectSlideOver({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fid}-special-requirements`} className="block text-sm font-medium text-ink mb-1.5">
             Special Requirements
           </label>
           <textarea
+            id={`${fid}-special-requirements`}
             value={specialRequirements}
             onChange={(e) => setSpecialRequirements(e.target.value)}
             rows={2}
@@ -539,10 +546,11 @@ function EditObjectSlideOver({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fid}-installation-notes`} className="block text-sm font-medium text-ink mb-1.5">
             Installation Notes
           </label>
           <textarea
+            id={`${fid}-installation-notes`}
             value={installationNotes}
             onChange={(e) => setInstallationNotes(e.target.value)}
             rows={2}
@@ -552,10 +560,10 @@ function EditObjectSlideOver({
         </div>
 
         {/* Condition Reports Section */}
-        <div className="pt-4 border-t border-lichen">
-          <label className="block text-sm font-medium text-ink mb-2">
+        <fieldset className="pt-4 border-t border-lichen">
+          <legend className="block text-sm font-medium text-ink mb-2">
             Condition Reports
-          </label>
+          </legend>
           <div className="space-y-2">
             <ConditionReportSelector
               organizationId={organizationId}
@@ -572,7 +580,7 @@ function EditObjectSlideOver({
               onChange={setConditionOutReportId}
             />
           </div>
-        </div>
+        </fieldset>
       </div>
     </SlideOver>
   );

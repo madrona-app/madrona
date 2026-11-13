@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Tag, Globe } from 'lucide-react';
 import {
@@ -65,6 +66,7 @@ export function SubjectLinker({
   embedded = false,
   onCountChange,
 }: SubjectLinkerProps) {
+  const fid = useId();
   const { data: subjects, isLoading } = useQuery({
     queryKey: ['object-subjects', organizationId, objectId],
     queryFn: () => getObjectSubjects(organizationId, objectId),
@@ -159,10 +161,11 @@ export function SubjectLinker({
                 New Subject
               </h4>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">
+                <label htmlFor={`${fid}-term`} className="block text-sm font-medium text-ink mb-1">
                   Term <span className="text-semantic-error">*</span>
                 </label>
                 <input
+                  id={`${fid}-term`}
                   type="text"
                   value={formData.term ?? searchTerm}
                   onChange={(e) =>
@@ -170,12 +173,12 @@ export function SubjectLinker({
                   }
                   className="w-full px-3 py-2 border border-lichen rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
                   placeholder="e.g., Madonna and Child"
-                  autoFocus
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Type</label>
+                <label htmlFor={`${fid}-type`} className="block text-sm font-medium text-ink mb-1">Type</label>
                 <select
+                  id={`${fid}-type`}
                   value={formData.subject_type || 'iconographic'}
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, subject_type: e.target.value }))
@@ -193,10 +196,11 @@ export function SubjectLinker({
             <div className="border-t border-lichen pt-4 space-y-4">
               <h4 className="text-sm font-medium text-ink">Link Details</h4>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">
+                <label htmlFor={`${fid}-subject-extent`} className="block text-sm font-medium text-ink mb-1.5">
                   Subject Extent
                 </label>
                 <input
+                  id={`${fid}-subject-extent`}
                   type="text"
                   value={formData.subject_extent ?? metadata.subject_extent ?? ''}
                   onChange={(e) =>
@@ -210,10 +214,11 @@ export function SubjectLinker({
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">
+                <label htmlFor={`${fid}-interpretation-note`} className="block text-sm font-medium text-ink mb-1.5">
                   Interpretation Note
                 </label>
                 <textarea
+                  id={`${fid}-interpretation-note`}
                   value={
                     formData.interpretation_note ?? metadata.interpretation_note ?? ''
                   }

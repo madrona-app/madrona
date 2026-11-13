@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Palette } from 'lucide-react';
 import {
@@ -60,6 +61,7 @@ export function StylePeriodLinker({
   embedded = false,
   onCountChange,
 }: StylePeriodLinkerProps) {
+  const fid = useId();
   const { data: stylePeriods, isLoading } = useQuery({
     queryKey: ['object-style-periods', organizationId, objectId],
     queryFn: () => getObjectStylePeriods(organizationId, objectId),
@@ -153,10 +155,11 @@ export function StylePeriodLinker({
               New Style/Period
             </h4>
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${fid}-term`} className="block text-sm font-medium text-ink mb-1">
                 Term <span className="text-semantic-error">*</span>
               </label>
               <input
+                id={`${fid}-term`}
                 type="text"
                 value={formData.term ?? searchTerm}
                 onChange={(e) =>
@@ -164,12 +167,12 @@ export function StylePeriodLinker({
                 }
                 className="w-full px-3 py-2 border border-lichen rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
                 placeholder="e.g., Baroque"
-                autoFocus
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">Type</label>
+              <label htmlFor={`${fid}-type`} className="block text-sm font-medium text-ink mb-1">Type</label>
               <select
+                id={`${fid}-type`}
                 value={formData.type || 'style'}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, type: e.target.value }))

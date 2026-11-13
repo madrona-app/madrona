@@ -295,8 +295,9 @@ function HintCard({
               onClick={() => onDismiss(hint.id)}
               className="text-xs px-2 py-1 rounded text-archive hover:text-archive hover:bg-stone transition-colors"
               title="Dismiss this suggestion"
+              aria-label="Dismiss this suggestion"
             >
-              ✕
+              <span aria-hidden="true">✕</span>
             </button>
           )}
         </div>

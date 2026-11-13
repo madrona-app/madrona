@@ -126,11 +126,7 @@ describe('ClassificationLinker', () => {
     useLookupCategoryMock.mockReturnValue({ values: [] });
     renderLinker({ isEditing: true });
     await waitFor(() => screen.getByText('Painting'));
-    // The remove button is the only button rendered in the tag
-    const removeButton = screen
-      .getByText('Painting')
-      .closest('span')
-      ?.querySelector('button') as HTMLButtonElement;
+    const removeButton = screen.getByRole('button', { name: 'Remove classification Painting' });
     fireEvent.click(removeButton);
     await waitFor(() =>
       expect(unlinkObjectClassificationMock).toHaveBeenCalledWith('org-1', 'obj-1', 'l-9'),

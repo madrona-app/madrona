@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Calendar } from 'lucide-react';
 import { formatDateShort } from '../../lib/formatters';
@@ -67,6 +68,7 @@ export function ObjectEventLinker({
   isEditing = false,
   onCountChange,
 }: ObjectEventLinkerProps) {
+  const fid = useId();
   const { getLookup } = useLookupValues({ context: 'events' });
   const eventTypeOptions = getLookup('event_type');
   const audienceOptions = getLookup('event_audience');
@@ -183,10 +185,11 @@ export function ObjectEventLinker({
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+              <label htmlFor={`${fid}-event-title`} className="block text-sm font-medium text-ink mb-1.5">
                 Event Title <span className="text-semantic-error">*</span>
               </label>
               <input
+                id={`${fid}-event-title`}
                 type="text"
                 value={formData.title ?? searchTerm}
                 onChange={(e) =>
@@ -194,15 +197,15 @@ export function ObjectEventLinker({
                 }
                 placeholder="Enter event title..."
                 className="w-full px-3 py-2 border border-lichen rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
-                autoFocus
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">
+                <label htmlFor={`${fid}-event-type`} className="block text-sm font-medium text-ink mb-1.5">
                   Event Type <span className="text-semantic-error">*</span>
                 </label>
                 <select
+                  id={`${fid}-event-type`}
                   value={formData.event_type ?? ''}
                   onChange={(e) =>
                     setFormData((prev) => ({
@@ -221,10 +224,11 @@ export function ObjectEventLinker({
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">
+                <label htmlFor={`${fid}-audience`} className="block text-sm font-medium text-ink mb-1.5">
                   Audience
                 </label>
                 <select
+                  id={`${fid}-audience`}
                   value={formData.audience ?? ''}
                   onChange={(e) =>
                     setFormData((prev) => ({
@@ -245,10 +249,11 @@ export function ObjectEventLinker({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">
+                <label htmlFor={`${fid}-start-date-time`} className="block text-sm font-medium text-ink mb-1.5">
                   Start Date/Time
                 </label>
                 <input
+                  id={`${fid}-start-date-time`}
                   type="datetime-local"
                   value={formData.start_at ?? ''}
                   onChange={(e) =>
@@ -261,10 +266,11 @@ export function ObjectEventLinker({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">
+                <label htmlFor={`${fid}-end-date-time`} className="block text-sm font-medium text-ink mb-1.5">
                   End Date/Time
                 </label>
                 <input
+                  id={`${fid}-end-date-time`}
                   type="datetime-local"
                   value={formData.end_at ?? ''}
                   onChange={(e) =>
@@ -278,10 +284,11 @@ export function ObjectEventLinker({
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+              <label htmlFor={`${fid}-description`} className="block text-sm font-medium text-ink mb-1.5">
                 Description
               </label>
               <textarea
+                id={`${fid}-description`}
                 value={formData.description ?? ''}
                 onChange={(e) =>
                   setFormData((prev) => ({
@@ -295,21 +302,23 @@ export function ObjectEventLinker({
               />
             </div>
             {/* Role selection for create mode */}
-            <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+            <fieldset>
+              <legend className="block text-sm font-medium text-ink mb-1.5">
                 Object Role
-              </label>
+              </legend>
               <div className="space-y-2">
                 {ROLE_OPTIONS.map((option) => (
                   <label
                     key={option.value}
-                    className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                    htmlFor={`${fid}-create_role-${option.value}`}
+                    className={`grid grid-cols-[auto_1fr] items-start gap-x-3 p-3 border rounded-lg cursor-pointer transition-colors ${
                       (formData.role || 'primary') === option.value
                         ? 'border-bark bg-bark/5'
                         : 'border-lichen hover:border-bark/30'
                     }`}
                   >
                     <input
+                      id={`${fid}-create_role-${option.value}`}
                       type="radio"
                       name="create_role"
                       value={option.value}
@@ -320,36 +329,32 @@ export function ObjectEventLinker({
                           role: e.target.value,
                         }))
                       }
-                      className="mt-0.5"
+                      className="mt-0.5 row-span-2"
                     />
-                    <div>
-                      <p className="text-sm font-medium text-ink">
-                        {option.label}
-                      </p>
-                      <p className="text-xs text-archive">
-                        {option.description}
-                      </p>
-                    </div>
+                    <span className="col-start-2 text-sm font-medium text-ink">{option.label}</span>
+                    <span className="col-start-2 text-xs text-archive">{option.description}</span>
                   </label>
                 ))}
               </div>
-            </div>
+            </fieldset>
             {/* Planned use selection for create mode */}
-            <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+            <fieldset>
+              <legend className="block text-sm font-medium text-ink mb-1.5">
                 Planned Use <span className="text-semantic-error">*</span>
-              </label>
+              </legend>
               <div className="space-y-2">
                 {PLANNED_USE_OPTIONS.map((option) => (
                   <label
                     key={option.value}
-                    className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                    htmlFor={`${fid}-create_planned_use-${option.value}`}
+                    className={`grid grid-cols-[auto_1fr] items-start gap-x-3 p-3 border rounded-lg cursor-pointer transition-colors ${
                       (formData.planned_use || 'discuss') === option.value
                         ? 'border-bark bg-bark/5'
                         : 'border-lichen hover:border-bark/30'
                     }`}
                   >
                     <input
+                      id={`${fid}-create_planned_use-${option.value}`}
                       type="radio"
                       name="create_planned_use"
                       value={option.value}
@@ -362,20 +367,14 @@ export function ObjectEventLinker({
                           planned_use: e.target.value,
                         }))
                       }
-                      className="mt-0.5"
+                      className="mt-0.5 row-span-2"
                     />
-                    <div>
-                      <p className="text-sm font-medium text-ink">
-                        {option.label}
-                      </p>
-                      <p className="text-xs text-archive">
-                        {option.description}
-                      </p>
-                    </div>
+                    <span className="col-start-2 text-sm font-medium text-ink">{option.label}</span>
+                    <span className="col-start-2 text-xs text-archive">{option.description}</span>
                   </label>
                 ))}
               </div>
-            </div>
+            </fieldset>
           </div>
         ),
         onCreateSubmit: async (formData) => {

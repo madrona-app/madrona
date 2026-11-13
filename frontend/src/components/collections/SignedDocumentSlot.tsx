@@ -14,7 +14,7 @@
  * the procedure, plus provides an "Add another" button.
  */
 
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, useId } from 'react';
 import {
   FileText,
   Upload,
@@ -71,6 +71,7 @@ export function SignedDocumentSlot({
   isGeneratingUnsigned,
   generateUnsignedLabel = 'Generate unsigned document',
 }: SignedDocumentSlotProps) {
+  const fid = useId();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [referenceInput, setReferenceInput] = useState('');
@@ -224,20 +225,22 @@ export function SignedDocumentSlot({
                     href={doc.media_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-1.5 text-archive hover:text-bark rounded"
+                    className="p-1.5 text-archive hover:text-bark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                     title="Open signed document"
+                    aria-label={`Open signed document ${doc.label || doc.media_filename || doc.reference || doc.document_type}`}
                   >
-                    <ExternalLink size={14} />
+                    <ExternalLink size={14} aria-hidden="true" />
                   </a>
                 )}
                 {isEditing && (
                   <button
                     type="button"
                     onClick={() => setConfirmDelete(doc.signed_document_id)}
-                    className="p-1.5 text-archive hover:text-semantic-error rounded"
+                    className="p-1.5 text-archive hover:text-semantic-error rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                     title="Remove signed document"
+                    aria-label={`Remove signed document ${doc.label || doc.media_filename || doc.reference || doc.document_type}`}
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={14} aria-hidden="true" />
                   </button>
                 )}
               </div>
@@ -314,10 +317,11 @@ export function SignedDocumentSlot({
 
           <div className="flex items-end gap-2">
             <div className="flex-1">
-              <label className="text-xs text-archive block mb-1">
+              <label htmlFor={`${fid}-or-reference-a-paper-document`} className="text-xs text-archive block mb-1">
                 …or reference a paper document
               </label>
               <input
+                id={`${fid}-or-reference-a-paper-document`}
                 type="text"
                 value={referenceInput}
                 onChange={(e) => setReferenceInput(e.target.value)}

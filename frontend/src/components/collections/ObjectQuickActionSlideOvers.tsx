@@ -5,7 +5,7 @@
  * Users can fill in essential fields and create records quickly, then edit details later.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import Checkbox from '../Checkbox';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -73,6 +73,7 @@ export function ConditionReportSlideOver({
   objectTitle,
   onSuccess,
 }: BaseSlideOverProps) {
+  const fid = useId();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -157,10 +158,11 @@ export function ConditionReportSlideOver({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium text-ink block mb-1.5">
+            <label htmlFor={`${fid}-report-type`} className="text-sm font-medium text-ink block mb-1.5">
               Report Type <span className="text-semantic-error">*</span>
             </label>
             <select
+              id={`${fid}-report-type`}
               value={formData.report_type}
               onChange={(e) => setFormData(prev => ({ ...prev, report_type: e.target.value }))}
               className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -172,11 +174,12 @@ export function ConditionReportSlideOver({
           </div>
 
           <div>
-            <label className="text-sm font-medium text-ink block mb-1.5">
+            <label htmlFor={`${fid}-report-date`} className="text-sm font-medium text-ink block mb-1.5">
               <Calendar size={14} className="inline mr-1.5" />
               Report Date
             </label>
             <input
+              id={`${fid}-report-date`}
               type="date"
               value={formData.report_date}
               max={new Date().toISOString().split('T')[0]}
@@ -186,17 +189,18 @@ export function ConditionReportSlideOver({
           </div>
         </div>
 
-        <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">
+        <fieldset>
+          <legend className="text-sm font-medium text-ink block mb-1.5">
             Overall Condition <span className="text-semantic-error">*</span>
-          </label>
+          </legend>
           <div className="grid grid-cols-3 gap-2">
             {OVERALL_CONDITIONS.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, overall_condition: opt.value }))}
-                className={`px-3 py-2.5 text-sm rounded-lg border transition-colors text-center ${
+                aria-pressed={formData.overall_condition === opt.value}
+                className={`px-3 py-2.5 text-sm rounded-lg border transition-colors text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 ${
                   formData.overall_condition === opt.value
                     ? 'bg-bark text-parchment border-bark'
                     : 'bg-parchment text-ink border-lichen hover:border-bark/50'
@@ -206,14 +210,15 @@ export function ConditionReportSlideOver({
               </button>
             ))}
           </div>
-        </div>
+        </fieldset>
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">
+          <label htmlFor={`${fid}-condition-summary`} className="text-sm font-medium text-ink block mb-1.5">
             <FileText size={14} className="inline mr-1.5" />
             Condition Summary
           </label>
           <textarea
+            id={`${fid}-condition-summary`}
             value={formData.condition_summary}
             onChange={(e) => setFormData(prev => ({ ...prev, condition_summary: e.target.value }))}
             placeholder="Brief description of the object's current condition..."
@@ -249,6 +254,7 @@ export function IncidentReportSlideOver({
   objectTitle,
   onSuccess,
 }: BaseSlideOverProps) {
+  const fid = useId();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -345,10 +351,11 @@ export function IncidentReportSlideOver({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium text-ink block mb-1.5">
+            <label htmlFor={`${fid}-incident-type`} className="text-sm font-medium text-ink block mb-1.5">
               Incident Type <span className="text-semantic-error">*</span>
             </label>
             <select
+              id={`${fid}-incident-type`}
               value={formData.incident_type}
               onChange={(e) => setFormData(prev => ({ ...prev, incident_type: e.target.value }))}
               className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -360,11 +367,12 @@ export function IncidentReportSlideOver({
           </div>
 
           <div>
-            <label className="text-sm font-medium text-ink block mb-1.5">
+            <label htmlFor={`${fid}-incident-date`} className="text-sm font-medium text-ink block mb-1.5">
               <Calendar size={14} className="inline mr-1.5" />
               Incident Date
             </label>
             <input
+              id={`${fid}-incident-date`}
               type="date"
               value={formData.incident_date}
               max={new Date().toISOString().split('T')[0]}
@@ -375,10 +383,11 @@ export function IncidentReportSlideOver({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">
+          <label htmlFor={`${fid}-description-2`} className="text-sm font-medium text-ink block mb-1.5">
             Description <span className="text-semantic-error">*</span>
           </label>
           <textarea
+            id={`${fid}-description-2`}
             value={formData.description}
             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
             placeholder="Describe what happened, when it was discovered, and any immediate actions taken..."
@@ -421,6 +430,7 @@ export function ConservationSlideOver({
   objectTitle,
   onSuccess,
 }: BaseSlideOverProps) {
+  const fid = useId();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -497,10 +507,11 @@ export function ConservationSlideOver({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium text-ink block mb-1.5">
+            <label htmlFor={`${fid}-treatment-type`} className="text-sm font-medium text-ink block mb-1.5">
               Treatment Type <span className="text-semantic-error">*</span>
             </label>
             <select
+              id={`${fid}-treatment-type`}
               value={formData.treatment_type}
               onChange={(e) => setFormData(prev => ({ ...prev, treatment_type: e.target.value }))}
               className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -512,10 +523,11 @@ export function ConservationSlideOver({
           </div>
 
           <div>
-            <label className="text-sm font-medium text-ink block mb-1.5">
+            <label htmlFor={`${fid}-priority`} className="text-sm font-medium text-ink block mb-1.5">
               Priority <span className="text-semantic-error">*</span>
             </label>
             <select
+              id={`${fid}-priority`}
               value={formData.priority}
               onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value }))}
               className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -528,11 +540,12 @@ export function ConservationSlideOver({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">
+          <label htmlFor={`${fid}-proposed-treatment`} className="text-sm font-medium text-ink block mb-1.5">
             <FileText size={14} className="inline mr-1.5" />
             Proposed Treatment
           </label>
           <textarea
+            id={`${fid}-proposed-treatment`}
             value={formData.proposed_treatment}
             onChange={(e) => setFormData(prev => ({ ...prev, proposed_treatment: e.target.value }))}
             placeholder="Describe the proposed conservation treatment..."
@@ -574,6 +587,7 @@ export function ValuationSlideOver({
   objectTitle,
   onSuccess,
 }: BaseSlideOverProps) {
+  const fid = useId();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -664,10 +678,11 @@ export function ValuationSlideOver({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium text-ink block mb-1.5">
+            <label htmlFor={`${fid}-valuation-type`} className="text-sm font-medium text-ink block mb-1.5">
               Valuation Type <span className="text-semantic-error">*</span>
             </label>
             <select
+              id={`${fid}-valuation-type`}
               value={formData.valuation_type}
               onChange={(e) => setFormData(prev => ({ ...prev, valuation_type: e.target.value }))}
               className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -679,11 +694,12 @@ export function ValuationSlideOver({
           </div>
 
           <div>
-            <label className="text-sm font-medium text-ink block mb-1.5">
+            <label htmlFor={`${fid}-valuation-date`} className="text-sm font-medium text-ink block mb-1.5">
               <Calendar size={14} className="inline mr-1.5" />
               Valuation Date
             </label>
             <input
+              id={`${fid}-valuation-date`}
               type="date"
               value={formData.valuation_date}
               max={new Date().toISOString().split('T')[0]}
@@ -695,11 +711,12 @@ export function ValuationSlideOver({
 
         <div className="grid grid-cols-3 gap-4">
           <div className="col-span-2">
-            <label className="text-sm font-medium text-ink block mb-1.5">
+            <label htmlFor={`${fid}-amount`} className="text-sm font-medium text-ink block mb-1.5">
               <DollarSign size={14} className="inline mr-1.5" />
               Amount <span className="text-semantic-error">*</span>
             </label>
             <input
+              id={`${fid}-amount`}
               type="number"
               min="0"
               step="0.01"
@@ -711,8 +728,9 @@ export function ValuationSlideOver({
           </div>
 
           <div>
-            <label className="text-sm font-medium text-ink block mb-1.5">Currency</label>
+            <label htmlFor={`${fid}-currency`} className="text-sm font-medium text-ink block mb-1.5">Currency</label>
             <select
+              id={`${fid}-currency`}
               value={formData.valuation_currency}
               onChange={(e) => setFormData(prev => ({ ...prev, valuation_currency: e.target.value }))}
               className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -736,11 +754,12 @@ export function ValuationSlideOver({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">
+          <label htmlFor={`${fid}-notes-2`} className="text-sm font-medium text-ink block mb-1.5">
             <FileText size={14} className="inline mr-1.5" />
             Notes
           </label>
           <textarea
+            id={`${fid}-notes-2`}
             value={formData.notes}
             onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
             placeholder="Valuation methodology, appraiser, or other notes..."
@@ -766,6 +785,7 @@ export function LoanRequestSlideOver({
   objectTitle,
   onSuccess,
 }: BaseSlideOverProps) {
+  const fid = useId();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -858,10 +878,11 @@ export function LoanRequestSlideOver({
         )}
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">
+          <label htmlFor={`${fid}-borrower`} className="text-sm font-medium text-ink block mb-1.5">
             Borrower <span className="text-semantic-error">*</span>
           </label>
           <input
+            id={`${fid}-borrower`}
             type="text"
             value={formData.borrower_name}
             onChange={(e) => setFormData(prev => ({ ...prev, borrower_name: e.target.value }))}
@@ -871,10 +892,11 @@ export function LoanRequestSlideOver({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">
+          <label htmlFor={`${fid}-purpose`} className="text-sm font-medium text-ink block mb-1.5">
             Purpose
           </label>
           <input
+            id={`${fid}-purpose`}
             type="text"
             value={formData.loan_purpose}
             onChange={(e) => setFormData(prev => ({ ...prev, loan_purpose: e.target.value }))}
@@ -885,11 +907,12 @@ export function LoanRequestSlideOver({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium text-ink block mb-1.5">
+            <label htmlFor={`${fid}-requested-start`} className="text-sm font-medium text-ink block mb-1.5">
               <Calendar size={14} className="inline mr-1.5" />
               Requested Start
             </label>
             <input
+              id={`${fid}-requested-start`}
               type="date"
               value={formData.requested_start_date}
               onChange={(e) => setFormData(prev => ({ ...prev, requested_start_date: e.target.value }))}
@@ -898,11 +921,12 @@ export function LoanRequestSlideOver({
           </div>
 
           <div>
-            <label className="text-sm font-medium text-ink block mb-1.5">
+            <label htmlFor={`${fid}-requested-end`} className="text-sm font-medium text-ink block mb-1.5">
               <Calendar size={14} className="inline mr-1.5" />
               Requested End
             </label>
             <input
+              id={`${fid}-requested-end`}
               type="date"
               value={formData.requested_end_date}
               min={formData.requested_start_date}
@@ -913,11 +937,12 @@ export function LoanRequestSlideOver({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">
+          <label htmlFor={`${fid}-notes`} className="text-sm font-medium text-ink block mb-1.5">
             <FileText size={14} className="inline mr-1.5" />
             Notes
           </label>
           <textarea
+            id={`${fid}-notes`}
             value={formData.notes}
             onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
             placeholder="Additional details about the loan request..."
@@ -954,6 +979,7 @@ export function UseRequestSlideOver({
   objectTitle,
   onSuccess,
 }: BaseSlideOverProps) {
+  const fid = useId();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -1041,10 +1067,11 @@ export function UseRequestSlideOver({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium text-ink block mb-1.5">
+            <label htmlFor={`${fid}-use-type`} className="text-sm font-medium text-ink block mb-1.5">
               Use Type <span className="text-semantic-error">*</span>
             </label>
             <select
+              id={`${fid}-use-type`}
               value={formData.use_type}
               onChange={(e) => setFormData(prev => ({ ...prev, use_type: e.target.value }))}
               className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -1056,11 +1083,12 @@ export function UseRequestSlideOver({
           </div>
 
           <div>
-            <label className="text-sm font-medium text-ink block mb-1.5">
+            <label htmlFor={`${fid}-requested-date`} className="text-sm font-medium text-ink block mb-1.5">
               <Calendar size={14} className="inline mr-1.5" />
               Requested Date
             </label>
             <input
+              id={`${fid}-requested-date`}
               type="date"
               value={formData.requested_date}
               onChange={(e) => setFormData(prev => ({ ...prev, requested_date: e.target.value }))}
@@ -1070,10 +1098,11 @@ export function UseRequestSlideOver({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">
+          <label htmlFor={`${fid}-requester-name`} className="text-sm font-medium text-ink block mb-1.5">
             Requester Name <span className="text-semantic-error">*</span>
           </label>
           <input
+            id={`${fid}-requester-name`}
             type="text"
             value={formData.requester_name}
             onChange={(e) => setFormData(prev => ({ ...prev, requester_name: e.target.value }))}
@@ -1083,10 +1112,11 @@ export function UseRequestSlideOver({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">
+          <label htmlFor={`${fid}-institution`} className="text-sm font-medium text-ink block mb-1.5">
             Institution
           </label>
           <input
+            id={`${fid}-institution`}
             type="text"
             value={formData.requester_institution}
             onChange={(e) => setFormData(prev => ({ ...prev, requester_institution: e.target.value }))}
@@ -1096,11 +1126,12 @@ export function UseRequestSlideOver({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">
+          <label htmlFor={`${fid}-description`} className="text-sm font-medium text-ink block mb-1.5">
             <FileText size={14} className="inline mr-1.5" />
             Description
           </label>
           <textarea
+            id={`${fid}-description`}
             value={formData.use_description}
             onChange={(e) => setFormData(prev => ({ ...prev, use_description: e.target.value }))}
             placeholder="Describe how the object will be used..."

@@ -95,6 +95,7 @@ function SuggestionItem({
   onMouseEnter: () => void;
 }) {
   return (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events -- combobox option: keys are handled on the input via aria-activedescendant (APG combobox)
     <li
       id={id}
       role="option"
@@ -348,6 +349,7 @@ export const AuthorityAutocomplete = forwardRef<
             </SuggestionGroup>
           )}
           {showCreateOption && (
+            // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus -- combobox option: keys are handled on the input via aria-activedescendant (APG combobox)
             <div
               id={optionId(createIndex)}
               role="option"

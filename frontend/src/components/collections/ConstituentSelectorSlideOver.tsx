@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, User, Building2, Users, Loader2, ArrowLeft, Plus } from 'lucide-react';
 import { getConstituents, createConstituent } from '../../lib/api/constituents';
@@ -47,10 +47,21 @@ export function ConstituentSelectorSlideOver({
   constituentTypes,
   excludeIds,
 }: ConstituentSelectorSlideOverProps) {
+  const fid = useId();
   const queryClient = useQueryClient();
 
   // Mode: 'search' (default) or 'create'
   const [mode, setMode] = useState<'search' | 'create'>('search');
+  // Move focus to the first field of the view the user just switched to,
+  // so it isn't lost on the removed button.
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const previousMode = useRef(mode);
+  useEffect(() => {
+    if (previousMode.current === mode) return;
+    previousMode.current = mode;
+    (mode === 'create' ? nameInputRef : searchInputRef).current?.focus();
+  }, [mode]);
 
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
@@ -189,7 +200,7 @@ export function ConstituentSelectorSlideOver({
     >
       <div className="space-y-5">
         {error && (
-          <div className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-lg text-sm text-semantic-error">
+          <div role="alert" className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-lg text-sm text-semantic-error">
             {error}
           </div>
         )}
@@ -197,18 +208,19 @@ export function ConstituentSelectorSlideOver({
         {mode === 'search' ? (
           <>
             <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+              <label htmlFor={`${fid}-search-constituents`} className="block text-sm font-medium text-ink mb-1.5">
                 Search Constituents
               </label>
               <div className="relative">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-archive" />
+                <Search size={16} aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-archive" />
                 <input
-                  type="text"
+                  id={`${fid}-search-constituents`}
+                  ref={searchInputRef}
+                  type="search"
                   value={searchTerm}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   placeholder="Search by name..."
                   className="w-full pl-9 pr-4 py-2 border border-lichen rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
-                  autoFocus
                 />
               </div>
             </div>
@@ -219,18 +231,19 @@ export function ConstituentSelectorSlideOver({
                   Type at least 2 characters to search...
                 </div>
               ) : isSearching ? (
-                <div className="p-6 text-center text-archive">
-                  <Loader2 size={16} className="inline animate-spin mr-2" />
+                <div className="p-6 text-center text-archive" role="status">
+                  <Loader2 size={16} className="inline animate-spin mr-2" aria-hidden="true" />
                   Searching...
                 </div>
               ) : availableConstituents.length > 0 ? (
-                <div className="max-h-64 overflow-y-auto">
+                <ul className="max-h-64 overflow-y-auto" aria-label={`${availableConstituents.length} result${availableConstituents.length !== 1 ? 's' : ''}`}>
                   {availableConstituents.map((c: Constituent) => (
+                    <li key={c.constituent_id} className="border-b border-lichen last:border-b-0">
                     <button
-                      key={c.constituent_id}
                       type="button"
                       onClick={() => setSelectedId(c.constituent_id)}
-                      className={`w-full text-left px-3 py-2.5 hover:bg-stone/50 border-b border-lichen last:border-b-0 flex items-center gap-3 ${
+                      aria-pressed={selectedId === c.constituent_id}
+                      className={`w-full text-left px-3 py-2.5 hover:bg-stone/50 flex items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bark/30 ${
                         selectedId === c.constituent_id ? 'bg-azurite/10 border-l-2 border-l-azurite' : ''
                       }`}
                     >
@@ -245,17 +258,18 @@ export function ConstituentSelectorSlideOver({
                         )}
                       </div>
                     </button>
+                    </li>
                   ))}
-                </div>
+                </ul>
               ) : showNoResults ? (
                 <div className="p-6 text-center">
-                  <p className="text-sm text-archive mb-3">No people or organizations found for "{searchTerm}"</p>
+                  <p className="text-sm text-archive mb-3" role="status">No people or organizations found for "{searchTerm}"</p>
                   <button
                     type="button"
                     onClick={handleSwitchToCreate}
                     className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-parchment bg-bark rounded-lg hover:bg-copper-dark hover:text-parchment"
                   >
-                    <Plus size={16} />
+                    <Plus size={16} aria-hidden="true" />
                     Create New Person or Organization
                   </button>
                 </div>
@@ -275,7 +289,7 @@ export function ConstituentSelectorSlideOver({
             )}
 
             {selectedId && (
-              <div className="p-3 bg-bark/5 border border-bark/20 rounded-lg">
+              <div className="p-3 bg-bark/5 border border-bark/20 rounded-lg" role="status">
                 <p className="text-xs text-archive mb-1">Selected:</p>
                 <p className="text-sm font-medium text-ink">
                   {availableConstituents.find((c: Constituent) => c.constituent_id === selectedId)?.name || 'Unknown'}
@@ -290,19 +304,19 @@ export function ConstituentSelectorSlideOver({
               onClick={handleBackToSearch}
               className="flex items-center gap-1 text-sm text-archive hover:text-ink"
             >
-              <ArrowLeft size={14} />
+              <ArrowLeft size={14} aria-hidden="true" />
               Back to search
             </button>
 
-            <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+            <fieldset>
+              <legend className="block text-sm font-medium text-ink mb-1.5">
                 Type <span className="text-semantic-error">*</span>
-              </label>
+              </legend>
               <div className="flex gap-4">
                 {CONSTITUENT_TYPE_OPTIONS.map((opt) => (
                   <label
                     key={opt.value}
-                    className={`flex-1 flex items-center justify-center gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${
+                    className={`flex-1 flex items-center justify-center gap-2 p-3 border rounded-lg cursor-pointer transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-bark/30 has-[:focus-visible]:ring-offset-2 ${
                       constituentType === opt.value
                         ? 'border-bark bg-bark/5'
                         : 'border-lichen hover:border-bark/30'
@@ -317,27 +331,28 @@ export function ConstituentSelectorSlideOver({
                       className="sr-only"
                     />
                     {opt.value === 'person' ? (
-                      <User size={18} className={constituentType === opt.value ? 'text-bark' : 'text-archive'} />
+                      <User size={18} aria-hidden="true" className={constituentType === opt.value ? 'text-bark' : 'text-archive'} />
                     ) : (
-                      <Building2 size={18} className={constituentType === opt.value ? 'text-bark' : 'text-archive'} />
+                      <Building2 size={18} aria-hidden="true" className={constituentType === opt.value ? 'text-bark' : 'text-archive'} />
                     )}
                     <span className="text-sm font-medium">{opt.label}</span>
                   </label>
                 ))}
               </div>
-            </div>
+            </fieldset>
 
             <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+              <label htmlFor={`${fid}-name`} className="block text-sm font-medium text-ink mb-1.5">
                 Name <span className="text-semantic-error">*</span>
               </label>
               <input
+                id={`${fid}-name`}
+                ref={nameInputRef}
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={constituentType === 'person' ? 'Enter person name...' : 'Enter organization name...'}
                 className="w-full px-3 py-2 border border-lichen rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
-                autoFocus
               />
             </div>
 

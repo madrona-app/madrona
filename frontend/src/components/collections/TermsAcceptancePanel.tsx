@@ -5,7 +5,7 @@
  * of terms and conditions per procedure requirements.
  */
 
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import Checkbox from '../Checkbox';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -64,6 +64,7 @@ export function TermsAcceptancePanel({
   onGenerateReceipt,
   isGeneratingReceipt = false,
 }: TermsAcceptancePanelProps) {
+  const fid = useId();
   const [showContactSelector, setShowContactSelector] = useState(false);
 
   // Fetch accepted by contact details
@@ -156,23 +157,24 @@ export function TermsAcceptancePanel({
       {(isEditing || data.termsAccepted) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Accepted By */}
-          <div>
-            <label className="flex items-center gap-1.5 text-sm font-medium text-bark mb-1.5">
-              <User className="h-4 w-4" />
+          <div role="group" aria-labelledby={`${fid}-accepted-by`}>
+            <span id={`${fid}-accepted-by`} className="flex items-center gap-1.5 text-sm font-medium text-bark mb-1.5">
+              <User className="h-4 w-4" aria-hidden="true" />
               Accepted By
-            </label>
+            </span>
             {isEditing ? (
               <div className="flex items-center gap-2">
                 {data.acceptedById && acceptedByContact ? (
                   <div className="flex-1 flex items-center gap-2 px-3 py-2 border border-lichen rounded-lg bg-parchment">
-                    <User size={16} className="text-archive flex-shrink-0" />
+                    <User size={16} className="text-archive flex-shrink-0" aria-hidden="true" />
                     <span className="text-sm text-ink truncate">{acceptedByContact.name}</span>
                     <button
                       type="button"
                       onClick={() => onChange({ acceptedById: '' })}
-                      className="ml-auto p-1 text-archive hover:text-semantic-error"
+                      aria-label={`Remove ${acceptedByContact.name}`}
+                      className="ml-auto p-1 rounded text-archive hover:text-semantic-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                     >
-                      <X size={14} />
+                      <X size={14} aria-hidden="true" />
                     </button>
                   </div>
                 ) : (
@@ -181,7 +183,7 @@ export function TermsAcceptancePanel({
                     onClick={() => setShowContactSelector(true)}
                     className="flex-1 flex items-center gap-2 px-3 py-2 border-2 border-dashed border-lichen rounded-lg text-archive hover:border-bark hover:text-bark transition-colors"
                   >
-                    <Search size={16} />
+                    <Search size={16} aria-hidden="true" />
                     <span className="text-sm">Search or create contact...</span>
                   </button>
                 )}
@@ -189,6 +191,7 @@ export function TermsAcceptancePanel({
                   <button
                     type="button"
                     onClick={() => setShowContactSelector(true)}
+                    aria-label="Change accepted by contact"
                     className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
                   >
                     Change
@@ -202,12 +205,13 @@ export function TermsAcceptancePanel({
 
           {/* Acceptance Date */}
           <div>
-            <label className="flex items-center gap-1.5 text-sm font-medium text-bark mb-1.5">
-              <Calendar className="h-4 w-4" />
+            <label htmlFor={`${fid}-accepted-date`} className="flex items-center gap-1.5 text-sm font-medium text-bark mb-1.5">
+              <Calendar className="h-4 w-4" aria-hidden="true" />
               Acceptance Date
             </label>
             {isEditing ? (
               <input
+                id={`${fid}-accepted-date`}
                 type="date"
                 value={data.acceptedDate || ''}
                 onChange={(e) => onChange({ acceptedDate: e.target.value })}
@@ -222,12 +226,13 @@ export function TermsAcceptancePanel({
 
           {/* Acceptance Method */}
           <div>
-            <label className="flex items-center gap-1.5 text-sm font-medium text-bark mb-1.5">
-              <CheckCircle className="h-4 w-4" />
+            <label htmlFor={`${fid}-acceptance-method`} className="flex items-center gap-1.5 text-sm font-medium text-bark mb-1.5">
+              <CheckCircle className="h-4 w-4" aria-hidden="true" />
               Acceptance Method
             </label>
             {isEditing ? (
               <select
+                id={`${fid}-acceptance-method`}
                 value={data.acceptanceMethod || 'signature'}
                 onChange={(e) => onChange({ acceptanceMethod: e.target.value as TermsAcceptanceData['acceptanceMethod'] })}
                 className="w-full px-3 py-2 border border-lichen rounded-md text-sm focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -258,11 +263,12 @@ export function TermsAcceptancePanel({
       {/* Acceptance Notes */}
       {(isEditing || data.acceptanceNote) && (
         <div>
-          <label className="text-sm font-medium text-bark mb-1.5 block">
+          <label htmlFor={`${fid}-acceptance-notes`} className="text-sm font-medium text-bark mb-1.5 block">
             Acceptance Notes
           </label>
           {isEditing ? (
             <textarea
+              id={`${fid}-acceptance-notes`}
               value={data.acceptanceNote || ''}
               onChange={(e) => onChange({ acceptanceNote: e.target.value })}
               placeholder="Additional notes about how acceptance was obtained..."

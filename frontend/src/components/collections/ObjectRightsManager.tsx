@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Checkbox from '../Checkbox';
 import { Link } from 'react-router-dom';
@@ -246,19 +246,21 @@ export function ObjectRightsManager({
                     <div className="flex items-center gap-2">
                       <Link
                         to={`/organizations/${organizationId}/collections/rights/${right.right_id}/edit`}
-                        className="text-bark hover:text-copper-dark p-1"
+                        className="text-bark hover:text-copper-dark p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 rounded"
                         title="Edit right"
+                        aria-label={`Edit ${RIGHT_TYPE_LABELS[right.right_type] || right.right_type} right`}
                       >
-                        <Edit2 size={14} />
+                        <Edit2 size={14} aria-hidden="true" />
                       </Link>
                       {!readOnly && (
                         <button
                           onClick={() => handleDelete(right.right_id)}
                           disabled={deleteMutation.isPending}
-                          className="text-semantic-error hover:text-semantic-error/80 p-1 disabled:opacity-50"
+                          className="text-semantic-error hover:text-semantic-error/80 p-1 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 rounded"
                           title="Delete right"
+                          aria-label={`Delete ${RIGHT_TYPE_LABELS[right.right_type] || right.right_type} right`}
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={14} aria-hidden="true" />
                         </button>
                       )}
                     </div>
@@ -314,6 +316,7 @@ function AddRightSlideOver({
   onClose,
   onSuccess,
 }: AddRightSlideOverProps) {
+  const fid = useId();
   const [rightType, setRightType] = useState('copyright');
   const [status, setStatus] = useState('unknown');
   const [rightsHolderContactId, setRightsHolderContactId] = useState('');
@@ -405,10 +408,11 @@ function AddRightSlideOver({
 
         {/* Right Type */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fid}-right-type`} className="block text-sm font-medium text-ink mb-1.5">
             Right Type <span className="text-semantic-error">*</span>
           </label>
           <select
+            id={`${fid}-right-type`}
             value={rightType}
             onChange={(e) => setRightType(e.target.value)}
             className="input w-full"
@@ -423,10 +427,11 @@ function AddRightSlideOver({
 
         {/* Status */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fid}-status`} className="block text-sm font-medium text-ink mb-1.5">
             Status <span className="text-semantic-error">*</span>
           </label>
           <select
+            id={`${fid}-status`}
             value={status}
             onChange={(e) => setStatus(e.target.value)}
             className="input w-full"
@@ -440,10 +445,10 @@ function AddRightSlideOver({
         </div>
 
         {/* Rights Holder */}
-        <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+        <div role="group" aria-labelledby={`${fid}-rights-holder`}>
+          <span id={`${fid}-rights-holder`} className="block text-sm font-medium text-ink mb-1.5">
             Rights Holder
-          </label>
+          </span>
           {rightsHolderContactId && rightsHolderContact ? (
             <div className="flex items-center justify-between p-3 bg-stone/30 rounded-lg">
               <div>
@@ -455,9 +460,10 @@ function AddRightSlideOver({
               <button
                 type="button"
                 onClick={() => setRightsHolderContactId('')}
-                className="text-archive hover:text-ink"
+                aria-label={`Remove rights holder ${rightsHolderContact.name}`}
+                className="text-archive hover:text-ink rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
               >
-                <X size={18} />
+                <X size={18} aria-hidden="true" />
               </button>
             </div>
           ) : (
@@ -473,10 +479,11 @@ function AddRightSlideOver({
 
         {/* Territory */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fid}-territory`} className="block text-sm font-medium text-ink mb-1.5">
             Territory
           </label>
           <input
+            id={`${fid}-territory`}
             type="text"
             value={territory}
             onChange={(e) => setTerritory(e.target.value)}
@@ -487,8 +494,9 @@ function AddRightSlideOver({
 
         {/* Duration */}
         <div className="space-y-3">
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label htmlFor={`${fid}-perpetual-no-end-date`} className="flex items-center gap-2 cursor-pointer">
             <Checkbox
+              id={`${fid}-perpetual-no-end-date`}
               checked={isPerpetual}
               onChange={(e) => setIsPerpetual(e.target.checked)}
             />
@@ -497,10 +505,11 @@ function AddRightSlideOver({
 
           {!isPerpetual && (
             <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+              <label htmlFor={`${fid}-end-date`} className="block text-sm font-medium text-ink mb-1.5">
                 End Date
               </label>
               <input
+                id={`${fid}-end-date`}
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
@@ -512,10 +521,11 @@ function AddRightSlideOver({
 
         {/* Usage Conditions */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fid}-usage-conditions`} className="block text-sm font-medium text-ink mb-1.5">
             Usage Conditions
           </label>
           <textarea
+            id={`${fid}-usage-conditions`}
             value={usageConditions}
             onChange={(e) => setUsageConditions(e.target.value)}
             placeholder="Conditions for usage..."
@@ -526,10 +536,11 @@ function AddRightSlideOver({
 
         {/* Notes */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fid}-notes`} className="block text-sm font-medium text-ink mb-1.5">
             Notes
           </label>
           <textarea
+            id={`${fid}-notes`}
             value={rightNote}
             onChange={(e) => setRightNote(e.target.value)}
             placeholder="Additional notes..."
