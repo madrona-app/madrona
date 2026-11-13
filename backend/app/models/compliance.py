@@ -8,6 +8,7 @@ from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import (
+    BigInteger,
     DateTime,
     Boolean,
     CheckConstraint,
@@ -724,6 +725,16 @@ class AuditCampaign(Base):
     sample_percentage: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
     sampling_criteria: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Generated check list. The seed plus the parameters recorded in
+    # check_list_params (method, size, scope, population count) reproduce the
+    # exact list, so an auditor can show how the sample was drawn.
+    check_list_seed: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    check_list_generated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    check_list_generated_by_id: Mapped[UUID | None] = mapped_column(
+        "check_list_generated_by", ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
+    )
+    check_list_params: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+
     # Methodology
     methodology: Mapped[str | None] = mapped_column(Text, nullable=True)
     verification_procedures: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -881,6 +892,10 @@ class AuditResult(Base):
 
     # Notes
     result_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Position in a generated check list (1-based); NULL for results recorded
+    # ad hoc rather than from a generated list.
+    check_sequence: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # Relationships
     campaign: Mapped["AuditCampaign"] = relationship(

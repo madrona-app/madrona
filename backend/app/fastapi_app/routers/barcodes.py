@@ -745,34 +745,45 @@ def perform_scan(
         obj.last_inventoried_by = auth.user_id
 
         if body.campaign_id:
+            # body is a Pydantic model: body["campaign_id"] raised TypeError,
+            # and "location_discrepancy" is not an allowed result_status, so
+            # every scan into a campaign failed. A scan now fills in the
+            # object's row on the campaign's check list when it has one.
+            from app.services.audit_checklist_service import (
+                apply_check_outcome,
+                recompute_campaign_counters,
+            )
             campaign = db.query(AuditCampaign).filter(
-                AuditCampaign.campaign_id == body["campaign_id"],
-                AuditCampaign.organization_id == str(org_id),
+                AuditCampaign.campaign_id == body.campaign_id,
+                AuditCampaign.organization_id == org_id,
             ).first()
 
             if campaign:
-                # Check location match if scan location provided
-                location_ok = True
-                if scan_location_id and obj.current_location_id:
-                    location_ok = str(obj.current_location_id) == str(scan_location_id)
+                audit_result = db.query(AuditResult).filter(
+                    AuditResult.campaign_id == campaign.campaign_id,
+                    AuditResult.object_id == obj.object_id,
+                ).order_by(AuditResult.check_sequence.asc().nulls_last()).first()
+                if audit_result is None:
+                    audit_result = AuditResult(
+                        campaign_id=campaign.campaign_id,
+                        organization_id=org_id,
+                        object_id=obj.object_id,
+                        expected_location_id=obj.current_location_id,
+                        result_status="pending",
+                    )
+                    db.add(audit_result)
 
-                audit_result = AuditResult(
-                    campaign_id=campaign.campaign_id,
-                    organization_id=str(org_id),
-                    object_id=resolved_entity_id,
-                    location_id=scan_location_id,
-                    verified=True,
-                    verified_by_id=auth.user_id,
-                    actual_location_id=scan_location_id,
-                    result_status="verified" if location_ok else "location_discrepancy",
-                )
-                db.add(audit_result)
-                campaign.objects_audited += 1
-                if location_ok:
-                    campaign.objects_verified += 1
-                else:
-                    campaign.objects_location_discrepancy += 1
+                scan_uuid = UUID(scan_location_id) if scan_location_id else None
+                expected_loc = audit_result.expected_location_id
+                if scan_uuid and expected_loc and scan_uuid != expected_loc:
+                    apply_check_outcome(audit_result, "wrong_location", auth.user_id, actual_location_id=scan_uuid)
                     result_status = "mismatch"
+                else:
+                    apply_check_outcome(audit_result, "found", auth.user_id)
+                    if scan_uuid and not expected_loc:
+                        audit_result.actual_location_id = scan_uuid
+                audit_result.location_id = scan_uuid
+                recompute_campaign_counters(db, campaign)
 
     # ── Check Out ────────────────────────────────────────────────────
     # Object is leaving its location. Record where it was.

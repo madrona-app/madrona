@@ -2,6 +2,7 @@ import type { SectionGroup } from '../../../components/record-detail';
 import {
   ClipboardCheck,
   Calendar,
+  ListChecks,
   CheckSquare,
   History,
 } from 'lucide-react';
@@ -67,6 +68,15 @@ export const AUDIT_CAMPAIGN_SECTION_GROUPS: SectionGroup[] = [
     ],
   },
   {
+    id: 'inventory',
+    label: 'Inventory',
+    icon: ListChecks,
+    defaultExpanded: true,
+    sections: [
+      { id: 'checklist', label: 'Check List', dataKey: 'checklist' },
+    ],
+  },
+  {
     id: 'outcome',
     label: 'Outcome',
     icon: CheckSquare,
@@ -92,15 +102,17 @@ export const SECTION_GROUPS: Record<string, string> = {
   sampling: 'overview',
   timeline: 'planning',
   methodology: 'planning',
+  checklist: 'inventory',
   findings: 'outcome',
   history: 'admin',
 };
 
-export const GROUP_ORDER = ['overview', 'planning', 'outcome', 'admin'];
+export const GROUP_ORDER = ['overview', 'planning', 'inventory', 'outcome', 'admin'];
 
 export const ALL_SECTION_IDS = [
   'info', 'sampling',
   'timeline', 'methodology',
+  'checklist',
   'findings',
   'history',
 ];
@@ -110,6 +122,7 @@ export const INITIAL_EXPANDED_SECTIONS: Record<string, boolean> = {
   sampling: true,
   timeline: false,
   methodology: false,
+  checklist: true,
   findings: false,
   history: false,
 };

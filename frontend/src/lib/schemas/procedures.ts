@@ -1331,6 +1331,17 @@ export const AuditCampaignSchema = z.object({
   sample_method: z.string().nullable().optional(),
   sample_size: z.number().nullable().optional(),
   sample_percentage: z.number().nullable().optional(),
+  sampling_criteria: z.string().nullable().optional(),
+  // Check-list scope: [{ location_id, include_children }] and object types.
+  target_locations: z.array(z.union([
+    z.string(),
+    z.object({ location_id: z.string(), include_children: z.boolean().optional(), label: z.string().optional() }),
+  ])).nullable().optional(),
+  target_object_types: z.array(z.string()).nullable().optional(),
+  check_list_seed: z.number().nullable().optional(),
+  check_list_generated_at: z.string().nullable().optional(),
+  check_list_generated_by: z.string().nullable().optional(),
+  check_list_params: z.record(z.string(), z.unknown()).nullable().optional(),
   start_date: z.string().nullable().optional(),
   end_date: z.string().nullable().optional(),
   items_total: z.number(),
