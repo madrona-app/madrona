@@ -126,6 +126,7 @@ describe('MFA steps', () => {
           onSetupStart={vi.fn().mockResolvedValue({
             secret: 'JBSWY3DPEHPK3PXP',
             otpauthUrl: 'otpauth://totp/Madrona:user@example.com?secret=JBSWY3DPEHPK3PXP',
+            qrSvg: 'data:image/svg+xml;charset=utf-8,%3Csvg%3E%3C/svg%3E',
             session: 's2',
           })}
           onSetupVerify={vi.fn()}
@@ -133,7 +134,7 @@ describe('MFA steps', () => {
       </main>,
     );
     await screen.findByRole('heading', { level: 1 });
-    await screen.findByAltText(/QR Code/);
+    await screen.findByAltText(/QR code/);
     await expectNoViolations(container);
   });
 });

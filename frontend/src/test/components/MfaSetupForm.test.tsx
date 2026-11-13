@@ -11,6 +11,7 @@ function renderForm(opts: {
   const onSetupStart = opts.setupStart ?? vi.fn().mockResolvedValue({
     secret: 'JBSWY3DPEHPK3PXP',
     otpauthUrl: 'otpauth://totp/Madrona:user@example.com?secret=JBSWY3DPEHPK3PXP',
+    qrSvg: 'data:image/svg+xml;charset=utf-8,%3Csvg%3E%3C/svg%3E',
     session: 'session-2',
   });
   const onSetupVerify = opts.setupVerify ?? vi.fn().mockResolvedValue(undefined);
@@ -45,8 +46,10 @@ describe('MfaSetupForm', () => {
     const { container } = renderForm();
     await screen.findByText('Set Up Authenticator');
     const img = container.querySelector('img');
-    expect(img?.getAttribute('src')).toContain('api.qrserver.com');
-    expect(img?.getAttribute('src')).toContain('otpauth');
+    expect(img?.getAttribute('src')).toMatch(/^data:image\/svg\+xml/);
+    expect(img?.getAttribute('src')).not.toContain('qrserver');
+    // The secret never leaves the page in an image URL.
+    expect(img?.getAttribute('src')).not.toContain('JBSWY3DPEHPK3PXP');
   });
 
   it('toggling the manual entry shows the secret', async () => {

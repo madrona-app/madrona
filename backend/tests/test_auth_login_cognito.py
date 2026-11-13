@@ -645,6 +645,8 @@ class TestMFAEnrollment:
         assert data["secret"] == "JBSWY3DPEHPK3PXP"
         assert info["email"] in data["otpauthUrl"]
         assert "otpauth://totp/Madrona:" in data["otpauthUrl"]
+        # The QR code is drawn by our server, so the secret never goes to a third party.
+        assert data["qrSvg"].startswith("data:image/svg+xml")
 
     @patch("app.fastapi_app.routers.auth.cognito_get_user")
     def test_mfa_setup_start_email_mismatch(self, mock_get_user, client, db_session):
