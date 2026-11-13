@@ -8,7 +8,7 @@
  * 4. Execute and show results
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useId, useState, useEffect, useMemo } from 'react';
 import Checkbox from '../Checkbox';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
@@ -84,6 +84,7 @@ export default function MediaBulkActionDialog({
   const { activeOrganization } = useOrganization();
   const orgId = activeOrganization?.organization_id;
 
+  const fid = useId();
   const { modalRef, titleId, descriptionId } = useAccessibleModal({
     isOpen,
     onClose,
@@ -247,15 +248,14 @@ export default function MediaBulkActionDialog({
 
   return (
     <ModalPortal>
-    <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50">
+      <div aria-hidden="true" className="absolute inset-0" onClick={onClose} />
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation only: keeps dialog clicks from bubbling to React ancestors through the portal */}
       <div
         ref={modalRef}
         {...getModalAriaProps(titleId, descriptionId)}
         onClick={(e) => e.stopPropagation()}
-        className="bg-parchment rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col"
+        className="relative bg-parchment rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col"
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-lichen">
@@ -351,10 +351,11 @@ export default function MediaBulkActionDialog({
               {selectedAction.key === 'download_assets' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
+                    <label htmlFor={`${fid}-download-format`} className="block text-sm font-medium text-ink mb-1">
                       Download Format
                     </label>
                     <select
+                      id={`${fid}-download-format`}
                       value={(actionParams.derivative_type as string) || 'original'}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, derivative_type: e.target.value })
@@ -391,10 +392,11 @@ export default function MediaBulkActionDialog({
               {selectedAction.key === 'move_to_folder' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
+                    <label htmlFor={`${fid}-folder`} className="block text-sm font-medium text-ink mb-1">
                       Destination Folder <span className="text-semantic-error">*</span>
                     </label>
                     <select
+                      id={`${fid}-folder`}
                       value={(actionParams.folder_id as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, folder_id: e.target.value })
@@ -416,10 +418,11 @@ export default function MediaBulkActionDialog({
               {selectedAction.key === 'set_rights_policy' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
+                    <label htmlFor={`${fid}-copyright`} className="block text-sm font-medium text-ink mb-1">
                       Copyright Status <span className="text-semantic-error">*</span>
                     </label>
                     <select
+                      id={`${fid}-copyright`}
                       value={(actionParams.copyright_status as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, copyright_status: e.target.value })
@@ -438,8 +441,9 @@ export default function MediaBulkActionDialog({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">Rights Statement (optional)</label>
+                    <label htmlFor={`${fid}-rights-statement`} className="block text-sm font-medium text-ink mb-1">Rights Statement (optional)</label>
                     <textarea
+                      id={`${fid}-rights-statement`}
                       value={(actionParams.rights_statement as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, rights_statement: e.target.value })
@@ -455,9 +459,10 @@ export default function MediaBulkActionDialog({
               {selectedAction.key === 'create_renditions' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
+                    <fieldset>
+                    <legend className="block text-sm font-medium text-ink mb-1">
                       Rendition Types <span className="text-semantic-error">*</span>
-                    </label>
+                    </legend>
                     <div className="space-y-2">
                       {[
                         { value: 'thumbnail', label: 'Thumbnail (200px)' },
@@ -482,6 +487,7 @@ export default function MediaBulkActionDialog({
                         </label>
                       ))}
                     </div>
+                    </fieldset>
                   </div>
                 </div>
               )}
@@ -489,7 +495,7 @@ export default function MediaBulkActionDialog({
               {selectedAction.key === 'add_to_lightbox' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
+                    <label htmlFor={`${fid}-lightbox`} className="block text-sm font-medium text-ink mb-1">
                       Target Lightbox <span className="text-semantic-error">*</span>
                     </label>
                     {(() => {
@@ -506,6 +512,7 @@ export default function MediaBulkActionDialog({
                       return (
                         <>
                           <select
+                            id={`${fid}-lightbox`}
                             value={(actionParams.target_workspace_id as string) || ''}
                             onChange={(e) =>
                               setActionParams({
@@ -536,8 +543,9 @@ export default function MediaBulkActionDialog({
                     })()}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">Note (optional)</label>
+                    <label htmlFor={`${fid}-note`} className="block text-sm font-medium text-ink mb-1">Note (optional)</label>
                     <textarea
+                      id={`${fid}-note`}
                       value={(actionParams.note as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, note: e.target.value })
@@ -553,10 +561,11 @@ export default function MediaBulkActionDialog({
               {selectedAction.key === 'apply_metadata_template' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
+                    <label htmlFor={`${fid}-template`} className="block text-sm font-medium text-ink mb-1">
                       Metadata Template <span className="text-semantic-error">*</span>
                     </label>
                     <select
+                      id={`${fid}-template`}
                       value={(actionParams.template_id as string) || ''}
                       onChange={(e) =>
                         setActionParams({ ...actionParams, template_id: e.target.value })
@@ -602,8 +611,9 @@ export default function MediaBulkActionDialog({
                     </div>
                   )}
                   <div>
-                    <label className="flex items-center gap-2">
+                    <label htmlFor={`${fid}-overwrite`} className="flex items-center gap-2">
                       <Checkbox
+                        id={`${fid}-overwrite`}
                         checked={(actionParams.overwrite_existing as boolean) || false}
                         onChange={(e) =>
                           setActionParams({ ...actionParams, overwrite_existing: e.target.checked })
@@ -719,8 +729,9 @@ export default function MediaBulkActionDialog({
                       </div>
                     ))}
                   </div>
-                  <label className="flex items-center gap-2 mt-2 text-sm">
+                  <label htmlFor={`${fid}-skip-blocked`} className="flex items-center gap-2 mt-2 text-sm">
                     <Checkbox
+                      id={`${fid}-skip-blocked`}
                       checked={skipBlocked}
                       onChange={(e) => setSkipBlocked(e.target.checked)}
                     />
@@ -917,6 +928,8 @@ function BulkTagPicker({
   onChange,
 }: BulkTagPickerProps) {
   const [keywordInput, setKeywordInput] = useState('');
+  const pid = useId();
+  const valuesLabelId = `${pid}-values`;
 
   const fieldType = selectedDefinition?.field_type;
   const isControlled =
@@ -962,6 +975,7 @@ function BulkTagPicker({
       const current = selectedValueIds[0] ?? '';
       return (
         <select
+          aria-labelledby={valuesLabelId}
           value={current}
           onChange={(e) => onChange({ value_ids: e.target.value ? [e.target.value] : [] })}
           className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -981,7 +995,11 @@ function BulkTagPicker({
       const selectedSet = new Set(selectedValueIds);
       const visible = values.filter((v) => v.is_active);
       return (
-        <div className="max-h-64 overflow-auto border border-lichen rounded-sm bg-parchment divide-y divide-lichen">
+        <div
+          role="group"
+          aria-labelledby={valuesLabelId}
+          className="max-h-64 overflow-auto border border-lichen rounded-sm bg-parchment divide-y divide-lichen"
+        >
           {visible.length === 0 ? (
             <p className="text-sm text-archive italic p-3">No allowed values yet.</p>
           ) : (
@@ -1048,6 +1066,7 @@ function BulkTagPicker({
             ))}
             <input
               type="text"
+              aria-labelledby={valuesLabelId}
               value={keywordInput}
               onChange={(e) => setKeywordInput(e.target.value)}
               onKeyDown={(e) => {
@@ -1065,7 +1084,7 @@ function BulkTagPicker({
             />
           </div>
           {keywordInput.trim() && (suggestions.length > 0 || !exact) && (
-            <div className="border border-lichen rounded-sm max-h-48 overflow-auto bg-parchment">
+            <div role="group" aria-label="Suggestions" className="border border-lichen rounded-sm max-h-48 overflow-auto bg-parchment">
               {suggestions.map((v) => (
                 <button
                   key={v.value_id}
@@ -1103,6 +1122,7 @@ function BulkTagPicker({
       return (
         <input
           type="date"
+          aria-labelledby={valuesLabelId}
           value={single}
           onChange={(e) => onChange({ values: e.target.value ? [e.target.value] : [] })}
           className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -1112,6 +1132,7 @@ function BulkTagPicker({
     return (
       <input
         type="text"
+        aria-labelledby={valuesLabelId}
         value={single}
         onChange={(e) => onChange({ values: e.target.value ? [e.target.value] : [] })}
         placeholder="Enter a value…"
@@ -1124,10 +1145,11 @@ function BulkTagPicker({
     <div className="space-y-4">
       {/* Step 1: pick the tag category */}
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${pid}-definition`} className="block text-sm font-medium text-ink mb-1">
           Tag category <span className="text-semantic-error">*</span>
         </label>
         <select
+          id={`${pid}-definition`}
           value={selectedDefinition?.definition_id ?? ''}
           onChange={(e) => onChange({ definition_id: e.target.value, value_ids: [], values: [] })}
           className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -1149,8 +1171,9 @@ function BulkTagPicker({
       {/* Step 2: mode */}
       {selectedDefinition && (
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">Mode</label>
+          <label htmlFor={`${pid}-mode`} className="block text-sm font-medium text-ink mb-1">Mode</label>
           <select
+            id={`${pid}-mode`}
             value={mode}
             onChange={(e) => onChange({ mode: e.target.value as 'append' | 'remove' | 'replace' })}
             className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -1170,9 +1193,9 @@ function BulkTagPicker({
       {/* Step 3: values */}
       {selectedDefinition && (
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <span id={valuesLabelId} className="block text-sm font-medium text-ink mb-1">
             Values <span className="text-semantic-error">*</span>
-          </label>
+          </span>
           {isControlled ? renderValuePicker() : renderFreeformPicker()}
         </div>
       )}

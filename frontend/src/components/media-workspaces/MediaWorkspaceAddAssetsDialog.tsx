@@ -7,7 +7,7 @@
  * - Add selected assets to the current workspace
  */
 
-import { useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   X,
@@ -58,6 +58,14 @@ export default function MediaWorkspaceAddAssetsDialog({
   });
 
   const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Initial focus goes to the search field (runs after the modal hook's own first-element focus)
+  useEffect(() => {
+    if (!isOpen) return;
+    const t = setTimeout(() => searchInputRef.current?.focus(), 0);
+    return () => clearTimeout(t);
+  }, [isOpen]);
   const [selectedMediaIds, setSelectedMediaIds] = useState<Set<string>>(new Set());
   const [mediaTypeFilter, setMediaTypeFilter] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
@@ -134,15 +142,14 @@ export default function MediaWorkspaceAddAssetsDialog({
 
   return (
     <ModalPortal>
-    <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
-      onClick={handleClose}
-    >
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50">
+      <div aria-hidden="true" className="absolute inset-0" onClick={handleClose} />
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation only: keeps dialog clicks from bubbling to React ancestors through the portal */}
       <div
         ref={modalRef}
         {...getModalAriaProps(titleId, descriptionId)}
         onClick={(e) => e.stopPropagation()}
-        className="bg-parchment rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="relative bg-parchment rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-lichen">
@@ -174,15 +181,17 @@ export default function MediaWorkspaceAddAssetsDialog({
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-archive"
               />
               <input
+                ref={searchInputRef}
                 type="text"
                 placeholder="Search media..."
+                aria-label="Search media"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
-                autoFocus
               />
             </div>
             <select
+              aria-label="Filter by media type"
               value={mediaTypeFilter}
               onChange={(e) => setMediaTypeFilter(e.target.value)}
               className="px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -261,6 +270,8 @@ export default function MediaWorkspaceAddAssetsDialog({
                     return (
                       <button
                         key={item.media_id}
+                        type="button"
+                        aria-pressed={isSelected}
                         onClick={() => toggleMediaSelection(item.media_id)}
                         className={cn(
                           'relative aspect-square rounded-sm overflow-hidden border-2 transition-all',
