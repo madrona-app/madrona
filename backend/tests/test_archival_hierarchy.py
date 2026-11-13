@@ -95,3 +95,48 @@ def test_parent_must_be_same_org(tree, viewer_auth_setup):
     # A parent id from another organization is not found from this org.
     import uuid
     assert _put(c, org, t["f2"], {"parent_object_id": str(uuid.uuid4())}).status_code == 404
+
+
+def test_ead3_export(tree, db_session):
+    from lxml import etree
+    from app.models import ObjectSubject, SubjectAuthority
+    import uuid as _uuid
+
+    c, org, t = tree
+    sa = SubjectAuthority(organization_id=org.organization_id, preferred_term="Blind -- Civil rights",
+                          lcsh_id="sh85014896")
+    db_session.add(sa)
+    db_session.flush()
+    db_session.add(ObjectSubject(organization_id=org.organization_id, object_id=_uuid.UUID(t["coll"]),
+                                 subject_authority_id=sa.authority_id))
+    db_session.commit()
+    _put(c, org, t["coll"], {"full_description": "Papers of Jacobus tenBroek.\n\nIncludes correspondence."})
+
+    resp = c.get(f"{_base(org)}/{t['coll']}/ead")
+    assert resp.status_code == 200
+    assert "attachment" in resp.headers["content-disposition"]
+    ns = {"e": "http://ead3.archivists.org/schema/"}
+    root = etree.fromstring(resp.content)
+    assert root.tag == "{http://ead3.archivists.org/schema/}ead"
+    # Required control elements.
+    for path in ["e:control/e:recordid", "e:control/e:filedesc/e:titlestmt/e:titleproper",
+                 "e:control/e:maintenancestatus", "e:control/e:maintenanceagency/e:agencyname",
+                 "e:control/e:maintenancehistory/e:maintenanceevent/e:eventtype",
+                 "e:control/e:languagedeclaration/e:script"]:
+        assert root.find(path, ns) is not None, path
+    arch = root.find("e:archdesc", ns)
+    assert arch.get("level") == "collection"
+    assert arch.find("e:did/e:unittitle", ns).text == "tenBroek papers"
+    assert [p.text for p in arch.findall("e:scopecontent/e:p", ns)] == ["Papers of Jacobus tenBroek.", "Includes correspondence."]
+    subj = arch.find("e:controlaccess/e:subject", ns)
+    assert subj.get("source") == "lcsh" and subj.get("identifier").endswith("sh85014896")
+    series = arch.find("e:dsc/e:c", ns)
+    assert series.get("level") == "series"
+    box = series.find("e:c", ns)
+    assert (box.get("level"), box.get("otherlevel")) == ("otherlevel", "box")
+    folder = box.find("e:c", ns)
+    assert [(x.get("localtype"), x.text) for x in folder.findall("e:did/e:container", ns)] == [("box", "NFB.1.1.B1")]
+    item = folder.find("e:c", ns)
+    assert item.get("level") == "item"
+    assert [(x.get("localtype"), x.text) for x in item.findall("e:did/e:container", ns)] == [
+        ("box", "NFB.1.1.B1"), ("folder", "NFB.1.1.B1.F1")]

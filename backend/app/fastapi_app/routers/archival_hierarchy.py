@@ -128,3 +128,30 @@ def reorder_record_children(
         raise HTTPException(status_code=422, detail={"code": "validation_error", "message": "object_ids must be ids"})
     db.commit()
     return {"reordered": len(ids)}
+
+
+@router.get(_BASE + "/ead", summary="Export a finding aid as EAD3")
+def export_ead(
+    organization_id: UUID,
+    object_id: UUID,
+    auth: AuthContext = Depends(require_permission(Permission.COLLECTIONS_VIEW)),
+    db: Session = Depends(get_db),
+):
+    """EAD3 finding aid for this record and everything below it, as a download."""
+    import re
+
+    from fastapi.responses import Response
+
+    from app.services.ead_export import build_ead3
+
+    obj = _obj(db, organization_id, object_id)
+    try:
+        xml = build_ead3(db, organization_id, obj)
+    except ValueError as e:
+        raise HTTPException(status_code=413, detail={"code": "too_large", "message": str(e)})
+    name = re.sub(r"[^A-Za-z0-9._-]+", "_", obj.object_number or str(obj.object_id))[:100]
+    return Response(
+        content=xml,
+        media_type="application/xml",
+        headers={"Content-Disposition": f'attachment; filename="{name}-ead3.xml"'},
+    )
