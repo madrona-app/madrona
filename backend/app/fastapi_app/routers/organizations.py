@@ -2016,6 +2016,64 @@ def update_procedure_enforcement(
 
 
 # =============================================================================
+# STRICT VOCABULARY VALIDATION SETTINGS
+# =============================================================================
+
+
+@router.get("/api/organizations/{org_id}/settings/vocabulary-validation", response_model=dict, summary="Get vocabulary validation settings")
+def get_vocabulary_validation(
+    org_id: UUID,
+    # Readable by anyone who can view collections: the object editor needs to
+    # know which fields are strict so it can disable "use as entered".
+    auth: AuthContext = Depends(require_permission(Permission.COLLECTIONS_VIEW)),
+    db: Session = Depends(get_db),
+):
+    """List vocabulary-backed object fields and whether each is strict."""
+    from app.models import Organization
+    from app.services.vocabulary_validation import describe_settings
+
+    org = db.query(Organization).filter_by(organization_id=org_id).first()
+    if not org:
+        raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Organization not found"})
+    return {"fields": describe_settings(db, org_id)}
+
+
+@router.put("/api/organizations/{org_id}/settings/vocabulary-validation", response_model=dict, summary="Update vocabulary validation settings")
+def update_vocabulary_validation(
+    org_id: UUID,
+    data: dict,
+    auth: AuthContext = Depends(require_permission(Permission.ORG_MANAGE_SETTINGS)),
+    db: Session = Depends(get_db),
+):
+    """Switch strict validation on or off per field. Body: {field_key: bool}."""
+    from sqlalchemy.orm.attributes import flag_modified
+    from app.models import Organization
+    from app.services.vocabulary_validation import STRICT_VOCABULARY_FIELDS, describe_settings
+
+    org = db.query(Organization).filter_by(organization_id=org_id).first()
+    if not org:
+        raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Organization not found"})
+
+    unknown = [k for k in data if k not in STRICT_VOCABULARY_FIELDS]
+    invalid = [k for k, v in data.items() if not isinstance(v, bool)]
+    if unknown or invalid:
+        raise HTTPException(status_code=422, detail={
+            "code": "validation_error",
+            "message": (
+                f"Unknown field(s): {', '.join(sorted(unknown))}" if unknown
+                else f"Value must be true or false for: {', '.join(sorted(invalid))}"
+            ),
+        })
+
+    settings = dict(org.vocabulary_strict_fields or {})
+    settings.update(data)
+    org.vocabulary_strict_fields = settings
+    flag_modified(org, "vocabulary_strict_fields")
+    db.commit()
+    return {"fields": describe_settings(db, org_id)}
+
+
+# =============================================================================
 # MEDIA-RIGHTS ENFORCEMENT SETTINGS
 # =============================================================================
 

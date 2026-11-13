@@ -144,6 +144,22 @@ export const FIELD_TYPE_CONFIG: Record<FieldType, {
   },
 };
 
+/**
+ * VocabularyTerm.vocabulary key for each reference source, used when a chosen
+ * suggestion is cached into the organization's vocabulary.
+ */
+export const REFERENCE_SOURCE_VOCABULARY: Partial<Record<ReferenceSource, string>> = {
+  AAT: 'aat',
+  ULAN: 'ulan',
+  TGN: 'tgn',
+  LCSH: 'lcsh',
+  LCNAF: 'lcnaf',
+  Iconclass: 'iconclass',
+  Wikidata: 'wikidata',
+  Nomenclature: 'nomenclature',
+  VIAF: 'viaf',
+};
+
 // ============================================================================
 // API CLIENT
 // ============================================================================
@@ -308,6 +324,39 @@ export class AutocompleteApiClient {
       return await response.json();
     } catch {
       return null;
+    }
+  }
+
+  /**
+   * Save a chosen reference-source suggestion into the organization's
+   * vocabulary (POST /autocomplete/select). Used for strict fields whose
+   * stored value is plain text, so the API can recognise the term later.
+   * Throws when the request fails.
+   */
+  async select(suggestion: AutocompleteSuggestion, applicableField?: string): Promise<void> {
+    const url = AUTOCOMPLETE_ENDPOINTS.select(this.organizationId);
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken;
+    }
+    const source = suggestion.reference?.source;
+    const response = await fetch(`${this.baseUrl}${url}`, {
+      method: 'POST',
+      headers,
+      credentials: 'include',
+      body: JSON.stringify({
+        suggestion_id: suggestion.id,
+        label: suggestion.label,
+        description: suggestion.description,
+        organization_id: this.organizationId,
+        vocabulary: source ? REFERENCE_SOURCE_VOCABULARY[source] : undefined,
+        external_uri: suggestion.reference?.uri,
+        applicable_fields: applicableField ? [applicableField] : undefined,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`Saving the term failed: ${response.statusText}`);
     }
   }
 

@@ -94,6 +94,8 @@ export function CreatorsField({
                   placeholder="Search for artist or maker (ULAN)..."
                   showVerifiedBadge={true}
                   allowCreate={true}
+                  strictField="creators"
+                  ariaLabel={`Creator ${i + 1}`}
                 />
               </div>
               <button
@@ -102,9 +104,10 @@ export function CreatorsField({
                   onChange(creators.filter((_, idx) => idx !== i));
                   onSave();
                 }}
-                className="p-1 text-archive hover:text-semantic-error mt-2"
+                aria-label={`Remove creator ${i + 1}${c.name ? `, ${c.name}` : ''}`}
+                className="min-h-11 min-w-11 inline-flex items-center justify-center rounded text-archive hover:text-semantic-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
               >
-                <X size={16} />
+                <X size={16} aria-hidden="true" />
               </button>
             </div>
             <div className="grid grid-cols-2 gap-2">

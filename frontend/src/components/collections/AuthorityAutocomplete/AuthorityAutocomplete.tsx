@@ -6,16 +6,24 @@
  *
  * Design principles:
  * - Works offline (local suggestions always available)
- * - Authorities are optional (users can ignore them)
+ * - Authorities are optional (users can ignore them) unless the organization
+ *   has switched the field to strict vocabulary validation
  * - No jargon (users see "verified" not "linked data")
  * - Progressive enhancement (basic → local → external)
+ *
+ * Accessibility: follows the WAI-ARIA combobox pattern with a listbox popup —
+ * role="combobox" input with aria-expanded / aria-controls /
+ * aria-activedescendant, a grouped listbox (role="group" + role="option"),
+ * a polite live region announcing the result count, Escape to close, and
+ * focus that never leaves the input while moving through options.
  */
 
 import React, { forwardRef, useId, useRef, useState, useLayoutEffect, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, Clock, Building2, Check, Loader2, WifiOff, Plus, ExternalLink } from 'lucide-react';
+import { Search, Clock, Building2, Check, Loader2, WifiOff, Plus } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { useOrganization } from '../../../contexts/useOrganization';
+import { useIsStrictVocabularyField } from '../../../hooks/useVocabularyValidation';
 import { useAutocomplete } from './useAutocomplete';
 import type {
   AuthorityAutocompleteProps,
@@ -29,14 +37,14 @@ import { REFERENCE_SOURCE_LABELS } from './types';
 // ============================================================================
 
 /**
- * Icon for suggestion source.
+ * Icon for suggestion source (decorative; the group label says the same).
  */
 function SourceIcon({ source }: { source: SuggestionSource }) {
   switch (source) {
     case 'recent':
-      return <Clock size={14} className="text-archive" />;
+      return <Clock size={14} className="text-archive shrink-0 mt-1" aria-hidden="true" />;
     case 'organization':
-      return <Building2 size={14} className="text-forest" />;
+      return <Building2 size={14} className="text-forest shrink-0 mt-1" aria-hidden="true" />;
     default:
       return null;
   }
@@ -46,12 +54,10 @@ function SourceIcon({ source }: { source: SuggestionSource }) {
  * Badge showing where a suggestion came from.
  */
 function SourceBadge({ suggestion }: { suggestion: AutocompleteSuggestion }) {
-  // Recent entries don't need a badge
   if (suggestion.source === 'recent') {
     return null;
   }
 
-  // Organization entries
   if (suggestion.source === 'organization') {
     return (
       <span className="text-xs text-forest bg-forest/10 px-1.5 py-0.5 rounded">
@@ -60,11 +66,10 @@ function SourceBadge({ suggestion }: { suggestion: AutocompleteSuggestion }) {
     );
   }
 
-  // External sources
   if (suggestion.reference) {
     const label = REFERENCE_SOURCE_LABELS[suggestion.reference.source] || suggestion.reference.source;
     return (
-      <span className="text-xs text-archive bg-stone px-1.5 py-0.5 rounded">
+      <span className="text-xs text-accessible-gray bg-stone px-1.5 py-0.5 rounded">
         {label}
       </span>
     );
@@ -74,39 +79,33 @@ function SourceBadge({ suggestion }: { suggestion: AutocompleteSuggestion }) {
 }
 
 /**
- * Section header in the dropdown.
- */
-function SectionHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="px-3 py-1.5 text-xs font-medium text-archive uppercase tracking-wide">
-      {children}
-    </div>
-  );
-}
-
-/**
- * A single suggestion item.
+ * A single suggestion option.
  */
 function SuggestionItem({
+  id,
   suggestion,
   isHighlighted,
-  onClick,
+  onSelect,
   onMouseEnter,
 }: {
+  id: string;
   suggestion: AutocompleteSuggestion;
   isHighlighted: boolean;
-  onClick: () => void;
+  onSelect: () => void;
   onMouseEnter: () => void;
 }) {
   return (
     <li
+      id={id}
       role="option"
       aria-selected={isHighlighted}
-      onClick={onClick}
+      // Keep focus in the input so the combobox stays the focused element
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={onSelect}
       onMouseEnter={onMouseEnter}
       className={cn(
         'px-3 py-2 cursor-pointer transition-colors',
-        isHighlighted ? 'bg-bark/10' : 'hover:bg-stone/50'
+        isHighlighted ? 'bg-bark/10 outline outline-2 -outline-offset-2 outline-bark/40' : 'hover:bg-stone/50'
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -125,18 +124,6 @@ function SuggestionItem({
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <SourceBadge suggestion={suggestion} />
-          {suggestion.reference?.uri && (
-            <a
-              href={suggestion.reference.uri}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="text-archive hover:text-bark p-0.5"
-              title={`View in ${REFERENCE_SOURCE_LABELS[suggestion.reference.source] || suggestion.reference.source}`}
-            >
-              <ExternalLink size={12} />
-            </a>
-          )}
         </div>
       </div>
     </li>
@@ -144,36 +131,33 @@ function SuggestionItem({
 }
 
 /**
- * "Use as entered" option at the bottom.
+ * A labelled group of options inside the listbox.
  */
-function CreateNewItem({
-  value,
-  isHighlighted,
-  onClick,
-  onMouseEnter,
+function SuggestionGroup({
+  id,
+  label,
+  children,
 }: {
-  value: string;
-  isHighlighted: boolean;
-  onClick: () => void;
-  onMouseEnter: () => void;
+  id: string;
+  label: string;
+  children: React.ReactNode;
 }) {
   return (
-    <li
-      role="option"
-      aria-selected={isHighlighted}
-      onClick={onClick}
-      onMouseEnter={onMouseEnter}
-      className={cn(
-        'px-3 py-2 cursor-pointer transition-colors border-t border-lichen',
-        isHighlighted ? 'bg-bark/10' : 'hover:bg-stone/50'
-      )}
-    >
-      <div className="flex items-center gap-2 text-bark">
-        <Plus size={14} />
-        <span>Use "{value}" as entered</span>
-      </div>
-    </li>
+    <ul role="group" aria-labelledby={id}>
+      <li
+        role="presentation"
+        id={id}
+        className="px-3 py-1.5 text-xs font-medium text-accessible-gray uppercase tracking-wide"
+      >
+        {label}
+      </li>
+      {children}
+    </ul>
   );
+}
+
+function pluralSuggestions(n: number): string {
+  return n === 1 ? '1 suggestion' : `${n} suggestions`;
 }
 
 // ============================================================================
@@ -196,6 +180,8 @@ export const AuthorityAutocomplete = forwardRef<
     maxSuggestions = 8,
     debounceMs = 300,
     allowCreate = true,
+    strictField,
+    describedBy,
     className,
     ariaLabel,
     id: propId,
@@ -206,14 +192,17 @@ export const AuthorityAutocomplete = forwardRef<
   const generatedId = useId();
   const id = propId || generatedId;
   const menuId = `${id}-menu`;
+  const statusId = `${id}-status`;
+  const strictHintId = `${id}-strict-hint`;
+  const verifiedId = `${id}-verified`;
+  const optionId = (index: number) => `${id}-option-${index}`;
 
-  // Refs for portal positioning
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
 
-  // Get organization ID from context
   const { activeOrganizationId } = useOrganization();
   const organizationId = activeOrganizationId || '';
+  const isStrict = useIsStrictVocabularyField(organizationId, strictField);
 
   const {
     inputValue,
@@ -223,6 +212,8 @@ export const AuthorityAutocomplete = forwardRef<
     setHighlightedIndex,
     isLoading,
     isOffline,
+    notice,
+    showCreateOption,
     handleSelect,
     handleCreateNew,
     getInputProps,
@@ -234,169 +225,178 @@ export const AuthorityAutocomplete = forwardRef<
     maxSuggestions,
     debounceMs,
     onSelect: onChange,
+    allowCreate,
+    strict: isStrict,
+    strictField,
   });
 
   // Group suggestions by source for display
   const recentSuggestions = suggestions.filter((s) => s.source === 'recent');
-  const orgSuggestions = suggestions.filter((s) => s.source === 'organization');
+  const orgSuggestions = suggestions.filter((s) => s.source === 'organization' || s.source === 'vocabulary');
   const externalSuggestions = suggestions.filter(
-    (s) => !['recent', 'organization'].includes(s.source)
+    (s) => !['recent', 'organization', 'vocabulary'].includes(s.source)
   );
+  // Display order must match keyboard order
+  const ordered = [...recentSuggestions, ...orgSuggestions, ...externalSuggestions];
+  const indexOf = (s: AutocompleteSuggestion) => ordered.indexOf(s);
+  const createIndex = ordered.length;
 
-  // Track index across all groups
-  let currentIndex = 0;
-  const getIndexAndIncrement = () => currentIndex++;
+  const hasReference = !!(value?.authorities && value.authorities.length > 0);
+  const query = inputValue.trim();
+  const listboxVisible = isOpen && !disabled && (ordered.length > 0 || showCreateOption);
+  const panelVisible = isOpen && !disabled && (listboxVisible || isLoading || query.length >= 2);
 
-  // Determine if we have a verified value
-  const hasReference = value?.authorities && value.authorities.length > 0;
+  const activeDescendant =
+    listboxVisible && highlightedIndex >= 0 && highlightedIndex <= createIndex
+      ? (highlightedIndex === createIndex ? (showCreateOption ? optionId(createIndex) : undefined) : optionId(highlightedIndex))
+      : undefined;
 
-  // Update dropdown position
+  // Screen-reader status: result count, searching, or why nothing happened
+  let statusMessage = '';
+  if (notice) {
+    statusMessage = notice;
+  } else if (isOpen && !disabled) {
+    if (isLoading && ordered.length === 0) {
+      statusMessage = 'Searching reference sources.';
+    } else if (ordered.length > 0) {
+      statusMessage = `${pluralSuggestions(ordered.length)} available. Use the up and down arrow keys to review, Enter to choose.`;
+    } else if (query.length >= 2) {
+      statusMessage = isStrict
+        ? 'No matching terms. This field only accepts terms from your vocabulary or a reference source.'
+        : 'No matches. Press Enter to use your entry as typed.';
+    }
+  }
+
+
   const updateDropdownPosition = useCallback(() => {
     if (wrapperRef.current) {
       const rect = wrapperRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom,
-        left: rect.left,
-        width: rect.width,
-      });
+      setDropdownPosition({ top: rect.bottom, left: rect.left, width: rect.width });
     }
   }, []);
 
-  // Calculate dropdown position when open
-  // Use fixed positioning with viewport-relative coords for compatibility with custom scroll containers
+  // Fixed positioning with viewport-relative coords for custom scroll containers
   useLayoutEffect(() => {
     if (isOpen) {
       updateDropdownPosition();
     }
   }, [isOpen, inputValue, updateDropdownPosition]);
 
-  // Update position on scroll (for fixed positioning)
   useEffect(() => {
     if (!isOpen) return;
-
-    // Listen to scroll events on window and any scroll containers
-    const handleScroll = () => {
-      updateDropdownPosition();
-    };
-
-    // Capture scroll events from any element (including custom scroll containers)
+    const handleScroll = () => updateDropdownPosition();
     window.addEventListener('scroll', handleScroll, true);
     window.addEventListener('resize', handleScroll);
-
     return () => {
       window.removeEventListener('scroll', handleScroll, true);
       window.removeEventListener('resize', handleScroll);
     };
   }, [isOpen, updateDropdownPosition]);
 
-  // Dropdown content - rendered via portal with fixed positioning
-  const dropdownContent = isOpen && (inputValue.trim() || suggestions.length > 0) && (
-    <ul
-      {...getMenuProps()}
-      id={menuId}
+  // Keep the highlighted option scrolled into view
+  useEffect(() => {
+    if (!activeDescendant) return;
+    const el = document.getElementById(activeDescendant);
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ block: 'nearest' });
+    }
+  }, [activeDescendant]);
+
+  const renderItem = (s: AutocompleteSuggestion) => {
+    const index = indexOf(s);
+    return (
+      <SuggestionItem
+        key={s.id}
+        id={optionId(index)}
+        suggestion={s}
+        isHighlighted={highlightedIndex === index}
+        onSelect={() => handleSelect(s)}
+        onMouseEnter={() => setHighlightedIndex(index)}
+      />
+    );
+  };
+
+  const dropdownContent = panelVisible && (
+    <div
       style={{
         position: 'fixed',
         top: dropdownPosition.top,
         left: dropdownPosition.left,
         width: dropdownPosition.width,
       }}
-      className={cn(
-        'z-[9999] bg-parchment border border-lichen rounded-lg shadow-lg',
-        'max-h-80 overflow-y-auto'
-      )}
+      className="z-[9999] bg-parchment border border-lichen rounded-lg shadow-lg max-h-80 overflow-y-auto"
     >
-      {/* Recent suggestions */}
-      {recentSuggestions.length > 0 && (
-        <>
-          <SectionHeader>Recently Used</SectionHeader>
-          {recentSuggestions.map((suggestion) => {
-            const index = getIndexAndIncrement();
-            return (
-              <SuggestionItem
-                key={suggestion.id}
-                suggestion={suggestion}
-                isHighlighted={highlightedIndex === index}
-                onClick={() => handleSelect(suggestion)}
-                onMouseEnter={() => setHighlightedIndex(index)}
-              />
-            );
-          })}
-        </>
+      {listboxVisible && (
+        <div
+          role={getMenuProps().role}
+          id={menuId}
+          aria-label={ariaLabel ? `${ariaLabel} suggestions` : `${fieldType} suggestions`}
+        >
+          {recentSuggestions.length > 0 && (
+            <SuggestionGroup id={`${id}-group-recent`} label="Recently used">
+              {recentSuggestions.map(renderItem)}
+            </SuggestionGroup>
+          )}
+          {orgSuggestions.length > 0 && (
+            <SuggestionGroup id={`${id}-group-org`} label="From your collection">
+              {orgSuggestions.map(renderItem)}
+            </SuggestionGroup>
+          )}
+          {externalSuggestions.length > 0 && (
+            <SuggestionGroup id={`${id}-group-external`} label="Reference sources">
+              {externalSuggestions.map(renderItem)}
+            </SuggestionGroup>
+          )}
+          {showCreateOption && (
+            <div
+              id={optionId(createIndex)}
+              role="option"
+              aria-selected={highlightedIndex === createIndex}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={handleCreateNew}
+              onMouseEnter={() => setHighlightedIndex(createIndex)}
+              className={cn(
+                'px-3 py-2 cursor-pointer transition-colors border-t border-lichen',
+                highlightedIndex === createIndex ? 'bg-bark/10 outline outline-2 -outline-offset-2 outline-bark/40' : 'hover:bg-stone/50'
+              )}
+            >
+              <div className="flex items-center gap-2 text-bark">
+                <Plus size={14} aria-hidden="true" />
+                <span>Use &ldquo;{query}&rdquo; as entered</span>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
-      {/* Organization suggestions */}
-      {orgSuggestions.length > 0 && (
-        <>
-          <SectionHeader>From Your Collection</SectionHeader>
-          {orgSuggestions.map((suggestion) => {
-            const index = getIndexAndIncrement();
-            return (
-              <SuggestionItem
-                key={suggestion.id}
-                suggestion={suggestion}
-                isHighlighted={highlightedIndex === index}
-                onClick={() => handleSelect(suggestion)}
-                onMouseEnter={() => setHighlightedIndex(index)}
-              />
-            );
-          })}
-        </>
-      )}
-
-      {/* External suggestions */}
-      {externalSuggestions.length > 0 && (
-        <>
-          <SectionHeader>Reference Sources</SectionHeader>
-          {externalSuggestions.map((suggestion) => {
-            const index = getIndexAndIncrement();
-            return (
-              <SuggestionItem
-                key={suggestion.id}
-                suggestion={suggestion}
-                isHighlighted={highlightedIndex === index}
-                onClick={() => handleSelect(suggestion)}
-                onMouseEnter={() => setHighlightedIndex(index)}
-              />
-            );
-          })}
-        </>
-      )}
-
-      {/* Loading indicator */}
-      {isLoading && externalSuggestions.length === 0 && (
-        <div className="px-3 py-2 text-sm text-archive flex items-center gap-2">
+      {/* Visual status inside the panel; announced via the live region instead */}
+      {isLoading && ordered.length === 0 && (
+        <div className="px-3 py-2 text-sm text-archive flex items-center gap-2" aria-hidden="true">
           <Loader2 size={14} className="animate-spin" />
           <span>Searching reference sources...</span>
         </div>
       )}
-
-      {/* No results message */}
-      {!isLoading &&
-        suggestions.length === 0 &&
-        inputValue.trim().length >= 2 && (
-          <div className="px-3 py-2 text-sm text-archive">
-            No matches found — you can still use your entry
-          </div>
-        )}
-
-      {/* Create new option */}
-      {allowCreate && inputValue.trim() && (
-        <CreateNewItem
-          value={inputValue.trim()}
-          isHighlighted={highlightedIndex === currentIndex}
-          onClick={handleCreateNew}
-          onMouseEnter={() => setHighlightedIndex(currentIndex)}
-        />
+      {!isLoading && ordered.length === 0 && query.length >= 2 && (
+        <div className="px-3 py-2 text-sm text-archive" aria-hidden="true">
+          {isStrict
+            ? 'No matching terms in your vocabulary or reference sources'
+            : 'No matches found — you can still use your entry'}
+        </div>
       )}
-    </ul>
+    </div>
   );
+
+  const inputProps = getInputProps();
+  const describedByIds = [
+    isStrict ? strictHintId : null,
+    hasReference && showVerifiedBadge && !isOpen ? verifiedId : null,
+    describedBy || null,
+  ].filter(Boolean).join(' ') || undefined;
 
   return (
     <div ref={wrapperRef} className={cn('relative', className)}>
-      {/* Input wrapper */}
       <div className="relative">
-        {/* Search icon */}
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true">
           {isLoading ? (
             <Loader2 size={16} className="text-archive animate-spin" />
           ) : (
@@ -404,9 +404,9 @@ export const AuthorityAutocomplete = forwardRef<
           )}
         </div>
 
-        {/* Input */}
         <input
-          {...getInputProps()}
+          {...inputProps}
+          role="combobox"
           ref={ref}
           id={id}
           name={name}
@@ -414,9 +414,12 @@ export const AuthorityAutocomplete = forwardRef<
           required={required}
           placeholder={placeholder}
           aria-label={ariaLabel || `Search ${fieldType}`}
-          aria-controls={menuId}
+          aria-expanded={listboxVisible}
+          aria-controls={listboxVisible ? menuId : undefined}
+          aria-activedescendant={activeDescendant}
+          aria-describedby={describedByIds}
           className={cn(
-            'w-full pl-9 pr-4 py-2 border rounded-lg',
+            'w-full pl-9 pr-10 py-2 border rounded-lg',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark',
             'placeholder:text-archive/60',
             disabled && 'bg-stone/50 cursor-not-allowed',
@@ -425,37 +428,39 @@ export const AuthorityAutocomplete = forwardRef<
           )}
         />
 
-        {/* Right side indicators */}
         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-          {/* Offline indicator */}
           {isOffline && (
             <span title="Working offline - showing local suggestions only">
-              <WifiOff
-                size={14}
-                className="text-archive"
-              />
+              <WifiOff size={14} className="text-archive" aria-hidden="true" />
+              <span className="sr-only">Working offline, showing local suggestions only</span>
             </span>
           )}
-
-          {/* Verified indicator */}
           {hasReference && showVerifiedBadge && (
-            <span title="Verified in reference sources">
-              <Check
-                size={14}
-                className="text-semantic-success"
-              />
+            <span title="Verified in reference sources" aria-hidden="true">
+              <Check size={14} className="text-semantic-success" />
             </span>
           )}
         </div>
       </div>
 
-      {/* Verified badge below input */}
+      {isStrict && (
+        <p id={strictHintId} className="mt-1 text-xs text-accessible-gray">
+          Strict vocabulary: new terms can&rsquo;t be added here. Type to search, then choose a term
+          from your vocabulary or a reference source.
+        </p>
+      )}
+
       {hasReference && showVerifiedBadge && !isOpen && (
-        <div className="mt-1 text-xs text-semantic-success flex items-center gap-1">
-          <Check size={12} />
+        <div id={verifiedId} className="mt-1 text-xs text-semantic-success flex items-center gap-1">
+          <Check size={12} aria-hidden="true" />
           <span>Verified in reference sources</span>
         </div>
       )}
+
+      {/* Polite live region: always rendered so updates are announced */}
+      <div id={statusId} role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {statusMessage}
+      </div>
 
       {/* Dropdown rendered via portal to escape overflow:hidden containers */}
       {dropdownContent && createPortal(dropdownContent, document.body)}

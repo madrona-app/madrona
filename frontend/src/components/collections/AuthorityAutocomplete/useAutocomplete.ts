@@ -140,7 +140,9 @@ function mergeSuggestions(
   // Helper to add unique suggestions
   const addUnique = (suggestions: AutocompleteSuggestion[]) => {
     for (const suggestion of suggestions) {
-      const key = suggestion.label.toLowerCase();
+      // Same label from different reference sources (e.g. a local term and
+      // its LCSH heading) are distinct choices; repeats from one source are not.
+      const key = `${suggestion.label.toLowerCase()}|${suggestion.reference?.source ?? ''}`;
       if (!seen.has(key) && result.length < maxTotal) {
         seen.add(key);
         result.push(suggestion);
@@ -168,6 +170,27 @@ interface UseAutocompleteOptions {
   maxSuggestions?: number;
   debounceMs?: number;
   onSelect?: (value: AuthorityBackedValue) => void;
+  /** Offer "use as entered" for text that matches no suggestion */
+  allowCreate?: boolean;
+  /**
+   * Strict vocabulary mode: only suggestions backed by the vocabulary or a
+   * reference source are offered, and a chosen reference-source term is saved
+   * to the organization's vocabulary before onSelect fires.
+   */
+  strict?: boolean;
+  /** Object field key passed to the vocabulary cache as applicable_fields */
+  strictField?: string;
+}
+
+/**
+ * Whether a suggestion is acceptable for a strict field: a local vocabulary
+ * term, anything carrying a reference-source link, or a local authority record.
+ */
+export function isVocabularyBacked(s: AutocompleteSuggestion): boolean {
+  if (s.source === 'vocabulary') return true;
+  if (s.reference?.uri) return true;
+  const meta = s.metadata as { authority_id?: string | null } | undefined;
+  return !!meta?.authority_id;
 }
 
 interface UseAutocompleteReturn {
@@ -181,6 +204,13 @@ interface UseAutocompleteReturn {
   setHighlightedIndex: (index: number) => void;
   isLoading: boolean;
   isOffline: boolean;
+
+  /** One-off message for screen readers (e.g. why Enter did nothing) */
+  notice: string;
+  /** Number of options in the listbox, including "use as entered" */
+  optionCount: number;
+  /** Whether the "use as entered" option is shown */
+  showCreateOption: boolean;
 
   // Actions
   handleSelect: (suggestion: AutocompleteSuggestion) => void;
@@ -203,6 +233,9 @@ export function useAutocomplete({
   maxSuggestions = DEFAULT_MAX_SUGGESTIONS,
   debounceMs = DEFAULT_DEBOUNCE_MS,
   onSelect,
+  allowCreate = true,
+  strict = false,
+  strictField,
 }: UseAutocompleteOptions): UseAutocompleteReturn {
   // State
   const [inputValue, setInputValue] = useState(initialValue);
@@ -212,6 +245,7 @@ export function useAutocomplete({
   const [externalSuggestions, setExternalSuggestions] = useState<AutocompleteSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
+  const [notice, setNotice] = useState('');
 
   // Refs
   const apiClientRef = useRef<AutocompleteApiClient | null>(null);
@@ -232,12 +266,16 @@ export function useAutocomplete({
   // Debounced search query
   const debouncedQuery = useDebounce(inputValue, debounceMs);
 
-  // Combined suggestions
-  const suggestions = mergeSuggestions(
+  // Combined suggestions (strict fields only offer vocabulary-backed terms)
+  const merged = mergeSuggestions(
     localSuggestions,
     externalSuggestions,
     maxSuggestions
   );
+  const suggestions = strict ? merged.filter(isVocabularyBacked) : merged;
+  const canCreate = allowCreate && !strict;
+  const showCreateOption = canCreate && inputValue.trim().length > 0;
+  const optionCount = suggestions.length + (showCreateOption ? 1 : 0);
 
   // ══════════════════════════════════════════════════════════════════════════
   // LOCAL SEARCH (Immediate)
@@ -335,14 +373,32 @@ export function useAutocomplete({
       setIsOpen(false);
       setHighlightedIndex(-1);
 
-      // Notify parent
-      onSelect?.(value);
+      const commit = () => onSelect?.(value);
+
+      // Strict fields: make sure a reference-source term is in the org's
+      // vocabulary before the value is saved, so the API recognises it even
+      // where only the text is stored. A failure still commits — the API then
+      // answers with a field-named error instead of silently dropping input.
+      if (strict && suggestion.reference?.uri && suggestion.source !== 'vocabulary') {
+        const client = apiClientRef.current;
+        if (client) {
+          client.select(suggestion, strictField).catch((error) => {
+            logger.warn('Caching selected term failed', error);
+          }).finally(commit);
+          return;
+        }
+      }
+      commit();
     },
-    [fieldType, organizationId, onSelect]
+    [fieldType, organizationId, onSelect, strict, strictField]
   );
 
   const handleCreateNew = useCallback(() => {
     if (!inputValue.trim()) return;
+    if (!canCreate) {
+      setNotice('New terms cannot be added to this field. Choose a suggestion from the list.');
+      return;
+    }
 
     const value: AuthorityBackedValue = {
       value: inputValue.trim(),
@@ -358,7 +414,7 @@ export function useAutocomplete({
 
     // Notify parent
     onSelect?.(value);
-  }, [inputValue, fieldType, organizationId, onSelect]);
+  }, [inputValue, canCreate, fieldType, organizationId, onSelect]);
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
@@ -367,33 +423,38 @@ export function useAutocomplete({
           event.preventDefault();
           if (!isOpen) {
             setIsOpen(true);
-          } else {
-            setHighlightedIndex((prev) =>
-              prev < suggestions.length ? prev + 1 : prev
-            );
+          } else if (optionCount > 0) {
+            setHighlightedIndex((prev) => (prev < optionCount - 1 ? prev + 1 : 0));
           }
           break;
 
         case 'ArrowUp':
           event.preventDefault();
-          setHighlightedIndex((prev) => (prev > -1 ? prev - 1 : -1));
+          if (!isOpen) {
+            setIsOpen(true);
+          } else if (optionCount > 0) {
+            setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : optionCount - 1));
+          }
           break;
 
         case 'Enter':
           event.preventDefault();
-          if (highlightedIndex >= 0 && highlightedIndex < suggestions.length) {
+          if (isOpen && highlightedIndex >= 0 && highlightedIndex < suggestions.length) {
             handleSelect(suggestions[highlightedIndex]);
-          } else if (highlightedIndex === suggestions.length) {
-            // "Use as entered" option
-            handleCreateNew();
           } else {
+            // Highlighted "use as entered", or nothing highlighted
             handleCreateNew();
           }
           break;
 
         case 'Escape':
-          setIsOpen(false);
-          setHighlightedIndex(-1);
+          if (isOpen) {
+            // Close the list without leaving a surrounding dialog
+            event.preventDefault();
+            event.stopPropagation();
+            setIsOpen(false);
+            setHighlightedIndex(-1);
+          }
           break;
 
         case 'Tab':
@@ -401,10 +462,11 @@ export function useAutocomplete({
             handleSelect(suggestions[highlightedIndex]);
           }
           setIsOpen(false);
+          setHighlightedIndex(-1);
           break;
       }
     },
-    [isOpen, suggestions, highlightedIndex, handleSelect, handleCreateNew]
+    [isOpen, suggestions, optionCount, highlightedIndex, handleSelect, handleCreateNew]
   );
 
   const handleFocus = useCallback(() => {
@@ -433,7 +495,12 @@ export function useAutocomplete({
   const getInputProps = useCallback(
     (): React.InputHTMLAttributes<HTMLInputElement> => ({
       value: inputValue,
-      onChange: (e) => setInputValue(e.target.value),
+      onChange: (e) => {
+        setInputValue(e.target.value);
+        setNotice('');
+        setIsOpen(true);
+        setHighlightedIndex(-1);
+      },
       onFocus: handleFocus,
       onBlur: handleBlur,
       onKeyDown: handleKeyDown,
@@ -481,6 +548,9 @@ export function useAutocomplete({
     setHighlightedIndex,
     isLoading,
     isOffline,
+    notice,
+    optionCount,
+    showCreateOption,
     handleSelect,
     handleCreateNew,
     handleKeyDown,

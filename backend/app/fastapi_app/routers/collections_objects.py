@@ -212,6 +212,26 @@ def _sync_link_tables(obj, data, org_uuid, user_uuid):
 _LINK_TABLE_FIELDS = {'titles', 'other_numbers', 'measurements', 'inscriptions'}
 
 
+def _enforce_strict_vocabulary(db, organization_id, data, existing_obj, protected_fields) -> None:
+    """422 when a field the org switched to strict holds an unknown value.
+
+    Write-restricted fields are skipped: they are dropped from the write
+    anyway, so they must not block the rest of the save.
+    """
+    from app.services.vocabulary_validation import (
+        VocabularyValidationError,
+        validate_strict_vocabulary,
+    )
+
+    try:
+        validate_strict_vocabulary(
+            db, organization_id, data,
+            existing_obj=existing_obj, skip_fields=set(protected_fields),
+        )
+    except VocabularyValidationError as e:
+        raise HTTPException(status_code=422, detail=e.to_detail())
+
+
 # ============================================================================
 # COLLECTION OBJECT CRUD
 # ============================================================================
@@ -253,6 +273,7 @@ def create_collection_object(
     protected_fields |= get_write_restricted_fields('collection_object', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
     if "external_links" in data:
         data["external_links"] = _validated_external_links(data["external_links"])
+    _enforce_strict_vocabulary(db, organization_id, data, None, protected_fields)
     filtered_data = {}
     for k, v in data.items():
         if hasattr(CollectionObject, k) and k not in protected_fields:
@@ -601,6 +622,7 @@ def update_collection_object(
     protected_fields |= get_write_restricted_fields('collection_object', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
     if "external_links" in data:
         data["external_links"] = _validated_external_links(data["external_links"])
+    _enforce_strict_vocabulary(db, organization_id, data, obj, protected_fields)
     from app.services.coerce import coerce_value_for_column
     for key, value in data.items():
         if hasattr(obj, key) and key not in protected_fields:

@@ -103,6 +103,7 @@ import {
   DeaccessionsPage,
   DiscoverSettingsPage,
   ProcedureEnforcementSettingsPage,
+  VocabularyValidationSettingsPage,
   MediaRightsEnforcementSettingsPage,
   EmergencyPlansPage,
   EventsPage,
@@ -381,6 +382,7 @@ export function AppRoutes() {
           <Route index element={<CollectionsGeneralSettingsPage />} />
           <Route path="locations" element={<CollectionLocationsPage />} />
           <Route path="lookup-values" element={<LookupValuesPage />} />
+          <Route path="vocabulary-validation" element={<VocabularyValidationSettingsPage />} />
           <Route path="branding" element={<BrandingSettingsPage />} />
           <Route path="scope" element={<CollectionScopeSettingsPage />} />
           <Route path="report-templates" element={<ReportTemplatesSettingsPage />} />
