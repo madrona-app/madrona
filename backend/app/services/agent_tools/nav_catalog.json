@@ -608,6 +608,31 @@
       "appKey": "collections"
     },
     {
+      "id": "collections:library-catalog",
+      "product": "collections",
+      "label": "Library",
+      "pathPattern": "/organizations/:orgId/collections/library",
+      "breadcrumb": [
+        "Collection",
+        "Library"
+      ],
+      "keywords": [
+        "audio books",
+        "barcodes",
+        "bibliographic records",
+        "books",
+        "braille",
+        "collection",
+        "collections",
+        "holdings",
+        "large print",
+        "library",
+        "serials"
+      ],
+      "permission": "collections.view",
+      "appKey": "collections"
+    },
+    {
       "id": "collections:loans-in",
       "product": "collections",
       "label": "Loans In",
