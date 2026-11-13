@@ -135,7 +135,15 @@ class CollectionsTargetConnector(BaseTargetConnector):
         # Build canonical record format from entity payloads
         canonical_records = []
         for entity in entities:
-            payload = entity.get("payload", {})
+            # The pipeline publish phase hands over the stored canonical
+            # payloads themselves (EntityCurrent.payload); other callers wrap
+            # them as {"entity_key", "payload"}. Accept both.
+            if isinstance(entity.get("payload"), dict):
+                payload = entity["payload"]
+            elif "properties" in entity:
+                payload = entity
+            else:
+                payload = {}
             if not payload:
                 continue
             canonical_records.append({
@@ -149,6 +157,11 @@ class CollectionsTargetConnector(BaseTargetConnector):
         # and next() cannot drive one. get_session() is the sync equivalent and
         # it commits, rolls back and closes.
         with get_session() as db:
+            # A standalone session has no RLS scope; under the app role
+            # (NOBYPASSRLS) every org-scoped write would be refused. The
+            # context is stashed on the session and re-applied after commits.
+            from app.tasks.rls_helpers import set_task_rls_context
+            set_task_rls_context(db, str(org_id))
             result = import_canonical_to_collections(
                 db, org_id, canonical_records, dry_run=dry_run,
             )

@@ -10,7 +10,7 @@ import re
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
@@ -361,6 +361,8 @@ def create_connector_instance(
             "message": "Connector definition not found",
         })
 
+    _validate_file_source_config(definition, body.config or {}, str(body.organization_id))
+
     instance = ConnectorInstance(
         organization_id=body.organization_id,
         connector_definition_id=body.connector_definition_id,
@@ -439,6 +441,7 @@ def update_connector_instance(
         instance.name = body.name
     if body.config is not None:
         instance.config = merge_config_preserving_secrets(body.config, instance.config)
+        _validate_file_source_config(instance.connector_definition, instance.config, org_id)
 
     db.commit()
     db.refresh(instance)
@@ -1111,3 +1114,152 @@ async def preview_source_data(
         auth=auth,
         db=db,
     )
+
+
+# =============================================================================
+# Bridge file source: upload + preview
+# =============================================================================
+
+
+def _validate_file_source_config(definition, config: dict, organization_id: str) -> None:
+    """Reject a file-source config whose storage_key isn't this org's upload."""
+    from app.connectors.core.file_source import FILE_SOURCE_KEY, FileSourceConnector
+
+    if definition is None or definition.key != FILE_SOURCE_KEY:
+        return
+    try:
+        FileSourceConnector(config, organization_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail={
+            "code": "invalid_config",
+            "message": str(exc),
+        }) from exc
+
+
+_FILE_CONTENT_TYPES = {
+    "csv": "text/csv",
+    "tsv": "text/tab-separated-values",
+    "txt": "text/plain",
+    "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "xlsm": "application/vnd.ms-excel.sheet.macroEnabled.12",
+}
+
+
+@router.post("/api/connector-files/preview", response_model=dict, summary="Upload or re-read a spreadsheet for a file source")
+async def preview_connector_file(
+    file: UploadFile | None = File(default=None),
+    storage_key: str | None = Form(default=None),
+    sheet_name: str | None = Form(default=None),
+    header_row: int | None = Form(default=None),
+    organization_id: str | None = Form(default=None),
+    auth: AuthContext = Depends(require_permission(Permission.CONNECTORS_EDIT)),
+    db: Session = Depends(get_db),
+):
+    """Store an uploaded .csv/.xlsx in org storage and return its columns and first rows.
+
+    Send ``file`` to upload. To change the sheet or header row of a file
+    already uploaded, send its ``storage_key`` instead (no re-upload). Nothing
+    is stored unless the file parses within the limits.
+    """
+    import uuid
+    from datetime import datetime, timezone
+
+    from app.connectors.core import file_source as fs
+    from app.services import storage as storage_mod
+    from app.services.uploads import StorageLimitExceeded, check_storage_limit, update_storage_used
+
+    active = str(auth.active_organization_id) if auth.active_organization_id else None
+    org_id = organization_id or active
+    if not org_id:
+        raise HTTPException(status_code=400, detail={
+            "code": "bad_request", "message": "Organization context required",
+        })
+    if active and org_id != active:
+        raise HTTPException(status_code=403, detail={
+            "code": "forbidden", "message": "Files can only be uploaded to your active organization.",
+        })
+    if (file is None) == (storage_key is None):
+        raise HTTPException(status_code=400, detail={
+            "code": "bad_request", "message": "Send either a file or the storage_key of an earlier upload.",
+        })
+    if header_row is not None and header_row < 1:
+        raise HTTPException(status_code=422, detail={
+            "code": "invalid_header_row", "message": "Header row must be 1 or more.",
+        })
+
+    backend = storage_mod.get_storage_backend(org_id, db)
+    prefix = fs.upload_prefix(org_id)
+
+    if file is not None:
+        filename = (file.filename or "upload").rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
+        data = await file.read(fs.MAX_FILE_BYTES + 1)
+        if len(data) > fs.MAX_FILE_BYTES:
+            raise HTTPException(status_code=413, detail={
+                "code": "file_too_large",
+                "message": f"The file is larger than {fs.MAX_FILE_BYTES // 1_048_576} MB.",
+            })
+    else:
+        if not storage_key.startswith(prefix) or ".." in storage_key:
+            raise HTTPException(status_code=404, detail={
+                "code": "not_found", "message": "Upload not found",
+            })
+        try:
+            data, meta = backend.get_object_sync(storage_key)
+        except Exception:
+            raise HTTPException(status_code=404, detail={
+                "code": "not_found", "message": "Upload not found",
+            })
+        filename = (getattr(meta, "metadata", None) or {}).get("filename") or storage_key.rsplit("/", 1)[-1]
+
+    try:
+        table = fs.parse_file(data, filename, sheet_name=sheet_name, header_row=header_row)
+    except fs.FileSourceError as exc:
+        status = 413 if exc.code in ("file_too_large", "too_many_rows", "too_many_columns", "cell_too_large") else 422
+        raise HTTPException(status_code=status, detail={"code": exc.code, "message": exc.message})
+
+    if file is not None:
+        try:
+            check_storage_limit(org_id, len(data), db)
+        except StorageLimitExceeded as exc:
+            raise HTTPException(status_code=413, detail={"code": "storage_limit", "message": str(exc)})
+        ext = fs.file_extension(filename)
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%d")
+        storage_key = f"{prefix}{stamp}_{uuid.uuid4().hex[:12]}.{ext}"
+        safe_name = re.sub(r"[^A-Za-z0-9._ -]+", "_", filename)[:200]
+        backend.put_object_sync(
+            key=storage_key,
+            body=data,
+            content_type=_FILE_CONTENT_TYPES.get(ext, "application/octet-stream"),
+            metadata={"filename": safe_name},
+        )
+        update_storage_used(org_id, len(data), db)
+        db.commit()
+        logger.info("Bridge file upload stored for org %s: %s (%d bytes)", org_id, storage_key, len(data))
+
+    suggested = fs.suggest_field_mapping(table.columns)
+    return {
+        "storage_key": storage_key,
+        "filename": filename,
+        "file_format": table.file_format,
+        "size_bytes": len(data),
+        "sheets": table.sheets,
+        "sheet_name": table.sheet_name,
+        "header_row": table.header_row,
+        "encoding": table.encoding,
+        "delimiter": table.delimiter,
+        "columns": table.columns,
+        "total_rows": table.total_rows,
+        "preview_rows": [
+            {"row_number": r.row_number, "values": r.values}
+            for r in table.rows[: fs.PREVIEW_ROWS]
+        ],
+        "suggested_mapping": suggested,
+        "mapping_targets": [
+            {"key": key, "label": label} for key, (label, _syn) in fs.MAPPING_TARGETS.items()
+        ],
+        "limits": {
+            "max_file_bytes": fs.MAX_FILE_BYTES,
+            "max_rows": fs.MAX_ROWS,
+            "max_columns": fs.MAX_COLUMNS,
+        },
+    }

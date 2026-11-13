@@ -110,6 +110,10 @@ beautifulsoup4>=4.15.0
 striprtf>=0.0.34
 chardet>=5.2.0
 
+# Bridge — spreadsheet file source (.xlsx). MIT. defusedxml (PSF) hardens its XML parsing.
+openpyxl>=3.1.5
+defusedxml>=0.7.1
+
 # DAM — Social publishing (optional)
 # PyVimeo>=1.1.0
 # flickrapi>=2.4.0
