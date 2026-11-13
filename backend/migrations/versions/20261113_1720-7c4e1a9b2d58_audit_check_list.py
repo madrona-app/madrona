@@ -5,12 +5,12 @@ effective parameters) so a sample can be reproduced, and gives each generated
 audit result its position in the list.
 
 Revision ID: 7c4e1a9b2d58
-Revises: d2b8e4f0c312
+Revises: e0e72f8ffff6
 """
 from alembic import op
 
 revision = "7c4e1a9b2d58"
-down_revision = "d2b8e4f0c312"
+down_revision = "e0e72f8ffff6"
 branch_labels = None
 depends_on = None
 
