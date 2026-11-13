@@ -64,10 +64,12 @@ def test_import_builds_hierarchy_and_round_trips_to_ead3(auth_setup, db_session)
         ObjectSubject.subject_authority_id == braille.authority_id)} == {letters.object_id}
 
     xml = client.get(f"/api/organizations/{org.organization_id}/collections/objects/{root_id}/ead").content
+    from tests.ead3_schema import assert_valid_ead3
+    assert_valid_ead3(xml)
     doc = etree.fromstring(xml)
     arch = doc.find("e:archdesc", NS)
     assert arch.find("e:did/e:unittitle", NS).text == "Test Papers"
-    assert arch.find("e:origination/e:persname/e:part", NS).text == "Example, Person"
+    assert arch.find("e:did/e:origination/e:persname/e:part", NS).text == "Example, Person"
     subj = arch.find("e:controlaccess/e:subject", NS)
     assert subj.get("identifier").endswith("sh85014896")
     files = [c for c in doc.iter("{http://ead3.archivists.org/schema/}c") if c.get("level") == "file"]
@@ -130,6 +132,8 @@ def test_legacy_dtd_based_finding_aid(auth_setup, db_session):
     assert "Blind—United States—Societies, etc." in subjects
 
     xml = client.get(f"/api/organizations/{org.organization_id}/collections/objects/{root_id}/ead").content
+    from tests.ead3_schema import assert_valid_ead3
+    assert_valid_ead3(xml)
     doc = etree.fromstring(xml)
     arch = doc.find("e:archdesc", NS)
     assert arch.find("e:prefercite/e:p", NS).text.startswith("[Item]")

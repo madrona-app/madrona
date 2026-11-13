@@ -116,6 +116,8 @@ def test_ead3_export(tree, db_session):
     assert resp.status_code == 200
     assert "attachment" in resp.headers["content-disposition"]
     ns = {"e": "http://ead3.archivists.org/schema/"}
+    from tests.ead3_schema import assert_valid_ead3
+    assert_valid_ead3(resp.content)
     root = etree.fromstring(resp.content)
     assert root.tag == "{http://ead3.archivists.org/schema/}ead"
     # Required control elements.
@@ -140,3 +142,38 @@ def test_ead3_export(tree, db_session):
     assert item.get("level") == "item"
     assert [(x.get("localtype"), x.text) for x in item.findall("e:did/e:container", ns)] == [
         ("box", "NFB.1.1.B1"), ("folder", "NFB.1.1.B1.F1")]
+
+
+def test_ead3_export_with_every_mapped_field_is_schema_valid(tree, db_session):
+    """Populate every field the exporter maps and validate against the official EAD3 schema."""
+    import uuid as _uuid
+    from app.models import Constituent, ConstituentXref
+    from tests.ead3_schema import assert_valid_ead3
+
+    c, org, t = tree
+    _put(c, org, t["coll"], {
+        "brief_description": "A short abstract.",
+        "physical_description": "12 linear feet",
+        "full_description": "Scope.\n\n- One\n- Two",
+        "arrangement": "Two series.",
+        "provenance": "Gift of the family.",
+        "credit_line": "Gift, 1990.",
+        "creation_date_display": "1940-1968",
+        "external_links": [{"url": "https://en.wikipedia.org/wiki/Jacobus_tenBroek", "label": "Wikipedia"}],
+    })
+    for i, (name, ctype, role, extra) in enumerate([
+        ("tenBroek, Jacobus", "person", "creator", {"loc_id": "n50047520"}),
+        ("National Federation of the Blind", "organization", "subject", {"ulan_id": "500000000"}),
+        ("tenBroek family", "family", "associated", {}),
+    ]):
+        con = Constituent(constituent_id=_uuid.uuid4(), organization_id=org.organization_id, constituent_type=ctype,
+                          name=name, display_name=name, **extra)
+        db_session.add(con)
+        db_session.flush()
+        db_session.add(ConstituentXref(organization_id=org.organization_id, constituent_id=con.constituent_id,
+                                       entity_type="collection_object", entity_id=_uuid.UUID(t["coll"]),
+                                       role=role, display_order=i, is_primary=i == 0))
+    db_session.commit()
+    resp = c.get(f"{_base(org)}/{t['coll']}/ead")
+    assert resp.status_code == 200
+    assert_valid_ead3(resp.content)

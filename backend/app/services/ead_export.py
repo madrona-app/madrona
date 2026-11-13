@@ -145,7 +145,9 @@ def _description(db: Session, parent, obj: CollectionObject):
     names = _names(db, obj)
     creators = [(x, c) for x, c in names if (x.role or "").lower() in ("creator", "maker", "author", "artist")]
     if creators:
-        orig = _el(parent, "origination", label="Creator")
+        # EAD3: <origination> is part of the unit's <did>.
+        did = parent.find(f"{{{EAD3_NS}}}did")
+        orig = _el(did if did is not None else parent, "origination", label="Creator")
         for x, c in creators:
             source, ident = _name_identifier(c)
             n = _el(orig, _name_tag(c), source=source, identifier=ident)
