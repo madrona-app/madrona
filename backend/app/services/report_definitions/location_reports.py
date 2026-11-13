@@ -21,7 +21,7 @@ from app.database import current_session
 from app.models.locations import Location, Movement, ObjectPart
 from app.models import CollectionObject, Contact, User
 from app.services.report_registry import ReportDefinition, get_registry
-from app.services.report_definitions.tabular_exports import _tabular_renderer
+from app.services.report_definitions.tabular_exports import TABULAR_FORMATS, _tabular_renderer
 
 logger = logging.getLogger(__name__)
 
@@ -422,7 +422,7 @@ _LOCATION_REPORTS = [
         style="tabular",
         context_types=["global"],
         record_types=[],
-        supported_formats=["csv", "excel", "pdf"],
+        supported_formats=TABULAR_FORMATS,
         resolver=_resolve_current_location,
         renderer=_tabular_renderer,
         default_format="excel",
@@ -435,7 +435,7 @@ _LOCATION_REPORTS = [
         style="tabular",
         context_types=["global"],
         record_types=[],
-        supported_formats=["csv", "excel", "pdf"],
+        supported_formats=TABULAR_FORMATS,
         resolver=_resolve_location_history,
         renderer=_tabular_renderer,
         default_format="excel",
@@ -448,7 +448,7 @@ _LOCATION_REPORTS = [
         style="tabular",
         context_types=["global"],
         record_types=[],
-        supported_formats=["csv", "excel", "pdf"],
+        supported_formats=TABULAR_FORMATS,
         resolver=_resolve_displaced_objects,
         renderer=_tabular_renderer,
         default_format="excel",
@@ -461,7 +461,7 @@ _LOCATION_REPORTS = [
         style="tabular",
         context_types=["global"],
         record_types=[],
-        supported_formats=["csv", "excel", "pdf"],
+        supported_formats=TABULAR_FORMATS,
         resolver=_resolve_empty_locations,
         renderer=_tabular_renderer,
         default_format="excel",
@@ -474,7 +474,7 @@ _LOCATION_REPORTS = [
         style="tabular",
         context_types=["global"],
         record_types=[],
-        supported_formats=["csv", "excel", "pdf"],
+        supported_formats=TABULAR_FORMATS,
         resolver=_resolve_environment_summary,
         renderer=_tabular_renderer,
         default_format="excel",

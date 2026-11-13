@@ -2,11 +2,15 @@
 Tabular Export Report Definitions.
 
 Registers tabular export reports for each procedure record type.
-These support search and workspace contexts, producing CSV/Excel/PDF tables.
+These support search and workspace contexts, producing accessible HTML,
+CSV, Excel and PDF tables.
 """
 from app.services.report_registry import ReportDefinition, get_registry
 from app.services.report_resolvers import resolve_search, resolve_workspace
 from app.services.report_export import export_report
+
+# Accessible formats first: the order is the order the export menu offers them.
+TABULAR_FORMATS = ["html", "csv", "excel", "pdf"]
 
 # Record types and their display labels
 _RECORD_TYPES = {
@@ -54,12 +58,12 @@ for record_type, label in _RECORD_TYPES.items():
     registry.register(ReportDefinition(
         report_key=f"{record_type}_tabular",
         name=f"{label} Export",
-        description=f"Export {label.lower()} as a spreadsheet or PDF table.",
+        description=f"Export {label.lower()} as an accessible web page, spreadsheet or PDF table.",
         category="Tabular Export",
         style="tabular",
         context_types=context_types,
         record_types=[record_type],
-        supported_formats=["csv", "excel", "pdf"],
+        supported_formats=TABULAR_FORMATS,
         resolver=_tabular_resolver,
         renderer=_tabular_renderer,
         default_format="excel",

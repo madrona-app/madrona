@@ -4,6 +4,7 @@ Handles exporting report results to various formats:
 - CSV: Plain text, comma-separated
 - Excel: Formatted workbook with styling
 - PDF: Professional document with optional charts
+- HTML: Standalone accessible web page (see report_accessible)
 """
 import csv
 import io
@@ -47,6 +48,21 @@ _INK = "#1C1C1C"
 _LICHEN = "#E6E4E1"
 _STONE = "#D8D2C8"
 _ARCHIVE = "#6B7A7E"
+
+
+# ============================================================================
+# FORMAT REGISTRY
+# ============================================================================
+
+# export_format -> (file extension, content type). Single source of truth for
+# the task renderer and the S3 upload (report_storage).
+FORMAT_INFO: dict[str, tuple[str, str]] = {
+    "html": ("html", "text/html; charset=utf-8"),
+    "docx": ("docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+    "csv": ("csv", "text/csv; charset=utf-8"),
+    "excel": ("xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+    "pdf": ("pdf", "application/pdf"),
+}
 
 
 # ============================================================================
@@ -496,6 +512,11 @@ def export_report(
     """
     format = format.lower()
 
+    if format == "html":
+        from app.services.report_accessible import build_tabular_document, render_html
+        doc = build_tabular_document(data, columns, report_name, report_description)
+        return render_html(doc), FORMAT_INFO["html"][1], "html"
+
     if format == "csv":
         content = export_to_csv(data, columns)
         return content, "text/csv", "csv"
@@ -518,6 +539,12 @@ def export_report(
 def get_available_formats() -> list[dict[str, Any]]:
     """Get list of available export formats with their status."""
     return [
+        {
+            "format": "html",
+            "label": "Accessible web page (HTML)",
+            "description": "Structured web page for screen readers and braille displays",
+            "available": True,
+        },
         {
             "format": "csv",
             "label": "CSV",

@@ -1,0 +1,205 @@
+"""Accessible report formats: HTML, plain text and Word.
+
+These assert the structure access technology relies on — headings, table
+headers, captions, alt text, document language — on the actual bytes each
+format produces, not on intermediate objects.
+"""
+import base64
+import io
+import zipfile
+from html.parser import HTMLParser
+
+import pytest
+
+from app.services import report_accessible as ra
+from app.services import report_document_renderer as rdr
+from app.services.report_export import export_report
+
+# 1x1 transparent PNG
+_PNG_B64 = (
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+)
+
+
+class _Tree(HTMLParser):
+    """Collect the tags/attributes/text the assertions need."""
+
+    def __init__(self):
+        super().__init__()
+        self.tags: list[tuple[str, dict]] = []
+        self.text_by_tag: dict[str, list[str]] = {}
+        self._stack: list[str] = []
+
+    def handle_starttag(self, tag, attrs):
+        self.tags.append((tag, dict(attrs)))
+        if tag not in ("img", "meta", "br"):
+            self._stack.append(tag)
+
+    def handle_endtag(self, tag):
+        if self._stack and self._stack[-1] == tag:
+            self._stack.pop()
+
+    def handle_data(self, data):
+        if self._stack and data.strip():
+            self.text_by_tag.setdefault(self._stack[-1], []).append(data.strip())
+
+    def find(self, tag):
+        return [a for t, a in self.tags if t == tag]
+
+    def headings(self):
+        return [t for t, _ in self.tags if t in ("h1", "h2", "h3", "h4", "h5", "h6")]
+
+
+def _parse(content: bytes) -> _Tree:
+    tree = _Tree()
+    tree.feed(content.decode("utf-8"))
+    return tree
+
+
+def _assert_heading_order(levels: list[str]):
+    assert levels and levels[0] == "h1"
+    assert levels.count("h1") == 1
+    prev = 1
+    for h in levels[1:]:
+        n = int(h[1])
+        assert n <= prev + 1, f"heading level skipped: {levels}"
+        prev = n
+
+
+@pytest.fixture
+def record_sheet_context():
+    return {
+        "org_name": "Test Museum",
+        "title": "1999.1 — Bowl",
+        "object_number": "1999.1",
+        "generated_at": "November 13, 2026 at 10:00 UTC",
+        "ident_fields": [("Object Number", "1999.1"), ("Object Name", "Bowl"), ("Category", None)],
+        "image_b64": _PNG_B64,
+        "image_mime": "image/png",
+        "image_alt": "Celadon bowl with a crackled glaze, viewed from above",
+        "creators": "Unknown potter (maker)",
+        "brief_description": "A small bowl.",
+        "provenance": "Line one\nLine two",
+        "attachments": [
+            {"filename": "bowl-front.tif", "type_label": "Image", "title": "Front view"},
+            {"filename": "condition-2019.pdf", "type_label": "Document", "title": None},
+        ],
+        "created_at": "2026-01-01",
+    }
+
+
+# ============================================================================
+# HTML
+# ============================================================================
+
+class TestRecordHtml:
+    def test_document_skeleton(self, record_sheet_context):
+        out = ra.render_html(ra.build_record_document("object_record_sheet.html", record_sheet_context))
+        tree = _parse(out)
+        assert out.startswith(b"<!DOCTYPE html>")
+        assert tree.find("html")[0]["lang"] == "en"
+        assert tree.text_by_tag["title"] == ["Object Record Sheet — 1999.1 — Bowl — Test Museum"]
+        assert tree.text_by_tag["h1"] == ["Object Record Sheet"]
+        _assert_heading_order(tree.headings())
+        assert "Identification" in tree.text_by_tag["h2"]
+        assert len(tree.find("main")) == 1
+
+    def test_image_uses_media_alt_text(self, record_sheet_context):
+        tree = _parse(ra.render_html(ra.build_record_document("object_record_sheet.html", record_sheet_context)))
+        imgs = tree.find("img")
+        assert len(imgs) == 1
+        assert imgs[0]["alt"] == "Celadon bowl with a crackled glaze, viewed from above"
+
+    def test_image_without_alt_text_falls_back_to_object_title(self, record_sheet_context):
+        record_sheet_context["image_alt"] = None
+        tree = _parse(ra.render_html(ra.build_record_document("object_record_sheet.html", record_sheet_context)))
+        alt = tree.find("img")[0]["alt"]
+        assert alt == "Image of 1999.1 — Bowl"
+        assert "Primary image" not in alt
+
+    def test_attachment_table_has_caption_and_scoped_headers(self, record_sheet_context):
+        tree = _parse(ra.render_html(ra.build_record_document("object_record_sheet.html", record_sheet_context)))
+        assert "Attached files" in tree.text_by_tag["caption"]
+        col_headers = [a for a in tree.find("th") if a.get("scope") == "col"]
+        row_headers = [a for a in tree.find("th") if a.get("scope") == "row"]
+        assert len(col_headers) == 3
+        assert len(row_headers) == 2
+        assert all(a.get("scope") in ("col", "row") for a in tree.find("th"))
+        assert "bowl-front.tif" in tree.text_by_tag["th"]
+
+    def test_fields_are_definition_lists_not_layout_tables(self, record_sheet_context):
+        record_sheet_context["attachments"] = None
+        out = ra.render_html(ra.build_record_document("object_record_sheet.html", record_sheet_context))
+        tree = _parse(out)
+        assert tree.find("table") == []  # no attachments -> no tables at all
+        assert "Object Number" in tree.text_by_tag["dt"]
+        assert "Category" not in tree.text_by_tag["dt"]  # empty values omitted
+
+    def test_values_are_escaped(self, record_sheet_context):
+        record_sheet_context["brief_description"] = '<script>alert("x")</script>'
+        out = ra.render_html(ra.build_record_document("object_record_sheet.html", record_sheet_context))
+        assert b"<script>" not in out
+        assert b"&lt;script&gt;" in out
+
+    @pytest.mark.parametrize("template_name,ctx,h1", [
+        ("condition_report.html", {"report_number": "CR-1", "overall_condition": "Good"}, "Condition Report"),
+        ("loan_agreement.html", {"loan_type": "Incoming Loan", "is_loan_in": True, "loan_number": "L-1",
+                                 "lender_name": "Peer", "sig_party_1_role": "Lender",
+                                 "sig_party_2_role": "Borrower",
+                                 "loan_objects": [{"object_title": "Vase", "insurance_value": "10 USD"}]},
+         "Incoming Loan Agreement"),
+        ("object_entry_report.html", {"entry_number": "E-1"}, "Object Entry Record"),
+        ("object_exit_report.html", {"exit_number": "X-1"}, "Object Exit Record"),
+        ("conservation_treatment_report.html", {"treatment_number": "T-1"}, "Conservation Treatment Report"),
+        ("acquisition_report.html", {"acquisition_number": "A-1"}, "Acquisition Record"),
+    ])
+    def test_every_document_report_has_valid_structure(self, template_name, ctx, h1):
+        tree = _parse(ra.render_html(ra.build_record_document(template_name, ctx)))
+        assert tree.text_by_tag["h1"] == [h1]
+        _assert_heading_order(tree.headings())
+        for th in tree.find("th"):
+            assert th.get("scope") in ("col", "row")
+
+    def test_loan_signatures_use_h3_under_h2(self):
+        ctx = {"loan_type": "Outgoing Loan", "loan_number": "L-2", "sig_party_1_role": "Lender",
+               "sig_party_1_name": "Museum", "sig_party_2_role": "Borrower", "sig_party_2_name": "Other"}
+        tree = _parse(ra.render_html(ra.build_record_document("loan_agreement.html", ctx)))
+        assert tree.text_by_tag["h3"] == ["Lender", "Borrower"]
+
+    def test_renderer_entry_point_returns_html(self):
+        out = rdr.render_condition_report_html(
+            [{"report_number": "CR-9"}], {"organization_name": "M"}, export_format="html",
+        )
+        assert out.startswith(b"<!DOCTYPE html>")
+        assert b"<h1>Condition Report</h1>" in out
+
+
+class TestTabularHtml:
+    def test_table_structure(self):
+        data = [{"object_number": "1", "object_name": "Bowl"}, {"object_number": "2", "object_name": "Cup"}]
+        cols = [{"field": "object_number", "label": "Object Number"}, {"field": "object_name", "label": "Name"}]
+        content, content_type, ext = export_report(data, "html", cols, report_name="Objects Export")
+        assert ext == "html"
+        assert content_type.startswith("text/html")
+        tree = _parse(content)
+        assert tree.find("html")[0]["lang"] == "en"
+        assert tree.text_by_tag["h1"] == ["Objects Export"]
+        _assert_heading_order(tree.headings())
+        assert tree.text_by_tag["caption"] == ["Objects Export (2 rows)"]
+        assert [a["scope"] for a in tree.find("th")] == ["col", "col", "row", "row"]
+        region = [a for a in tree.find("div") if a.get("role") == "region"][0]
+        assert region["tabindex"] == "0"
+        assert region["aria-labelledby"] == tree.find("caption")[0]["id"]
+
+    def test_all_rows_and_columns_kept(self):
+        cols = [{"field": f"c{i}", "label": f"Column {i}"} for i in range(20)]
+        data = [{f"c{i}": f"r{r}c{i}" for i in range(20)} for r in range(600)]
+        content, _, _ = export_report(data, "html", cols, report_name="Wide")
+        tree = _parse(content)
+        assert len([a for a in tree.find("th") if a["scope"] == "col"]) == 20
+        assert len(tree.find("tr")) == 601
+
+    def test_empty(self):
+        content, _, _ = export_report([], "html", [{"field": "a", "label": "A"}], report_name="Empty")
+        assert b"No data available." in content
+        assert b"<table" not in content
