@@ -20,13 +20,13 @@ export function RestrictedFieldPlaceholder({
   className?: string;
 }) {
   return (
-    <div className={className}>
+    <dl className={className}>
       <dt className="text-sm font-medium text-archive mb-1">{label}</dt>
       <dd className="flex items-center gap-1.5 text-sm text-archive/60 italic">
         <Lock size={12} className="flex-shrink-0" />
         Restricted
       </dd>
-    </div>
+    </dl>
   );
 }
 
@@ -108,15 +108,15 @@ export function EditableField({
   if (!isEditing) {
     if (!value) {
       return (
-        <div className={className}>
+        <dl className={className}>
           <dt className="text-sm font-medium text-archive mb-1">{label}</dt>
           <dd className="text-archive italic text-sm">{emptyText}</dd>
-        </div>
+        </dl>
       );
     }
 
     return (
-      <div className={className}>
+      <dl className={className}>
         <dt className="text-sm font-medium text-archive mb-1">{label}</dt>
         <dd className="text-ink">
           {badge ? (
@@ -127,7 +127,7 @@ export function EditableField({
             value
           )}
         </dd>
-      </div>
+      </dl>
     );
   }
 
@@ -253,20 +253,20 @@ export function EditableSelect({
   if (!isEditing) {
     if (!value) {
       return (
-        <div className={className}>
+        <dl className={className}>
           <dt className="text-sm font-medium text-archive mb-1">{label}</dt>
           <dd className="text-archive italic text-sm">{emptyText}</dd>
-        </div>
+        </dl>
       );
     }
 
     return (
-      <div className={className}>
+      <dl className={className}>
         <dt className="text-sm font-medium text-archive mb-1">{label}</dt>
         <dd className="text-ink">
           {badge ? <span className="badge">{displayValue}</span> : displayValue}
         </dd>
-      </div>
+      </dl>
     );
   }
 
@@ -362,7 +362,7 @@ export function EditableCheckbox({
   // View mode
   if (!isEditing) {
     return (
-      <div className={className}>
+      <dl className={className}>
         <dt className="text-sm font-medium text-archive mb-1">{label}</dt>
         <dd className="text-ink">
           {value ? (
@@ -371,7 +371,7 @@ export function EditableCheckbox({
             <span className="text-archive text-sm">No</span>
           )}
         </dd>
-      </div>
+      </dl>
     );
   }
 

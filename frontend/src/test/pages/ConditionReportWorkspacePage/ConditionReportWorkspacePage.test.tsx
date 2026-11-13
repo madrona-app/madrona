@@ -467,10 +467,7 @@ describe('ConditionReportWorkspacePage', () => {
       await waitFor(() => {
         expect(screen.getByRole('group', { name: 'Examiner' })).toBeInTheDocument();
       });
-      // dlitem is excluded: the shared EditableField (components/workspace)
-      // renders <dt>/<dd> in read mode without a <dl> ancestor. That fix belongs
-      // in the shared component; everything else on the page is checked.
-      const results = await checkA11y(container, { rules: { dlitem: { enabled: false } } });
+      const results = await checkA11y(container);
       expect(results.violations).toEqual([]);
     });
   });
