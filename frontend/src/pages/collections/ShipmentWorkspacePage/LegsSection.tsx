@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import Checkbox from '../../../components/Checkbox';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MapPin, Plus, X, Trash2, Pencil } from 'lucide-react';
@@ -71,12 +71,14 @@ function LegForm({
   isPending: boolean;
   submitLabel: string;
 }) {
+  const uid = useId();
   return (
     <div className="p-4 border border-lichen rounded-lg bg-parchment space-y-3">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-ink mb-1">Shipping Method</label>
+          <label htmlFor={`${uid}-shipping-method`} className="block text-xs font-medium text-ink mb-1">Shipping Method</label>
           <select
+            id={`${uid}-shipping-method`}
             value={formData.shipping_method}
             onChange={(e) => setFormData((d) => ({ ...d, shipping_method: e.target.value }))}
             className={inputClassName}
@@ -89,8 +91,9 @@ function LegForm({
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-ink mb-1">Carrier Name</label>
+          <label htmlFor={`${uid}-carrier-name`} className="block text-xs font-medium text-ink mb-1">Carrier Name</label>
           <input
+            id={`${uid}-carrier-name`}
             type="text"
             value={formData.carrier_name}
             onChange={(e) => setFormData((d) => ({ ...d, carrier_name: e.target.value }))}
@@ -100,8 +103,9 @@ function LegForm({
         </div>
       </div>
       <div>
-        <label className="block text-xs font-medium text-ink mb-1">Tracking Number</label>
+        <label htmlFor={`${uid}-tracking-number`} className="block text-xs font-medium text-ink mb-1">Tracking Number</label>
         <input
+          id={`${uid}-tracking-number`}
           type="text"
           value={formData.tracking_number}
           onChange={(e) => setFormData((d) => ({ ...d, tracking_number: e.target.value }))}
@@ -110,8 +114,9 @@ function LegForm({
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-ink mb-1">Departure Location</label>
+          <label htmlFor={`${uid}-departure-location`} className="block text-xs font-medium text-ink mb-1">Departure Location</label>
           <input
+            id={`${uid}-departure-location`}
             type="text"
             value={formData.departure_location}
             onChange={(e) => setFormData((d) => ({ ...d, departure_location: e.target.value }))}
@@ -119,8 +124,9 @@ function LegForm({
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-ink mb-1">Departure Date</label>
+          <label htmlFor={`${uid}-departure-date`} className="block text-xs font-medium text-ink mb-1">Departure Date</label>
           <input
+            id={`${uid}-departure-date`}
             type="date"
             value={formData.departure_date}
             onChange={(e) => setFormData((d) => ({ ...d, departure_date: e.target.value }))}
@@ -130,8 +136,9 @@ function LegForm({
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-ink mb-1">Arrival Location</label>
+          <label htmlFor={`${uid}-arrival-location`} className="block text-xs font-medium text-ink mb-1">Arrival Location</label>
           <input
+            id={`${uid}-arrival-location`}
             type="text"
             value={formData.arrival_location}
             onChange={(e) => setFormData((d) => ({ ...d, arrival_location: e.target.value }))}
@@ -139,8 +146,9 @@ function LegForm({
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-ink mb-1">Arrival Date</label>
+          <label htmlFor={`${uid}-arrival-date`} className="block text-xs font-medium text-ink mb-1">Arrival Date</label>
           <input
+            id={`${uid}-arrival-date`}
             type="date"
             value={formData.arrival_date}
             onChange={(e) => setFormData((d) => ({ ...d, arrival_date: e.target.value }))}
@@ -159,8 +167,9 @@ function LegForm({
         </label>
       </div>
       <div>
-        <label className="block text-xs font-medium text-ink mb-1">Notes</label>
+        <label htmlFor={`${uid}-notes`} className="block text-xs font-medium text-ink mb-1">Notes</label>
         <input
+          id={`${uid}-notes`}
           type="text"
           value={formData.notes}
           onChange={(e) => setFormData((d) => ({ ...d, notes: e.target.value }))}

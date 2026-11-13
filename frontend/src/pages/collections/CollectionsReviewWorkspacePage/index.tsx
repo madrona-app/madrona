@@ -387,13 +387,13 @@ function CollectionsReviewWorkspacePageContent() {
               <>
                 {reviewRecord.actual_start_date && (
                   <div>
-                    <label className="text-sm font-medium text-archive">Actual Start</label>
+                    <span className="text-sm font-medium text-archive">Actual Start</span>
                     <p className="text-ink mt-1">{formatDateShort(reviewRecord.actual_start_date as string)}</p>
                   </div>
                 )}
                 {reviewRecord.actual_end_date && (
                   <div>
-                    <label className="text-sm font-medium text-archive">Actual End</label>
+                    <span className="text-sm font-medium text-archive">Actual End</span>
                     <p className="text-ink mt-1">{formatDateShort(reviewRecord.actual_end_date as string)}</p>
                   </div>
                 )}

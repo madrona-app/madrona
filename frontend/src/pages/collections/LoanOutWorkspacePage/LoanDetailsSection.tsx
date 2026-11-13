@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { FileText } from 'lucide-react';
 import { WorkspaceSection, EditableField, EditableSelect } from '../../../components/workspace';
 import type { LookupOption } from '../../../hooks/useLookupValues';
@@ -28,6 +29,7 @@ export function LoanDetailsSection({
   isRestricted,
   orgId: _orgId,
 }: LoanDetailsSectionProps) {
+  const uid = useId();
   return (
     <WorkspaceSection
       id="details"
@@ -81,14 +83,15 @@ export function LoanDetailsSection({
         />
 
         {/* Photography permitted */}
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-ink mb-1.5">
+        <div role="group" aria-labelledby={`${uid}-photography-permitted`} className="md:col-span-2">
+          <span id={`${uid}-photography-permitted`} className="block text-sm font-medium text-ink mb-1.5">
             Photography permitted
-          </label>
+          </span>
           {isEditing ? (
             <div className="flex items-center gap-1">
               <button
                 type="button"
+                aria-pressed={formData.photography_permitted === true}
                 onClick={() => {
                   onUpdateField('photography_permitted', true);
                   onFieldBlur();
@@ -103,6 +106,7 @@ export function LoanDetailsSection({
               </button>
               <button
                 type="button"
+                aria-pressed={formData.photography_permitted === false}
                 onClick={() => {
                   onUpdateField('photography_permitted', false);
                   onFieldBlur();
@@ -117,6 +121,7 @@ export function LoanDetailsSection({
               </button>
               <button
                 type="button"
+                aria-pressed={formData.photography_permitted === null}
                 onClick={() => {
                   onUpdateField('photography_permitted', null);
                   onFieldBlur();

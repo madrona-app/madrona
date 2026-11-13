@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useId } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FileText, Check, Loader2 } from 'lucide-react';
 import { WorkspaceSection } from '../../../components/workspace';
@@ -86,6 +86,7 @@ export default function DocumentsSection({
   isEmpty,
   summary,
 }: DocumentsSectionProps) {
+  const uid = useId();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [confirmUnlink, setConfirmUnlink] = useState<string | null>(null);
@@ -232,10 +233,11 @@ export default function DocumentsSection({
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">
+            <label htmlFor={`${uid}-document-type`} className="block text-sm font-medium text-ink mb-1.5">
               Document Type
             </label>
             <select
+              id={`${uid}-document-type`}
               value={docType}
               onChange={(e) => setDocType(e.target.value)}
               className="w-full px-3 py-2 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment"
@@ -249,10 +251,11 @@ export default function DocumentsSection({
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">
+            <label htmlFor={`${uid}-label`} className="block text-sm font-medium text-ink mb-1.5">
               Label
             </label>
             <input
+              id={`${uid}-label`}
               type="text"
               value={docLabel}
               onChange={(e) => setDocLabel(e.target.value)}

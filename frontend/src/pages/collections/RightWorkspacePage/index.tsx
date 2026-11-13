@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useWorkspacePage } from '../../../hooks/useWorkspacePage';
@@ -56,6 +56,7 @@ export default function RightWorkspacePage() {
 }
 
 function RightWorkspacePageContent() {
+  const uid = useId();
   const { orgId, rightId, objectId: urlObjectId } = useParams<{
     orgId: string;
     rightId?: string;
@@ -346,10 +347,10 @@ function RightWorkspacePageContent() {
           isEmpty={!hasContent.holder}
           summary={sectionSummaries.holder}
         >
-          <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">
+          <div role="group" aria-labelledby={`${uid}-rights-holder-contact`}>
+            <span id={`${uid}-rights-holder-contact`} className="block text-sm font-medium text-ink mb-1.5">
               Rights Holder Contact
-            </label>
+            </span>
             {formData.rights_holder_contact_id && rightsHolderContact ? (
               <div className="flex items-center justify-between p-3 bg-stone/30 rounded-lg">
                 <div>
@@ -366,8 +367,9 @@ function RightWorkspacePageContent() {
                     type="button"
                     onClick={() => updateField('rights_holder_contact_id', '')}
                     className="text-archive hover:text-ink"
+                    aria-label="Clear rights holder contact"
                   >
-                    <X size={18} />
+                    <X size={18} aria-hidden="true" />
                   </button>
                 )}
               </div>

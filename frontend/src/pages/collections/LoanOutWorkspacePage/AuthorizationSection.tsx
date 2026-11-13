@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { ShieldCheck, User, Search, X } from 'lucide-react';
 import { WorkspaceSection, EditableField } from '../../../components/workspace';
 import type { FormData, Contact } from './types';
@@ -25,6 +26,7 @@ export function AuthorizationSection({
   onFieldBlur,
   onOpenAuthorizerSelector,
 }: AuthorizationSectionProps) {
+  const uid = useId();
   return (
     <WorkspaceSection
       id="authorization"
@@ -37,10 +39,10 @@ export function AuthorizationSection({
     >
       <div className="space-y-4">
         {/* Authorizer — constituent selector */}
-        <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+        <div role="group" aria-labelledby={`${uid}-authorizer`}>
+          <span id={`${uid}-authorizer`} className="block text-sm font-medium text-ink mb-1.5">
             Authorizer
-          </label>
+          </span>
           {isEditing ? (
             <div className="flex items-center gap-2">
               {formData.authorizer_id && authorizerContact ? (
@@ -56,8 +58,9 @@ export function AuthorizationSection({
                       onUpdateField('authorizer_id', '');
                     }}
                     className="ml-auto p-1 text-archive hover:text-semantic-error"
+                    aria-label="Clear authorizer"
                   >
-                    <X size={14} />
+                    <X size={14} aria-hidden="true" />
                   </button>
                 </div>
               ) : (
@@ -75,6 +78,7 @@ export function AuthorizationSection({
                   type="button"
                   onClick={onOpenAuthorizerSelector}
                   className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
+                  aria-label="Change authorizer"
                 >
                   Change
                 </button>

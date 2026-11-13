@@ -1,3 +1,4 @@
+import { useId } from 'react';
 /**
  * Depositor Information Section
  *
@@ -24,6 +25,7 @@ export function DepositorSection({
   sectionCompletion,
   orgId,
 }: DepositorSectionProps) {
+  const uid = useId();
   // Contact selectors
   const depositorSelector = useContactSelector();
   const currentOwnerSelector = useContactSelector();
@@ -56,10 +58,10 @@ export function DepositorSection({
       >
         <div className="grid grid-cols-2 gap-6">
           {/* Depositor */}
-          <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">
+          <div role="group" aria-labelledby={`${uid}-depositor`}>
+            <span id={`${uid}-depositor`} className="block text-sm font-medium text-ink mb-1.5">
               Depositor <span className="text-semantic-error">*</span>
-            </label>
+            </span>
             {isEditing ? (
               <div className="flex items-center gap-2">
                 {formData.depositor_id && depositorContact ? (
@@ -76,8 +78,9 @@ export function DepositorSection({
                         updateField('depositor_name', '');
                       }}
                       className="ml-auto p-1 text-archive hover:text-semantic-error"
+                      aria-label="Clear depositor"
                     >
-                      <X size={14} />
+                      <X size={14} aria-hidden="true" />
                     </button>
                   </div>
                 ) : (
@@ -95,6 +98,7 @@ export function DepositorSection({
                     type="button"
                     onClick={() => depositorSelector.open()}
                     className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
+                    aria-label="Change depositor"
                   >
                     Change
                   </button>
@@ -119,10 +123,10 @@ export function DepositorSection({
           </div>
 
           {/* Current Owner */}
-          <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">
+          <div role="group" aria-labelledby={`${uid}-current-owner`}>
+            <span id={`${uid}-current-owner`} className="block text-sm font-medium text-ink mb-1.5">
               Current Owner
-            </label>
+            </span>
             {isEditing ? (
               <div className="flex items-center gap-2">
                 {formData.current_owner_id && currentOwnerContact ? (
@@ -139,8 +143,9 @@ export function DepositorSection({
                         updateField('current_owner', '');
                       }}
                       className="ml-auto p-1 text-archive hover:text-semantic-error"
+                      aria-label="Clear current owner"
                     >
-                      <X size={14} />
+                      <X size={14} aria-hidden="true" />
                     </button>
                   </div>
                 ) : (
@@ -158,6 +163,7 @@ export function DepositorSection({
                     type="button"
                     onClick={() => currentOwnerSelector.open()}
                     className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
+                    aria-label="Change current owner"
                   >
                     Change
                   </button>

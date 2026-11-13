@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useId } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { formatDateTime } from '@/lib/formatters';
 import { useAuth } from '../../../hooks/useAuth';
@@ -74,6 +74,7 @@ export default function DeaccessionWorkspacePage() {
 }
 
 function DeaccessionWorkspacePageContent() {
+  const uid = useId();
   const { orgId, deaccessionId } = useParams<{ orgId: string; deaccessionId?: string }>();
   const { requirementGroups, statusOrder, enforcementEnabled } = useProcedureRequirements('deaccession', orgId);
   const isCreateMode = !deaccessionId;
@@ -713,10 +714,10 @@ function DeaccessionWorkspacePageContent() {
               onChange={(v) => updateField('appraised_date', v)}
               type="date"
             />
-            <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+            <div role="group" aria-labelledby={`${uid}-appraiser`}>
+              <span id={`${uid}-appraiser`} className="block text-sm font-medium text-ink mb-1.5">
                 Appraiser
-              </label>
+              </span>
               {isEditing ? (
                 <div className="flex items-center gap-2">
                   {formData.appraiser_id && appraiserContact ? (
@@ -730,8 +731,9 @@ function DeaccessionWorkspacePageContent() {
                         type="button"
                         onClick={() => updateField('appraiser_id', '')}
                         className="ml-auto p-1 text-archive hover:text-semantic-error"
+                        aria-label="Clear appraiser"
                       >
-                        <X size={14} />
+                        <X size={14} aria-hidden="true" />
                       </button>
                     </div>
                   ) : (
@@ -749,6 +751,7 @@ function DeaccessionWorkspacePageContent() {
                       type="button"
                       onClick={() => setShowAppraiserSelector(true)}
                       className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
+                      aria-label="Change appraiser"
                     >
                       Change
                     </button>

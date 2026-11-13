@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { FileText, Search, X } from 'lucide-react';
 import {
   WorkspaceSection,
@@ -54,6 +55,7 @@ export function LoanDetailsSection({
   isRestricted,
   orgId: _orgId,
 }: LoanDetailsSectionProps) {
+  const uid = useId();
   return (
     <WorkspaceSection
       id="details"
@@ -77,10 +79,10 @@ export function LoanDetailsSection({
           required
         />
         {formData.loan_purpose === 'exhibition' && (
-          <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">
+          <div role="group" aria-labelledby={`${uid}-exhibition`}>
+            <span id={`${uid}-exhibition`} className="block text-sm font-medium text-ink mb-1.5">
               Exhibition
-            </label>
+            </span>
             {isEditing ? (
               <div className="relative">
                 {formData.exhibition_id && linkedExhibition ? (
@@ -94,14 +96,16 @@ export function LoanDetailsSection({
                         type="button"
                         onClick={() => updateField('exhibition_id', '')}
                         className="ml-auto p-1 text-archive hover:text-semantic-error"
+                        aria-label="Clear exhibition"
                       >
-                        <X size={14} />
+                        <X size={14} aria-hidden="true" />
                       </button>
                     </div>
                     <button
                       type="button"
                       onClick={() => setShowExhibitionSelector(true)}
                       className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
+                      aria-label="Change exhibition"
                     >
                       Change
                     </button>
@@ -124,6 +128,7 @@ export function LoanDetailsSection({
                             value={exhibitionSearch}
                             onChange={(e) => setExhibitionSearch(e.target.value)}
                             placeholder="Search by title..."
+                            aria-label="Search exhibitions by title"
                             className="w-full px-3 py-2 border border-lichen rounded text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                             autoFocus
                           />
