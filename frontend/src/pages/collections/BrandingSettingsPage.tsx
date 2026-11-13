@@ -205,6 +205,8 @@ export default function BrandingSettingsPage() {
               <input
                 ref={logoInputRef}
                 type="file"
+                aria-label="Logo image file"
+                tabIndex={-1}
                 accept="image/jpeg,image/png,image/svg+xml,image/webp"
                 onChange={handleLogoUpload}
                 className="hidden"
@@ -527,6 +529,8 @@ export default function BrandingSettingsPage() {
               <input
                 ref={signatureInputRef}
                 type="file"
+                aria-label="Signature image file"
+                tabIndex={-1}
                 accept="image/png,image/jpeg,image/webp"
                 onChange={handleSignatureUpload}
                 className="hidden"

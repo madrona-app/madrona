@@ -605,11 +605,11 @@ export default function CollectionObjectsPage() {
             {mapSearchResults && !isMapSearching && (
               <div className="mt-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-medium text-ink">
+                  <h2 className="text-sm font-medium text-ink">
                     {mapSearchResults.total === 0
                       ? 'No objects found in selected area'
                       : `Found ${mapSearchResults.total} object${mapSearchResults.total !== 1 ? 's' : ''} in selected area`}
-                  </h3>
+                  </h2>
                   {mapSearchResults.total > 0 && (
                     <button
                       type="button"
@@ -670,6 +670,7 @@ export default function CollectionObjectsPage() {
       </div>
 
       {/* Results */}
+      <h2 className="sr-only">Search results</h2>
       {error ? (
         <div className="text-center py-12 text-semantic-error">
           Error loading objects: {(error as Error).message}
