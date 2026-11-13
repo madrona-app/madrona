@@ -371,10 +371,11 @@ export default function StorageConfigPage() {
                 {/* Endpoint URL (S3-compatible only) */}
                 {selectedProvider === 's3_compatible' && (
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">
+                    <label htmlFor="storage-config-endpoint-url" className="block text-sm font-medium text-ink mb-1">
                       Endpoint URL <span className="text-semantic-error">*</span>
                     </label>
                     <input
+                      id="storage-config-endpoint-url"
                       type="url"
                       value={formData.endpoint_url}
                       onChange={(e) =>
@@ -392,10 +393,11 @@ export default function StorageConfigPage() {
 
                 {/* Bucket Name */}
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <label htmlFor="storage-config-bucket-name-2" className="block text-sm font-medium text-ink mb-1">
                     Bucket Name <span className="text-semantic-error">*</span>
                   </label>
                   <input
+                    id="storage-config-bucket-name-2"
                     type="text"
                     value={formData.bucket}
                     onChange={(e) =>
@@ -409,8 +411,9 @@ export default function StorageConfigPage() {
 
                 {/* Region */}
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">Region</label>
+                  <label htmlFor="storage-config-region" className="block text-sm font-medium text-ink mb-1">Region</label>
                   <select
+                    id="storage-config-region"
                     value={formData.region}
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, region: e.target.value }))
@@ -432,10 +435,11 @@ export default function StorageConfigPage() {
 
                 {/* Access Key */}
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <label htmlFor="storage-config-access-key-id" className="block text-sm font-medium text-ink mb-1">
                     Access Key ID <span className="text-semantic-error">*</span>
                   </label>
                   <input
+                    id="storage-config-access-key-id"
                     type="text"
                     value={formData.access_key_id}
                     onChange={(e) =>
@@ -449,11 +453,12 @@ export default function StorageConfigPage() {
 
                 {/* Secret Key */}
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <label htmlFor="storage-config-secret-access-key" className="block text-sm font-medium text-ink mb-1">
                     Secret Access Key <span className="text-semantic-error">*</span>
                   </label>
                   <div className="relative">
                     <input
+                      id="storage-config-secret-access-key"
                       type={showSecrets ? 'text' : 'password'}
                       value={formData.secret_access_key}
                       onChange={(e) =>
@@ -469,12 +474,14 @@ export default function StorageConfigPage() {
                     <button
                       type="button"
                       onClick={() => setShowSecrets(!showSecrets)}
+                      aria-label={showSecrets ? 'Hide secret values' : 'Show secret values'}
+                      aria-pressed={showSecrets}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-ink/40 hover:text-ink"
                     >
                       {showSecrets ? (
-                        <EyeOff className="w-4 h-4" />
+                        <EyeOff className="w-4 h-4" aria-hidden="true" />
                       ) : (
-                        <Eye className="w-4 h-4" />
+                        <Eye className="w-4 h-4" aria-hidden="true" />
                       )}
                     </button>
                   </div>
@@ -490,10 +497,11 @@ export default function StorageConfigPage() {
               <div className="space-y-4">
                 {/* Container Name */}
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <label htmlFor="storage-config-container-name" className="block text-sm font-medium text-ink mb-1">
                     Container Name <span className="text-semantic-error">*</span>
                   </label>
                   <input
+                    id="storage-config-container-name"
                     type="text"
                     value={formData.container}
                     onChange={(e) =>
@@ -507,10 +515,11 @@ export default function StorageConfigPage() {
 
                 {/* Account Name */}
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <label htmlFor="storage-config-storage-account-name" className="block text-sm font-medium text-ink mb-1">
                     Storage Account Name <span className="text-semantic-error">*</span>
                   </label>
                   <input
+                    id="storage-config-storage-account-name"
                     type="text"
                     value={formData.account_name}
                     onChange={(e) =>
@@ -524,11 +533,12 @@ export default function StorageConfigPage() {
 
                 {/* Account Key */}
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <label htmlFor="storage-config-account-key" className="block text-sm font-medium text-ink mb-1">
                     Account Key <span className="text-semantic-error">*</span>
                   </label>
                   <div className="relative">
                     <input
+                      id="storage-config-account-key"
                       type={showSecrets ? 'text' : 'password'}
                       value={formData.account_key}
                       onChange={(e) =>
@@ -541,9 +551,11 @@ export default function StorageConfigPage() {
                     <button
                       type="button"
                       onClick={() => setShowSecrets(!showSecrets)}
+                      aria-label={showSecrets ? 'Hide secret values' : 'Show secret values'}
+                      aria-pressed={showSecrets}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-ink/40 hover:text-ink"
                     >
-                      {showSecrets ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showSecrets ? <EyeOff className="w-4 h-4" aria-hidden="true" /> : <Eye className="w-4 h-4" aria-hidden="true" />}
                     </button>
                   </div>
                   <p className="text-xs text-ink/50 mt-1">
@@ -553,10 +565,11 @@ export default function StorageConfigPage() {
 
                 {/* Connection String (optional) */}
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <label htmlFor="storage-config-connection-string-alternative" className="block text-sm font-medium text-ink mb-1">
                     Connection String <span className="text-ink/50">(alternative)</span>
                   </label>
                   <input
+                    id="storage-config-connection-string-alternative"
                     type={showSecrets ? 'text' : 'password'}
                     value={formData.connection_string}
                     onChange={(e) =>
@@ -577,10 +590,11 @@ export default function StorageConfigPage() {
               <div className="space-y-4">
                 {/* Bucket Name */}
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <label htmlFor="storage-config-bucket-name" className="block text-sm font-medium text-ink mb-1">
                     Bucket Name <span className="text-semantic-error">*</span>
                   </label>
                   <input
+                    id="storage-config-bucket-name"
                     type="text"
                     value={formData.gcs_bucket}
                     onChange={(e) =>
@@ -594,10 +608,11 @@ export default function StorageConfigPage() {
 
                 {/* Project ID */}
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <label htmlFor="storage-config-project-id" className="block text-sm font-medium text-ink mb-1">
                     Project ID
                   </label>
                   <input
+                    id="storage-config-project-id"
                     type="text"
                     value={formData.project_id}
                     onChange={(e) =>
@@ -613,10 +628,11 @@ export default function StorageConfigPage() {
 
                 {/* Service Account JSON */}
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <label htmlFor="storage-config-service-account-credentials" className="block text-sm font-medium text-ink mb-1">
                     Service Account Credentials <span className="text-semantic-error">*</span>
                   </label>
                   <textarea
+                    id="storage-config-service-account-credentials"
                     value={formData.credentials_json}
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, credentials_json: e.target.value }))

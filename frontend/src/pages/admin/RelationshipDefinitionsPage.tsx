@@ -240,10 +240,11 @@ export default function RelationshipDefinitionsPage() {
 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor="relationship-definitions-name" className="block text-sm font-medium text-ink mb-1">
                 Name <span className="text-semantic-error">*</span>
               </label>
               <input
+                id="relationship-definitions-name"
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -252,10 +253,11 @@ export default function RelationshipDefinitionsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor="relationship-definitions-relationship-type" className="block text-sm font-medium text-ink mb-1">
                 Relationship Type <span className="text-semantic-error">*</span>
               </label>
               <input
+                id="relationship-definitions-relationship-type"
                 type="text"
                 value={formData.relationship_type}
                 onChange={(e) => setFormData({ ...formData, relationship_type: e.target.value })}
@@ -266,8 +268,9 @@ export default function RelationshipDefinitionsPage() {
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-ink mb-1">Description</label>
+            <label htmlFor="relationship-definitions-description" className="block text-sm font-medium text-ink mb-1">Description</label>
             <textarea
+              id="relationship-definitions-description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               className="w-full border border-lichen rounded-md px-3 py-2"
@@ -280,8 +283,9 @@ export default function RelationshipDefinitionsPage() {
             <h3 className="text-sm font-semibold text-ink mb-3">Source Entity</h3>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm text-archive mb-1">Dataset (optional)</label>
+                <label htmlFor="relationship-definitions-dataset-2" className="block text-sm text-archive mb-1">Dataset (optional)</label>
                 <select
+                  id="relationship-definitions-dataset-2"
                   value={formData.source_dataset_id}
                   onChange={(e) => setFormData({ ...formData, source_dataset_id: e.target.value })}
                   className="w-full border border-lichen rounded-md px-3 py-2"
@@ -293,8 +297,9 @@ export default function RelationshipDefinitionsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm text-archive mb-1">Entity Type (optional)</label>
+                <label htmlFor="relationship-definitions-entity-type-2" className="block text-sm text-archive mb-1">Entity Type (optional)</label>
                 <input
+                  id="relationship-definitions-entity-type-2"
                   type="text"
                   value={formData.source_entity_type}
                   onChange={(e) => setFormData({ ...formData, source_entity_type: e.target.value })}
@@ -303,10 +308,11 @@ export default function RelationshipDefinitionsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-archive mb-1">
+                <label htmlFor="relationship-definitions-field-path-2" className="block text-sm text-archive mb-1">
                   Field Path <span className="text-semantic-error">*</span>
                 </label>
                 <input
+                  id="relationship-definitions-field-path-2"
                   type="text"
                   value={formData.source_field_path}
                   onChange={(e) => setFormData({ ...formData, source_field_path: e.target.value })}
@@ -321,8 +327,9 @@ export default function RelationshipDefinitionsPage() {
             <h3 className="text-sm font-semibold text-ink mb-3">Target Entity</h3>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm text-archive mb-1">Dataset (optional)</label>
+                <label htmlFor="relationship-definitions-dataset" className="block text-sm text-archive mb-1">Dataset (optional)</label>
                 <select
+                  id="relationship-definitions-dataset"
                   value={formData.target_dataset_id}
                   onChange={(e) => setFormData({ ...formData, target_dataset_id: e.target.value })}
                   className="w-full border border-lichen rounded-md px-3 py-2"
@@ -334,8 +341,9 @@ export default function RelationshipDefinitionsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm text-archive mb-1">Entity Type (optional)</label>
+                <label htmlFor="relationship-definitions-entity-type" className="block text-sm text-archive mb-1">Entity Type (optional)</label>
                 <input
+                  id="relationship-definitions-entity-type"
                   type="text"
                   value={formData.target_entity_type}
                   onChange={(e) => setFormData({ ...formData, target_entity_type: e.target.value })}
@@ -344,10 +352,11 @@ export default function RelationshipDefinitionsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-archive mb-1">
+                <label htmlFor="relationship-definitions-field-path" className="block text-sm text-archive mb-1">
                   Field Path <span className="text-semantic-error">*</span>
                 </label>
                 <input
+                  id="relationship-definitions-field-path"
                   type="text"
                   value={formData.target_field_path}
                   onChange={(e) => setFormData({ ...formData, target_field_path: e.target.value })}
@@ -362,8 +371,9 @@ export default function RelationshipDefinitionsPage() {
             <h3 className="text-sm font-semibold text-ink mb-3">Matching Options</h3>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm text-archive mb-1">Transform</label>
+                <label htmlFor="relationship-definitions-transform" className="block text-sm text-archive mb-1">Transform</label>
                 <select
+                  id="relationship-definitions-transform"
                   value={formData.match_transform}
                   onChange={(e) => setFormData({ ...formData, match_transform: e.target.value as FormData['match_transform'] })}
                   className="w-full border border-lichen rounded-md px-3 py-2"
@@ -376,8 +386,9 @@ export default function RelationshipDefinitionsPage() {
                 </select>
               </div>
               <div className="flex items-center gap-4 pt-6">
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label htmlFor="relationship-definitions-case-sensitive" className="flex items-center gap-2 cursor-pointer">
                   <Checkbox
+                    id="relationship-definitions-case-sensitive"
                     checked={formData.case_sensitive}
                     onChange={(e) => setFormData({ ...formData, case_sensitive: e.target.checked })}
                   />
@@ -390,22 +401,25 @@ export default function RelationshipDefinitionsPage() {
           <div className="border-t pt-4 mb-4">
             <h3 className="text-sm font-semibold text-ink mb-3">Behavior</h3>
             <div className="flex flex-wrap gap-6">
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label htmlFor="relationship-definitions-enabled" className="flex items-center gap-2 cursor-pointer">
                 <Checkbox
+                  id="relationship-definitions-enabled"
                   checked={formData.enabled}
                   onChange={(e) => setFormData({ ...formData, enabled: e.target.checked })}
                 />
                 <span className="text-sm text-ink">Enabled</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label htmlFor="relationship-definitions-auto-link-on-ingest" className="flex items-center gap-2 cursor-pointer">
                 <Checkbox
+                  id="relationship-definitions-auto-link-on-ingest"
                   checked={formData.auto_link_on_ingest}
                   onChange={(e) => setFormData({ ...formData, auto_link_on_ingest: e.target.checked })}
                 />
                 <span className="text-sm text-ink">Auto-link on ingest</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label htmlFor="relationship-definitions-bidirectional" className="flex items-center gap-2 cursor-pointer">
                 <Checkbox
+                  id="relationship-definitions-bidirectional"
                   checked={formData.bidirectional}
                   onChange={(e) => setFormData({ ...formData, bidirectional: e.target.checked })}
                 />
@@ -414,8 +428,9 @@ export default function RelationshipDefinitionsPage() {
             </div>
             {formData.bidirectional && (
               <div className="mt-3">
-                <label className="block text-sm text-archive mb-1">Inverse Relationship Type</label>
+                <label htmlFor="relationship-definitions-inverse-relationship-type" className="block text-sm text-archive mb-1">Inverse Relationship Type</label>
                 <input
+                  id="relationship-definitions-inverse-relationship-type"
                   type="text"
                   value={formData.inverse_relationship_type}
                   onChange={(e) => setFormData({ ...formData, inverse_relationship_type: e.target.value })}

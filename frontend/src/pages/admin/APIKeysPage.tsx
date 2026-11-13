@@ -261,29 +261,31 @@ export default function APIKeysPage() {
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-ink mb-2">
+          <fieldset>
+            <legend className="block text-sm font-medium text-ink mb-2">
               Permissions
-            </label>
+            </legend>
             <div className="space-y-2">
               {AVAILABLE_SCOPES.map((scope) => (
                 <label
+                  htmlFor={`api-key-scope-${scope.id}`}
                   key={scope.id}
                   className="flex items-start gap-3 p-3 bg-stone/30 rounded-sm cursor-pointer hover:bg-stone/50"
                 >
                   <Checkbox
+                    id={`api-key-scope-${scope.id}`}
                     checked={newKeyScopes.includes(scope.id)}
                     onChange={() => toggleScope(scope.id)}
                     className="mt-0.5"
                   />
-                  <div>
-                    <p className="text-sm font-medium text-ink">{scope.label}</p>
-                    <p className="text-xs text-archive">{scope.description}</p>
-                  </div>
+                  <span>
+                    <span className="block text-sm font-medium text-ink">{scope.label}</span>
+                    <span className="block text-xs text-archive">{scope.description}</span>
+                  </span>
                 </label>
               ))}
             </div>
-          </div>
+          </fieldset>
 
           <div className="flex justify-end gap-2 pt-2">
             <button

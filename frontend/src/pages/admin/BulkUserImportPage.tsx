@@ -383,26 +383,29 @@ export default function BulkUserImportPage() {
               onClick={downloadTemplate}
               className="flex items-center gap-1 text-sm text-forest hover:text-forest/80"
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-4 h-4" aria-hidden="true" />
               Download Template
             </button>
           </div>
 
-          <div
-            className="border-2 border-dashed border-lichen rounded-lg p-8 text-center hover:border-forest/50 transition-colors cursor-pointer"
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,.txt"
+            onChange={handleFileUpload}
+            className="hidden"
+            tabIndex={-1}
+            aria-hidden="true"
+          />
+          <button
+            type="button"
+            className="block w-full border-2 border-dashed border-lichen rounded-lg p-8 text-center hover:border-forest/50 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             onClick={() => fileInputRef.current?.click()}
           >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv,.txt"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-            <Upload className="w-8 h-8 text-ink/40 mx-auto mb-2" />
-            <p className="text-ink/70">Click to upload or drag and drop</p>
-            <p className="text-sm text-ink/50">CSV file with columns: email, name, role</p>
-          </div>
+            <Upload className="w-8 h-8 text-ink/40 mx-auto mb-2" aria-hidden="true" />
+            <span className="block text-ink/70">Click to upload or drag and drop</span>
+            <span className="block text-sm text-ink/50">CSV file with columns: email, name, role</span>
+          </button>
         </div>
 
         {/* User List */}
@@ -481,8 +484,9 @@ export default function BulkUserImportPage() {
         {/* Options */}
         {users.length > 0 && (
           <div className="bg-parchment rounded-lg border border-lichen p-6">
-            <label className="flex items-center gap-3 cursor-pointer">
+            <label htmlFor="bulk-user-import-send-invitation-emails-users" className="flex items-center gap-3 cursor-pointer">
               <Checkbox
+                id="bulk-user-import-send-invitation-emails-users"
                 checked={sendInvitations}
                 onChange={(e) => setSendInvitations(e.target.checked)}
               />
