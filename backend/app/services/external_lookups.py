@@ -7,6 +7,7 @@ Provides enrichment capabilities by looking up entities in external authority fi
 - GeoNames - Geographic database
 - VIAF (Virtual International Authority File)
 - AAT (Art & Architecture Thesaurus) - Getty
+- LCSH (Library of Congress Subject Headings) - id.loc.gov suggest2
 
 USAGE:
     from app.services.external_lookups import (
@@ -708,6 +709,102 @@ def lookup_viaf(name: str, entity_type: str = "personal") -> ExternalLookupResul
     except Exception as e:
         logger.error(f"VIAF lookup error for '{name}': {e}")
         return ExternalLookupResult(source="viaf", error=str(e))
+
+
+# =============================================================================
+# LCSH (LIBRARY OF CONGRESS SUBJECT HEADINGS)
+# =============================================================================
+
+LCSH_SUGGEST_URL = "https://id.loc.gov/authorities/subjects/suggest2"
+LCSH_TIMEOUT = 5
+_LCSH_URI_RE = re.compile(r"^https?://id\.loc\.gov/authorities/subjects/(sh\d+)$")
+
+
+class LCSHLookupError(Exception):
+    """id.loc.gov could not be reached or returned something unusable."""
+
+
+def parse_lcsh_suggest2(data: Any, limit: int = 10) -> list[dict[str, Any]]:
+    """
+    Parse an id.loc.gov suggest2 response into subject heading results.
+
+    suggest2 returns ``{"q": ..., "count": n, "hits": [{"uri", "aLabel",
+    "vLabel", "token", ...}]}`` — the same shape the LCNAF name search
+    (routers/collections_constituents.py) parses. ``aLabel`` is the authorized
+    heading; ``vLabel`` is the variant label that matched, when the match was on
+    a variant rather than the heading itself.
+
+    Hits whose URI is not an LCSH subject URI (e.g. a children's subject
+    heading or a names record) are skipped, as are duplicates. URIs are
+    normalized to the canonical ``http://id.loc.gov/authorities/subjects/{id}``.
+    """
+    if not isinstance(data, dict):
+        return []
+    results: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for hit in data.get("hits") or []:
+        if not isinstance(hit, dict):
+            continue
+        uri = str(hit.get("uri") or "").strip()
+        label = str(hit.get("aLabel") or hit.get("suggestLabel") or "").strip()
+        match = _LCSH_URI_RE.match(uri)
+        if not match or not label:
+            continue
+        lcsh_id = match.group(1)
+        if lcsh_id in seen:
+            continue
+        seen.add(lcsh_id)
+        variant = str(hit.get("vLabel") or "").strip()
+        results.append({
+            "id": lcsh_id,
+            "label": label,
+            "uri": f"http://id.loc.gov/authorities/subjects/{lcsh_id}",
+            "matched_variant": variant if variant and variant != label else None,
+        })
+        if len(results) >= limit:
+            break
+    return results
+
+
+def lookup_lcsh(query: str, limit: int = 10) -> list[dict[str, Any]]:
+    """
+    Search Library of Congress Subject Headings by keyword.
+
+    Uses id.loc.gov's suggest2 endpoint (keyword search). Returns a list of
+    ``{"id", "label", "uri", "matched_variant"}`` dicts, best match first.
+
+    Raises:
+        LCSHLookupError: the service was unreachable, timed out, or answered
+            with a non-200 status or invalid JSON. An empty list means the
+            service answered and nothing matched.
+    """
+    query = (query or "").strip()
+    if len(query) < 2:
+        return []
+    limit = max(1, min(int(limit), 50))
+
+    from app.services.deployment_identity import outbound_user_agent
+
+    try:
+        response = requests.get(
+            LCSH_SUGGEST_URL,
+            params={"q": query, "searchtype": "keyword", "count": limit},
+            headers={"Accept": "application/json", "User-Agent": outbound_user_agent()},
+            timeout=LCSH_TIMEOUT,
+        )
+    except requests.RequestException as e:
+        logger.warning("LCSH lookup failed for %r: %s", query, e)
+        raise LCSHLookupError(str(e)) from e
+
+    if response.status_code != 200:
+        logger.warning("LCSH lookup for %r returned HTTP %s", query, response.status_code)
+        raise LCSHLookupError(f"HTTP {response.status_code}")
+    try:
+        data = response.json()
+    except ValueError as e:
+        raise LCSHLookupError("Invalid JSON from id.loc.gov") from e
+
+    return parse_lcsh_suggest2(data, limit=limit)
 
 
 # =============================================================================

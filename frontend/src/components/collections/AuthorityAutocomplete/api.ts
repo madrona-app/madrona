@@ -125,10 +125,10 @@ export const FIELD_TYPE_CONFIG: Record<FieldType, {
     description: 'Geographic and historical locations (Getty TGN)',
   },
   subject: {
-    sources: ['AAT', 'Iconclass', 'Wikidata', 'Local'],
+    sources: ['AAT', 'LCSH', 'Iconclass', 'Wikidata', 'Local'],
     placeholder: 'Search for subject...',
     example: 'e.g., landscapes, Madonna and Child',
-    description: 'Subject matter and iconography (Getty AAT, Iconclass)',
+    description: 'Subject matter and iconography (Getty AAT, Library of Congress Subject Headings, Iconclass)',
   },
   classification: {
     sources: ['AAT', 'Local'],
@@ -159,6 +159,23 @@ export const REFERENCE_SOURCE_VOCABULARY: Partial<Record<ReferenceSource, string
   Nomenclature: 'nomenclature',
   VIAF: 'viaf',
 };
+
+/**
+ * Identify the reference source of a stored authority URI, so a value saved
+ * with only its URI (e.g. Subject.vocabulary_term_id) shows the right source.
+ */
+export function referenceSourceForUri(uri: string | null | undefined): ReferenceSource | undefined {
+  if (!uri) return undefined;
+  if (/^https?:\/\/id\.loc\.gov\/authorities\/subjects\//.test(uri)) return 'LCSH';
+  if (/^https?:\/\/id\.loc\.gov\/authorities\/names\//.test(uri)) return 'LCNAF';
+  if (/^https?:\/\/vocab\.getty\.edu\/(page\/)?aat\//.test(uri)) return 'AAT';
+  if (/^https?:\/\/vocab\.getty\.edu\/(page\/)?ulan\//.test(uri)) return 'ULAN';
+  if (/^https?:\/\/vocab\.getty\.edu\/(page\/)?tgn\//.test(uri)) return 'TGN';
+  if (/^https?:\/\/(www\.)?wikidata\.org\//.test(uri)) return 'Wikidata';
+  if (/^https?:\/\/(www\.)?iconclass\.org\//.test(uri)) return 'Iconclass';
+  if (/^https?:\/\/(www\.)?viaf\.org\//.test(uri)) return 'VIAF';
+  return undefined;
+}
 
 // ============================================================================
 // API CLIENT
