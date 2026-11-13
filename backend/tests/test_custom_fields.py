@@ -132,3 +132,18 @@ def test_search_by_custom_field(setup):
     # A field hidden from the caller cannot be used to probe values.
     assert intern.get(f"{_objs(org)}?custom_field=donor_contact_notes:secret").status_code == 422
     assert admin.get(f"{_objs(org)}?custom_field=nope:x").status_code == 422
+
+
+def test_export_includes_visible_custom_fields(setup, db_session):
+    from app.services.collections_export import fetch_export_data
+    from app.models import User
+    admin, intern, org = setup
+    _post(admin, _objs(org), {"object_number": "E.1", "object_name": "x", "custom_fields": {
+        "accessible_format": ["Braille", "Audio"], "donor_contact_notes": "secret"}})
+    intern_user = db_session.query(User).filter(User.email == "intern2@example.com").one()
+    with patch("app.services.collections_export.current_session", return_value=db_session):
+        rows, cols = fetch_export_data(org.organization_id, "collection_objects", user_id=intern_user.user_id)
+    labels = [c["label"] for c in cols]
+    assert "Accessible format" in labels and "Donor contact notes" not in labels
+    row = [r for r in rows if r["object_number"] == "E.1"][0]
+    assert row["custom.accessible_format"] == "Braille; Audio"

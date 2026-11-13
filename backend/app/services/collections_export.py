@@ -364,6 +364,23 @@ def fetch_export_data(
         except Exception:
             logger.warning("field_access check failed for export; proceeding with default columns", exc_info=True)
 
+    # User-defined fields on objects: one column per active field the
+    # requester's role may view (custom.<key>). Requested explicitly, or all
+    # of them when no column subset was given.
+    if model is CollectionObject:
+        try:
+            from app.services import custom_fields as cf
+            sess = current_session()
+            ctx = cf.role_context(sess, org_id, user_id) if user_id else cf.RoleContext("admin", None)
+            visible = [d for d in cf.definitions(sess, org_id) if cf.can_view(d, ctx)]
+            requested = {c.get("field") for c in (columns or [])}
+            for d in visible:
+                key = f"custom.{d.key}"
+                if not columns or key in requested:
+                    col_defs = [*col_defs, {"field": key, "label": d.label}]
+        except Exception:
+            logger.warning("custom field columns skipped for export", exc_info=True)
+
     field_names = [c["field"] for c in col_defs]
 
     # Build query
@@ -507,6 +524,9 @@ def fetch_export_data(
             elif object_fk and field == object_fk[1]:
                 oid = getattr(record, object_fk[0], None)
                 row[field] = objects_by_id.get(oid, "") if oid else ""
+            elif field.startswith("custom."):
+                value = (getattr(record, "custom_fields", None) or {}).get(field[len("custom."):])
+                row[field] = "; ".join(map(str, value)) if isinstance(value, list) else _format_value(value)
             elif hasattr(record, field):
                 row[field] = _format_value(getattr(record, field))
             else:
