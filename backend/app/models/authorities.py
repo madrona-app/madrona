@@ -412,6 +412,9 @@ class SubjectAuthority(Base):
     aat_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
     iconclass_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     wikidata_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    # Library of Congress Subject Headings id, e.g. "sh85015235"
+    # (http://id.loc.gov/authorities/subjects/sh85015235).
+    lcsh_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     # Hierarchy
     broader_subject_id: Mapped[uuid.UUID | None] = mapped_column(

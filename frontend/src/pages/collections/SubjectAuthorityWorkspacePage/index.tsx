@@ -133,6 +133,7 @@ function SubjectAuthorityWorkspacePageContent() {
       aat_id: formData.aat_id,
       iconclass_id: formData.iconclass_id,
       wikidata_id: formData.wikidata_id,
+      lcsh_id: formData.lcsh_id,
     },
     status: {
       status: formData.status,
@@ -392,6 +393,13 @@ function SubjectAuthorityWorkspacePageContent() {
               isEditing={isEditing}
               onChange={(v) => updateField('wikidata_id', v)}
               placeholder="e.g., Q208267"
+            />
+            <EditableField
+              label="Library of Congress Subject Heading ID"
+              value={formData.lcsh_id || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('lcsh_id', v)}
+              placeholder="e.g., sh85015235"
             />
           </div>
         </WorkspaceSection>

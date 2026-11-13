@@ -187,3 +187,18 @@ class TestEndpoints:
         refs = [(s["label"], (s.get("reference") or {}).get("source")) for s in resp.get_json()["suggestions"]]
         assert ("Blind", "LCSH") in refs
         assert ("blind", "AAT") in refs
+
+
+def test_subject_authority_keeps_lcsh_id(auth_setup):
+    """Linking an LCSH heading in the Subjects section keeps its identifier."""
+    import json as _json
+    client, org, _ = auth_setup
+    base = f"/api/organizations/{org.organization_id}/collections/subject-authorities"
+    resp = client.post(base, data=_json.dumps({"preferred_term": "Blind", "lcsh_id": "sh85014896"}),
+                       content_type="application/json")
+    assert resp.status_code == 201, resp.get_json()
+    aid = resp.get_json()["authority_id"]
+    assert client.get(f"{base}/{aid}").get_json()["lcsh_id"] == "sh85014896"
+    resp = client.put(f"{base}/{aid}", data=_json.dumps({"lcsh_id": "sh85014897"}), content_type="application/json")
+    assert resp.status_code == 200
+    assert client.get(f"{base}/{aid}").get_json()["lcsh_id"] == "sh85014897"

@@ -113,6 +113,7 @@ class CreateSubjectAuthorityRequest(BaseModel):
     aat_id: str | None = None
     iconclass_id: str | None = None
     wikidata_id: str | None = None
+    lcsh_id: str | None = None
     broader_subject_id: UUID | None = None
     description: str | None = None
     notes: str | None = None
@@ -126,6 +127,7 @@ class UpdateSubjectAuthorityRequest(BaseModel):
     aat_id: str | None = None
     iconclass_id: str | None = None
     wikidata_id: str | None = None
+    lcsh_id: str | None = None
     broader_subject_id: UUID | None = None
     description: str | None = None
     notes: str | None = None
@@ -270,6 +272,7 @@ class SubjectAuthorityOut(BaseModel):
     aat_id: str | None = None
     iconclass_id: str | None = None
     wikidata_id: str | None = None
+    lcsh_id: str | None = None
     broader_subject_id: str | None = None
     description: str | None = None
     notes: str | None = None

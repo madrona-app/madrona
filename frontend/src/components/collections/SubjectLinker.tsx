@@ -20,6 +20,7 @@ interface SubjectSearchItem {
   // Local fields
   aat_id?: string | null;
   iconclass_id?: string | null;
+  lcsh_id?: string | null;
   wikidata_id?: string | null;
   description?: string | null;
   status?: string;
@@ -118,6 +119,7 @@ export function SubjectLinker({
             aat_id: ext.source === 'AAT' ? subject.authority_id.replace('aat-', '') : undefined,
             iconclass_id: ext.source === 'Iconclass' ? subject.authority_id.replace('ic-', '') : undefined,
             wikidata_id: ext.source === 'Wikidata' ? subject.authority_id.replace('wd-', '') : undefined,
+            lcsh_id: ext.source === 'LCSH' ? subject.authority_id.replace('lcsh-', '') : undefined,
           });
           authorityId = newSubject.authority_id;
         }
@@ -270,6 +272,7 @@ export function SubjectLinker({
             subject_type: sa.subject_type,
             aat_id: sa.aat_id,
             iconclass_id: sa.iconclass_id,
+            lcsh_id: sa.lcsh_id,
             wikidata_id: sa.wikidata_id,
             description: sa.description,
             status: sa.status,
@@ -296,6 +299,7 @@ export function SubjectLinker({
           localItems.forEach((item) => {
             if (item.aat_id) localExternalIds.add(`aat-${item.aat_id}`);
             if (item.iconclass_id) localExternalIds.add(`ic-${item.iconclass_id}`);
+            if (item.lcsh_id) localExternalIds.add(`lcsh-${item.lcsh_id}`);
             if (item.wikidata_id) localExternalIds.add(`wd-${item.wikidata_id}`);
           });
 
