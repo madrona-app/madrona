@@ -1,7 +1,7 @@
 """bridge_file_source_connector
 
 Revision ID: e0e72f8ffff6
-Revises: d2b8e4f0c312
+Revises: d3c9f5a1e423
 Create Date: 2026-11-13 17:00:00.000000
 
 Data-only migration registering two Bridge connector definitions:
@@ -31,7 +31,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'e0e72f8ffff6'
-down_revision: Union[str, Sequence[str], None] = 'd2b8e4f0c312'
+down_revision: Union[str, Sequence[str], None] = 'd3c9f5a1e423'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
