@@ -19,7 +19,7 @@
  * @see /docs/record-detail-page-redesign.md
  */
 
-import { useState, useMemo, type ReactNode } from 'react';
+import { useId, useState, useMemo, type ReactNode } from 'react';
 import { ChevronRight, ExternalLink, type LucideIcon } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { shouldVirtualize } from './LazySection';
@@ -102,38 +102,39 @@ export interface RelationshipTableProps<T extends RelatedItem = RelatedItem> {
 interface TableHeaderProps<T> {
   columns: ColumnDef<T>[];
   isCompact: boolean;
+  hasActionColumn: boolean;
 }
 
-function TableHeader<T>({ columns, isCompact }: TableHeaderProps<T>) {
+function TableHeader<T>({ columns, isCompact, hasActionColumn }: TableHeaderProps<T>) {
   const visibleColumns = columns.filter(
     (col) => !isCompact || !col.hideInCompact
   );
 
   return (
-    <div
-      className={cn(
-        'hidden md:flex items-center border-b border-lichen',
-        isCompact ? 'py-1.5 px-2' : 'py-2 px-3'
-      )}
-    >
-      {visibleColumns.map((col) => (
-        <div
-          key={col.key}
-          className={cn(
-            'font-medium text-archive uppercase tracking-wide',
-            isCompact ? 'text-[10px]' : 'text-xs',
-            col.align === 'center' && 'text-center',
-            col.align === 'right' && 'text-right'
-          )}
-          style={{
-            width: col.width,
-            flex: col.flex ?? 1,
-          }}
-        >
-          {col.header}
-        </div>
-      ))}
-    </div>
+    <thead>
+      <tr className="border-b border-lichen">
+        {visibleColumns.map((col) => (
+          <th
+            key={col.key}
+            scope="col"
+            className={cn(
+              'font-medium text-archive uppercase tracking-wide text-left',
+              isCompact ? 'text-[10px] py-1.5 px-2' : 'text-xs py-2 px-3',
+              col.align === 'center' && 'text-center',
+              col.align === 'right' && 'text-right'
+            )}
+            style={{ width: col.width }}
+          >
+            {col.header}
+          </th>
+        ))}
+        {hasActionColumn && (
+          <th scope="col" className="w-10">
+            <span className="sr-only">Open</span>
+          </th>
+        )}
+      </tr>
+    </thead>
   );
 }
 
@@ -151,7 +152,107 @@ interface TableRowProps<T> {
   showLinkIcon: boolean;
 }
 
+function renderCell<T extends RelatedItem>(col: ColumnDef<T>, item: T, index: number): ReactNode {
+  const value = item[col.key];
+  if (col.render) return col.render(item, index);
+  return value !== null && value !== undefined ? String(value) : '—';
+}
+
+/**
+ * Open button for a clickable row. Its accessible name is "Open" followed by
+ * the row's first cell, so screen reader users hear which item it opens. The
+ * row itself also responds to mouse clicks as a larger target.
+ */
+function RowOpenButton({
+  onClick,
+  labelledBy,
+  buttonId,
+  visible,
+  size,
+}: {
+  onClick?: () => void;
+  labelledBy: string;
+  buttonId: string;
+  visible: boolean;
+  size: number;
+}) {
+  return (
+    <button
+      type="button"
+      id={buttonId}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.();
+      }}
+      aria-labelledby={`${buttonId} ${labelledBy}`}
+      className={cn(
+        'p-1 rounded text-archive hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2',
+        !visible && 'sr-only focus-visible:not-sr-only'
+      )}
+    >
+      <span className="sr-only">Open</span>
+      <ChevronRight size={size} aria-hidden="true" />
+    </button>
+  );
+}
+
 function TableRow<T extends RelatedItem>({
+  item,
+  index,
+  columns,
+  isCompact,
+  onClick,
+  clickable,
+}: TableRowProps<T>) {
+  const rowId = useId();
+  const visibleColumns = columns.filter(
+    (col) => !isCompact || !col.hideInCompact
+  );
+
+  return (
+    // Whole-row click is a mouse convenience; the Open button in the last
+    // cell is the keyboard and screen reader path.
+    <tr
+      className={cn(
+        'border-b border-lichen/50 last:border-b-0 group',
+        clickable && 'cursor-pointer hover:bg-stone/30 transition-colors'
+      )}
+      onClick={clickable ? onClick : undefined}
+    >
+      {visibleColumns.map((col, i) => (
+        <td
+          key={col.key}
+          id={i === 0 ? `${rowId}-label` : undefined}
+          className={cn(
+            isCompact ? 'text-sm py-1.5 px-2' : 'text-base py-2.5 px-3',
+            'text-ink truncate',
+            col.align === 'center' && 'text-center',
+            col.align === 'right' && 'text-right'
+          )}
+        >
+          {renderCell(col, item, index)}
+        </td>
+      ))}
+      {clickable && (
+        <td className="w-10 pr-2 text-right">
+          <RowOpenButton
+            onClick={onClick}
+            buttonId={`${rowId}-open`}
+            labelledBy={`${rowId}-label`}
+            visible
+            size={16}
+          />
+        </td>
+      )}
+    </tr>
+  );
+}
+
+/**
+ * Card row — below md. Each column becomes a label/value pair stacked
+ * vertically so rows stay readable on phones without horizontal scroll.
+ */
+function CardRow<T extends RelatedItem>({
   item,
   index,
   columns,
@@ -160,118 +261,52 @@ function TableRow<T extends RelatedItem>({
   clickable,
   showLinkIcon,
 }: TableRowProps<T>) {
+  const rowId = useId();
   const visibleColumns = columns.filter(
     (col) => !isCompact || !col.hideInCompact
   );
-
-  const keyboardHandler = clickable
-    ? (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onClick?.();
-        }
-      }
-    : undefined;
+  const [headline, ...rest] = visibleColumns;
 
   return (
-    <>
-      {/* Table row — md and up */}
-      <div
-        className={cn(
-          'hidden md:flex items-center border-b border-lichen/50 last:border-b-0 group',
-          isCompact ? 'py-1.5 px-2' : 'py-2.5 px-3',
-          clickable && 'cursor-pointer hover:bg-stone/30 transition-colors'
-        )}
-        onClick={onClick}
-        role={clickable ? 'button' : undefined}
-        tabIndex={clickable ? 0 : undefined}
-        onKeyDown={keyboardHandler}
-      >
-        {visibleColumns.map((col) => {
-          const value = item[col.key];
-          const rendered = col.render
-            ? col.render(item, index)
-            : value !== null && value !== undefined
-              ? String(value)
-              : '—';
-
-          return (
-            <div
-              key={col.key}
-              className={cn(
-                isCompact ? 'text-sm' : 'text-base',
-                'text-ink truncate',
-                col.align === 'center' && 'text-center',
-                col.align === 'right' && 'text-right'
-              )}
-              style={{
-                width: col.width,
-                flex: col.flex ?? 1,
-              }}
-            >
-              {rendered}
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- mouse convenience; the card's Open button is the keyboard path
+    <li
+      className={cn(
+        'border-b border-lichen/50 last:border-b-0 px-3 py-3',
+        clickable && 'cursor-pointer active:bg-stone/40 hover:bg-stone/30 transition-colors'
+      )}
+      onClick={clickable ? onClick : undefined}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1 space-y-1">
+          {headline && (
+            <div id={`${rowId}-label`} className="text-base font-medium text-ink break-words">
+              {renderCell(headline, item, index)}
             </div>
-          );
-        })}
-        {clickable && showLinkIcon && (
-          <ChevronRight
-            size={16}
-            className="text-archive opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex-shrink-0 ml-2"
-          />
-        )}
-      </div>
-
-      {/* Card row — below md. Each column becomes a label/value pair stacked
-       * vertically so rows stay readable on phones without horizontal scroll. */}
-      <div
-        className={cn(
-          'md:hidden border-b border-lichen/50 last:border-b-0 px-3 py-3',
-          clickable && 'cursor-pointer active:bg-stone/40 hover:bg-stone/30 transition-colors'
-        )}
-        onClick={onClick}
-        role={clickable ? 'button' : undefined}
-        tabIndex={clickable ? 0 : undefined}
-        onKeyDown={keyboardHandler}
-      >
-        <div className="flex items-start justify-between gap-2">
-          <dl className="min-w-0 flex-1 space-y-1">
-            {visibleColumns.map((col, i) => {
-              const value = item[col.key];
-              const rendered = col.render
-                ? col.render(item, index)
-                : value !== null && value !== undefined
-                  ? String(value)
-                  : '—';
-
-              // First column rendered large as the "headline"; subsequent
-              // columns get a small label prefix.
-              if (i === 0) {
-                return (
-                  <div key={col.key} className="text-base font-medium text-ink break-words">
-                    {rendered}
-                  </div>
-                );
-              }
-              return (
+          )}
+          {rest.length > 0 && (
+            <dl className="space-y-1">
+              {rest.map((col) => (
                 <div key={col.key} className="flex gap-2 text-sm">
                   <dt className="text-[11px] font-medium text-archive uppercase tracking-wide shrink-0 pt-0.5 min-w-[72px]">
                     {col.header}
                   </dt>
-                  <dd className="text-ink break-words min-w-0">{rendered}</dd>
+                  <dd className="text-ink break-words min-w-0">{renderCell(col, item, index)}</dd>
                 </div>
-              );
-            })}
-          </dl>
-          {clickable && showLinkIcon && (
-            <ChevronRight
-              size={18}
-              className="text-archive shrink-0 mt-0.5"
-              aria-hidden="true"
-            />
+              ))}
+            </dl>
           )}
         </div>
+        {clickable && (
+          <RowOpenButton
+            onClick={onClick}
+            buttonId={`${rowId}-open`}
+            labelledBy={`${rowId}-label`}
+            visible={showLinkIcon}
+            size={18}
+          />
+        )}
       </div>
-    </>
+    </li>
   );
 }
 
@@ -366,6 +401,7 @@ export function RelationshipTable<T extends RelatedItem = RelatedItem>({
   }, [items, showAll, maxInitialRows]);
 
   const hasMore = items.length > maxInitialRows;
+  const rowsClickable = clickable && !!onItemClick;
   const remainingCount = items.length - maxInitialRows;
 
   // Empty state
@@ -404,22 +440,41 @@ export function RelationshipTable<T extends RelatedItem = RelatedItem>({
       )}
 
       <div className="border border-lichen rounded-lg overflow-hidden bg-parchment">
-        <TableHeader columns={columns} isCompact={isCompact} />
+        {/* Table — md and up */}
+        <table className="hidden md:table w-full border-collapse">
+          <caption className="sr-only">{title || 'Related items'}</caption>
+          <TableHeader columns={columns} isCompact={isCompact} hasActionColumn={rowsClickable} />
+          <tbody>
+            {displayedItems.map((item, index) => (
+              <TableRow
+                key={item.id}
+                item={item}
+                index={index}
+                columns={columns}
+                isCompact={isCompact}
+                onClick={onItemClick ? () => onItemClick(item) : undefined}
+                clickable={rowsClickable}
+                showLinkIcon={showLinkIcon}
+              />
+            ))}
+          </tbody>
+        </table>
 
-        <div className="divide-y divide-lichen/50">
+        {/* Cards — below md */}
+        <ul className="md:hidden divide-y divide-lichen/50" aria-label={title || 'Related items'}>
           {displayedItems.map((item, index) => (
-            <TableRow
+            <CardRow
               key={item.id}
               item={item}
               index={index}
               columns={columns}
               isCompact={isCompact}
               onClick={onItemClick ? () => onItemClick(item) : undefined}
-              clickable={clickable && !!onItemClick}
+              clickable={rowsClickable}
               showLinkIcon={showLinkIcon}
             />
           ))}
-        </div>
+        </ul>
 
         {/* Show more / View all */}
         {hasMore && !showAll && (
@@ -448,7 +503,7 @@ export function RelationshipTable<T extends RelatedItem = RelatedItem>({
                   )}
                 >
                   View all
-                  <ExternalLink size={12} />
+                  <ExternalLink size={12} aria-hidden="true" />
                 </button>
               )}
             </div>

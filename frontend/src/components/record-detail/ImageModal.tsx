@@ -24,6 +24,7 @@ import {
 import { cn } from '../../lib/utils';
 import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
 import { ModalPortal } from '../ModalPortal';
+import { useStableCallback } from '../workspace/useStableCallback';
 
 // =============================================================================
 // TYPES
@@ -347,6 +348,9 @@ function ImageViewer({ media, zoomLevel, onZoomToggle }: ImageViewerProps) {
   }, [onZoomToggle]);
 
   return (
+    // Pointer gesture surface (drag to pan, click to zoom). The zoom buttons in
+    // the toolbar are the keyboard path for zooming.
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- pointer gesture surface; toolbar zoom buttons are the keyboard path
     <div
       ref={containerRef}
       className={cn(
@@ -450,9 +454,10 @@ export function ImageModal({
   }, [isOpen, initialIndex]);
 
   // Extended modal hook with custom keyboard handling
+  const stableOnClose = useStableCallback(onClose);
   const { modalRef, titleId } = useAccessibleModal({
     isOpen,
-    onClose,
+    onClose: stableOnClose,
     titlePrefix: 'image-modal',
   });
 
@@ -541,13 +546,12 @@ export function ImageModal({
         'sidebar-aware-modal fixed inset-0 z-[1100] flex flex-col bg-ink/95 backdrop-blur-sm',
         className
       )}
-      onClick={onClose}
     >
+      {/* The dialog fills the overlay, so there is no backdrop to click; Escape and the close button dismiss it */}
       <div
         ref={modalRef}
         {...getModalAriaProps(titleId)}
         className="flex-1 flex flex-col"
-        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 bg-ink/60 backdrop-blur-sm">

@@ -7,7 +7,7 @@
  * - Supports search by accession number or title
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Search, X, Package, Clock } from 'lucide-react';
 import { useOrganization } from '../../contexts/useOrganization';
@@ -15,6 +15,8 @@ import { useWork } from '../../contexts/WorkContext';
 import { searchCollections } from '../../lib/api';
 import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
 import { ModalPortal } from '../ModalPortal';
+import { useFocusWhen } from '../workspace/useFocusWhen';
+import { useStableCallback } from '../workspace/useStableCallback';
 
 interface ObjectSearchDialogProps {
   /** Whether the dialog is open */
@@ -42,11 +44,14 @@ export function ObjectSearchDialog({
   const { setActiveObject, recentItems } = useWork();
   const orgId = activeOrganization?.organization_id;
 
+  const stableOnClose = useStableCallback(onClose);
   const { modalRef, titleId, descriptionId } = useAccessibleModal({
     isOpen,
-    onClose,
+    onClose: stableOnClose,
     titlePrefix: 'object-search-dialog',
   });
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  useFocusWhen(searchInputRef, isOpen);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -103,23 +108,25 @@ export function ObjectSearchDialog({
   return (
     <ModalPortal>
     <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
-      onClick={onClose}
+      className="fixed inset-0 z-[1000] flex items-center justify-center"
     >
+      {/* Backdrop: mouse dismiss only; Escape closes the dialog */}
+      <div aria-hidden="true" className="absolute inset-0 bg-ink/50" onClick={onClose} />
       <div
         ref={modalRef}
         {...getModalAriaProps(titleId, descriptionId)}
-        className="bg-parchment rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
+        className="relative bg-parchment rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-lichen flex items-center justify-between">
           <h2 id={titleId} className="text-lg font-semibold text-ink">{title}</h2>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1 text-archive hover:text-ink rounded"
+            aria-label="Close"
+            className="p-1 text-archive hover:text-ink rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
           >
-            <X size={20} />
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
 
@@ -127,22 +134,28 @@ export function ObjectSearchDialog({
         <div className="p-6 space-y-4">
           {/* Search Input */}
           <div>
-            <label id={descriptionId} className="block text-sm font-medium text-ink mb-1">
+            <label
+              id={descriptionId}
+              htmlFor="object-search-dialog-input"
+              className="block text-sm font-medium text-ink mb-1"
+            >
               Search by accession number or title
             </label>
             <div className="relative">
               <Search
                 size={18}
+                aria-hidden="true"
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-archive"
               />
               <input
-                type="text"
+                ref={searchInputRef}
+                id="object-search-dialog-input"
+                type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by accession number or title..."
                 className="w-full px-3 py-2 pl-10 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
                 autoComplete="off"
-                autoFocus
               />
             </div>
           </div>
