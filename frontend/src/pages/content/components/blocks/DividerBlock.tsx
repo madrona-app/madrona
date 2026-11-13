@@ -2,6 +2,7 @@
  * Divider Block — Visual separator with multiple styles.
  */
 
+import { useId } from 'react';
 import { cn } from '../../../../lib/utils';
 
 // =============================================================================
@@ -30,19 +31,21 @@ const STYLE_OPTIONS: { value: DividerStyle; label: string }[] = [
 // =============================================================================
 
 export function DividerEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const style = (content.style as DividerStyle) || 'line';
 
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <span id={`${fieldId}-style-group`} className="block text-sm font-medium text-ink mb-1">
           Style
-        </label>
-        <div className="flex gap-2">
+        </span>
+        <div role="group" aria-labelledby={`${fieldId}-style-group`} className="flex gap-2">
           {STYLE_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               type="button"
+              aria-pressed={style === opt.value}
               onClick={() => onChange({ ...content, style: opt.value })}
               className={cn(
                 'px-3 py-1.5 text-sm rounded-lg border transition-colors',

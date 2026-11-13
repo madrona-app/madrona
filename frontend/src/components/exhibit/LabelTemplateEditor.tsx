@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import Checkbox from '../Checkbox';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2, GripVertical, Loader2 } from 'lucide-react';
@@ -53,6 +53,7 @@ export function LabelTemplateEditor({
   onClose,
   onSuccess,
 }: LabelTemplateEditorProps) {
+  const fieldId = useId();
   const queryClient = useQueryClient();
   const isEditMode = !!template;
 
@@ -197,10 +198,10 @@ export function LabelTemplateEditor({
         {/* Basic info */}
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-ink mb-1.5">
+            <label htmlFor={`${fieldId}-template-name`} className="block text-sm font-medium text-ink mb-1.5">
               Template Name <span className="text-semantic-error">*</span>
             </label>
-            <input
+            <input id={`${fieldId}-template-name`}
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -210,10 +211,10 @@ export function LabelTemplateEditor({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">
+            <label htmlFor={`${fieldId}-label-type`} className="block text-sm font-medium text-ink mb-1.5">
               Label Type
             </label>
-            <select
+            <select id={`${fieldId}-label-type`}
               value={labelType}
               onChange={(e) => setLabelType(e.target.value as LabelTemplate['label_type'])}
               className="w-full px-3 py-2 border border-lichen rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -227,8 +228,8 @@ export function LabelTemplateEditor({
           </div>
 
           <div className="flex items-center">
-            <label className="flex items-center gap-2 text-sm text-ink cursor-pointer">
-              <Checkbox
+            <label htmlFor={`${fieldId}-set-as-default-template`} className="flex items-center gap-2 text-sm text-ink cursor-pointer">
+              <Checkbox id={`${fieldId}-set-as-default-template`}
                 checked={isDefault}
                 onChange={(e) => setIsDefault(e.target.checked)}
               />
@@ -242,8 +243,8 @@ export function LabelTemplateEditor({
           <h4 className="text-sm font-medium text-ink mb-3">Typography</h4>
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs text-archive mb-1">Font Family</label>
-              <select
+              <label htmlFor={`${fieldId}-font-family`} className="block text-xs text-archive mb-1">Font Family</label>
+              <select id={`${fieldId}-font-family`}
                 value={fontFamily}
                 onChange={(e) => setFontFamily(e.target.value)}
                 className="w-full px-3 py-2 border border-lichen rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -256,8 +257,8 @@ export function LabelTemplateEditor({
               </select>
             </div>
             <div>
-              <label className="block text-xs text-archive mb-1">Font Size (pt)</label>
-              <input
+              <label htmlFor={`${fieldId}-font-size-pt`} className="block text-xs text-archive mb-1">Font Size (pt)</label>
+              <input id={`${fieldId}-font-size-pt`}
                 type="number"
                 value={fontSize}
                 onChange={(e) => setFontSize(Number(e.target.value))}
@@ -268,8 +269,8 @@ export function LabelTemplateEditor({
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs text-archive mb-1">Width (cm)</label>
-                <input
+                <label htmlFor={`${fieldId}-width-cm`} className="block text-xs text-archive mb-1">Width (cm)</label>
+                <input id={`${fieldId}-width-cm`}
                   type="number"
                   value={widthCm}
                   onChange={(e) => setWidthCm(e.target.value)}
@@ -280,8 +281,8 @@ export function LabelTemplateEditor({
                 />
               </div>
               <div>
-                <label className="block text-xs text-archive mb-1">Height (cm)</label>
-                <input
+                <label htmlFor={`${fieldId}-height-cm`} className="block text-xs text-archive mb-1">Height (cm)</label>
+                <input id={`${fieldId}-height-cm`}
                   type="number"
                   value={heightCm}
                   onChange={(e) => setHeightCm(e.target.value)}

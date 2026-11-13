@@ -2,7 +2,7 @@
  * Form Block — Custom form with configurable fields.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useId } from 'react';
 import Checkbox from '../../../../components/Checkbox';
 import { Plus, Trash2, ChevronDown, GripVertical, CheckCircle, Loader2 } from 'lucide-react';
 import { cn } from '../../../../lib/utils';
@@ -40,6 +40,7 @@ const FIELD_TYPE_OPTIONS: { value: FieldType; label: string }[] = [
 // =============================================================================
 
 export function FormEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const fields = (content.fields as FormField[]) || [];
   const actionUrl = (content.action_url as string) || '';
   const successMessage = (content.success_message as string) || '';
@@ -82,10 +83,10 @@ export function FormEditor({ content, onChange }: BlockEditorComponentProps) {
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-form-action-url`} className="block text-sm font-medium text-ink mb-1">
           Form Action URL <span className="text-semantic-error">*</span>
         </label>
-        <input
+        <input id={`${fieldId}-form-action-url`}
           type="text"
           value={actionUrl}
           onChange={(e) => onChange({ ...content, action_url: e.target.value })}
@@ -95,10 +96,10 @@ export function FormEditor({ content, onChange }: BlockEditorComponentProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-success-message`} className="block text-sm font-medium text-ink mb-1">
           Success Message
         </label>
-        <input
+        <input id={`${fieldId}-success-message`}
           type="text"
           value={successMessage}
           onChange={(e) => onChange({ ...content, success_message: e.target.value })}
@@ -108,10 +109,10 @@ export function FormEditor({ content, onChange }: BlockEditorComponentProps) {
       </div>
 
       {/* Fields */}
-      <div>
-        <label className="block text-sm font-medium text-ink mb-2">
+      <div role="group" aria-labelledby={`${fieldId}-form-fields-group`}>
+        <span id={`${fieldId}-form-fields-group`} className="block text-sm font-medium text-ink mb-2">
           Form Fields
-        </label>
+        </span>
 
         {fields.length === 0 && (
           <p className="text-sm text-archive italic">
@@ -161,10 +162,10 @@ export function FormEditor({ content, onChange }: BlockEditorComponentProps) {
 
               <div className="grid grid-cols-3 gap-2 items-end">
                 <div className="col-span-1">
-                  <label className="block text-xs text-archive mb-1">
+                  <label htmlFor={`${fieldId}-label-${index}`} className="block text-xs text-archive mb-1">
                     Label
                   </label>
-                  <input
+                  <input id={`${fieldId}-label-${index}`}
                     type="text"
                     value={field.label}
                     onChange={(e) => updateField(index, { label: e.target.value })}
@@ -174,10 +175,10 @@ export function FormEditor({ content, onChange }: BlockEditorComponentProps) {
                 </div>
 
                 <div>
-                  <label className="block text-xs text-archive mb-1">
+                  <label htmlFor={`${fieldId}-type-${index}`} className="block text-xs text-archive mb-1">
                     Type
                   </label>
-                  <select
+                  <select id={`${fieldId}-type-${index}`}
                     value={field.type}
                     onChange={(e) => updateField(index, { type: e.target.value as FieldType })}
                     className="border border-lichen rounded-lg px-3 py-2 text-sm text-ink focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 w-full"
@@ -191,11 +192,11 @@ export function FormEditor({ content, onChange }: BlockEditorComponentProps) {
                 </div>
 
                 <div>
-                  <label className={cn(
+                  <label htmlFor={`${fieldId}-required-${index}`} className={cn(
                     'flex items-center gap-2 text-sm cursor-pointer px-3 py-2',
                     field.required ? 'text-bark' : 'text-archive',
                   )}>
-                    <Checkbox
+                    <Checkbox id={`${fieldId}-required-${index}`}
                       checked={field.required}
                       onChange={(e) => updateField(index, { required: e.target.checked })}
                     />

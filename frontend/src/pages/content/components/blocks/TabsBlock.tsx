@@ -5,7 +5,7 @@
  * a lazy-imported BlockRenderer to avoid circular dependencies.
  */
 
-import { useState, useCallback, lazy, Suspense } from 'react';
+import { useState, useCallback, lazy, Suspense, useId } from 'react';
 import { Plus, Trash2, ChevronDown, GripVertical } from 'lucide-react';
 import { MadronaLoader } from '../../../../components/ui/MadronaLoader';
 import { cn } from '../../../../lib/utils';
@@ -41,6 +41,7 @@ const LazyBlockRenderer = lazy(() => import('../BlockRenderer'));
 // =============================================================================
 
 export function TabsEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const tabs = (content.tabs as TabItem[]) || [];
 
   const updateTab = useCallback(
@@ -79,10 +80,10 @@ export function TabsEditor({ content, onChange }: BlockEditorComponentProps) {
   );
 
   return (
-    <div className="space-y-3">
-      <label className="block text-sm font-medium text-ink">
+    <div role="group" aria-labelledby={`${fieldId}-tabs-group`} className="space-y-3">
+      <span id={`${fieldId}-tabs-group`} className="block text-sm font-medium text-ink">
         Tabs
-      </label>
+      </span>
 
       {tabs.length === 0 && (
         <p className="text-sm text-archive italic">
@@ -138,10 +139,10 @@ export function TabsEditor({ content, onChange }: BlockEditorComponentProps) {
           />
 
           <div>
-            <label className="block text-xs text-archive mb-1">
+            <label htmlFor={`${fieldId}-blocks-json-${index}`} className="block text-xs text-archive mb-1">
               Blocks (JSON)
             </label>
-            <textarea
+            <textarea id={`${fieldId}-blocks-json-${index}`}
               value={JSON.stringify(tab.blocks || [], null, 2)}
               onChange={(e) => {
                 try {
@@ -195,6 +196,7 @@ export function TabsEditor({ content, onChange }: BlockEditorComponentProps) {
 export function TabsRenderer({ content }: BlockRendererComponentProps) {
   const tabs = (content.tabs as Array<{ label: string; blocks: NestedBlock[] }>) || [];
   const [activeIndex, setActiveIndex] = useState(0);
+  const tabsId = useId();
 
   if (tabs.length === 0) return null;
 
@@ -211,13 +213,31 @@ export function TabsRenderer({ content }: BlockRendererComponentProps) {
   return (
     <div>
       {/* Tab buttons */}
-      <div className="flex border-b border-lichen" role="tablist">
+      <div
+        className="flex border-b border-lichen"
+        role="tablist"
+      >
         {tabs.map((tab, index) => (
           <button
             key={index}
+            id={`${tabsId}-tab-${index}`}
             type="button"
             role="tab"
+            onKeyDown={(e) => {
+              // Arrow keys / Home / End move between tabs (automatic activation)
+              let next = -1;
+              if (e.key === 'ArrowRight') next = (activeIndex + 1) % tabs.length;
+              else if (e.key === 'ArrowLeft') next = (activeIndex - 1 + tabs.length) % tabs.length;
+              else if (e.key === 'Home') next = 0;
+              else if (e.key === 'End') next = tabs.length - 1;
+              if (next === -1) return;
+              e.preventDefault();
+              setActiveIndex(next);
+              document.getElementById(`${tabsId}-tab-${next}`)?.focus();
+            }}
             aria-selected={index === activeIndex}
+            aria-controls={`${tabsId}-panel`}
+            tabIndex={index === activeIndex ? 0 : -1}
             onClick={() => setActiveIndex(index)}
             className={cn(
               'px-5 py-3 text-sm font-medium border-b-2 transition-colors -mb-px',
@@ -232,7 +252,13 @@ export function TabsRenderer({ content }: BlockRendererComponentProps) {
       </div>
 
       {/* Tab content — recursive block rendering */}
-      <div className="pt-6">
+      <div
+        id={`${tabsId}-panel`}
+        role="tabpanel"
+        aria-labelledby={`${tabsId}-tab-${activeIndex}`}
+        tabIndex={0}
+        className="pt-6"
+      >
         {contentBlocks.length > 0 ? (
           <Suspense
             fallback={

@@ -2,6 +2,7 @@
  * Quote Block — Styled blockquote with attribution.
  */
 
+import { useId } from 'react';
 // =============================================================================
 // Shared Types
 // =============================================================================
@@ -20,16 +21,17 @@ interface BlockRendererComponentProps {
 // =============================================================================
 
 export function QuoteEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const text = (content.text as string) || '';
   const attribution = (content.attribution as string) || '';
 
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-quote-text`} className="block text-sm font-medium text-ink mb-1">
           Quote Text <span className="text-semantic-error">*</span>
         </label>
-        <textarea
+        <textarea id={`${fieldId}-quote-text`}
           value={text}
           onChange={(e) => onChange({ ...content, text: e.target.value })}
           placeholder="Enter the quote..."
@@ -39,10 +41,10 @@ export function QuoteEditor({ content, onChange }: BlockEditorComponentProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-attribution`} className="block text-sm font-medium text-ink mb-1">
           Attribution
         </label>
-        <input
+        <input id={`${fieldId}-attribution`}
           type="text"
           value={attribution}
           onChange={(e) => onChange({ ...content, attribution: e.target.value })}

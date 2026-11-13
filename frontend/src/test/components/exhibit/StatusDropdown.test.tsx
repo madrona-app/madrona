@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { checkA11y, formatViolations } from '../../a11y';
 import { StatusDropdown } from '../../../components/exhibit/ExhibitionChecklistTab/StatusDropdown';
 
 describe('StatusDropdown', () => {
@@ -10,12 +11,12 @@ describe('StatusDropdown', () => {
     expect(screen.getByText('To Do')).toBeInTheDocument();
   });
 
-  it('aria-haspopup listbox and aria-expanded starts false', () => {
+  it('aria-haspopup menu and aria-expanded starts false', () => {
     render(
       <StatusDropdown currentStatus="todo" onStatusChange={vi.fn()} />,
     );
     const button = screen.getByRole('button');
-    expect(button).toHaveAttribute('aria-haspopup', 'listbox');
+    expect(button).toHaveAttribute('aria-haspopup', 'menu');
     expect(button).toHaveAttribute('aria-expanded', 'false');
   });
 
@@ -76,5 +77,27 @@ describe('StatusDropdown', () => {
 
     fireEvent.mouseDown(screen.getByTestId('outside'));
     expect(button).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('supports the menu button keyboard pattern and has no axe violations', async () => {
+    const onStatusChange = vi.fn();
+    const { container } = render(
+      <StatusDropdown currentStatus="todo" onStatusChange={onStatusChange} label="Book shippers" />,
+    );
+    const button = screen.getByRole('button', { name: 'Book shippers: status To Do' });
+    fireEvent.keyDown(button, { key: 'ArrowDown' });
+    expect(button).toHaveAttribute('aria-expanded', 'true');
+    const checked = screen.getByRole('menuitemradio', { name: 'To Do' });
+    expect(checked).toHaveAttribute('aria-checked', 'true');
+    expect(checked).toHaveFocus();
+    const results = await checkA11y(container);
+    expect(results.violations, formatViolations(results)).toEqual([]);
+    const menu = screen.getByRole('menu');
+    fireEvent.keyDown(menu, { key: 'ArrowDown' });
+    expect(screen.getByRole('menuitemradio', { name: 'In Progress' })).toHaveFocus();
+    fireEvent.keyDown(menu, { key: 'Escape' });
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    expect(button).toHaveFocus();
+    expect(onStatusChange).not.toHaveBeenCalled();
   });
 });

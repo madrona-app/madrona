@@ -2,6 +2,7 @@
  * HTML Block — Raw HTML editor and renderer.
  */
 
+import { useId } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { sanitizeRichHtml } from '../../../../lib/sanitize';
 
@@ -23,6 +24,7 @@ interface BlockRendererComponentProps {
 // =============================================================================
 
 export function HtmlEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const code = (content.code as string) || '';
 
   return (
@@ -35,10 +37,10 @@ export function HtmlEditor({ content, onChange }: BlockEditorComponentProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-html-code`} className="block text-sm font-medium text-ink mb-1">
           HTML Code
         </label>
-        <textarea
+        <textarea id={`${fieldId}-html-code`}
           value={code}
           onChange={(e) => onChange({ ...content, code: e.target.value })}
           placeholder="<div>Your HTML here...</div>"

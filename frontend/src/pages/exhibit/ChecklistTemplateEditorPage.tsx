@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useId, useRef } from 'react';
 import Checkbox from '../../components/Checkbox';
 import { Link, useParams } from 'react-router-dom';
 import {
@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '../../lib/apiClient';
 import { usePermissions } from '../../hooks/usePermissions';
+import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { SlideOver } from '../../components/ui/SlideOver';
 import { logger } from '../../lib/logger';
@@ -105,25 +106,32 @@ interface ItemEditorProps {
 }
 
 function ItemEditor({ item, onChange, onSave, onCancel, saving, isNew }: ItemEditorProps) {
+  const fieldId = useId();
+  const titleRef = useRef<HTMLInputElement>(null);
+  // The editor opens in response to "Add Item"/"Edit"; move focus into it so
+  // keyboard and screen-reader users land on the field they asked to edit.
+  useEffect(() => {
+    titleRef.current?.focus();
+  }, []);
   return (
     <div className="bg-stone/30 border border-lichen rounded-lg p-4 space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-title`} className="block text-sm font-medium text-ink mb-1">
             Title <span className="text-semantic-error">*</span>
           </label>
-          <input
+          <input id={`${fieldId}-title`}
+            ref={titleRef}
             type="text"
             value={item.title || ''}
             onChange={(e) => onChange({ ...item, title: e.target.value })}
             placeholder="Task title..."
             className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
-            autoFocus
           />
         </div>
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-ink mb-1">Description</label>
-          <textarea
+          <label htmlFor={`${fieldId}-description`} className="block text-sm font-medium text-ink mb-1">Description</label>
+          <textarea id={`${fieldId}-description`}
             value={item.description || ''}
             onChange={(e) => onChange({ ...item, description: e.target.value })}
             placeholder="Optional details..."
@@ -132,10 +140,10 @@ function ItemEditor({ item, onChange, onSave, onCancel, saving, isNew }: ItemEdi
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-responsible-role`} className="block text-sm font-medium text-ink mb-1">
             Responsible Role <span className="text-semantic-error">*</span>
           </label>
-          <select
+          <select id={`${fieldId}-responsible-role`}
             value={item.responsible_role || 'curator'}
             onChange={(e) => onChange({ ...item, responsible_role: e.target.value as ChecklistRole })}
             className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -148,10 +156,10 @@ function ItemEditor({ item, onChange, onSave, onCancel, saving, isNew }: ItemEdi
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-due-date-offset-days`} className="block text-sm font-medium text-ink mb-1">
             Due Date Offset (days)
           </label>
-          <input
+          <input id={`${fieldId}-due-date-offset-days`}
             type="number"
             value={item.default_due_offset_days ?? ''}
             onChange={(e) =>
@@ -169,8 +177,8 @@ function ItemEditor({ item, onChange, onSave, onCancel, saving, isNew }: ItemEdi
         </div>
       </div>
       <div className="flex items-center gap-4">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <Checkbox
+        <label htmlFor={`${fieldId}-required-item`} className="flex items-center gap-2 cursor-pointer">
+          <Checkbox id={`${fieldId}-required-item`}
             checked={item.is_required !== false}
             onChange={(e) => onChange({ ...item, is_required: e.target.checked })}
           />
@@ -246,30 +254,31 @@ function PhaseGroup({
 
   return (
     <div className="border border-lichen rounded-lg overflow-hidden">
-      <div
-        className="flex items-center justify-between px-4 py-3 bg-parchment border-b border-lichen cursor-pointer hover:bg-stone/30"
-        onClick={onToggle}
-      >
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between px-4 py-3 bg-parchment border-b border-lichen hover:bg-stone/30">
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={isExpanded}
+          className="flex flex-1 items-center gap-3 text-left cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+        >
           {isExpanded ? (
-            <ChevronDown className="w-5 h-5 text-archive" />
+            <ChevronDown className="w-5 h-5 text-archive" aria-hidden="true" />
           ) : (
-            <ChevronRight className="w-5 h-5 text-archive" />
+            <ChevronRight className="w-5 h-5 text-archive" aria-hidden="true" />
           )}
           <span className={`px-2.5 py-1 text-sm font-medium rounded-full ${config.color}`}>
             {config.label}
           </span>
           <span className="text-sm text-archive">{items.length} items</span>
-        </div>
+        </button>
         {!isLocked && isExpanded && (
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onAddItem();
-            }}
+            type="button"
+            onClick={onAddItem}
+            aria-label={`Add item to ${config.label}`}
             className="flex items-center gap-1 px-2 py-1 text-sm text-bark hover:text-copper-dark"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4" aria-hidden="true" />
             Add Item
           </button>
         )}
@@ -417,19 +426,26 @@ function VersionHistory({
           {sortedVersions.map((version) => (
             <div
               key={version.version_id}
-              className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+              className={`relative p-4 border rounded-lg cursor-pointer transition-colors ${
                 version.version_id === currentVersionId
                   ? 'border-bark bg-bark/5'
                   : 'border-lichen hover:bg-stone/30'
               }`}
-              onClick={() => onSelectVersion(version.version_id)}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-ink">Version {version.version_number}</span>
+                  {/* The button's ::after stretches over the card so the whole card stays clickable */}
+                  <button
+                    type="button"
+                    onClick={() => onSelectVersion(version.version_id)}
+                    aria-current={version.version_id === currentVersionId ? 'true' : undefined}
+                    className="font-medium text-ink text-left rounded after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+                  >
+                    Version {version.version_number}
+                  </button>
                   {version.is_published && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-semantic-success/10 text-semantic-success">
-                      <CheckCircle2 className="w-3 h-3" />
+                      <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
                       Published
                     </span>
                   )}
@@ -452,13 +468,15 @@ function VersionHistory({
               </div>
               {!version.is_locked && (
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     onCreateVersion(version.version_id);
                   }}
-                  className="mt-2 flex items-center gap-1 text-xs text-bark hover:text-copper-dark"
+                  aria-label={`Create copy of version ${version.version_number}`}
+                  className="relative z-10 mt-2 flex items-center gap-1 text-xs text-bark hover:text-copper-dark"
                 >
-                  <Copy className="w-3 h-3" />
+                  <Copy className="w-3 h-3" aria-hidden="true" />
                   Create copy
                 </button>
               )}
@@ -472,6 +490,7 @@ function VersionHistory({
 
 // Main Component
 export default function ChecklistTemplateEditorPage() {
+  const fieldId = useId();
   const { orgId, templateId } = useParams<{ orgId: string; templateId: string }>();
   const { hasPermission } = usePermissions();
 
@@ -501,6 +520,11 @@ export default function ChecklistTemplateEditorPage() {
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [showDeleteItemConfirm, setShowDeleteItemConfirm] = useState<ChecklistTemplateItem | null>(null);
   const [showCreateVersionModal, setShowCreateVersionModal] = useState(false);
+  const { modalRef: versionModalRef, titleId: versionModalTitleId } = useAccessibleModal({
+    isOpen: showCreateVersionModal,
+    onClose: () => setShowCreateVersionModal(false),
+    titlePrefix: 'create-template-version',
+  });
   const [newVersionNotes, setNewVersionNotes] = useState('');
   const [copyFromVersionId, setCopyFromVersionId] = useState<string | undefined>(undefined);
 
@@ -1015,24 +1039,28 @@ export default function ChecklistTemplateEditorPage() {
       {showCreateVersionModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4">
-            <div className="fixed inset-0 bg-ink/30" onClick={() => setShowCreateVersionModal(false)} />
-            <div className="relative bg-parchment rounded-lg shadow-xl w-full max-w-md">
+            <div className="fixed inset-0 bg-ink/30" aria-hidden="true" onClick={() => setShowCreateVersionModal(false)} />
+            <div
+              ref={versionModalRef}
+              {...getModalAriaProps(versionModalTitleId)}
+              className="relative bg-parchment rounded-lg shadow-xl w-full max-w-md"
+            >
               <div className="px-6 py-4 border-b border-lichen">
-                <h2 className="text-lg font-semibold text-ink">Create New Version</h2>
+                <h2 id={versionModalTitleId} className="text-lg font-semibold text-ink">Create New Version</h2>
               </div>
               <div className="p-6 space-y-4">
                 {copyFromVersionId && (
                   <div className="flex items-center gap-2 px-3 py-2 bg-semantic-info/10 text-semantic-info rounded-lg text-sm">
-                    <Copy className="w-4 h-4" />
+                    <Copy className="w-4 h-4" aria-hidden="true" />
                     Copying items from version{' '}
                     {template.versions.find((v) => v.version_id === copyFromVersionId)?.version_number}
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <label htmlFor={`${fieldId}-change-notes-optional`} className="block text-sm font-medium text-ink mb-1">
                     Change Notes (optional)
                   </label>
-                  <textarea
+                  <textarea id={`${fieldId}-change-notes-optional`}
                     value={newVersionNotes}
                     onChange={(e) => setNewVersionNotes(e.target.value)}
                     placeholder="What changed in this version..."

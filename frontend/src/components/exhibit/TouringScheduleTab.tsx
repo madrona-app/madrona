@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, lazy, Suspense, useId } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   MapPin,
@@ -375,6 +375,7 @@ function VenueEditor({
   onClose,
   onSuccess,
 }: VenueEditorProps) {
+  const fieldId = useId();
   const queryClient = useQueryClient();
   const isEditMode = !!venue;
 
@@ -530,10 +531,10 @@ function VenueEditor({
         )}
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fieldId}-venue-name`} className="block text-sm font-medium text-ink mb-1.5">
             Venue Name <span className="text-semantic-error">*</span>
           </label>
-          <input
+          <input id={`${fieldId}-venue-name`}
             type="text"
             value={externalVenueName}
             onChange={(e) => setExternalVenueName(e.target.value)}
@@ -543,10 +544,10 @@ function VenueEditor({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fieldId}-address`} className="block text-sm font-medium text-ink mb-1.5">
             Address
           </label>
-          <textarea
+          <textarea id={`${fieldId}-address`}
             value={externalVenueAddress}
             onChange={(e) => setExternalVenueAddress(e.target.value)}
             rows={2}
@@ -557,10 +558,10 @@ function VenueEditor({
 
         {/* Location / Coordinates */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <span id={`${fieldId}-location-for-map-display-group`} className="block text-sm font-medium text-ink mb-1.5">
             Location (for map display)
-          </label>
-          <div className="flex items-center gap-2">
+          </span>
+          <div role="group" aria-labelledby={`${fieldId}-location-for-map-display-group`} className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleGeocode}
@@ -598,10 +599,10 @@ function VenueEditor({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">
+            <label htmlFor={`${fieldId}-planned-start-date`} className="block text-sm font-medium text-ink mb-1.5">
               Planned Start Date
             </label>
-            <input
+            <input id={`${fieldId}-planned-start-date`}
               type="date"
               value={plannedStartDate}
               onChange={(e) => setPlannedStartDate(e.target.value)}
@@ -609,10 +610,10 @@ function VenueEditor({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">
+            <label htmlFor={`${fieldId}-planned-end-date`} className="block text-sm font-medium text-ink mb-1.5">
               Planned End Date
             </label>
-            <input
+            <input id={`${fieldId}-planned-end-date`}
               type="date"
               value={plannedEndDate}
               onChange={(e) => setPlannedEndDate(e.target.value)}
@@ -622,10 +623,10 @@ function VenueEditor({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fieldId}-status`} className="block text-sm font-medium text-ink mb-1.5">
             Status
           </label>
-          <select
+          <select id={`${fieldId}-status`}
             value={status}
             onChange={(e) => setStatus(e.target.value as 'proposed' | 'confirmed' | 'installed' | 'open' | 'closing' | 'in_transit' | 'returned')}
             className="w-full px-3 py-2 border border-lichen rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -640,10 +641,10 @@ function VenueEditor({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">
+            <label htmlFor={`${fieldId}-fee-amount`} className="block text-sm font-medium text-ink mb-1.5">
               Fee Amount
             </label>
-            <input
+            <input id={`${fieldId}-fee-amount`}
               type="number"
               value={feeAmount}
               onChange={(e) => setFeeAmount(e.target.value)}
@@ -654,10 +655,10 @@ function VenueEditor({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">
+            <label htmlFor={`${fieldId}-currency`} className="block text-sm font-medium text-ink mb-1.5">
               Currency
             </label>
-            <select
+            <select id={`${fieldId}-currency`}
               value={feeCurrency}
               onChange={(e) => setFeeCurrency(e.target.value)}
               className="w-full px-3 py-2 border border-lichen rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -672,10 +673,10 @@ function VenueEditor({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fieldId}-special-requirements`} className="block text-sm font-medium text-ink mb-1.5">
             Special Requirements
           </label>
-          <textarea
+          <textarea id={`${fieldId}-special-requirements`}
             value={specialRequirements}
             onChange={(e) => setSpecialRequirements(e.target.value)}
             rows={3}

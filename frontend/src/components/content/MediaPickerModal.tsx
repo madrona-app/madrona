@@ -102,9 +102,10 @@ export function MediaPickerModal({
   return (
     <ModalPortal>
     <div className="fixed inset-0 z-50 flex justify-end">
-      {/* Backdrop */}
+      {/* Backdrop: mouse dismiss; Escape closes via useAccessibleModal */}
       <div
         className="fixed inset-0 bg-ink/30 transition-opacity"
+        aria-hidden="true"
         onClick={onClose}
       />
 
@@ -122,17 +123,19 @@ export function MediaPickerModal({
             Media Library
           </h2>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close media library"
             className="p-1.5 text-archive hover:text-ink rounded transition-colors"
           >
-            <X size={18} />
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
 
         {/* Search */}
         <div className="px-5 py-3 border-b border-lichen">
           <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-archive" />
+            <Search size={16} aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-archive" />
             <input
               ref={searchRef}
               type="text"
@@ -142,6 +145,7 @@ export function MediaPickerModal({
                 setPage(1);
               }}
               placeholder="Search media..."
+              aria-label="Search media"
               className="w-full pl-9 pr-3 py-2 border border-lichen rounded-lg text-sm text-ink placeholder:text-archive/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
             />
           </div>
@@ -155,7 +159,7 @@ export function MediaPickerModal({
             </div>
           ) : items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-archive">
-              <ImageIcon size={32} className="mb-2 text-archive/40" />
+              <ImageIcon size={32} aria-hidden="true" className="mb-2 text-archive/40" />
               <p className="text-sm">No images found</p>
             </div>
           ) : (
@@ -163,6 +167,8 @@ export function MediaPickerModal({
               {items.map((item) => (
                 <button
                   key={item.media_id}
+                  type="button"
+                  aria-pressed={selectedId === item.media_id}
                   onClick={() => setSelectedId(item.media_id)}
                   className={`relative aspect-square overflow-hidden rounded-lg border-2 transition-all ${
                     selectedId === item.media_id
@@ -178,7 +184,7 @@ export function MediaPickerModal({
                   />
                   {selectedId === item.media_id && (
                     <div className="absolute top-1.5 right-1.5 w-6 h-6 bg-bark rounded-full flex items-center justify-center">
-                      <Check size={14} className="text-parchment" />
+                      <Check size={14} aria-hidden="true" className="text-parchment" />
                     </div>
                   )}
                 </button>
@@ -190,6 +196,7 @@ export function MediaPickerModal({
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-3 pt-4">
               <button
+                type="button"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
                 className="px-3 py-1.5 text-sm border border-lichen rounded-lg text-ink hover:bg-stone/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
@@ -200,6 +207,7 @@ export function MediaPickerModal({
                 {page} of {totalPages}
               </span>
               <button
+                type="button"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
                 className="px-3 py-1.5 text-sm border border-lichen rounded-lg text-ink hover:bg-stone/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
@@ -217,12 +225,14 @@ export function MediaPickerModal({
           </span>
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={onClose}
               className="px-4 py-2 text-sm border border-lichen rounded-lg text-ink hover:bg-stone/30 transition-colors"
             >
               Cancel
             </button>
             <button
+              type="button"
               onClick={handleConfirm}
               disabled={!selectedId}
               className="px-4 py-2 text-sm bg-bark text-parchment rounded-lg hover:bg-copper-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors"

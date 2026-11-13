@@ -2,7 +2,7 @@
  * Membership CTA Block — Membership tiers with pricing and benefits.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useId } from 'react';
 import { Plus, Trash2, ChevronDown, GripVertical, Check } from 'lucide-react';
 import { cn } from '../../../../lib/utils';
 
@@ -30,6 +30,7 @@ interface MembershipTier {
 // =============================================================================
 
 export function MembershipCtaEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const heading = (content.heading as string) || '';
   const description = (content.description as string) || '';
   const tiers = (content.tiers as MembershipTier[]) || [];
@@ -73,10 +74,10 @@ export function MembershipCtaEditor({ content, onChange }: BlockEditorComponentP
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-heading`} className="block text-sm font-medium text-ink mb-1">
           Heading
         </label>
-        <input
+        <input id={`${fieldId}-heading`}
           type="text"
           value={heading}
           onChange={(e) => onChange({ ...content, heading: e.target.value })}
@@ -86,10 +87,10 @@ export function MembershipCtaEditor({ content, onChange }: BlockEditorComponentP
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-description`} className="block text-sm font-medium text-ink mb-1">
           Description
         </label>
-        <textarea
+        <textarea id={`${fieldId}-description`}
           value={description}
           onChange={(e) => onChange({ ...content, description: e.target.value })}
           placeholder="Support the museum and enjoy exclusive benefits."
@@ -99,10 +100,10 @@ export function MembershipCtaEditor({ content, onChange }: BlockEditorComponentP
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-membership-url`} className="block text-sm font-medium text-ink mb-1">
           Membership URL
         </label>
-        <input
+        <input id={`${fieldId}-membership-url`}
           type="text"
           value={ctaUrl}
           onChange={(e) => onChange({ ...content, cta_url: e.target.value })}
@@ -112,10 +113,10 @@ export function MembershipCtaEditor({ content, onChange }: BlockEditorComponentP
       </div>
 
       {/* Tiers */}
-      <div>
-        <label className="block text-sm font-medium text-ink mb-2">
+      <div role="group" aria-labelledby={`${fieldId}-tiers-group`}>
+        <span id={`${fieldId}-tiers-group`} className="block text-sm font-medium text-ink mb-2">
           Tiers
-        </label>
+        </span>
 
         {tiers.length === 0 && (
           <p className="text-sm text-archive italic">
@@ -181,10 +182,10 @@ export function MembershipCtaEditor({ content, onChange }: BlockEditorComponentP
               </div>
 
               <div>
-                <label className="block text-xs text-archive mb-1">
+                <label htmlFor={`${fieldId}-benefits-one-per-line-${index}`} className="block text-xs text-archive mb-1">
                   Benefits (one per line)
                 </label>
-                <textarea
+                <textarea id={`${fieldId}-benefits-one-per-line-${index}`}
                   value={(tier.benefits || []).join('\n')}
                   onChange={(e) => {
                     const benefits = e.target.value

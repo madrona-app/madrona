@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -63,6 +63,7 @@ function VenueModal({
   orgId: string;
   venue: Venue | null;
 }) {
+  const fieldId = useId();
   const queryClient = useQueryClient();
   const { modalRef, titleId } = useAccessibleModal({
     isOpen,
@@ -119,18 +120,17 @@ function VenueModal({
         </h2>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">Name *</label>
-            <input
+            <label htmlFor={`${fieldId}-name`} className="block text-sm font-medium text-ink mb-1">Name *</label>
+            <input id={`${fieldId}-name`}
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full px-3 py-2 border border-lichen rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
-              autoFocus
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">Description</label>
-            <textarea
+            <label htmlFor={`${fieldId}-description`} className="block text-sm font-medium text-ink mb-1">Description</label>
+            <textarea id={`${fieldId}-description`}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
@@ -138,8 +138,8 @@ function VenueModal({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">Address</label>
-            <input
+            <label htmlFor={`${fieldId}-address`} className="block text-sm font-medium text-ink mb-1">Address</label>
+            <input id={`${fieldId}-address`}
               type="text"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
@@ -148,10 +148,10 @@ function VenueModal({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${fieldId}-default-ceiling-cm`} className="block text-sm font-medium text-ink mb-1">
                 Default Ceiling (cm)
               </label>
-              <input
+              <input id={`${fieldId}-default-ceiling-cm`}
                 type="number"
                 value={ceilingHeight}
                 onChange={(e) => setCeilingHeight(parseInt(e.target.value) || 300)}
@@ -159,10 +159,10 @@ function VenueModal({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${fieldId}-default-wall-color`} className="block text-sm font-medium text-ink mb-1">
                 Default Wall Color
               </label>
-              <input
+              <input id={`${fieldId}-default-wall-color`}
                 type="color"
                 value={wallColor}
                 onChange={(e) => setWallColor(e.target.value)}
@@ -216,6 +216,7 @@ function FloorPlanModal({
   venueId: string;
   plan: FloorPlan | null;
 }) {
+  const fieldId = useId();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { modalRef, titleId } = useAccessibleModal({
@@ -291,19 +292,18 @@ function FloorPlanModal({
         </h2>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">Room Name *</label>
-            <input
+            <label htmlFor={`${fieldId}-room-name`} className="block text-sm font-medium text-ink mb-1">Room Name *</label>
+            <input id={`${fieldId}-room-name`}
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Main Gallery, Room 1"
               className="w-full px-3 py-2 border border-lichen rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
-              autoFocus
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">Floor Number</label>
-            <input
+            <label htmlFor={`${fieldId}-floor-number`} className="block text-sm font-medium text-ink mb-1">Floor Number</label>
+            <input id={`${fieldId}-floor-number`}
               type="number"
               value={floor}
               onChange={(e) => setFloor(parseInt(e.target.value) || 0)}
@@ -312,8 +312,8 @@ function FloorPlanModal({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">Width (cm) *</label>
-              <input
+              <label htmlFor={`${fieldId}-width-cm`} className="block text-sm font-medium text-ink mb-1">Width (cm) *</label>
+              <input id={`${fieldId}-width-cm`}
                 type="number"
                 value={width}
                 onChange={(e) => setWidth(parseInt(e.target.value) || 800)}
@@ -321,8 +321,8 @@ function FloorPlanModal({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">Depth (cm) *</label>
-              <input
+              <label htmlFor={`${fieldId}-depth-cm`} className="block text-sm font-medium text-ink mb-1">Depth (cm) *</label>
+              <input id={`${fieldId}-depth-cm`}
                 type="number"
                 value={depth}
                 onChange={(e) => setDepth(parseInt(e.target.value) || 600)}
@@ -335,10 +335,10 @@ function FloorPlanModal({
           </p>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${fieldId}-ceiling-height-cm`} className="block text-sm font-medium text-ink mb-1">
                 Ceiling Height (cm)
               </label>
-              <input
+              <input id={`${fieldId}-ceiling-height-cm`}
                 type="number"
                 value={ceilingHeight}
                 onChange={(e) => setCeilingHeight(e.target.value ? parseInt(e.target.value) : '')}
@@ -347,8 +347,8 @@ function FloorPlanModal({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">Wall Color</label>
-              <input
+              <label htmlFor={`${fieldId}-wall-color`} className="block text-sm font-medium text-ink mb-1">Wall Color</label>
+              <input id={`${fieldId}-wall-color`}
                 type="color"
                 value={wallColor || 'rgb(var(--color-parchment-warm))'}
                 onChange={(e) => setWallColor(e.target.value)}
@@ -525,7 +525,7 @@ export default function VenuesPage() {
       {filteredVenues.length === 0 ? (
         <div className="text-center py-12 rounded-lg border border-dashed border-lichen">
           <Building2 className="w-12 h-12 mx-auto text-archive mb-4" />
-          <h3 className="text-lg font-medium text-ink mb-2">No venues found</h3>
+          <h2 className="text-lg font-medium text-ink mb-2">No venues found</h2>
           <p className="text-archive mb-4">
             {searchTerm
               ? 'Try adjusting your search'
@@ -553,21 +553,25 @@ export default function VenuesPage() {
                 className="bg-parchment rounded-lg border border-lichen overflow-hidden"
               >
                 {/* Venue Header */}
-                <div
-                  role="button"
-                  tabIndex={0}
-                  className="w-full p-4 flex items-center gap-4 text-left hover:bg-stone/50 transition-colors cursor-pointer"
-                  onClick={() => setExpandedVenue(isExpanded ? null : venue.venue_id)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedVenue(isExpanded ? null : venue.venue_id); } }}
-                >
+                {/* The toggle button's ::after stretches over the header so the whole header stays clickable */}
+                <div className="relative w-full p-4 flex items-center gap-4 text-left hover:bg-stone/50 transition-colors cursor-pointer">
                   <div className="p-2 bg-bark/10 rounded-lg">
-                    <Building2 className="w-5 h-5 text-bark" />
+                    <Building2 className="w-5 h-5 text-bark" aria-hidden="true" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-ink">{venue.name}</h3>
+                    <h2 className="font-semibold text-ink">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedVenue(isExpanded ? null : venue.venue_id)}
+                        aria-expanded={isExpanded}
+                        className="text-left font-semibold rounded after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+                      >
+                        {venue.name}
+                      </button>
+                    </h2>
                     {venue.address && (
                       <p className="text-sm text-archive flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
+                        <MapPin className="w-3 h-3" aria-hidden="true" />
                         {venue.address}
                       </p>
                     )}
@@ -576,13 +580,14 @@ export default function VenuesPage() {
                     {venue.floor_plan_count} room{venue.floor_plan_count !== 1 ? 's' : ''}
                   </div>
                   {canEdit && (
-                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    <div className="relative z-10 flex items-center gap-1">
                       <button
                         type="button"
                         onClick={() => openVenueModal(venue)}
+                        aria-label={`Edit ${venue.name}`}
                         className="p-2 text-archive hover:text-ink hover:bg-stone rounded"
                       >
-                        <Pencil className="w-4 h-4" />
+                        <Pencil className="w-4 h-4" aria-hidden="true" />
                       </button>
                       <button
                         type="button"
@@ -590,16 +595,17 @@ export default function VenuesPage() {
                           setVenueToDelete(venue.venue_id);
                           setShowDeleteVenueConfirm(true);
                         }}
+                        aria-label={`Delete ${venue.name}`}
                         className="p-2 text-archive hover:text-semantic-error hover:bg-semantic-error/10 rounded"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" aria-hidden="true" />
                       </button>
                     </div>
                   )}
                   {isExpanded ? (
-                    <ChevronDown className="w-5 h-5 text-archive" />
+                    <ChevronDown className="w-5 h-5 text-archive" aria-hidden="true" />
                   ) : (
-                    <ChevronRight className="w-5 h-5 text-archive" />
+                    <ChevronRight className="w-5 h-5 text-archive" aria-hidden="true" />
                   )}
                 </div>
 
