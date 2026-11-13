@@ -413,6 +413,7 @@ function DynamicKeywordsField({ definition, tags, organizationId, mediaId, reado
     .filter((v) => !normalized || v.value.toLowerCase().includes(normalized))
     .slice(0, 15);
   const exactMatch = values.some((v) => v.value.toLowerCase() === normalized);
+  const showSuggestions = open && !readonly && (matches.length > 0 || (!!input.trim() && !exactMatch));
 
   const commit = (value?: string, valueId?: string) => {
     const body: { definition_id: string; value_id?: string; tag_value?: string } = {
@@ -479,7 +480,7 @@ function DynamicKeywordsField({ definition, tags, organizationId, mediaId, reado
               id={inputId}
               type="text"
               value={input}
-              aria-controls={`${inputId}-suggestions`}
+              aria-controls={showSuggestions ? `${inputId}-suggestions` : undefined}
               placeholder={tags.length === 0 ? 'Type or pick a value…' : ''}
               onChange={(e) => {
                 setInput(e.target.value);
@@ -491,7 +492,7 @@ function DynamicKeywordsField({ definition, tags, organizationId, mediaId, reado
             />
           )}
         </div>
-        {open && !readonly && (matches.length > 0 || (input.trim() && !exactMatch)) && (
+        {showSuggestions && (
           <div
             id={`${inputId}-suggestions`}
             role="group"

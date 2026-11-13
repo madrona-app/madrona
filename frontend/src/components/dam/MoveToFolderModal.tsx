@@ -94,7 +94,7 @@ function FolderSelectNode({
           {/* Folder name */}
           <span className="flex-1 text-sm truncate">
             {folder.name}
-            {isDisabled && <span className="sr-only"> (current folder)</span>}
+            {isDisabled && <span className="sr-only">, current folder</span>}
           </span>
 
           {/* Selected indicator */}

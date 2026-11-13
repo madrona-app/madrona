@@ -657,6 +657,7 @@ export default function MediaLibraryPage() {
             <input
               type="text"
               placeholder={searchMode === 'visual' ? 'Describe what you\'re looking for...' : 'Search media...'}
+              aria-label={searchMode === 'visual' ? 'Describe the media you are looking for' : 'Search media'}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className={`input w-full pl-10 pr-10 ${searchMode === 'visual' ? 'border-bark/40' : ''}`}
@@ -669,6 +670,7 @@ export default function MediaLibraryPage() {
             {searchMode !== 'visual' && (
               <>
                 <select
+                  aria-label="Media type"
                   value={mediaType}
                   onChange={(e) => setMediaType(e.target.value as 'image' | 'video' | 'audio' | 'document' | 'model_3d' | '')}
                   className="input"
@@ -681,7 +683,10 @@ export default function MediaLibraryPage() {
                   <option value="model_3d">3D Models</option>
                 </select>
                 <button
+                  type="button"
                   onClick={() => setShowFilters(!showFilters)}
+                  aria-label="Filters"
+                  aria-expanded={showFilters}
                   className={`btn ${showFilters ? 'btn-primary' : 'btn-secondary'}`}
                 >
                   <Filter size={18} />
@@ -710,20 +715,28 @@ export default function MediaLibraryPage() {
               }}
               className={`btn flex items-center gap-1.5 ${searchMode === 'visual' ? 'btn-primary' : 'btn-secondary'}`}
               title={searchMode === 'visual' ? 'Switch to text search' : 'Search by description (AI)'}
+              aria-label="AI search by description"
+              aria-pressed={searchMode === 'visual'}
             >
               <Sparkles size={16} />
               <span className="hidden sm:inline text-sm">
                 {searchMode === 'visual' ? 'AI' : 'AI'}
               </span>
             </button>
-            <div className="border-l pl-2 flex items-center gap-1">
+            <div role="group" aria-label="View" className="border-l pl-2 flex items-center gap-1">
               <button
+                type="button"
+                aria-label="Grid view"
+                aria-pressed={viewMode === 'grid'}
                 onClick={() => setViewMode('grid')}
                 className={`p-2 rounded ${viewMode === 'grid' ? 'bg-forest/10 text-forest' : 'text-archive hover:bg-stone'}`}
               >
                 <Grid size={18} />
               </button>
               <button
+                type="button"
+                aria-label="List view"
+                aria-pressed={viewMode === 'list'}
                 onClick={() => setViewMode('list')}
                 className={`p-2 rounded ${viewMode === 'list' ? 'bg-forest/10 text-forest' : 'text-archive hover:bg-stone'}`}
               >
