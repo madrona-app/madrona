@@ -12,9 +12,11 @@ interface ResultsGridProps {
   error?: Error | null;
   viewMode: 'grid' | 'list';
   orgSlug: string;
+  /** Canonical query of the results shown, carried to object pages for their breadcrumb. */
+  resultsSearch?: string;
 }
 
-export function ResultsGrid({ hits, total, isLoading, error, viewMode, orgSlug }: ResultsGridProps) {
+export function ResultsGrid({ hits, total, isLoading, error, viewMode, orgSlug, resultsSearch }: ResultsGridProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -52,9 +54,9 @@ export function ResultsGrid({ hits, total, isLoading, error, viewMode, orgSlug }
 
   return (
     <>
-      <p className="text-sm text-archive mb-4">
+      <h2 className="text-sm font-normal text-archive mb-4">
         Showing {hits.length} of {formatNumber(total)} results
-      </p>
+      </h2>
       <div
         className={
           viewMode === 'grid'
@@ -63,7 +65,7 @@ export function ResultsGrid({ hits, total, isLoading, error, viewMode, orgSlug }
         }
       >
         {hits.map((hit) => (
-          <ObjectCard key={hit.object_id} hit={hit} orgSlug={orgSlug} viewMode={viewMode} />
+          <ObjectCard key={hit.object_id} hit={hit} orgSlug={orgSlug} viewMode={viewMode} resultsSearch={resultsSearch} />
         ))}
       </div>
     </>

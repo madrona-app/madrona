@@ -278,6 +278,8 @@ class TestExhibitionExport:
         db_session.commit()
         data = client.get("/api/discover/exh-page/exhibitions/spring-show").get_json()
         assert [o["title"] for o in data["related_objects"]] == ["Shown"]
+        # The size of the exportable group, counted with the same gate.
+        assert data["public_object_count"] == 1
 
 
 def test_detail_hides_soft_deleted_object(client, db_session):

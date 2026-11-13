@@ -1194,6 +1194,19 @@ def get_public_exhibition(
         .all()
     )
 
+    # Size of the exportable group (same gate as the export endpoint).
+    public_object_count = (
+        db.query(func.count(func.distinct(ExhibitionObject.object_id)))
+        .join(CollectionObject, CollectionObject.object_id == ExhibitionObject.object_id)
+        .filter(
+            ExhibitionObject.exhibition_id == exh.exhibition_id,
+            CollectionObject.organization_id == org.organization_id,
+            CollectionObject.is_discoverable == True,  # noqa: E712
+            CollectionObject.is_deleted == False,  # noqa: E712
+        )
+        .scalar()
+    ) or 0
+
     related_object_ids = [eo.object_id for eo in exhibition_objects if eo.object_id]
     thumbnails_data = _get_thumbnail_urls_bulk_with_srcset(related_object_ids, org.organization_id, db)
 
@@ -1241,6 +1254,7 @@ def get_public_exhibition(
         "thumbnail_url": _get_media_url(exh.thumbnail_media_id, org.organization_id, db),
         "tags": exh.tags,
         "related_objects": related_objects,
+        "public_object_count": public_object_count,
     }
 
     pub_cache_set(cache_key, result)

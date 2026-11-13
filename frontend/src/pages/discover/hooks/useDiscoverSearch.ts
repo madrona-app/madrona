@@ -1,8 +1,12 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { DiscoverSearchParams } from '../../../types/discover';
-
-const PAGE_SIZE = 24;
+import {
+  DISCOVER_PAGE_SIZE as PAGE_SIZE,
+  buildSearchParamsFromState,
+  canonicalSearch,
+  parseSearchParams,
+} from '../searchUrl';
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -11,83 +15,6 @@ function useDebounce<T>(value: T, delay: number): T {
     return () => clearTimeout(timer);
   }, [value, delay]);
   return debounced;
-}
-
-function parseSearchParams(sp: URLSearchParams): DiscoverSearchParams {
-  const params: DiscoverSearchParams = {};
-  const q = sp.get('q');
-  if (q) params.q = q;
-
-  const objectType = sp.getAll('object_type');
-  if (objectType.length) params.object_type = objectType;
-
-  const classification = sp.getAll('classification');
-  if (classification.length) params.classification = classification;
-
-  const creator = sp.get('creator');
-  if (creator) params.creator = creator;
-
-  const material = sp.get('material');
-  if (material) params.material = material;
-
-  const technique = sp.get('technique');
-  if (technique) params.technique = technique;
-
-  const subject = sp.get('subject');
-  if (subject) params.subject = subject;
-
-  const stylePeriod = sp.getAll('style_period');
-  if (stylePeriod.length) params.style_period = stylePeriod;
-
-  const creationPlace = sp.get('creation_place');
-  if (creationPlace) params.creation_place = creationPlace;
-
-  const hasImage = sp.get('has_image');
-  if (hasImage === 'true') params.has_image = true;
-
-  const dateFrom = sp.get('date_from');
-  if (dateFrom) params.date_from = dateFrom;
-
-  const dateTo = sp.get('date_to');
-  if (dateTo) params.date_to = dateTo;
-
-  const onDisplay = sp.get('on_display');
-  if (onDisplay === 'true') params.on_display = true;
-
-  const sort = sp.get('sort');
-  if (sort) params.sort = sort as DiscoverSearchParams['sort'];
-
-  const page = sp.get('page');
-  const pageNum = page ? parseInt(page, 10) : 1;
-  if (pageNum > 1) params.offset = (pageNum - 1) * PAGE_SIZE;
-
-  params.limit = PAGE_SIZE;
-  params.include_facets = true;
-
-  return params;
-}
-
-function buildSearchParamsFromState(
-  params: DiscoverSearchParams,
-  page: number,
-): URLSearchParams {
-  const sp = new URLSearchParams();
-  if (params.q) sp.set('q', params.q);
-  if (params.object_type) params.object_type.forEach((v) => sp.append('object_type', v));
-  if (params.classification) params.classification.forEach((v) => sp.append('classification', v));
-  if (params.creator) sp.set('creator', params.creator);
-  if (params.material) sp.set('material', params.material);
-  if (params.technique) sp.set('technique', params.technique);
-  if (params.subject) sp.set('subject', params.subject);
-  if (params.style_period) params.style_period.forEach((v) => sp.append('style_period', v));
-  if (params.creation_place) sp.set('creation_place', params.creation_place);
-  if (params.has_image) sp.set('has_image', 'true');
-  if (params.date_from) sp.set('date_from', params.date_from);
-  if (params.date_to) sp.set('date_to', params.date_to);
-  if (params.on_display) sp.set('on_display', 'true');
-  if (params.sort && params.sort !== 'relevance') sp.set('sort', params.sort);
-  if (page > 1) sp.set('page', String(page));
-  return sp;
 }
 
 export function useDiscoverSearch() {
@@ -101,19 +28,28 @@ export function useDiscoverSearch() {
   const params = useMemo(() => parseSearchParams(searchParams), [searchParams]);
   const currentPage = params.offset ? Math.floor(params.offset / PAGE_SIZE) + 1 : 1;
 
-  // Sync debounced search input to URL
+  // The last `q` this hook wrote to the URL. A URL `q` that differs from it
+  // came from outside (back/forward, a breadcrumb, a pasted link), so the
+  // search box follows the URL instead of overwriting it.
+  const lastWrittenQ = useRef(searchParams.get('q') || '');
+  const urlQ = searchParams.get('q') || '';
   useEffect(() => {
-    const currentQ = searchParams.get('q') || '';
-    if (debouncedSearch !== currentQ) {
-      const newSp = new URLSearchParams(searchParams);
-      if (debouncedSearch) {
-        newSp.set('q', debouncedSearch);
-      } else {
-        newSp.delete('q');
-      }
-      newSp.delete('page');
-      setSearchParams(newSp, { replace: true });
+    if (urlQ !== lastWrittenQ.current) {
+      lastWrittenQ.current = urlQ;
+      setSearchInput(urlQ);
     }
+  }, [urlQ]);
+
+  // Sync debounced search input to URL (canonical form, back to page 1)
+  useEffect(() => {
+    const trimmed = debouncedSearch.trim();
+    if (trimmed !== (searchParams.get('q') || '') && debouncedSearch === searchInput) {
+      lastWrittenQ.current = trimmed;
+      setSearchParams(buildSearchParamsFromState({ ...params, q: trimmed || undefined }, 1), { replace: true });
+    }
+    // Only a settled debounce writes; re-running on params/searchInput would
+    // write mid-typing or fight external URL changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]);
 
   const updateParams = useCallback(
@@ -184,17 +120,19 @@ export function useDiscoverSearch() {
   );
 
   const handleClearAll = useCallback(() => {
+    lastWrittenQ.current = '';
     setSearchInput('');
     setSearchParams(new URLSearchParams(), { replace: true });
   }, [setSearchParams]);
 
   const clearSearch = useCallback(() => {
+    lastWrittenQ.current = '';
     setSearchInput('');
-    const newSp = new URLSearchParams(searchParams);
-    newSp.delete('q');
-    newSp.delete('page');
-    setSearchParams(newSp, { replace: true });
-  }, [searchParams, setSearchParams]);
+    setSearchParams(buildSearchParamsFromState({ ...params, q: undefined }, 1), { replace: true });
+  }, [params, setSearchParams]);
+
+  /** Canonical `?query` for the results currently shown — the permalink. */
+  const resultsSearch = useMemo(() => canonicalSearch(params, currentPage), [params, currentPage]);
 
   return {
     params,
@@ -211,5 +149,6 @@ export function useDiscoverSearch() {
     handleRemoveFilter,
     handleClearAll,
     updateParams,
+    resultsSearch,
   };
 }

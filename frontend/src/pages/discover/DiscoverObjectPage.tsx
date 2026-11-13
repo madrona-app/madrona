@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, Link, useSearchParams } from 'react-router-dom';
+import { useParams, Link, useSearchParams, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -17,8 +17,13 @@ import type { DiscoverMediaItem } from '../../types/discover';
 import { CollectionSiteShell } from './components/CollectionSiteShell';
 import { RelatedObjects } from './components/RelatedObjects';
 import { ShareToolbar } from './components/ShareToolbar';
+import { Breadcrumbs } from './components/Breadcrumbs';
+import type { BreadcrumbItem } from './components/Breadcrumbs';
+import type { DiscoverObjectLinkState } from './components/ObjectCard';
+import { describeSearch, hasSearchCriteria, parseSearchParams } from './searchUrl';
 import { ResponsiveImage } from '../../components/ui/ResponsiveImage';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
+import { useAccessibleModal } from '../../hooks/useAccessibleModal';
 
 // ============================================================================
 // Lightbox
@@ -38,11 +43,12 @@ function Lightbox({
   onNext: () => void;
 }) {
   const item = media[currentIndex];
+  // Focus trap, Escape to close and focus restoration to the opening button.
+  const { modalRef, titleId } = useAccessibleModal({ isOpen: true, onClose, titlePrefix: 'object-lightbox' });
 
-  // Keyboard navigation
+  // Arrow keys step through images (Escape is handled by the modal hook)
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
       if (e.key === 'ArrowLeft') onPrev();
       if (e.key === 'ArrowRight') onNext();
     };
@@ -61,27 +67,42 @@ function Lightbox({
   if (!item) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-ink/95 flex items-center justify-center">
+    <div
+      ref={modalRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      className="fixed inset-0 z-50 bg-ink/95 flex items-center justify-center"
+    >
+      <h2 id={titleId} className="sr-only">
+        {media.length > 1 ? `Image ${currentIndex + 1} of ${media.length}` : 'Image viewer'}
+      </h2>
       <button
+        type="button"
         onClick={onClose}
-        className="absolute top-4 right-4 text-parchment/70 hover:text-parchment z-10 p-2"
+        aria-label="Close image viewer"
+        className="absolute top-4 right-4 text-parchment/70 hover:text-parchment z-10 p-2 min-w-[44px] min-h-[44px] rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-parchment/60"
       >
-        <X size={28} />
+        <X size={28} aria-hidden="true" />
       </button>
 
       {media.length > 1 && (
         <>
           <button
+            type="button"
             onClick={onPrev}
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-parchment/70 hover:text-parchment p-2"
+            aria-label="Previous image"
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-parchment/70 hover:text-parchment p-2 min-w-[44px] min-h-[44px] rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-parchment/60"
           >
-            <ChevronLeft size={36} />
+            <ChevronLeft size={36} aria-hidden="true" />
           </button>
           <button
+            type="button"
             onClick={onNext}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-parchment/70 hover:text-parchment p-2"
+            aria-label="Next image"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-parchment/70 hover:text-parchment p-2 min-w-[44px] min-h-[44px] rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-parchment/60"
           >
-            <ChevronRight size={36} />
+            <ChevronRight size={36} aria-hidden="true" />
           </button>
         </>
       )}
@@ -96,7 +117,7 @@ function Lightbox({
       />
 
       {media.length > 1 && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-parchment/60 text-sm">
+        <div aria-hidden="true" className="absolute bottom-6 left-1/2 -translate-x-1/2 text-parchment/80 text-sm">
           {currentIndex + 1} / {media.length}
         </div>
       )}
@@ -116,6 +137,24 @@ function MetadataRow({ label, children }: { label: string; children: React.React
       <dd className="text-sm text-ink">{children}</dd>
     </div>
   );
+}
+
+/**
+ * Home > Search results for “q” (the exact results URL) > object title.
+ * Without a results context (a shared or bookmarked record): Home > title.
+ */
+function objectCrumbs(orgSlug: string, fromResults: string | undefined, title: string): BreadcrumbItem[] {
+  const home = `/c/${orgSlug}`;
+  const items: BreadcrumbItem[] = [{ label: 'Home', to: home }];
+  if (fromResults !== undefined) {
+    const params = parseSearchParams(new URLSearchParams(fromResults));
+    items.push({
+      label: hasSearchCriteria(params) ? describeSearch(params) : 'Search results',
+      to: `${home}${fromResults}`,
+    });
+  }
+  items.push({ label: title });
+  return items;
 }
 
 // ============================================================================
@@ -244,8 +283,11 @@ export function DiscoverObjectPage() {
     sessionStorage.setItem('madrona-visitor-chat-open', '1');
   }, [searchParams, orgSlug, objectId]);
 
-  // Build "back to results" link preserving search state
-  const backLink = `/c/${orgSlug}${searchParams.toString() ? '?' + searchParams.toString() : ''}`;
+  // The results this record was opened from, if any. Carried as router
+  // state (not in the record URL, which stays a clean permalink); history
+  // state survives a reload of the same tab.
+  const location = useLocation();
+  const fromResults = (location.state as DiscoverObjectLinkState | null)?.discoverResults;
 
   const handleLightboxPrev = useCallback(() => {
     if (!obj) return;
@@ -348,15 +390,9 @@ export function DiscoverObjectPage() {
         </script>
       </Helmet>
 
-      {/* Back + share bar */}
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-        <Link
-          to={backLink}
-          className="text-archive hover:text-bark text-sm flex items-center gap-1 transition-colors"
-        >
-          <ArrowLeft size={16} />
-          Back to results
-        </Link>
+      {/* Breadcrumb + share bar */}
+      <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+        <Breadcrumbs items={objectCrumbs(orgSlug!, fromResults, obj.title || 'Untitled')} />
         <ShareToolbar
           url={obj.canonical_url}
           title={obj.title || 'Untitled'}
@@ -368,8 +404,10 @@ export function DiscoverObjectPage() {
         <div className="max-w-7xl mx-auto flex items-center justify-center py-8 px-4">
           {currentMedia ? (
             <button
+              type="button"
               onClick={() => setLightboxIndex(selectedImageIndex)}
-              className="relative group cursor-zoom-in"
+              aria-label={`Enlarge image: ${currentMedia.alt_text || obj.title || 'Object'}`}
+              className="relative group cursor-zoom-in rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             >
               <ResponsiveImage
                 src={currentMedia.url}

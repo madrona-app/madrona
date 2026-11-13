@@ -80,29 +80,35 @@ export function HeroSection({
         {/* Search bar */}
         <div className="mt-6 max-w-2xl mx-auto flex items-center gap-3">
           <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-parchment/50" />
+            <label htmlFor="discover-search-input" className="sr-only">Search the collection</label>
+            <Search aria-hidden="true" className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-parchment/50" />
             <input
-              type="text"
+              id="discover-search-input"
+              type="search"
               placeholder="Search the collection..."
               value={searchInput}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full pl-12 pr-10 py-3.5 bg-parchment/10 backdrop-blur-sm border border-parchment/20 rounded-lg text-parchment placeholder:text-parchment/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-parchment/30 focus-visible:ring-offset-2 focus-visible:border-parchment/40 text-base"
+              className="w-full pl-12 pr-14 py-3.5 bg-parchment/10 backdrop-blur-sm border border-parchment/20 rounded-lg text-parchment placeholder:text-parchment/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-parchment/30 focus-visible:ring-offset-2 focus-visible:border-parchment/40 text-base"
             />
             {searchInput && (
               <button
+                type="button"
                 onClick={onClearSearch}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-parchment/50 hover:text-parchment"
+                aria-label="Clear search"
+                className="absolute right-1 top-1/2 -translate-y-1/2 inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded text-parchment/70 hover:text-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-parchment/40"
               >
-                <X size={18} />
+                <X size={18} aria-hidden="true" />
               </button>
             )}
           </div>
           <button
             onClick={onToggleFilters}
             className="p-3.5 bg-parchment/10 backdrop-blur-sm border border-parchment/20 rounded-lg text-parchment/70 hover:text-parchment hover:bg-parchment/20 transition-colors"
-            aria-label="Toggle filters"
+            type="button"
+            aria-label="Filters and sort"
+            aria-haspopup="dialog"
           >
-            <SlidersHorizontal size={20} />
+            <SlidersHorizontal size={20} aria-hidden="true" />
           </button>
         </div>
       </div>

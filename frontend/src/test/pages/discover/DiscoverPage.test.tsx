@@ -10,6 +10,7 @@ import * as contentApi from '../../../lib/api/content';
 vi.mock('../../../lib/api', () => ({
   getDiscoverInfo: vi.fn(),
   searchDiscoverObjects: vi.fn(),
+  getDiscoverSearchExportUrl: (slug: string, q: string, f: string) => `/api/discover/${slug}/search/export${q}&format=${f}`,
 }));
 
 vi.mock('../../../lib/api/content', () => ({

@@ -315,6 +315,8 @@ export interface PublicExhibition {
   thumbnail_url: string | null;
   hero_image_url?: string | null;
   tags: string[] | null;
+  /** Number of public (discoverable) objects in the exhibition — the exportable group. */
+  public_object_count?: number;
 }
 
 // =============================================================================
