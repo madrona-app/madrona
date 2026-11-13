@@ -258,6 +258,8 @@ export default function VideoPlayer({ url, mimeType, posterUrl, subtitles, metad
     <div ref={containerRef} className="w-full h-full flex flex-col bg-ink">
       {/* Video area — click to toggle play (mouse shortcut for the Play button below) */}
       <div className="relative flex-1 min-h-0 flex items-center justify-center cursor-pointer">
+        {/* Caption/subtitle <track>s come from the media's caption files, passed in as props. */}
+        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
         <video
           ref={videoRef}
           className="w-full max-h-full object-contain"

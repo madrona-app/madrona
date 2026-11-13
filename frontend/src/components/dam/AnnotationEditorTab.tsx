@@ -298,7 +298,9 @@ export function AnnotationEditorTab({
         </div>
       )}
 
-      {/* Image with overlays */}
+      {/* Image with overlays. Drawing a region is pointer-only; the keyboard path is
+          the "annotate the whole image" button above. */}
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
       <div
         ref={imageContainerRef}
         className={`relative select-none overflow-hidden rounded-lg border border-lichen ${

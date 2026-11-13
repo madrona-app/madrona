@@ -26,16 +26,11 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
-      // Accessibility rules - catch issues at development time
-      // Set as warnings initially to allow gradual fixes without blocking builds
-      ...Object.fromEntries(
-        // Keep each rule's preset options (e.g. which elements may take which
-        // ARIA roles); only the severity is lowered.
-        Object.entries(jsxA11y.configs.recommended.rules).map(([key, value]) => [
-          key,
-          Array.isArray(value) ? ['warn', ...value.slice(1)] : 'warn',
-        ])
-      ),
+      // Accessibility rules: the jsx-a11y recommended preset, as errors, so a
+      // violation fails lint (and CI) instead of accumulating as warnings.
+      // Exceptions are per line, with an eslint-disable comment giving the
+      // reason and the keyboard alternative.
+      ...jsxA11y.configs.recommended.rules,
       // Disable deprecated label-has-for rule (replaced by label-has-associated-control)
       'jsx-a11y/label-has-for': 'off',
       // The recommended preset ships these OFF; the map above had switched them

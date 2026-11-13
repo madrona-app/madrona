@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { FileText, Search, X } from 'lucide-react';
 import {
   WorkspaceSection,
@@ -55,6 +55,11 @@ export function LoanDetailsSection({
   isRestricted,
   orgId: _orgId,
 }: LoanDetailsSectionProps) {
+  // The user just opened the exhibition search popover, so focus moves into it.
+  const exhibitionSearchRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (showExhibitionSelector) exhibitionSearchRef.current?.focus();
+  }, [showExhibitionSelector]);
   const uid = useId();
   return (
     <WorkspaceSection
@@ -130,7 +135,7 @@ export function LoanDetailsSection({
                             placeholder="Search by title..."
                             aria-label="Search exhibitions by title"
                             className="w-full px-3 py-2 border border-lichen rounded text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
-                            autoFocus
+                            ref={exhibitionSearchRef}
                           />
                         </div>
                         <div className="py-1">

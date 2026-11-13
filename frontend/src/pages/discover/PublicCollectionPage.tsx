@@ -254,6 +254,8 @@ function PasswordChallenge({
         <p className="text-sm text-archive">Enter the password shared with the link to view this collection.</p>
         <input
           type="password"
+          // The page's only purpose is this field; its heading and instructions sit just above it.
+          // eslint-disable-next-line jsx-a11y/no-autofocus
           autoFocus
           aria-label="Password"
           aria-invalid={error ? true : undefined}
