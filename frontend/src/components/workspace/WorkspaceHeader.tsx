@@ -140,20 +140,28 @@ export function WorkspaceHeader({
           <div className="flex items-center gap-4 min-w-0 flex-1">
             {/* Thumbnail */}
             {thumbnailUrl && (
-              <div
-                onClick={onImageClick}
-                className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-lichen/40 bg-stone/50 cursor-pointer group"
-              >
-                <img
-                  src={thumbnailUrl}
-                  alt=""
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                />
-              </div>
+              onImageClick ? (
+                <button
+                  type="button"
+                  onClick={onImageClick}
+                  aria-label={`View image of ${title || 'this record'}`}
+                  className="flex-shrink-0 w-16 h-16 p-0 rounded-lg overflow-hidden border border-lichen/40 bg-stone/50 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+                >
+                  <img
+                    src={thumbnailUrl}
+                    alt=""
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                  />
+                </button>
+              ) : (
+                <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-lichen/40 bg-stone/50">
+                  <img src={thumbnailUrl} alt="" className="w-full h-full object-cover" />
+                </div>
+              )
             )}
             {!thumbnailUrl && (
               <div className="flex-shrink-0 w-16 h-16 rounded-lg border border-lichen/40 bg-stone/50 flex items-center justify-center">
-                <ImageIcon size={24} className="text-archive" />
+                <ImageIcon size={24} className="text-archive" aria-hidden="true" />
               </div>
             )}
 

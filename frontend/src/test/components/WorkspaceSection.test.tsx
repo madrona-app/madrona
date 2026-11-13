@@ -85,13 +85,21 @@ describe('WorkspaceSection', () => {
       expect(onToggle).toHaveBeenCalledTimes(1);
     });
 
-    it('renders content area as clickable with role=button in view mode', () => {
+    it('offers an Edit button in view mode instead of making the content a button', () => {
       const onEdit = vi.fn();
       render(<WorkspaceSection {...defaultProps} isExpanded onEdit={onEdit} />);
-      // In view mode, the content area has role="button" for click-to-edit
-      const contentArea = screen.getByRole('button', { name: /Press Enter or Space to edit/i });
-      expect(contentArea).toBeInTheDocument();
-      expect(contentArea).toHaveAttribute('tabIndex', '0');
+      // The content keeps its own semantics (no role=button wrapping it)
+      expect(screen.queryByRole('button', { name: /Press Enter or Space to edit/i })).not.toBeInTheDocument();
+      const editButton = screen.getByRole('button', { name: 'Edit Description' });
+      fireEvent.click(editButton);
+      expect(onEdit).toHaveBeenCalledTimes(1);
+    });
+
+    it('still enters edit mode when the content is clicked with a mouse', () => {
+      const onEdit = vi.fn();
+      render(<WorkspaceSection {...defaultProps} isExpanded onEdit={onEdit} />);
+      fireEvent.click(screen.getByText('Section content'));
+      expect(onEdit).toHaveBeenCalledTimes(1);
     });
 
     it('does not call onEdit when content is clicked in edit mode', () => {
