@@ -193,6 +193,29 @@ describe('ConnectorsPage', () => {
     });
   });
 
+  describe('spreadsheet file source', () => {
+    it('offers an upload button for file sources that opens the upload dialog', async () => {
+      mockGetConnectorDefinitions.mockResolvedValue([
+        ...mockDefinitions,
+        {
+          connector_definition_id: 'def-3',
+          key: 'file-upload',
+          display_name: 'Spreadsheet file (CSV or Excel)',
+          direction: 'source',
+          category: 'file',
+          config_schema: { type: 'object' },
+        },
+      ] as never);
+      mockGetConnectorInstances.mockResolvedValue([] as never);
+      renderPage();
+      const button = await screen.findByRole('button', { name: 'Upload a spreadsheet' });
+      expect(screen.getByText(/^Files$/)).toBeInTheDocument();
+      fireEvent.click(button);
+      expect(await screen.findByRole('dialog', { name: 'Upload a spreadsheet' })).toBeInTheDocument();
+      expect(screen.getByLabelText('Spreadsheet file')).toHaveAttribute('type', 'file');
+    });
+  });
+
   describe('configured instances', () => {
     it('shows empty state when no instances', async () => {
       mockGetConnectorDefinitions.mockResolvedValue(mockDefinitions as never);

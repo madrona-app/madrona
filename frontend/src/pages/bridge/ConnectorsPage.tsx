@@ -15,6 +15,7 @@ import { useOrganization } from '../../contexts/useOrganization';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import DatabaseConnectionWizard from '../../components/DatabaseConnectionWizard';
 import ApiConnectionWizard from '../../components/ApiConnectionWizard';
+import FileSourceWizard from '../../components/FileSourceWizard';
 import { ConnectorIcon } from '../../lib/connectorIcons';
 import { Plug } from 'lucide-react';
 
@@ -38,6 +39,7 @@ export default function ConnectorsPage() {
   // Wizard state
   const [wizardDefinition, setWizardDefinition] = useState<ConnectorDefinition | null>(null);
   const [apiWizardDefinition, setApiWizardDefinition] = useState<ConnectorDefinition | null>(null);
+  const [fileWizardDefinition, setFileWizardDefinition] = useState<ConnectorDefinition | null>(null);
 
   const { data: definitions } = useQuery({
     queryKey: ['connector-definitions'],
@@ -65,8 +67,9 @@ export default function ConnectorsPage() {
   const categoryLabels: Record<string, string> = {
     database: 'Databases',
     api: 'APIs',
-    file: 'File Systems',
+    file: 'Files',
     cloud: 'Cloud Services',
+    madrona: 'Madrona',
   };
 
   // Group definitions by category
@@ -162,6 +165,15 @@ export default function ConnectorsPage() {
   // Check if a definition is an API connector
   const isApiConnector = (def: ConnectorDefinition) => def.category === 'api';
 
+  // File (spreadsheet upload) source connectors
+  const isFileConnector = (def: ConnectorDefinition) => def.category === 'file' && def.direction === 'source';
+
+  const handleFileWizardComplete = (instanceId: string) => {
+    setFileWizardDefinition(null);
+    queryClient.invalidateQueries({ queryKey: ['connector-instances'] });
+    navigate(`/organizations/${organizationId}/bridge/setup/connectors/${instanceId}`);
+  };
+
   // Launch wizard for API connectors
   const handleLaunchApiWizard = (def: ConnectorDefinition) => {
     setApiWizardDefinition(def);
@@ -240,6 +252,17 @@ export default function ConnectorsPage() {
                             className="w-full mt-2 px-3 py-1.5 bg-bark text-parchment text-sm rounded hover:bg-copper-dark hover:text-parchment transition-colors"
                           >
                             Connect
+                          </button>
+                        )}
+
+                        {/* Upload button for spreadsheet file sources */}
+                        {isFileConnector(def) && organizationId && (
+                          <button
+                            type="button"
+                            onClick={() => setFileWizardDefinition(def)}
+                            className="w-full mt-2 px-3 py-1.5 bg-bark text-parchment text-sm rounded hover:bg-copper-dark hover:text-parchment transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+                          >
+                            Upload a spreadsheet
                           </button>
                         )}
 
@@ -513,6 +536,18 @@ export default function ConnectorsPage() {
             organizationId={organizationId}
             onComplete={handleWizardComplete}
             onCancel={() => setWizardDefinition(null)}
+          />
+        </div>
+      )}
+
+      {/* Spreadsheet File Source Modal */}
+      {fileWizardDefinition && organizationId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4">
+          <FileSourceWizard
+            definition={fileWizardDefinition}
+            organizationId={organizationId}
+            onComplete={handleFileWizardComplete}
+            onCancel={() => setFileWizardDefinition(null)}
           />
         </div>
       )}

@@ -3,7 +3,7 @@
  * Profiles, Schedules, Jobs, Transformers, Projections, and Data Onboarding.
  */
 import { z } from 'zod';
-import { apiFetch, validate, buildQueryString } from './_utils';
+import { apiFetch, validate, buildQueryString, API_BASE_URL, getCsrfToken } from './_utils';
 import type { JsonValue, JsonObject } from '../../types/api';
 import type { ProjectionsResponse } from '../../types/projection';
 import {
@@ -250,6 +250,84 @@ export const createConnectorInstance = async (instance: {
   });
   return validate(ConnectorInstanceSchema, data);
 };
+
+// ── Bridge file source (spreadsheet upload + preview) ───────────────────────
+
+export const ConnectorFilePreviewSchema = z.object({
+  storage_key: z.string(),
+  filename: z.string(),
+  file_format: z.enum(['csv', 'xlsx']),
+  size_bytes: z.number(),
+  sheets: z.array(z.string()),
+  sheet_name: z.string().nullable(),
+  header_row: z.number(),
+  encoding: z.string().nullable(),
+  delimiter: z.string().nullable(),
+  columns: z.array(z.string()),
+  total_rows: z.number(),
+  preview_rows: z.array(
+    z.object({ row_number: z.number(), values: z.record(z.string(), z.string().nullable()) }),
+  ),
+  suggested_mapping: z.record(z.string(), z.string()),
+  mapping_targets: z.array(z.object({ key: z.string(), label: z.string() })),
+  limits: z.object({ max_file_bytes: z.number(), max_rows: z.number(), max_columns: z.number() }),
+});
+export type ConnectorFilePreview = z.infer<typeof ConnectorFilePreviewSchema>;
+
+export interface ConnectorFilePreviewRequest {
+  organizationId: string;
+  /** A new file to upload. Send this or storageKey. */
+  file?: File;
+  /** Re-read an earlier upload (e.g. another sheet) without uploading again. */
+  storageKey?: string;
+  sheetName?: string | null;
+  headerRow?: number | null;
+}
+
+/** Upload (or re-read) a spreadsheet for a Bridge file source. Reports upload progress 0..1. */
+export function previewConnectorFile(
+  req: ConnectorFilePreviewRequest,
+  onProgress?: (fraction: number) => void,
+): Promise<ConnectorFilePreview> {
+  const form = new FormData();
+  form.append('organization_id', req.organizationId);
+  if (req.file) form.append('file', req.file);
+  if (req.storageKey) form.append('storage_key', req.storageKey);
+  if (req.sheetName) form.append('sheet_name', req.sheetName);
+  if (req.headerRow) form.append('header_row', String(req.headerRow));
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_BASE_URL}/connector-files/preview`);
+    xhr.withCredentials = true;
+    const csrf = getCsrfToken();
+    if (csrf) xhr.setRequestHeader('X-CSRF-Token', csrf);
+    xhr.upload.onprogress = (event) => {
+      if (onProgress && event.lengthComputable) onProgress(event.loaded / event.total);
+    };
+    xhr.onload = () => {
+      let body: unknown = null;
+      try {
+        body = JSON.parse(xhr.responseText);
+      } catch {
+        body = null;
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          resolve(validate(ConnectorFilePreviewSchema, body));
+        } catch {
+          reject(new Error('The server sent an unexpected response.'));
+        }
+        return;
+      }
+      const err = (body as { error?: { message?: string }; detail?: { message?: string } } | null);
+      reject(new Error(err?.error?.message || err?.detail?.message || `Upload failed (${xhr.status}).`));
+    };
+    xhr.onerror = () => reject(new Error('Network error during upload.'));
+    xhr.onabort = () => reject(new Error('Upload cancelled.'));
+    xhr.send(form);
+  });
+}
 
 export const updateConnectorInstance = async (
   instanceId: string,
