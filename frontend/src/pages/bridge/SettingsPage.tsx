@@ -230,7 +230,7 @@ export default function SettingsPage() {
           />
         )}
         {schema.type === 'boolean' && (
-          <label className={`flex items-center ${isFieldEditable ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}>
+          <label htmlFor={fieldId} className={`flex items-center ${isFieldEditable ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}>
             <Checkbox
               id={fieldId}
               checked={value || false}
@@ -492,7 +492,7 @@ export default function SettingsPage() {
           {/* Catalog Browser Section */}
           <div className="mt-6 bg-parchment border border-lichen rounded-lg p-6">
             <div className="flex items-center gap-3 mb-4">
-              <FaDatabase size={20} className="text-bark" />
+              <FaDatabase size={20} className="text-bark" aria-hidden="true" />
               <h2 className="text-lg font-semibold m-0 text-forest">
                 Database Catalog
               </h2>

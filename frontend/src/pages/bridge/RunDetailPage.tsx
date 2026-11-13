@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
 import { useParams, Link } from 'react-router-dom';
 import { getRun, getRunChanges, executeRun, republishRun, getDatasets, getPipelines, getConnectorInstances, checkRollbackFeasibility, rollbackRun } from '../../lib/api';
 import type { RollbackCheckResult, RollbackResult } from '../../lib/api';
@@ -278,12 +279,17 @@ export default function RunDetailPage() {
     }
   };
 
-  const closeRollbackDrawer = () => {
+  const closeRollbackDrawer = useCallback(() => {
     setShowRollbackDrawer(false);
     setRollbackCheck(null);
     setRollbackError(null);
     setRollbackResult(null);
-  };
+  }, []);
+  const { modalRef: rollbackDrawerRef, titleId: rollbackTitleId } = useAccessibleModal({
+    isOpen: showRollbackDrawer,
+    onClose: closeRollbackDrawer,
+    titlePrefix: 'run-rollback-drawer',
+  });
 
   const getStatusIndex = (status: Run['status'], timeline: readonly string[]) => {
     const failedStatuses: Run['status'][] = ['failed', 'failed_publish', 'failed_finalize'];
@@ -1010,22 +1016,27 @@ export default function RunDetailPage() {
           <div
             className="drawer-backdrop fixed inset-0 bg-ink/50 z-[999]"
             onClick={closeRollbackDrawer}
+            aria-hidden="true"
           />
 
           {/* Drawer Panel */}
           <div
+            ref={rollbackDrawerRef}
+            {...getModalAriaProps(rollbackTitleId)}
             className="drawer fixed top-0 right-0 bottom-0 w-[400px] max-w-[90vw] bg-parchment shadow-[-4px_0_12px_rgba(0,0,0,0.15)] z-[1000] flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="px-6 py-5 border-b border-lichen flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-ink">
+              <h2 id={rollbackTitleId} className="text-lg font-semibold text-ink">
                 Rollback Run
               </h2>
               <button
+                type="button"
                 onClick={closeRollbackDrawer}
+                aria-label="Close rollback drawer"
                 className="bg-transparent border-none cursor-pointer p-1 text-archive"
               >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                   <path
                     fillRule="evenodd"
                     d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"

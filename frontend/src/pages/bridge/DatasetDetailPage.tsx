@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Download, ChevronDown, ChevronUp } from 'lucide-react';
@@ -34,6 +35,12 @@ export default function DatasetDetailPage() {
   const [expandedEntityKey, setExpandedEntityKey] = useState<string | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportFormat, setExportFormat] = useState<EntityExportFormat>('jsonl');
+  const closeExportModal = useCallback(() => setShowExportModal(false), []);
+  const { modalRef: exportModalRef, titleId: exportTitleId } = useAccessibleModal({
+    isOpen: showExportModal,
+    onClose: closeExportModal,
+    titlePrefix: 'dataset-export',
+  });
 
   const observerTarget = useRef<HTMLDivElement>(null);
 
@@ -374,23 +381,29 @@ export default function DatasetDetailPage() {
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div
               className="fixed inset-0 bg-stone0 bg-opacity-75 transition-opacity"
-              onClick={() => setShowExportModal(false)}
+              onClick={closeExportModal}
+              aria-hidden="true"
             />
 
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
 
-            <div className="inline-block align-bottom bg-parchment rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+            <div
+              ref={exportModalRef}
+              {...getModalAriaProps(exportTitleId)}
+              className="inline-block align-bottom bg-parchment rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6"
+            >
               <div>
                 <div className="mt-3 text-center sm:mt-0 sm:text-left">
-                  <h3 className="text-lg leading-6 font-medium text-ink">
+                  <h3 id={exportTitleId} className="text-lg leading-6 font-medium text-ink">
                     Export Dataset
                   </h3>
                   <div className="mt-4 space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-ink mb-2">
+                      <label htmlFor="dataset-export-format" className="block text-sm font-medium text-ink mb-2">
                         Export Format
                       </label>
                       <select
+                        id="dataset-export-format"
                         value={exportFormat}
                         onChange={(e) => setExportFormat(e.target.value as EntityExportFormat)}
                         className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-lichen focus-visible:outline-none focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark/30 sm:text-sm rounded-md"
