@@ -156,6 +156,8 @@ export default function EadImportPage() {
           <button type="button" className="btn-primary text-sm" disabled={busy || preview.conflicts.length > 0} onClick={doImport}>
             {busy ? 'Importing…' : `Import ${preview.total} ${preview.total === 1 ? 'record' : 'records'}`}
           </button>
+          {/* Focusable so keyboard users can scroll a wide table (axe scrollable-region-focusable). */}
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex */}
           <div className="overflow-x-auto" role="region" aria-labelledby={`${id}-cap`} tabIndex={0}>
             <table className="w-full text-sm border border-lichen rounded-lg">
               <caption id={`${id}-cap`} className="text-left text-sm font-medium text-ink mb-1">

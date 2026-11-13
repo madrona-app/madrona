@@ -208,6 +208,11 @@ export async function apiFetch<T = any>(
           errorMessage = errorData.error.message;
           errorCode = errorData.error.code;
           errorDetails = errorData.error.details;
+          // Validation errors name the field they belong to; keep it so forms
+          // can put the message on (and move focus to) that field.
+          if (errorData.error.field && !errorDetails?.field) {
+            errorDetails = { ...(errorDetails || {}), field: errorData.error.field };
+          }
         }
       } else if (errorData.message) {
         errorMessage = errorData.message;

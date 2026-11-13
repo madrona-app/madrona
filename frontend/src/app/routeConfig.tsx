@@ -105,6 +105,7 @@ import {
   ProcedureEnforcementSettingsPage,
   RecordRulesSettingsPage,
   EadImportPage,
+  CustomFieldsSettingsPage,
   VocabularyValidationSettingsPage,
   MediaRightsEnforcementSettingsPage,
   EmergencyPlansPage,
@@ -394,6 +395,7 @@ export function AppRoutes() {
           <Route path="discover" element={<DiscoverSettingsPage />} />
           <Route path="procedure" element={<ProcedureEnforcementSettingsPage />} />
           <Route path="record-rules" element={<RecordRulesSettingsPage />} />
+          <Route path="custom-fields" element={<CustomFieldsSettingsPage />} />
         </Route>
         {/* Media Library (DAM) */}
         <Route path="/organizations/:orgId/collections/media" element={<MediaLibraryPage />} />
