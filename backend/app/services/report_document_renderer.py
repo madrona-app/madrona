@@ -1523,370 +1523,6 @@ def _fetch_primary_image_b64(
         return None
 
 
-# ============================================================================
-# NATIVE DOCX BUILDERS (python-docx)
-# ============================================================================
-
-# Madrona brand colors for DOCX
-_FOREST_RGB = (0x1F, 0x3A, 0x2E)
-_ARCHIVE_RGB = (0x6B, 0x7A, 0x7E)
-_LICHEN_RGB = (0xE6, 0xE4, 0xE1)
-_INK_RGB = (0x1C, 0x1C, 0x1C)
-_BARK_RGB = (0x8E, 0x3B, 0x2F)
-
-
-def _docx_setup_styles(doc):
-    """Configure Madrona-branded styles on a python-docx Document."""
-    from docx.shared import Pt, RGBColor
-    from docx.enum.text import WD_ALIGN_PARAGRAPH
-
-    styles = doc.styles
-
-    # Title style
-    title_style = styles["Title"]
-    title_style.font.size = Pt(22)
-    title_style.font.color.rgb = RGBColor(*_FOREST_RGB)
-    title_style.font.bold = True
-    title_style.paragraph_format.space_after = Pt(2)
-
-    # Subtitle style
-    subtitle_style = styles["Subtitle"]
-    subtitle_style.font.size = Pt(11)
-    subtitle_style.font.color.rgb = RGBColor(*_ARCHIVE_RGB)
-    subtitle_style.font.bold = False
-    subtitle_style.paragraph_format.space_after = Pt(10)
-
-    # Heading 2 — section headers
-    h2 = styles["Heading 2"]
-    h2.font.size = Pt(13)
-    h2.font.color.rgb = RGBColor(*_FOREST_RGB)
-    h2.font.bold = True
-    h2.paragraph_format.space_before = Pt(14)
-    h2.paragraph_format.space_after = Pt(6)
-
-    # Normal body
-    normal = styles["Normal"]
-    normal.font.size = Pt(10)
-    normal.font.color.rgb = RGBColor(*_INK_RGB)
-    normal.paragraph_format.space_after = Pt(4)
-
-    return doc
-
-
-def _docx_add_field(doc, label: str, value: str | None):
-    """Add a label/value field pair to the document."""
-    if not value:
-        return
-    from docx.shared import Pt, RGBColor
-
-    p = doc.add_paragraph()
-    p.paragraph_format.space_before = Pt(0)
-    p.paragraph_format.space_after = Pt(4)
-
-    label_run = p.add_run(f"{label}: ")
-    label_run.font.size = Pt(9)
-    label_run.font.bold = True
-    label_run.font.color.rgb = RGBColor(*_ARCHIVE_RGB)
-
-    value_run = p.add_run(str(value))
-    value_run.font.size = Pt(10)
-    value_run.font.color.rgb = RGBColor(*_INK_RGB)
-
-
-def _docx_add_field_block(doc, label: str, value: str | None):
-    """Add a full-width label + block value (for longer text)."""
-    if not value:
-        return
-    from docx.shared import Pt, RGBColor
-
-    lp = doc.add_paragraph()
-    lp.paragraph_format.space_before = Pt(2)
-    lp.paragraph_format.space_after = Pt(1)
-    lr = lp.add_run(label.upper())
-    lr.font.size = Pt(9)
-    lr.font.bold = True
-    lr.font.color.rgb = RGBColor(*_ARCHIVE_RGB)
-
-    vp = doc.add_paragraph(str(value))
-    vp.paragraph_format.space_before = Pt(0)
-    vp.paragraph_format.space_after = Pt(6)
-    for run in vp.runs:
-        run.font.size = Pt(10)
-        run.font.color.rgb = RGBColor(*_INK_RGB)
-
-
-def _docx_add_field_pair_row(table, label1, val1, label2, val2):
-    """Add a two-column row to a field table."""
-    from docx.shared import Pt, RGBColor
-
-    row = table.add_row()
-    for idx, (label, val) in enumerate([(label1, val1), (label2, val2)]):
-        cell = row.cells[idx]
-        if not val:
-            cell.text = ""
-            continue
-        p = cell.paragraphs[0]
-        p.paragraph_format.space_after = Pt(4)
-        lr = p.add_run(f"{label}\n")
-        lr.font.size = Pt(9)
-        lr.font.bold = True
-        lr.font.color.rgb = RGBColor(*_ARCHIVE_RGB)
-        vr = p.add_run(str(val))
-        vr.font.size = Pt(10)
-        vr.font.color.rgb = RGBColor(*_INK_RGB)
-
-
-def _docx_make_field_table(doc):
-    """Create a borderless two-column table for field pairs."""
-    from docx.shared import Inches
-    table = doc.add_table(rows=0, cols=2)
-    table.columns[0].width = Inches(3.25)
-    table.columns[1].width = Inches(3.25)
-    # Remove borders
-    for cell in table.columns[0].cells + table.columns[1].cells:
-        _docx_clear_cell_borders(cell)
-    return table
-
-
-def _docx_clear_cell_borders(cell):
-    """Remove all borders from a table cell."""
-    from docx.oxml.ns import qn
-    tc_pr = cell._element.get_or_add_tcPr()
-    tc_borders = tc_pr.find(qn("w:tcBorders"))
-    if tc_borders is not None:
-        tc_pr.remove(tc_borders)
-
-
-def _docx_add_section(doc, heading: str):
-    """Add a section heading."""
-    doc.add_heading(heading, level=2)
-
-
-def _build_object_record_sheet_docx(context: dict[str, Any]) -> bytes:
-    """Build an Object Record Sheet DOCX natively with python-docx."""
-    import base64 as _b64
-    from docx import Document as DocxDocument
-    from docx.shared import Inches, Pt, RGBColor
-
-    doc = DocxDocument()
-    _docx_setup_styles(doc)
-
-    # -- Header: org name
-    hp = doc.add_paragraph()
-    hp.paragraph_format.space_after = Pt(2)
-    hr = hp.add_run(context.get("org_name") or "")
-    hr.font.size = Pt(14)
-    hr.font.bold = True
-    hr.font.color.rgb = RGBColor(*_FOREST_RGB)
-
-    # -- Title
-    doc.add_paragraph("Object Record Sheet", style="Title")
-    doc.add_paragraph(context.get("title", ""), style="Subtitle")
-
-    # -- Identification section with image
-    _docx_add_section(doc, "Identification")
-
-    # If there's a primary image, add it right-aligned
-    image_b64 = context.get("image_b64")
-    if image_b64:
-        try:
-            img_bytes = _b64.b64decode(image_b64)
-            img_stream = io.BytesIO(img_bytes)
-            doc.add_picture(img_stream, width=Inches(2.5))
-            # Add a small spacer after the image
-            doc.add_paragraph().paragraph_format.space_after = Pt(4)
-        except Exception:
-            logger.debug("Failed to add image to DOCX", exc_info=True)
-
-    # Identification fields
-    for label, value in context.get("ident_fields", []):
-        _docx_add_field(doc, label, value)
-
-    # -- Creators
-    if context.get("creators"):
-        _docx_add_section(doc, "Artists / Creators")
-        p = doc.add_paragraph(context["creators"])
-        for run in p.runs:
-            run.font.size = Pt(10)
-
-    # -- Description
-    desc_fields = [
-        context.get("brief_description"),
-        context.get("full_description"),
-        context.get("color"),
-        context.get("form"),
-        context.get("physical_description"),
-        context.get("distinguishing_features"),
-    ]
-    if any(desc_fields):
-        _docx_add_section(doc, "Description")
-        _docx_add_field_block(doc, "Brief Description", context.get("brief_description"))
-        _docx_add_field_block(doc, "Full Description", context.get("full_description"))
-        table = _docx_make_field_table(doc)
-        _docx_add_field_pair_row(table, "Color", context.get("color"),
-                                 "Form", context.get("form"))
-        _docx_add_field_pair_row(table, "Physical Description", context.get("physical_description"),
-                                 "Distinguishing Features", context.get("distinguishing_features"))
-
-    # -- Dimensions
-    if context.get("dimensions"):
-        _docx_add_section(doc, "Dimensions")
-        p = doc.add_paragraph(context["dimensions"])
-        for run in p.runs:
-            run.font.size = Pt(10)
-
-    # -- Materials & Techniques
-    if context.get("materials") or context.get("techniques"):
-        _docx_add_section(doc, "Materials & Techniques")
-        table = _docx_make_field_table(doc)
-        _docx_add_field_pair_row(table, "Materials", context.get("materials"),
-                                 "Techniques", context.get("techniques"))
-
-    # -- Inscriptions
-    if context.get("inscriptions"):
-        _docx_add_section(doc, "Inscriptions & Markings")
-        p = doc.add_paragraph(context["inscriptions"])
-        for run in p.runs:
-            run.font.size = Pt(10)
-
-    # -- Edition
-    edition_fields = [context.get("edition"), context.get("copy_number"),
-                      context.get("edition_size"), context.get("state_display")]
-    if any(edition_fields):
-        _docx_add_section(doc, "Edition")
-        table = _docx_make_field_table(doc)
-        _docx_add_field_pair_row(table, "Edition", context.get("edition"),
-                                 "Copy Number", context.get("copy_number"))
-        _docx_add_field_pair_row(table, "Edition Size", context.get("edition_size"),
-                                 "State", context.get("state_display"))
-        _docx_add_field_block(doc, "State Description", context.get("state_description"))
-
-    # -- Production
-    prod_fields = [context.get("creation_date_display"), context.get("creation_place"),
-                   context.get("style_period"), context.get("production_note")]
-    if any(prod_fields):
-        _docx_add_section(doc, "Production")
-        table = _docx_make_field_table(doc)
-        _docx_add_field_pair_row(table, "Date", context.get("creation_date_display"),
-                                 "Place of Creation", context.get("creation_place"))
-        _docx_add_field(doc, "Style / Period", context.get("style_period"))
-        _docx_add_field_block(doc, "Production Note", context.get("production_note"))
-
-    # -- Subject
-    if context.get("subjects_display"):
-        _docx_add_section(doc, "Subject")
-        _docx_add_field(doc, "Subjects", context.get("subjects_display"))
-        _docx_add_field_block(doc, "Content Description", context.get("content_description"))
-
-    # -- History
-    history_fields = [context.get("provenance"), context.get("credit_line"),
-                      context.get("object_history_note"), context.get("comments")]
-    if any(history_fields):
-        _docx_add_section(doc, "History")
-        _docx_add_field_block(doc, "Provenance", context.get("provenance"))
-        _docx_add_field_block(doc, "Credit Line", context.get("credit_line"))
-        _docx_add_field_block(doc, "Object History", context.get("object_history_note"))
-        _docx_add_field_block(doc, "Comments", context.get("comments"))
-
-    # -- Location & Inventory
-    if context.get("barcode") or context.get("last_inventoried_date"):
-        _docx_add_section(doc, "Location & Inventory")
-        table = _docx_make_field_table(doc)
-        _docx_add_field_pair_row(table, "Barcode", context.get("barcode"),
-                                 "Last Inventoried", context.get("last_inventoried_date"))
-
-    # -- Condition
-    if context.get("condition_rating"):
-        _docx_add_section(doc, "Condition")
-        table = _docx_make_field_table(doc)
-        _docx_add_field_pair_row(table, "Condition Rating", context.get("condition_rating"),
-                                 "Condition Date", context.get("condition_date"))
-        _docx_add_field_pair_row(table, "Completeness", context.get("completeness"),
-                                 "Conservation Priority", context.get("conservation_priority"))
-        _docx_add_field_block(doc, "Condition Note", context.get("condition_note"))
-        _docx_add_field_block(doc, "Handling Requirements", context.get("handling_requirements"))
-
-    # -- Valuation
-    if context.get("current_value_display") or context.get("insurance_value_display"):
-        _docx_add_section(doc, "Valuation")
-        table = _docx_make_field_table(doc)
-        _docx_add_field_pair_row(table, "Current Value", context.get("current_value_display"),
-                                 "Valuation Date", context.get("current_value_date"))
-        _docx_add_field(doc, "Insurance Value", context.get("insurance_value_display"))
-        _docx_add_field_block(doc, "Insurance Note", context.get("insurance_note"))
-
-    # -- Record info footer
-    footer_parts = []
-    if context.get("created_at"):
-        footer_parts.append(f"Created: {context['created_at']}")
-    if context.get("updated_at"):
-        footer_parts.append(f"Updated: {context['updated_at']}")
-    if footer_parts:
-        fp = doc.add_paragraph()
-        fp.paragraph_format.space_before = Pt(14)
-        fr = fp.add_run("  |  ".join(footer_parts))
-        fr.font.size = Pt(8)
-        fr.font.color.rgb = RGBColor(*_ARCHIVE_RGB)
-
-    # Generated-at footer
-    gp = doc.add_paragraph()
-    gr = gp.add_run(f"Generated {context.get('generated_at', '')}")
-    gr.font.size = Pt(8)
-    gr.font.color.rgb = RGBColor(*_ARCHIVE_RGB)
-
-    buf = io.BytesIO()
-    doc.save(buf)
-    return buf.getvalue()
-
-
-def _build_generic_report_docx(context: dict[str, Any]) -> bytes:
-    """Build a generic report DOCX from a context dict.
-
-    Used by condition reports, loan agreements, entry/exit reports, etc.
-    Renders all string-valued context keys as labeled fields.
-    """
-    from docx import Document as DocxDocument
-    from docx.shared import Pt, RGBColor
-
-    doc = DocxDocument()
-    _docx_setup_styles(doc)
-
-    # Header
-    hp = doc.add_paragraph()
-    hp.paragraph_format.space_after = Pt(2)
-    hr = hp.add_run(context.get("org_name") or "")
-    hr.font.size = Pt(14)
-    hr.font.bold = True
-    hr.font.color.rgb = RGBColor(*_FOREST_RGB)
-
-    # Use first non-org, non-generated_at key with a value as the title hint
-    doc.add_paragraph("Report", style="Title")
-    if context.get("generated_at"):
-        doc.add_paragraph(context["generated_at"], style="Subtitle")
-
-    # Skip metadata keys; render the rest as fields
-    _skip_keys = {"org_name", "generated_at"}
-    for key, value in context.items():
-        if key in _skip_keys or not value:
-            continue
-        label = key.replace("_", " ").title()
-        if isinstance(value, str) and len(value) > 120:
-            _docx_add_field_block(doc, label, value)
-        else:
-            _docx_add_field(doc, label, str(value) if not isinstance(value, str) else value)
-
-    # Footer
-    gp = doc.add_paragraph()
-    gp.paragraph_format.space_before = Pt(14)
-    gr = gp.add_run(f"Generated {context.get('generated_at', '')}")
-    gr.font.size = Pt(8)
-    gr.font.color.rgb = RGBColor(*_ARCHIVE_RGB)
-
-    buf = io.BytesIO()
-    doc.save(buf)
-    return buf.getvalue()
-
-
 def render_object_record_sheet_html(
     data: list[dict[str, Any]],
     metadata: dict[str, Any],
@@ -2016,7 +1652,7 @@ def render_object_record_sheet_html(
     }
 
     template_name = "object_record_sheet.html"
-    if export_format in ("html", "txt"):
+    if export_format in ("html", "txt", "docx"):
         return _render_accessible(template_name, context, export_format)
 
     # Try org-specific template; fall back to default if it errors
@@ -2033,23 +1669,22 @@ def render_object_record_sheet_html(
         template = env.get_template(template_name)
         html = template.render(**context)
 
-    if export_format == "docx":
-        return _build_object_record_sheet_docx(context)
-
     # Default: PDF via WeasyPrint
     import weasyprint
     return weasyprint.HTML(string=html).write_pdf()
 
 
 def _render_accessible(template_name: str, context: dict[str, Any], export_format: str) -> bytes:
-    """Accessible HTML or plain text built from the structured document model.
+    """Accessible HTML, plain text or Word built from the structured document model.
 
     Deliberately independent of the (per-org overridable) print templates: the
     accessible structure is guaranteed whatever an organization uploads.
     """
-    from app.services.report_accessible import build_record_document, render_html, render_text
+    from app.services.report_accessible import (
+        build_record_document, render_docx, render_html, render_text,
+    )
     doc = build_record_document(template_name, context)
-    return render_html(doc) if export_format == "html" else render_text(doc)
+    return {"html": render_html, "txt": render_text, "docx": render_docx}[export_format](doc)
 
 
 def _render_html_template(
@@ -2059,7 +1694,7 @@ def _render_html_template(
     export_format: str = "pdf",
 ) -> bytes:
     """Shared helper: render a record report to PDF, DOCX, accessible HTML or text."""
-    if export_format in ("html", "txt"):
+    if export_format in ("html", "txt", "docx"):
         return _render_accessible(template_name, context, export_format)
 
     try:
@@ -2074,9 +1709,6 @@ def _render_html_template(
         env = _get_template_env(None)
         template = env.get_template(template_name)
         html = template.render(**context)
-
-    if export_format == "docx":
-        return _build_generic_report_docx(context)
 
     import weasyprint
     return weasyprint.HTML(string=html).write_pdf()

@@ -1289,122 +1289,20 @@ class TestRenderHtmlTemplateFallback:
 
 
 class TestDocxBuilders:
-    def test_build_generic_report_docx_empty_context(self):
-        out = rdr._build_generic_report_docx({})
+    """DOCX is built from the accessible document model; its XML structure is
+    asserted in tests/test_report_accessible_formats.py."""
+
+    def test_generic_report_docx_via_template_helper(self, real_package_loader):
+        out = rdr._render_html_template(
+            "condition_report.html", {"report_number": "X", "org_name": "M"}, None,
+            export_format="docx",
+        )
         assert out.startswith(b"PK")
 
-    def test_build_generic_report_docx_skips_metadata_keys(self):
-        ctx = {
-            "org_name": "Museum",
-            "generated_at": "today",
-            "field_a": "value",
-            "field_b": "x" * 200,  # long → block
-            "number_field": 42,
-        }
-        out = rdr._build_generic_report_docx(ctx)
+    def test_object_record_sheet_docx_bad_image_b64(self, real_package_loader, minimal_metadata):
+        with patch.object(rdr, "_fetch_primary_image_b64", return_value=("NOT_VALID_BASE64_!!!", "image/png")):
+            out = rdr.render_object_record_sheet_html(
+                [{"object_number": "B.1", "object_id": "x", "organization_id": "y"}],
+                minimal_metadata, export_format="docx",
+            )
         assert out.startswith(b"PK")
-
-    def test_build_object_record_sheet_docx_minimal(self):
-        out = rdr._build_object_record_sheet_docx({
-            "org_name": "Museum",
-            "title": "Obj A",
-            "generated_at": "now",
-            "ident_fields": [("Object Number", "1")],
-        })
-        assert out.startswith(b"PK")
-
-    def test_build_object_record_sheet_docx_bad_image_b64(self):
-        # Bad base64 should be caught and logged — not raise
-        out = rdr._build_object_record_sheet_docx({
-            "org_name": "Museum",
-            "title": "Obj with bad image",
-            "generated_at": "now",
-            "ident_fields": [],
-            "image_b64": "NOT_VALID_BASE64_!!!",
-        })
-        assert out.startswith(b"PK")
-
-    def test_build_object_record_sheet_docx_all_sections(self):
-        out = rdr._build_object_record_sheet_docx({
-            "org_name": "Museum",
-            "title": "Full",
-            "generated_at": "now",
-            "ident_fields": [("Object Number", "1")],
-            "creators": "A (maker)",
-            "brief_description": "Short",
-            "full_description": "Full",
-            "color": "Blue",
-            "form": "Cup",
-            "physical_description": "Phys",
-            "distinguishing_features": "None",
-            "dimensions": "5x5 cm",
-            "materials": "wood",
-            "techniques": "carving",
-            "inscriptions": "SIGNED",
-            "edition": "1",
-            "copy_number": "1",
-            "edition_size": 10,
-            "state_display": "1/2",
-            "state_description": "First",
-            "creation_date_display": "1900",
-            "creation_place": "Paris",
-            "style_period": "Art Nouveau",
-            "production_note": "note",
-            "subjects_display": "still life",
-            "content_description": "fruit",
-            "provenance": "chain",
-            "credit_line": "gift",
-            "object_history_note": "history",
-            "comments": "ok",
-            "barcode": "BC",
-            "last_inventoried_date": "2026",
-            "condition_rating": "Good",
-            "condition_date": "2026",
-            "completeness": "Complete",
-            "conservation_priority": "Low",
-            "condition_note": "stable",
-            "handling_requirements": "gloves",
-            "current_value_display": "100 USD",
-            "current_value_date": "2026",
-            "insurance_value_display": "200 USD",
-            "insurance_note": "note",
-            "created_at": "2026-01-01",
-            "updated_at": "2026-02-01",
-        })
-        assert out.startswith(b"PK")
-
-    def test_docx_field_helpers_no_value_noop(self):
-        from docx import Document
-        doc = Document()
-        rdr._docx_setup_styles(doc)
-        before = len(doc.paragraphs)
-        rdr._docx_add_field(doc, "Label", None)
-        rdr._docx_add_field(doc, "Label", "")
-        rdr._docx_add_field_block(doc, "Label", None)
-        rdr._docx_add_field_block(doc, "Label", "")
-        after = len(doc.paragraphs)
-        assert after == before
-
-    def test_docx_add_field_with_value(self):
-        from docx import Document
-        doc = Document()
-        rdr._docx_setup_styles(doc)
-        rdr._docx_add_field(doc, "Label", "Value")
-        rdr._docx_add_field_block(doc, "Block Label", "Block Value" * 10)
-        assert any("Value" in p.text for p in doc.paragraphs)
-
-    def test_docx_make_field_table_and_pair_row(self):
-        from docx import Document
-        doc = Document()
-        rdr._docx_setup_styles(doc)
-        table = rdr._docx_make_field_table(doc)
-        rdr._docx_add_field_pair_row(table, "A", "1", "B", "2")
-        rdr._docx_add_field_pair_row(table, "A", None, "B", None)  # blank row
-        assert len(table.rows) == 2
-
-    def test_docx_add_section_creates_heading(self):
-        from docx import Document
-        doc = Document()
-        rdr._docx_setup_styles(doc)
-        rdr._docx_add_section(doc, "My Section")
-        assert any("My Section" in p.text for p in doc.paragraphs)

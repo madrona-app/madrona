@@ -4,7 +4,6 @@ These assert the structure access technology relies on — headings, table
 headers, captions, alt text, document language — on the actual bytes each
 format produces, not on intermediate objects.
 """
-import base64
 import io
 import zipfile
 from html.parser import HTMLParser
@@ -261,3 +260,99 @@ class TestPlainText:
         )
         assert out.decode().startswith("Acquisition Record\n==================\nA-7\n")
         assert "Source: Donor" in out.decode()
+
+
+# ============================================================================
+# WORD (DOCX) — assert on the generated XML itself
+# ============================================================================
+
+W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+
+
+def _docx_parts(content: bytes) -> dict[str, str]:
+    with zipfile.ZipFile(io.BytesIO(content)) as z:
+        return {n: z.read(n).decode("utf-8") for n in z.namelist() if n.endswith(".xml")}
+
+
+def _paragraph_styles(document_xml: str) -> list[tuple[str, str]]:
+    """(styleId, text) for every body paragraph."""
+    from lxml import etree
+    root = etree.fromstring(document_xml.encode())
+    out = []
+    for p in root.iter(f"{W}p"):
+        style = p.find(f"{W}pPr/{W}pStyle")
+        text = "".join(t.text or "" for t in p.iter(f"{W}t"))
+        out.append((style.get(f"{W}val") if style is not None else "", text))
+    return out
+
+
+class TestDocx:
+    @pytest.fixture
+    def parts(self, record_sheet_context):
+        out = ra.render_docx(ra.build_record_document("object_record_sheet.html", record_sheet_context))
+        assert out.startswith(b"PK")
+        return _docx_parts(out)
+
+    def test_headings_use_real_heading_styles(self, parts):
+        styles = _paragraph_styles(parts["word/document.xml"])
+        h1 = [t for s, t in styles if s == "Heading1"]
+        h2 = [t for s, t in styles if s == "Heading2"]
+        assert h1 == ["Object Record Sheet"]
+        assert "Identification" in h2 and "Attachments" in h2
+        assert not [t for s, t in styles if s == "Title"]
+        # Heading 1 comes before any Heading 2
+        order = [s for s, _ in styles if s.startswith("Heading")]
+        assert order[0] == "Heading1"
+
+    def test_heading3_for_nested_sections(self):
+        ctx = {"loan_type": "Outgoing Loan", "loan_number": "L-2", "sig_party_1_role": "Lender",
+               "sig_party_2_role": "Borrower"}
+        parts = _docx_parts(ra.render_docx(ra.build_record_document("loan_agreement.html", ctx)))
+        styles = _paragraph_styles(parts["word/document.xml"])
+        assert [t for s, t in styles if s == "Heading3"] == ["Lender", "Borrower"]
+
+    def test_table_header_row_repeats_and_has_caption(self, parts):
+        xml = parts["word/document.xml"]
+        assert xml.count("<w:tbl>") == 1  # only the attachments data table; no layout tables
+        assert '<w:tblHeader w:val="true"/>' in xml
+        assert '<w:tblCaption w:val="Attached files"/>' in xml
+        styles = _paragraph_styles(xml)
+        assert ("Caption", "Attached files") in styles
+        # header row is the first row and holds the column labels
+        from lxml import etree
+        tbl = etree.fromstring(xml.encode()).find(f".//{W}tbl")
+        first = tbl.find(f"{W}tr")
+        assert first.find(f"{W}trPr/{W}tblHeader") is not None
+        assert ["".join(t.text for t in tc.iter(f"{W}t")) for tc in first.findall(f"{W}tc")] == [
+            "File name", "Type", "Title"]
+
+    def test_image_has_alt_text(self, parts):
+        xml = parts["word/document.xml"]
+        assert 'descr="Celadon bowl with a crackled glaze, viewed from above"' in xml
+        assert "Primary image" not in xml
+
+    def test_title_and_language(self, parts):
+        assert "<dc:title>Object Record Sheet — 1999.1 — Bowl — Test Museum</dc:title>" in parts["docProps/core.xml"]
+        assert "<dc:language>en-US</dc:language>" in parts["docProps/core.xml"]
+        assert 'w:lang w:val="en-US"' in parts["word/styles.xml"]
+
+    def test_bad_image_keeps_description(self, record_sheet_context):
+        record_sheet_context["image_b64"] = "NOT_VALID_BASE64_!!!"
+        xml = _docx_parts(ra.render_docx(
+            ra.build_record_document("object_record_sheet.html", record_sheet_context)))["word/document.xml"]
+        assert "Image: Celadon bowl" in xml
+
+    @pytest.mark.parametrize("fn,record", [
+        (rdr.render_condition_report_html, {"report_number": "CR-1", "condition_summary": "Fine"}),
+        (rdr.render_object_entry_report_html, {"entry_number": "E-1"}),
+        (rdr.render_object_exit_report_html, {"exit_number": "X-1"}),
+        (rdr.render_conservation_treatment_report_html, {"treatment_number": "T-1"}),
+        (rdr.render_acquisition_report_html, {"acquisition_number": "A-1"}),
+        (rdr.render_loan_agreement_html, {"loan_number": "L-1", "lender_name": "P"}),
+    ])
+    def test_every_document_report_docx(self, fn, record):
+        parts = _docx_parts(fn([record], {"organization_name": "M"}, export_format="docx"))
+        styles = _paragraph_styles(parts["word/document.xml"])
+        assert len([1 for s, _ in styles if s == "Heading1"]) == 1
+        assert any(s == "Heading2" for s, _ in styles)
+        assert "<dc:title>" in parts["docProps/core.xml"]

@@ -8,6 +8,8 @@ be read with access technology:
   ``<caption>`` and ``<th scope>``, images carrying the media record's alt text.
   No layout tables and no meaning carried by colour alone.
 - ``render_text``  — structured UTF-8 plain text for screen readers and braille.
+- ``render_docx``  — Word with real heading styles, repeating table header rows,
+  image alt text, and document title/language set.
 
 Document reports (one record) are built from the same context dicts the PDF
 templates receive (see ``build_record_document``); tabular reports are built
@@ -16,6 +18,7 @@ from rows + column definitions (see ``build_tabular_document``).
 from __future__ import annotations
 
 import html as _html
+import io
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Callable
@@ -679,3 +682,169 @@ def render_text(doc: ReportDocument) -> bytes:
     while out and out[-1] == "":
         out.pop()
     return ("\n".join(out) + "\n").encode("utf-8")
+
+
+# ============================================================================
+# WORD (DOCX)
+# ============================================================================
+#
+# What Word, JAWS and NVDA rely on, and what this writer guarantees:
+# - the document title is a real "Heading 1"; sections "Heading 2"; nested
+#   sections "Heading 3" (never the "Title" style, which is not a heading);
+# - core properties carry the title and language, and the default run
+#   language (w:lang) is set, so speech uses the right voice;
+# - data tables mark the first row as a repeating header row (w:tblHeader)
+#   and carry a caption (a "Caption" paragraph plus w:tblCaption);
+# - images carry the media record's alt text in wp:docPr/@descr;
+# - no tables are used for layout: label/value pairs are paragraphs.
+
+_WORD_LANG = {"en": "en-US"}
+_DOCX_FOREST = (0x2B, 0x3A, 0x34)
+_DOCX_INK = (0x1C, 0x1C, 0x1A)
+
+
+def _docx_set_language(document, lang: str) -> None:
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    styles = document.styles.element
+    defaults = styles.find(qn("w:docDefaults"))
+    rpr = None
+    if defaults is not None:
+        rpr_default = defaults.find(qn("w:rPrDefault"))
+        if rpr_default is not None:
+            rpr = rpr_default.find(qn("w:rPr"))
+    if rpr is None:
+        rpr = document.styles["Normal"].element.get_or_add_rPr()
+    lang_el = rpr.find(qn("w:lang"))
+    if lang_el is None:
+        lang_el = OxmlElement("w:lang")
+        rpr.append(lang_el)
+    lang_el.set(qn("w:val"), lang)
+    lang_el.set(qn("w:eastAsia"), lang)
+
+
+def _docx_style_headings(document) -> None:
+    from docx.shared import Pt, RGBColor
+
+    for name, size in (("Heading 1", 20), ("Heading 2", 15), ("Heading 3", 12.5)):
+        style = document.styles[name]
+        style.font.size = Pt(size)
+        style.font.bold = True
+        style.font.color.rgb = RGBColor(*_DOCX_FOREST)
+    normal = document.styles["Normal"]
+    normal.font.size = Pt(11)
+    normal.font.color.rgb = RGBColor(*_DOCX_INK)
+
+
+def _docx_field(document, f: Field) -> None:
+    p = document.add_paragraph()
+    label = p.add_run(f"{f.label}: ")
+    label.bold = True
+    lines = f.value.splitlines() or [""]
+    if len(lines) > 1:
+        label.add_break()
+    for i, line in enumerate(lines):
+        run = p.add_run(line)
+        if i < len(lines) - 1:
+            run.add_break()
+
+
+def _docx_table(document, t: DataTable) -> None:
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    if not t.rows:
+        p = document.add_paragraph()
+        p.add_run(f"{t.caption}: ").bold = True
+        p.add_run(t.empty_message)
+        return
+
+    document.add_paragraph(t.caption, style="Caption")
+    table = document.add_table(rows=1, cols=len(t.columns))
+    table.style = document.styles["Table Grid"]
+
+    tbl_pr = table._tbl.tblPr
+    caption = OxmlElement("w:tblCaption")
+    caption.set(qn("w:val"), t.caption)
+    tbl_pr.append(caption)
+
+    header = table.rows[0]
+    tr_pr = header._tr.get_or_add_trPr()
+    tbl_header = OxmlElement("w:tblHeader")
+    tbl_header.set(qn("w:val"), "true")
+    tr_pr.append(tbl_header)
+    for cell, label in zip(header.cells, t.columns):
+        cell.paragraphs[0].add_run(label).bold = True
+
+    for row in t.rows:
+        cells = table.add_row().cells
+        for i, (cell, value) in enumerate(zip(cells, row)):
+            run = cell.paragraphs[0].add_run(value)
+            if i == 0 and t.row_header:
+                run.bold = True
+    document.add_paragraph()
+
+
+def _docx_figure(document, fig: Figure) -> None:
+    import base64
+    from docx.shared import Inches
+
+    try:
+        document.add_picture(io.BytesIO(base64.b64decode(fig.data_b64)), width=Inches(2.5))
+    except Exception:
+        # Undecodable image: keep its description so nothing is silently lost.
+        document.add_paragraph(f"Image: {fig.alt}")
+        return
+    doc_pr = document.inline_shapes[-1]._inline.docPr
+    doc_pr.set("descr", fig.alt)
+    doc_pr.set("title", fig.alt)
+
+
+def _docx_section(document, s: Section, level: int) -> None:
+    document.add_heading(s.heading, level=level)
+    for fig in s.figures:
+        _docx_figure(document, fig)
+    for text in s.paragraphs:
+        for line in text.splitlines() or [""]:
+            document.add_paragraph(line)
+    for f in s.fields:
+        _docx_field(document, f)
+    for t in s.tables:
+        _docx_table(document, t)
+    for sub in s.subsections:
+        if not sub.is_empty():
+            _docx_section(document, sub, min(level + 1, 9))
+
+
+def render_docx(doc: ReportDocument) -> bytes:
+    """Render a Word document with real heading styles and table headers."""
+    from docx import Document
+
+    document = Document()
+    word_lang = _WORD_LANG.get(doc.lang, doc.lang)
+    document.core_properties.title = doc.full_title
+    document.core_properties.language = word_lang
+    if doc.org_name:
+        document.core_properties.author = doc.org_name
+    _docx_set_language(document, word_lang)
+    _docx_style_headings(document)
+
+    if doc.org_name:
+        document.add_paragraph(doc.org_name)
+    document.add_heading(doc.title, level=1)
+    if doc.subtitle:
+        document.add_paragraph(doc.subtitle)
+    meta = list(doc.meta)
+    if doc.generated_at:
+        meta.append(Field("Generated", doc.generated_at))
+    for f in meta:
+        _docx_field(document, f)
+    for s in doc.sections:
+        _docx_section(document, s, 2)
+    for note in doc.notes:
+        document.add_paragraph(note)
+
+    buf = io.BytesIO()
+    document.save(buf)
+    return buf.getvalue()
