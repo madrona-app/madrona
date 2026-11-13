@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Folder, FolderOpen, ChevronRight, ChevronDown, Check } from 'lucide-react';
 import { listMediaFolders, moveMediaToFolder } from '../../lib/api';
 import type { MediaFolder } from '../../lib/schemas';
+import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
 
 interface MoveToFolderModalProps {
   organizationId: string;
@@ -38,9 +39,9 @@ function FolderSelectNode({
   const isDisabled = disabledIds.has(folder.folder_id);
 
   return (
-    <div>
+    <li>
       <div
-        className={`flex items-center gap-1 px-2 py-1.5 rounded-lg cursor-pointer ${
+        className={`relative flex items-center gap-1 px-2 py-1.5 rounded-lg cursor-pointer ${
           isDisabled
             ? 'opacity-50 cursor-not-allowed'
             : isSelected
@@ -48,11 +49,15 @@ function FolderSelectNode({
               : 'hover:bg-stone/20 text-ink'
         }`}
         style={{ paddingLeft: `${folder.depth * 16 + 8}px` }}
-        onClick={() => !isDisabled && onSelectFolder(folder.folder_id)}
       >
         {/* Expand/collapse toggle */}
         <button
-          className="p-0.5 hover:bg-stone/30 rounded"
+          type="button"
+          className="relative z-10 p-0.5 hover:bg-stone/30 rounded"
+          aria-label={hasChildren ? (isExpanded ? `Collapse ${folder.name}` : `Expand ${folder.name}`) : undefined}
+          aria-expanded={hasChildren ? isExpanded : undefined}
+          aria-hidden={hasChildren ? undefined : true}
+          tabIndex={hasChildren ? undefined : -1}
           onClick={(e) => {
             e.stopPropagation();
             if (hasChildren) {
@@ -62,32 +67,44 @@ function FolderSelectNode({
         >
           {hasChildren ? (
             isExpanded ? (
-              <ChevronDown size={14} className="text-archive" />
+              <ChevronDown size={14} className="text-archive" aria-hidden="true" />
             ) : (
-              <ChevronRight size={14} className="text-archive" />
+              <ChevronRight size={14} className="text-archive" aria-hidden="true" />
             )
           ) : (
             <span className="w-3.5" />
           )}
         </button>
 
-        {/* Folder icon */}
-        {isExpanded && hasChildren ? (
-          <FolderOpen size={16} className={isSelected ? 'text-forest' : 'text-archive'} />
-        ) : (
-          <Folder size={16} className={isSelected ? 'text-forest' : 'text-archive'} />
-        )}
+        {/* Choose destination: its ::after stretches over the whole row so a click anywhere selects */}
+        <button
+          type="button"
+          aria-pressed={isSelected}
+          disabled={isDisabled}
+          onClick={() => onSelectFolder(folder.folder_id)}
+          className="flex flex-1 min-w-0 items-center gap-1 text-left bg-transparent p-0 border-0 cursor-pointer disabled:cursor-not-allowed after:absolute after:inset-0 after:rounded-lg focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-bark/30 focus-visible:after:ring-offset-2"
+        >
+          {/* Folder icon */}
+          {isExpanded && hasChildren ? (
+            <FolderOpen size={16} className={isSelected ? 'text-forest' : 'text-archive'} aria-hidden="true" />
+          ) : (
+            <Folder size={16} className={isSelected ? 'text-forest' : 'text-archive'} aria-hidden="true" />
+          )}
 
-        {/* Folder name */}
-        <span className="flex-1 text-sm truncate">{folder.name}</span>
+          {/* Folder name */}
+          <span className="flex-1 text-sm truncate">
+            {folder.name}
+            {isDisabled && <span className="sr-only"> (current folder)</span>}
+          </span>
 
-        {/* Selected indicator */}
-        {isSelected && <Check size={16} className="text-forest" />}
+          {/* Selected indicator */}
+          {isSelected && <Check size={16} className="text-forest" aria-hidden="true" />}
+        </button>
       </div>
 
       {/* Children */}
       {isExpanded && hasChildren && (
-        <div>
+        <ul>
           {children
             .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
             .map((child) => (
@@ -102,9 +119,9 @@ function FolderSelectNode({
                 onSelectFolder={onSelectFolder}
               />
             ))}
-        </div>
+        </ul>
       )}
-    </div>
+    </li>
   );
 }
 
@@ -118,6 +135,11 @@ export function MoveToFolderModal({
   const queryClient = useQueryClient();
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const { modalRef, titleId } = useAccessibleModal({
+    isOpen: true,
+    onClose,
+    titlePrefix: 'move-to-folder-modal',
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ['media-folders', organizationId],
@@ -162,23 +184,29 @@ export function MoveToFolderModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-ink/50" onClick={onClose} />
+      <div aria-hidden="true" className="absolute inset-0 bg-ink/50" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative bg-parchment rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
+      <div
+        ref={modalRef}
+        {...getModalAriaProps(titleId)}
+        className="relative bg-parchment rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col"
+      >
         {/* Header */}
         <div className="px-6 py-4 border-b border-lichen flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Folder size={20} className="text-forest" />
-            <h2 className="text-lg font-semibold text-ink">
+            <Folder size={20} className="text-forest" aria-hidden="true" />
+            <h2 id={titleId} className="text-lg font-semibold text-ink">
               Move {itemCount} {itemLabel}
             </h2>
           </div>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close"
             className="p-1 text-archive hover:text-ink rounded transition-colors"
           >
-            <X size={20} />
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
 
@@ -187,10 +215,14 @@ export function MoveToFolderModal({
           {isLoading ? (
             <div className="py-8 text-center text-archive">Loading folders...</div>
           ) : (
-            <div className="space-y-1">
+            <ul className="space-y-1" aria-label="Destination folder">
               {/* Root option */}
-              <div
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer ${
+              <li>
+              <button
+                type="button"
+                aria-pressed={selectedFolderId === null && currentFolderId !== null}
+                disabled={currentFolderId === null}
+                className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 ${
                   selectedFolderId === null && currentFolderId !== null
                     ? 'bg-forest/10 text-forest'
                     : currentFolderId === null
@@ -200,6 +232,7 @@ export function MoveToFolderModal({
                 onClick={() => currentFolderId !== null && setSelectedFolderId(null)}
               >
                 <Folder
+                  aria-hidden="true"
                   size={16}
                   className={
                     selectedFolderId === null && currentFolderId !== null
@@ -209,9 +242,10 @@ export function MoveToFolderModal({
                 />
                 <span className="flex-1 text-sm font-medium">Root (No folder)</span>
                 {selectedFolderId === null && currentFolderId !== null && (
-                  <Check size={16} className="text-forest" />
+                  <Check size={16} className="text-forest" aria-hidden="true" />
                 )}
-              </div>
+              </button>
+              </li>
 
               {/* Folder tree */}
               {rootFolders
@@ -230,11 +264,11 @@ export function MoveToFolderModal({
                 ))}
 
               {rootFolders.length === 0 && (
-                <div className="py-8 text-center text-archive text-sm">
+                <li className="py-8 text-center text-archive text-sm">
                   No folders available
-                </div>
+                </li>
               )}
-            </div>
+            </ul>
           )}
         </div>
 
@@ -263,7 +297,7 @@ export function MoveToFolderModal({
               </>
             ) : (
               <>
-                <Folder size={16} />
+                <Folder size={16} aria-hidden="true" />
                 Move Here
               </>
             )}

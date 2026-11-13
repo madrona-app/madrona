@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useId, useState, useRef, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Loader2, ChevronDown, ChevronRight, Plus } from 'lucide-react';
@@ -58,17 +58,36 @@ interface FieldShellProps {
   children: React.ReactNode;
   rightAccessory?: React.ReactNode;
   isBusy?: boolean;
+  /** id of the single control this label names; omit when the field is a group of controls */
+  inputId?: string;
 }
-function FieldShell({ definition, children, rightAccessory, isBusy }: FieldShellProps) {
+function FieldShell({ definition, children, rightAccessory, isBusy, inputId }: FieldShellProps) {
+  const labelId = useId();
+  const labelContent = (
+    <>
+      {definition.display_name}
+      {definition.is_required && <span className="text-semantic-error ml-0.5">*</span>}:
+    </>
+  );
   return (
     <div className="flex items-start gap-2 py-1">
-      <label className="text-sm text-archive min-w-[110px] pt-1.5">
-        {definition.display_name}
-        {definition.is_required && <span className="text-semantic-error ml-0.5">*</span>}:
-      </label>
-      <div className="flex-1 min-w-0">{children}</div>
+      {inputId ? (
+        <label htmlFor={inputId} id={labelId} className="text-sm text-archive min-w-[110px] pt-1.5">
+          {labelContent}
+        </label>
+      ) : (
+        <span id={labelId} className="text-sm text-archive min-w-[110px] pt-1.5">
+          {labelContent}
+        </span>
+      )}
+      <div
+        className="flex-1 min-w-0"
+        {...(inputId ? {} : { role: 'group', 'aria-labelledby': labelId })}
+      >
+        {children}
+      </div>
       <div className="pt-1 flex items-center gap-1">
-        {isBusy && <Loader2 size={14} className="animate-spin text-archive" />}
+        {isBusy && <Loader2 size={14} className="animate-spin text-archive" aria-hidden="true" />}
         {rightAccessory}
       </div>
     </div>
@@ -90,6 +109,7 @@ function TextField({ definition, tags, organizationId, mediaId, readonly }: Fiel
   const current = tags[0];
   const [value, setValue] = useState(current?.tag_value ?? '');
   const [isEditing, setIsEditing] = useState(false);
+  const inputId = useId();
   const setTag = useSetTag(organizationId, mediaId);
   const deleteTag = useDeleteTag(organizationId, mediaId);
 
@@ -120,6 +140,7 @@ function TextField({ definition, tags, organizationId, mediaId, readonly }: Fiel
   return (
     <FieldShell
       definition={definition}
+      inputId={inputId}
       isBusy={setTag.isPending || deleteTag.isPending}
       rightAccessory={
         current && !isEditing ? (
@@ -130,12 +151,13 @@ function TextField({ definition, tags, organizationId, mediaId, readonly }: Fiel
             title="Clear"
             aria-label={`Clear ${definition.display_name}`}
           >
-            <X size={14} />
+            <X size={14} aria-hidden="true" />
           </button>
         ) : null
       }
     >
       <input
+        id={inputId}
         type="text"
         value={value}
         onFocus={() => setIsEditing(true)}
@@ -159,6 +181,7 @@ function TextField({ definition, tags, organizationId, mediaId, readonly }: Fiel
 // date — single ISO date
 function DateField({ definition, tags, organizationId, mediaId, readonly }: FieldProps) {
   const current = tags[0];
+  const inputId = useId();
   const setTag = useSetTag(organizationId, mediaId);
   const deleteTag = useDeleteTag(organizationId, mediaId);
 
@@ -175,6 +198,7 @@ function DateField({ definition, tags, organizationId, mediaId, readonly }: Fiel
   return (
     <FieldShell
       definition={definition}
+      inputId={inputId}
       isBusy={setTag.isPending || deleteTag.isPending}
       rightAccessory={
         current ? (
@@ -185,12 +209,13 @@ function DateField({ definition, tags, organizationId, mediaId, readonly }: Fiel
             title="Clear"
             aria-label={`Clear ${definition.display_name}`}
           >
-            <X size={14} />
+            <X size={14} aria-hidden="true" />
           </button>
         ) : null
       }
     >
       <input
+        id={inputId}
         type="date"
         value={current?.tag_value ?? ''}
         onChange={(e) => {
@@ -210,6 +235,7 @@ function DateField({ definition, tags, organizationId, mediaId, readonly }: Fiel
 // dropdown — single value from allowed set
 function DropdownField({ definition, tags, organizationId, mediaId, readonly }: FieldProps) {
   const current = tags[0];
+  const inputId = useId();
   const { data: valuesData, isLoading } = useAllowedValues(organizationId, definition, !readonly);
   const setTag = useSetTag(organizationId, mediaId);
   const deleteTag = useDeleteTag(organizationId, mediaId);
@@ -229,6 +255,7 @@ function DropdownField({ definition, tags, organizationId, mediaId, readonly }: 
   return (
     <FieldShell
       definition={definition}
+      inputId={inputId}
       isBusy={setTag.isPending || deleteTag.isPending || isLoading}
       rightAccessory={
         current ? (
@@ -239,12 +266,13 @@ function DropdownField({ definition, tags, organizationId, mediaId, readonly }: 
             title="Clear"
             aria-label={`Clear ${definition.display_name}`}
           >
-            <X size={14} />
+            <X size={14} aria-hidden="true" />
           </button>
         ) : null
       }
     >
       <select
+        id={inputId}
         value={current?.value_id ?? ''}
         onChange={(e) => {
           const vid = e.target.value;
@@ -311,7 +339,7 @@ function MultiSelectField({ definition, tags, organizationId, mediaId, readonly 
                 className="text-archive hover:text-semantic-error"
                 aria-label={`Remove ${tag.tag_value}`}
               >
-                <X size={12} />
+                <X size={12} aria-hidden="true" />
               </button>
             )}
           </span>
@@ -321,13 +349,15 @@ function MultiSelectField({ definition, tags, organizationId, mediaId, readonly 
             <button
               type="button"
               onClick={() => setAdding((a) => !a)}
+              aria-expanded={adding}
+              aria-label={`Add ${definition.display_name} value`}
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-lichen text-xs text-archive hover:bg-stone/50"
             >
-              <Plus size={12} /> Add
+              <Plus size={12} aria-hidden="true" /> Add
             </button>
             {adding && (
               <>
-                <div role="presentation" className="fixed inset-0 z-40" onClick={() => setAdding(false)} />
+                <div aria-hidden="true" className="fixed inset-0 z-40" onClick={() => setAdding(false)} />
                 <div className="absolute z-50 mt-1 left-0 min-w-[12rem] max-h-60 overflow-auto bg-parchment border border-lichen rounded shadow-lg">
                   {remaining.map((v) => (
                     <button
@@ -357,14 +387,22 @@ function DynamicKeywordsField({ definition, tags, organizationId, mediaId, reado
   const [input, setInput] = useState('');
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const inputId = useId();
 
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('keydown', onKey);
+    };
   }, [open]);
 
   const values = valuesData?.values ?? [];
@@ -403,11 +441,14 @@ function DynamicKeywordsField({ definition, tags, organizationId, mediaId, reado
   };
 
   return (
-    <FieldShell definition={definition} isBusy={setTag.isPending || deleteTag.isPending || isLoading}>
+    <FieldShell
+      definition={definition}
+      inputId={!readonly && (definition.allow_multiple || tags.length === 0) ? inputId : undefined}
+      isBusy={setTag.isPending || deleteTag.isPending || isLoading}
+    >
       <div ref={rootRef} className="relative">
         <div
           className="flex flex-wrap items-center gap-1.5 min-h-[2.25rem] px-1.5 py-1 border border-lichen rounded bg-parchment focus-within:ring-2 focus-within:ring-bark/30 focus-within:border-bark"
-          onClick={() => setOpen(true)}
         >
           {tags.map((tag) => (
             <span
@@ -428,15 +469,17 @@ function DynamicKeywordsField({ definition, tags, organizationId, mediaId, reado
                   className="text-archive hover:text-semantic-error"
                   aria-label={`Remove ${tag.tag_value}`}
                 >
-                  <X size={12} />
+                  <X size={12} aria-hidden="true" />
                 </button>
               )}
             </span>
           ))}
           {!readonly && (definition.allow_multiple || tags.length === 0) && (
             <input
+              id={inputId}
               type="text"
               value={input}
+              aria-controls={`${inputId}-suggestions`}
               placeholder={tags.length === 0 ? 'Type or pick a value…' : ''}
               onChange={(e) => {
                 setInput(e.target.value);
@@ -449,7 +492,12 @@ function DynamicKeywordsField({ definition, tags, organizationId, mediaId, reado
           )}
         </div>
         {open && !readonly && (matches.length > 0 || (input.trim() && !exactMatch)) && (
-          <div className="absolute z-50 mt-1 w-full max-h-60 overflow-auto bg-parchment border border-lichen rounded shadow-lg">
+          <div
+            id={`${inputId}-suggestions`}
+            role="group"
+            aria-label={`${definition.display_name} suggestions`}
+            className="absolute z-50 mt-1 w-full max-h-60 overflow-auto bg-parchment border border-lichen rounded shadow-lg"
+          >
             {matches.map((v) => (
               <button
                 key={v.value_id}
@@ -466,7 +514,7 @@ function DynamicKeywordsField({ definition, tags, organizationId, mediaId, reado
                 onClick={() => commit(input)}
                 className="block w-full text-left px-3 py-1.5 text-sm text-bark hover:bg-stone/50 border-t border-lichen"
               >
-                <Plus size={12} className="inline mr-1" />
+                <Plus size={12} className="inline mr-1" aria-hidden="true" />
                 Create "{input.trim()}"
               </button>
             )}
@@ -485,14 +533,22 @@ function CategoryTreeField({ definition, tags, organizationId, mediaId, readonly
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const rootRef = useRef<HTMLDivElement>(null);
+  const pickerId = useId();
 
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('keydown', onKey);
+    };
   }, [open]);
 
   const values = valuesData?.values ?? [];
@@ -541,13 +597,24 @@ function CategoryTreeField({ definition, tags, organizationId, mediaId, readonly
     <FieldShell definition={definition} isBusy={setTag.isPending || deleteTag.isPending || isLoading}>
       <div ref={rootRef} className="relative">
         <div
-          className="flex flex-wrap items-center gap-1.5 min-h-[2.25rem] px-1.5 py-1 border border-lichen rounded bg-parchment cursor-text"
-          onClick={() => !readonly && setOpen(true)}
+          className="relative flex flex-wrap items-center gap-1.5 min-h-[2.25rem] px-1.5 py-1 border border-lichen rounded bg-parchment cursor-text"
         >
-          {tags.length === 0 && (
-            <span className="text-sm text-archive italic">
-              {readonly ? 'Not set' : 'Click to choose…'}
-            </span>
+          {readonly ? (
+            tags.length === 0 && <span className="text-sm text-archive italic">Not set</span>
+          ) : (
+            // Opens the picker; its ::after stretches over the whole field so a click anywhere opens it
+            <button
+              type="button"
+              aria-expanded={open}
+              aria-controls={open ? pickerId : undefined}
+              onClick={() => setOpen(true)}
+              className={cn(
+                'text-left bg-transparent p-0 border-0 cursor-text after:absolute after:inset-0 after:rounded focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-bark/30 focus-visible:after:ring-offset-2',
+                tags.length === 0 ? 'text-sm text-archive italic' : 'order-last',
+              )}
+            >
+              {tags.length === 0 ? 'Click to choose…' : <span className="sr-only">Choose {definition.display_name}</span>}
+            </button>
           )}
           {tags.map((tag) => (
             <span
@@ -565,17 +632,22 @@ function CategoryTreeField({ definition, tags, organizationId, mediaId, readonly
                       value_id: tag.value_id ?? undefined,
                     });
                   }}
-                  className="text-archive hover:text-semantic-error"
+                  className="relative z-10 text-archive hover:text-semantic-error"
                   aria-label={`Remove ${tag.tag_value}`}
                 >
-                  <X size={12} />
+                  <X size={12} aria-hidden="true" />
                 </button>
               )}
             </span>
           ))}
         </div>
         {open && !readonly && values.length > 0 && (
-          <div className="absolute z-50 mt-1 w-full max-h-80 overflow-auto bg-parchment border border-lichen rounded shadow-lg py-1">
+          <div
+            id={pickerId}
+            role="group"
+            aria-label={`${definition.display_name} options`}
+            className="absolute z-50 mt-1 w-full max-h-80 overflow-auto bg-parchment border border-lichen rounded shadow-lg py-1"
+          >
             {visible.map((v) => {
               const depth = v.depth ?? 0;
               const isSelected = selectedIds.has(v.value_id);
@@ -591,15 +663,17 @@ function CategoryTreeField({ definition, tags, organizationId, mediaId, readonly
                       type="button"
                       onClick={() => toggleCollapse(v.value_id)}
                       className="text-archive hover:text-ink p-0.5"
-                      aria-label={collapsed.has(v.value_id) ? 'Expand' : 'Collapse'}
+                      aria-label={collapsed.has(v.value_id) ? `Expand ${v.value}` : `Collapse ${v.value}`}
+                      aria-expanded={!collapsed.has(v.value_id)}
                     >
-                      {collapsed.has(v.value_id) ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+                      {collapsed.has(v.value_id) ? <ChevronRight size={12} aria-hidden="true" /> : <ChevronDown size={12} aria-hidden="true" />}
                     </button>
                   ) : (
                     <span className="w-[18px]" />
                   )}
                   <button
                     type="button"
+                    aria-pressed={isSelected}
                     onClick={() => handleToggle(v)}
                     className={cn(
                       'flex-1 text-left truncate',
@@ -608,7 +682,7 @@ function CategoryTreeField({ definition, tags, organizationId, mediaId, readonly
                   >
                     {v.value}
                   </button>
-                  {isSelected && <span className="text-bark text-xs">✓</span>}
+                  {isSelected && <span className="text-bark text-xs" aria-hidden="true">✓</span>}
                 </div>
               );
             })}

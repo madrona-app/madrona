@@ -62,14 +62,13 @@ export function UploadVersionModal({
 
   return (
     <ModalPortal>
-    <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50">
+      <div aria-hidden="true" className="absolute inset-0" onClick={onClose} />
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation only: keeps dialog clicks from bubbling to React ancestors through the portal */}
       <div
         ref={modalRef}
         {...getModalAriaProps(titleId, descriptionId)}
-        className="bg-parchment rounded-lg shadow-xl w-full max-w-md"
+        className="relative bg-parchment rounded-lg shadow-xl w-full max-w-md"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -93,19 +92,8 @@ export function UploadVersionModal({
           </p>
 
           {/* File Drop Zone */}
-          <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
-              dragOver ? 'border-bark bg-parchment' : 'border-stone hover:border-archive'
-            }`}
-            onDrop={handleDrop}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragOver(true);
-            }}
-            onDragLeave={() => setDragOver(false)}
-            onClick={() => !file && fileInputRef.current?.click()}
-          >
-            {file ? (
+          {file ? (
+            <div className="border-2 border-dashed rounded-lg p-8 text-center border-stone">
               <div className="space-y-2">
                 <FileUp className="h-10 w-10 mx-auto text-bark" />
                 <p className="font-medium text-ink">{file.name}</p>
@@ -114,33 +102,45 @@ export function UploadVersionModal({
                 </p>
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setFile(null);
-                  }}
+                  onClick={() => setFile(null)}
+                  aria-label={`Remove ${file.name}`}
                   className="text-sm text-semantic-error hover:underline"
                 >
                   Remove
                 </button>
               </div>
-            ) : (
-              <>
-                <Upload className="h-10 w-10 mx-auto text-archive mb-3" />
-                <p className="font-medium text-ink mb-1">
-                  Drop file here or click to browse
-                </p>
-                <p className="text-sm text-archive">
-                  The new file will become the current version
-                </p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-              </>
-            )}
-          </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className={`w-full border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 ${
+                dragOver ? 'border-bark bg-parchment' : 'border-stone hover:border-archive'
+              }`}
+              onDrop={handleDrop}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="h-10 w-10 mx-auto text-archive mb-3" />
+              <span className="block font-medium text-ink mb-1">
+                Drop file here or click to browse
+              </span>
+              <span className="block text-sm text-archive">
+                The new file will become the current version
+              </span>
+            </button>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            onChange={handleFileSelect}
+            className="hidden"
+            tabIndex={-1}
+            aria-hidden="true"
+          />
 
           {/* Change Note */}
           <div>

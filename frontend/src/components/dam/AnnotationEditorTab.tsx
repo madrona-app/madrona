@@ -3,7 +3,7 @@
  * Displays existing annotations as rectangles on the image and allows
  * creating new ones by click-and-drag.
  */
-import { useState, useRef, useCallback } from 'react';
+import { useEffect, useId, useState, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   MessageSquare,
@@ -89,6 +89,13 @@ export function AnnotationEditorTab({
   const [formMotivation, setFormMotivation] = useState('commenting');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState('');
+  const fid = useId();
+  const editBodyRef = useRef<HTMLTextAreaElement>(null);
+
+  // Move focus to the note editor when the user chooses Edit
+  useEffect(() => {
+    if (editingId) editBodyRef.current?.focus();
+  }, [editingId]);
 
   const isImage = mediaType === 'image';
 
@@ -303,11 +310,11 @@ export function AnnotationEditorTab({
           if (!rect) return null;
           const isSelected = selectedAnnotation === ann.annotation_id;
           return (
-            <div
+            <button
+              type="button"
               key={ann.annotation_id}
-              role="button"
-              tabIndex={0}
-              className={`absolute border-2 transition-colors cursor-pointer ${
+              aria-pressed={isSelected}
+              className={`absolute p-0 border-2 transition-colors cursor-pointer ${
                 isSelected
                   ? 'border-bark bg-bark/20'
                   : 'border-bark/50 bg-bark/10 hover:border-bark hover:bg-bark/20'
@@ -321,13 +328,6 @@ export function AnnotationEditorTab({
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedAnnotation(isSelected ? null : ann.annotation_id);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setSelectedAnnotation(isSelected ? null : ann.annotation_id);
-                }
               }}
               title={getBodyText(ann) || ann.motivation || 'Annotation'}
               aria-label={`Annotation: ${getBodyText(ann) || ann.motivation || 'Annotation'}`}
@@ -367,8 +367,9 @@ export function AnnotationEditorTab({
         <div className="card p-4 border-2 border-bark/20 space-y-3">
           <h4 className="text-sm font-medium">New Annotation</h4>
           <div>
-            <label className="block text-xs text-archive mb-1">Motivation</label>
+            <label htmlFor={`${fid}-motivation`} className="block text-xs text-archive mb-1">Motivation</label>
             <select
+              id={`${fid}-motivation`}
               value={formMotivation}
               onChange={(e) => setFormMotivation(e.target.value)}
               className="input w-full text-sm"
@@ -379,8 +380,9 @@ export function AnnotationEditorTab({
             </select>
           </div>
           <div>
-            <label className="block text-xs text-archive mb-1">Note</label>
+            <label htmlFor={`${fid}-note`} className="block text-xs text-archive mb-1">Note</label>
             <textarea
+              id={`${fid}-note`}
               value={formBody}
               onChange={(e) => setFormBody(e.target.value)}
               placeholder="Describe this region..."
@@ -418,15 +420,21 @@ export function AnnotationEditorTab({
             return (
               <div
                 key={ann.annotation_id}
-                className={`p-3 border rounded-lg transition-colors cursor-pointer ${
+                className={`relative p-3 border rounded-lg transition-colors cursor-pointer ${
                   isSelected
                     ? 'border-bark bg-bark/5'
                     : 'border-lichen hover:border-stone'
                 }`}
-                onClick={() => setSelectedAnnotation(isSelected ? null : ann.annotation_id)}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
+                  {/* Selection toggle: its ::after stretches over the whole card so a click anywhere selects */}
+                  <button
+                    type="button"
+                    aria-pressed={isSelected}
+                    aria-label={`${motivationLabel} annotation${bodyText ? `: ${bodyText}` : ''}`}
+                    onClick={() => setSelectedAnnotation(isSelected ? null : ann.annotation_id)}
+                    className="flex items-center gap-2 min-w-0 text-left bg-transparent p-0 border-0 cursor-pointer after:absolute after:inset-0 after:rounded-lg focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-bark/30 focus-visible:after:ring-offset-2"
+                  >
                     {ann.motivation === 'tagging' ? (
                       <Tag size={14} className="text-bark flex-shrink-0" />
                     ) : ann.motivation === 'describing' ? (
@@ -437,10 +445,10 @@ export function AnnotationEditorTab({
                     <span className="text-xs bg-stone/30 text-archive px-1.5 py-0.5 rounded">
                       {motivationLabel}
                     </span>
-                  </div>
+                  </button>
 
                   {isSelected && (
-                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    <div className="relative z-10 flex items-center gap-1">
                       <button
                         onClick={() => {
                           setEditingId(ann.annotation_id);
@@ -466,13 +474,14 @@ export function AnnotationEditorTab({
                 </div>
 
                 {isEditingThis ? (
-                  <div className="mt-2 space-y-2" onClick={(e) => e.stopPropagation()}>
+                  <div className="relative z-10 mt-2 space-y-2">
                     <textarea
+                      ref={editBodyRef}
+                      aria-label="Annotation note"
                       value={editBody}
                       onChange={(e) => setEditBody(e.target.value)}
                       className="input w-full text-sm"
                       rows={2}
-                      autoFocus
                     />
                     <div className="flex justify-end gap-2">
                       <button onClick={() => setEditingId(null)} className="text-xs text-archive hover:text-ink">

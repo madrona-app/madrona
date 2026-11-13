@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Tag, X, ChevronDown, Loader2 } from 'lucide-react';
 import { listTagDefinitions, getTagValues } from '../../lib/api';
@@ -33,6 +33,23 @@ function TagFilterDropdown({
 }: TagFilterDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const popoverId = useId();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // On open: focus the search field; Escape closes and returns focus to the trigger
+  useEffect(() => {
+    if (!isOpen) return;
+    searchRef.current?.focus();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen]);
 
   const { data: valuesData, isLoading } = useQuery({
     queryKey: ['tag-values-filter', organizationId, definition.definition_id],
@@ -49,32 +66,42 @@ function TagFilterDropdown({
   return (
     <div className="relative">
       <button
+        ref={triggerRef}
+        type="button"
+        aria-expanded={isOpen}
+        aria-controls={isOpen ? popoverId : undefined}
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center gap-1.5 px-2 py-1 border rounded text-sm ${
           selectedValues.length > 0 ? 'bg-bark/10 border-bark/30' : 'bg-parchment'
         }`}
       >
-        <Tag size={14} className="text-archive" />
+        <Tag size={14} className="text-archive" aria-hidden="true" />
         <span className="max-w-[120px] truncate">
           {selectedValues.length > 0
             ? `${definition.display_name}: ${selectedValues.length}`
             : definition.display_name}
         </span>
-        <ChevronDown size={14} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown size={14} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
       </button>
 
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full left-0 mt-1 w-64 bg-parchment border rounded-lg shadow-lg z-20">
+          <div aria-hidden="true" className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+          <div
+            id={popoverId}
+            role="group"
+            aria-label={`Filter by ${definition.display_name}`}
+            className="absolute top-full left-0 mt-1 w-64 bg-parchment border rounded-lg shadow-lg z-20"
+          >
             <div className="p-2 border-b">
               <input
+                ref={searchRef}
                 type="text"
+                aria-label={`Search ${definition.display_name} values`}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={`Search ${definition.display_name}...`}
                 className="w-full px-2 py-1 text-sm border rounded"
-                autoFocus
               />
             </div>
 
@@ -89,13 +116,15 @@ function TagFilterDropdown({
                     >
                       {value}
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           onRemove(value);
                         }}
+                        aria-label={`Remove ${definition.display_name} filter ${value}`}
                         className="hover:text-parchment"
                       >
-                        <X size={12} />
+                        <X size={12} aria-hidden="true" />
                       </button>
                     </span>
                   ))}

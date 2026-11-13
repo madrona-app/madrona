@@ -3,7 +3,7 @@
  * For images: displays both side-by-side with a draggable slider divider.
  * For non-images: shows metadata diff (file size, dimensions, format).
  */
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import { X, ArrowLeftRight } from 'lucide-react';
 import type { MediaVersion } from '../../lib/schemas';
 import { formatDateTime } from '@/lib/formatters';
@@ -37,7 +37,6 @@ export function VersionComparisonView({
 }: VersionComparisonViewProps) {
   const [sliderPosition, setSliderPosition] = useState(50);
   const containerRef = useRef<HTMLDivElement>(null);
-  const isDragging = useRef(false);
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
@@ -45,15 +44,21 @@ export function VersionComparisonView({
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDragging.current || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    setSliderPosition(Math.max(5, Math.min(95, x)));
-  }, []);
-
-  const handleMouseDown = () => { isDragging.current = true; };
-  const handleMouseUp = () => { isDragging.current = false; };
+  // Drag the divider: track the pointer on the document until the button is released
+  const handleMouseDown = () => {
+    const onMove = (e: MouseEvent) => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      setSliderPosition(Math.max(5, Math.min(95, x)));
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
 
   const urlA = versionA.url || `/api/organizations/${organizationId}/media/${mediaId}/versions/${versionA.version_id}/download`;
   const urlB = versionB.url || `/api/organizations/${organizationId}/media/${mediaId}/versions/${versionB.version_id}/download`;
@@ -78,9 +83,6 @@ export function VersionComparisonView({
         <div
           ref={containerRef}
           className="relative h-[400px] select-none cursor-col-resize overflow-hidden"
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
         >
           {/* Version B (right/full) */}
           <div className="absolute inset-0">
@@ -107,6 +109,7 @@ export function VersionComparisonView({
             aria-valuemin={5}
             aria-valuemax={95}
             aria-valuenow={Math.round(sliderPosition)}
+            aria-valuetext={`${Math.round(sliderPosition)}% of version ${versionA.version_number} shown`}
             tabIndex={0}
             className="absolute top-0 bottom-0 w-1 bg-bark cursor-col-resize z-10 focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
@@ -118,6 +121,12 @@ export function VersionComparisonView({
               } else if (e.key === 'ArrowRight') {
                 e.preventDefault();
                 setSliderPosition((prev) => Math.min(95, prev + 2));
+              } else if (e.key === 'Home') {
+                e.preventDefault();
+                setSliderPosition(5);
+              } else if (e.key === 'End') {
+                e.preventDefault();
+                setSliderPosition(95);
               }
             }}
           >

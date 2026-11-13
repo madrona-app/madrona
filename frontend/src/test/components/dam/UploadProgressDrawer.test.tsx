@@ -151,9 +151,11 @@ describe('UploadProgressDrawer', () => {
     // Initially expanded — filename visible
     expect(screen.getByText('visible.jpg')).toBeInTheDocument();
 
-    // Click header to collapse
-    const header = screen.getByText(/1 file uploaded/);
-    fireEvent.click(header);
+    // Click the header toggle (a real button; its ::after covers the header) to collapse
+    expect(screen.getByText(/1 file uploaded/)).toBeInTheDocument();
+    const toggle = screen.getByRole('button', { name: 'Collapse upload list' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(toggle);
 
     expect(screen.queryByText('visible.jpg')).not.toBeInTheDocument();
   });

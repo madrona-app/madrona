@@ -180,14 +180,13 @@ export function ShareCollectionModal({
 
   return (
     <ModalPortal>
-    <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50">
+      <div aria-hidden="true" className="absolute inset-0" onClick={onClose} />
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation only: keeps dialog clicks from bubbling to React ancestors through the portal */}
       <div
         ref={modalRef}
         {...getModalAriaProps(titleId, descriptionId)}
-        className="bg-parchment rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="relative bg-parchment rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-6 py-4 border-b border-lichen">

@@ -13,7 +13,7 @@ interface EmbedCodeGeneratorProps {
   mediaId: string;
 }
 
-function CopyButton({ text }: { text: string }) {
+function CopyButton({ text, label }: { text: string; label: string }) {
   const [copied, setCopied] = useState(false);
   const { showToast } = useToast();
 
@@ -30,11 +30,13 @@ function CopyButton({ text }: { text: string }) {
 
   return (
     <button
+      type="button"
       onClick={handleCopy}
       className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium border border-lichen rounded hover:bg-stone/20 transition-colors"
     >
-      {copied ? <Check size={12} className="text-semantic-success" /> : <Copy size={12} />}
+      {copied ? <Check size={12} className="text-semantic-success" aria-hidden="true" /> : <Copy size={12} aria-hidden="true" />}
       {copied ? 'Copied' : 'Copy'}
+      <span className="sr-only"> {label}</span>
     </button>
   );
 }
@@ -65,11 +67,11 @@ export function EmbedCodeGenerator({
     <div className="space-y-4">
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <label className="text-xs text-archive flex items-center gap-1">
-            <Code size={12} />
+          <span className="text-xs text-archive flex items-center gap-1">
+            <Code size={12} aria-hidden="true" />
             Iframe Embed
-          </label>
-          <CopyButton text={iframe} />
+          </span>
+          <CopyButton text={iframe} label="iframe embed code" />
         </div>
         <pre className="p-3 text-xs font-mono bg-stone/20 border border-lichen rounded-lg overflow-x-auto whitespace-pre-wrap break-all">
           {iframe}
@@ -78,11 +80,11 @@ export function EmbedCodeGenerator({
 
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <label className="text-xs text-archive flex items-center gap-1">
-            <Link size={12} />
+          <span className="text-xs text-archive flex items-center gap-1">
+            <Link size={12} aria-hidden="true" />
             Direct URL
-          </label>
-          <CopyButton text={url} />
+          </span>
+          <CopyButton text={url} label="direct URL" />
         </div>
         <pre className="p-3 text-xs font-mono bg-stone/20 border border-lichen rounded-lg overflow-x-auto whitespace-pre-wrap break-all">
           {url}

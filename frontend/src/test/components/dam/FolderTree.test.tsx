@@ -137,10 +137,10 @@ describe('FolderTree', () => {
     expect(onCreateFolder).toHaveBeenCalledWith(null);
   });
 
-  it('has tree role with accessible label', async () => {
+  it('has a navigation landmark with accessible label', async () => {
     mockList.mockResolvedValue({ folders: [], unfiled_count: 0 } as never);
     renderTree();
     await waitFor(() => screen.getByText('All Media'));
-    expect(screen.getByRole('tree')).toHaveAttribute('aria-label', 'Media folders');
+    expect(screen.getByRole('navigation', { name: 'Media folders' })).toBeInTheDocument();
   });
 });

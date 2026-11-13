@@ -2,7 +2,7 @@
  * ContactSheetGenerator — generate PDF proof sheets from a media collection.
  * Dispatches async Celery task, polls for completion, then triggers download.
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useId, useState, useEffect, useCallback } from 'react';
 import Checkbox from '../Checkbox';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { FileDown, Loader2 } from 'lucide-react';
@@ -35,6 +35,7 @@ export function ContactSheetGenerator({
 }: ContactSheetGeneratorProps) {
   const { showToast } = useToast();
 
+  const fid = useId();
   const [layout, setLayout] = useState('grid');
   const [pageSize, setPageSize] = useState('letter');
   const [columns, setColumns] = useState(4);
@@ -108,8 +109,9 @@ export function ContactSheetGenerator({
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="text-xs text-archive block mb-1">Layout</label>
+          <label htmlFor={`${fid}-layout`} className="text-xs text-archive block mb-1">Layout</label>
           <select
+            id={`${fid}-layout`}
             value={layout}
             onChange={(e) => setLayout(e.target.value)}
             className="w-full px-2 py-1.5 text-sm border border-lichen rounded bg-parchment"
@@ -120,8 +122,9 @@ export function ContactSheetGenerator({
           </select>
         </div>
         <div>
-          <label className="text-xs text-archive block mb-1">Page Size</label>
+          <label htmlFor={`${fid}-page-size`} className="text-xs text-archive block mb-1">Page Size</label>
           <select
+            id={`${fid}-page-size`}
             value={pageSize}
             onChange={(e) => setPageSize(e.target.value)}
             className="w-full px-2 py-1.5 text-sm border border-lichen rounded bg-parchment"
@@ -132,8 +135,9 @@ export function ContactSheetGenerator({
           </select>
         </div>
         <div>
-          <label className="text-xs text-archive block mb-1">Columns</label>
+          <label htmlFor={`${fid}-columns`} className="text-xs text-archive block mb-1">Columns</label>
           <input
+            id={`${fid}-columns`}
             type="number"
             min={1}
             max={8}
@@ -145,20 +149,21 @@ export function ContactSheetGenerator({
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <label className="flex items-center gap-1.5 text-sm text-ink cursor-pointer">
-          <Checkbox checked={includeTitle} onChange={(e) => setIncludeTitle(e.target.checked)} />
+      <fieldset className="flex items-center gap-4">
+        <legend className="sr-only">Include in contact sheet</legend>
+        <label htmlFor={`${fid}-include-title`} className="flex items-center gap-1.5 text-sm text-ink cursor-pointer">
+          <Checkbox id={`${fid}-include-title`} checked={includeTitle} onChange={(e) => setIncludeTitle(e.target.checked)} />
           Title
         </label>
-        <label className="flex items-center gap-1.5 text-sm text-ink cursor-pointer">
-          <Checkbox checked={includeFilename} onChange={(e) => setIncludeFilename(e.target.checked)} />
+        <label htmlFor={`${fid}-include-filename`} className="flex items-center gap-1.5 text-sm text-ink cursor-pointer">
+          <Checkbox id={`${fid}-include-filename`} checked={includeFilename} onChange={(e) => setIncludeFilename(e.target.checked)} />
           Filename
         </label>
-        <label className="flex items-center gap-1.5 text-sm text-ink cursor-pointer">
-          <Checkbox checked={includeDescription} onChange={(e) => setIncludeDescription(e.target.checked)} />
+        <label htmlFor={`${fid}-include-description`} className="flex items-center gap-1.5 text-sm text-ink cursor-pointer">
+          <Checkbox id={`${fid}-include-description`} checked={includeDescription} onChange={(e) => setIncludeDescription(e.target.checked)} />
           Description
         </label>
-      </div>
+      </fieldset>
 
       <button
         onClick={() => mutation.mutate()}

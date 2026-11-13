@@ -2,7 +2,7 @@
  * DuplicateDetectionPanel — org-wide duplicate finder using CLIP embeddings.
  * Standalone page/panel component.
  */
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Copy, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
 import { findDuplicates, bulkGenerateClip } from '../../lib/api/media-dam';
@@ -15,6 +15,7 @@ interface DuplicateDetectionPanelProps {
 export function DuplicateDetectionPanel({
   organizationId,
 }: DuplicateDetectionPanelProps) {
+  const fid = useId();
   const { showToast } = useToast();
   const [threshold, setThreshold] = useState(0.95);
 
@@ -47,9 +48,11 @@ export function DuplicateDetectionPanel({
       {/* Controls */}
       <div className="flex items-center gap-4 p-4 bg-stone border border-lichen rounded-lg">
         <div className="flex items-center gap-2">
-          <label className="text-sm text-ink font-medium">Threshold:</label>
+          <label htmlFor={`${fid}-threshold`} className="text-sm text-ink font-medium">Threshold:</label>
           <input
+            id={`${fid}-threshold`}
             type="range"
+            aria-valuetext={`${Math.round(threshold * 100)}%`}
             min={0.8}
             max={1}
             step={0.01}

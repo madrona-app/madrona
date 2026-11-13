@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import Checkbox from '../Checkbox';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { batchMediaOperation } from '../../lib/api';
 import { SlideOver } from '../ui/SlideOver';
+import { handleTabListKeyDown } from './tabListKeyboard';
 
 interface BatchMetadataPanelProps {
   organizationId: string;
@@ -22,6 +23,12 @@ interface BatchMetadataPanelProps {
 
 type TabId = 'tags' | 'fields' | 'credits';
 
+const BATCH_TABS = [
+  { id: 'tags' as TabId, label: 'Tags', icon: Tags },
+  { id: 'fields' as TabId, label: 'Fields', icon: FileText },
+  { id: 'credits' as TabId, label: 'Credits', icon: Copyright },
+];
+
 export function BatchMetadataPanel({
   organizationId,
   selectedMediaIds,
@@ -30,6 +37,7 @@ export function BatchMetadataPanel({
   const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<TabId>('tags');
+  const fid = useId();
   const [showSuccess, setShowSuccess] = useState(false);
 
   // Tags tab state
@@ -162,37 +170,50 @@ export function BatchMetadataPanel({
       ) : (
         <div className="space-y-6">
           {/* Tabs */}
-          <div className="flex border-b border-lichen -mx-6 px-6">
-            {[
-              { id: 'tags' as TabId, label: 'Tags', icon: Tags },
-              { id: 'fields' as TabId, label: 'Fields', icon: FileText },
-              { id: 'credits' as TabId, label: 'Credits', icon: Copyright },
-            ].map((tab) => (
+          <div
+            role="tablist"
+            aria-label="Batch edit sections"
+            className="flex border-b border-lichen -mx-6 px-6"
+          >
+            {BATCH_TABS.map((tab) => (
               <button
                 key={tab.id}
+                type="button"
+                role="tab"
+                id={`${fid}-tab-${tab.id}`}
+                aria-selected={activeTab === tab.id}
+                aria-controls={`${fid}-panel`}
+                tabIndex={activeTab === tab.id ? 0 : -1}
                 onClick={() => setActiveTab(tab.id)}
+                onKeyDown={(e) => handleTabListKeyDown(e, BATCH_TABS.map((t) => t.id), activeTab, setActiveTab)}
                 className={`flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
                   activeTab === tab.id
                     ? 'border-bark text-bark'
                     : 'border-transparent text-archive hover:text-ink'
                 }`}
               >
-                <tab.icon size={16} />
+                <tab.icon size={16} aria-hidden="true" />
                 {tab.label}
               </button>
             ))}
           </div>
 
           {/* Tab Content */}
-          <div className="space-y-6">
+          <div
+            role="tabpanel"
+            id={`${fid}-panel`}
+            aria-labelledby={`${fid}-tab-${activeTab}`}
+            className="space-y-6"
+          >
             {/* Tags Tab */}
             {activeTab === 'tags' && (
               <>
                 {/* Add Tags */}
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-2">Add Tags</label>
+                  <label htmlFor={`${fid}-add-tag`} className="block text-sm font-medium text-ink mb-2">Add Tags</label>
                   <div className="flex gap-2 mb-2">
                     <input
+                      id={`${fid}-add-tag`}
                       type="text"
                       value={newTag}
                       onChange={(e) => setNewTag(e.target.value)}
@@ -203,9 +224,10 @@ export function BatchMetadataPanel({
                     <button
                       type="button"
                       onClick={handleAddTag}
+                      aria-label="Add tag"
                       className="px-3 py-2 text-archive bg-stone/50 border border-lichen rounded-lg hover:bg-stone transition-colors"
                     >
-                      <Plus size={16} />
+                      <Plus size={16} aria-hidden="true" />
                     </button>
                   </div>
                   {tagsToAdd.length > 0 && (
@@ -215,14 +237,15 @@ export function BatchMetadataPanel({
                           key={tag}
                           className="inline-flex items-center gap-1 px-2 py-1 bg-semantic-success/10 text-semantic-success text-sm rounded"
                         >
-                          <Plus size={12} />
+                          <Plus size={12} aria-hidden="true" />
                           {tag}
                           <button
                             type="button"
                             onClick={() => handleRemoveFromAdd(tag)}
+                            aria-label={`Remove tag ${tag}`}
                             className="hover:text-semantic-success/80"
                           >
-                            <X size={12} />
+                            <X size={12} aria-hidden="true" />
                           </button>
                         </span>
                       ))}
@@ -253,6 +276,7 @@ export function BatchMetadataPanel({
                     onChange={(e) => setTitlePrefix(e.target.value)}
                     disabled={!applyTitle}
                     placeholder="e.g., Collection A - "
+                    aria-label="Title prefix"
                     className="w-full px-3 py-2 text-sm border border-lichen rounded-lg bg-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 disabled:bg-stone/30 disabled:text-archive"
                   />
                   <p className="text-xs text-archive mt-1">
@@ -277,6 +301,7 @@ export function BatchMetadataPanel({
                     disabled={!applyDescription}
                     rows={3}
                     placeholder="Description for all selected items"
+                    aria-label="Description"
                     className="w-full px-3 py-2 text-sm border border-lichen rounded-lg bg-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 disabled:bg-stone/30 disabled:text-archive resize-none"
                   />
                 </div>
@@ -298,6 +323,7 @@ export function BatchMetadataPanel({
                     onChange={(e) => setAltText(e.target.value)}
                     disabled={!applyAltText}
                     placeholder="Alt text for accessibility"
+                    aria-label="Alt text"
                     className="w-full px-3 py-2 text-sm border border-lichen rounded-lg bg-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 disabled:bg-stone/30 disabled:text-archive"
                   />
                 </div>
@@ -324,6 +350,7 @@ export function BatchMetadataPanel({
                     onChange={(e) => setCredit(e.target.value)}
                     disabled={!applyCredit}
                     placeholder="e.g., Photo by John Smith"
+                    aria-label="Credit"
                     className="w-full px-3 py-2 text-sm border border-lichen rounded-lg bg-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 disabled:bg-stone/30 disabled:text-archive"
                   />
                 </div>
@@ -345,6 +372,7 @@ export function BatchMetadataPanel({
                     onChange={(e) => setCopyrightNotice(e.target.value)}
                     disabled={!applyCopyright}
                     placeholder="e.g., © 2024 Organization Name"
+                    aria-label="Copyright notice"
                     className="w-full px-3 py-2 text-sm border border-lichen rounded-lg bg-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 disabled:bg-stone/30 disabled:text-archive"
                   />
                 </div>
