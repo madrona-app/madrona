@@ -33,6 +33,7 @@ import {
 import type { Department } from '../../lib/schemas';
 import type { DepartmentMember } from '../../lib/api/departments';
 import { logger } from '../../lib/logger';
+import { useStableCallback } from '../../components/workspace/useStableCallback';
 
 // ============================================================================
 // Types
@@ -97,9 +98,10 @@ function DepartmentFormModal({
   submitting: boolean;
   isEdit: boolean;
 }) {
+  const stableOnClose = useStableCallback(onClose);
   const { modalRef, titleId } = useAccessibleModal({
     isOpen,
-    onClose,
+    onClose: stableOnClose,
     titlePrefix: isEdit ? 'edit-department' : 'create-department',
   });
   const [form, setForm] = useState<DepartmentForm>(initialData);
@@ -111,11 +113,12 @@ function DepartmentFormModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-ink/50 flex items-center justify-center z-50" onClick={onClose} role="presentation">
+    <div className="fixed inset-0 flex items-center justify-center z-50">
+      {/* Backdrop: mouse dismiss only; Escape closes the dialog */}
+      <div aria-hidden="true" className="absolute inset-0 bg-ink/50" onClick={onClose} />
       <div
         ref={modalRef}
-        className="bg-parchment rounded-lg p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
+        className="relative bg-parchment rounded-lg p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto"
         {...getModalAriaProps(titleId)}
       >
         <div className="flex justify-between items-center mb-4">
@@ -192,8 +195,8 @@ function DepartmentFormModal({
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-ink mb-1">Color</label>
+            <fieldset>
+              <legend className="block text-sm font-medium text-ink mb-1">Color</legend>
               <div className="flex items-center gap-2 flex-wrap">
                 {COLOR_PRESETS.map((c) => (
                   <button
@@ -205,6 +208,7 @@ function DepartmentFormModal({
                     }`}
                     style={{ backgroundColor: c }}
                     aria-label={`Color ${c}`}
+                    aria-pressed={form.color === c}
                   />
                 ))}
                 <button
@@ -214,11 +218,12 @@ function DepartmentFormModal({
                     !form.color ? 'border-ink' : 'border-lichen'
                   }`}
                   aria-label="No color"
+                  aria-pressed={!form.color}
                 >
-                  <X size={12} className="text-archive" />
+                  <X size={12} className="text-archive" aria-hidden="true" />
                 </button>
               </div>
-            </div>
+            </fieldset>
             <div>
               <label htmlFor="dept-sort" className="block text-sm font-medium text-ink mb-1">
                 Sort Order
@@ -262,9 +267,10 @@ function MembersPanel({
   department: Department | null;
   orgId: string;
 }) {
+  const stableOnClose = useStableCallback(onClose);
   const { modalRef, titleId } = useAccessibleModal({
     isOpen,
-    onClose,
+    onClose: stableOnClose,
     titlePrefix: 'dept-members',
   });
 
@@ -392,11 +398,12 @@ function MembersPanel({
   if (!isOpen || !department) return null;
 
   return (
-    <div className="fixed inset-0 bg-ink/50 flex items-center justify-center z-50" onClick={onClose} role="presentation">
+    <div className="fixed inset-0 flex items-center justify-center z-50">
+      {/* Backdrop: mouse dismiss only; Escape closes the dialog */}
+      <div aria-hidden="true" className="absolute inset-0 bg-ink/50" onClick={onClose} />
       <div
         ref={modalRef}
-        className="bg-parchment rounded-lg w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
+        className="relative bg-parchment rounded-lg w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
         {...getModalAriaProps(titleId)}
       >
         {/* Header */}
@@ -453,8 +460,9 @@ function MembersPanel({
                 ))}
               </select>
             </div>
-            <label className="flex items-center gap-1.5 pb-2 cursor-pointer">
+            <label htmlFor="department-management-primary" className="flex items-center gap-1.5 pb-2 cursor-pointer">
               <Checkbox
+                id="department-management-primary"
                 checked={addIsPrimary}
                 onChange={(e) => setAddIsPrimary(e.target.checked)}
               />
@@ -585,9 +593,10 @@ export default function DepartmentManagementPage() {
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
 
   // Deactivate modal
+  const closeDeactivateModal = useStableCallback(() => setShowDeactivateModal(false));
   const deactivateModal = useAccessibleModal({
     isOpen: showDeactivateModal,
-    onClose: () => setShowDeactivateModal(false),
+    onClose: closeDeactivateModal,
     titlePrefix: 'deactivate-dept',
   });
 

@@ -12,7 +12,7 @@
  * - Running bulk actions
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import Checkbox from '../../components/Checkbox';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -56,6 +56,9 @@ import { MediaBulkActionDialog } from '../../components/media-workspaces';
 import type { WorkspaceItem, MediaWorkspaceItem } from '../../lib/schemas';
 import { GenerateReportSlideOver } from '../../components/reports/GenerateReportSlideOver';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { useMenuNavigation } from '../../components/workspace/useMenuNavigation';
+import { useStableCallback } from '../../components/workspace/useStableCallback';
+import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
 
 // Union type for workspace items
 type UnifiedWorkspaceItem = WorkspaceItem | MediaWorkspaceItem;
@@ -81,6 +84,15 @@ export default function WorkspaceDetailPage() {
   const [showBulkActionDialog, setShowBulkActionDialog] = useState(false);
   const [showReportSlideOver, setShowReportSlideOver] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  const menuListRef = useRef<HTMLDivElement>(null);
+  const closeMenu = useCallback(() => setShowMenu(false), []);
+  const { onKeyDown: onMenuKeyDown } = useMenuNavigation({
+    isOpen: showMenu,
+    menuRef: menuListRef,
+    triggerRef: menuTriggerRef,
+    onClose: closeMenu,
+  });
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
@@ -403,27 +415,44 @@ export default function WorkspaceDetailPage() {
             {workspace.is_owner && (
               <div className="relative">
                 <button
+                  ref={menuTriggerRef}
+                  type="button"
                   onClick={() => setShowMenu(!showMenu)}
-                  className="p-2 rounded-lg border border-lichen hover:bg-stone/30"
+                  aria-label="Work set actions"
+                  aria-haspopup="menu"
+                  aria-expanded={showMenu}
+                  aria-controls={showMenu ? 'workspace-actions-menu' : undefined}
+                  className="p-2 rounded-lg border border-lichen hover:bg-stone/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                 >
-                  <MoreHorizontal size={18} className="text-archive" />
+                  <MoreHorizontal size={18} className="text-archive" aria-hidden="true" />
                 </button>
                 {showMenu && (
                   <>
                     {/* Backdrop to close menu */}
                     <div
+                      aria-hidden="true"
                       className="fixed inset-0 z-10"
                       onClick={() => setShowMenu(false)}
                     />
-                    <div className="absolute right-0 top-10 w-48 bg-parchment border border-lichen rounded-lg shadow-lg py-1 z-20">
+                    <div
+                      ref={menuListRef}
+                      id="workspace-actions-menu"
+                      role="menu"
+                      aria-label="Work set actions"
+                      onKeyDown={onMenuKeyDown}
+                      tabIndex={-1}
+                      className="absolute right-0 top-10 w-48 bg-parchment border border-lichen rounded-lg shadow-lg py-1 z-20"
+                    >
                       <button
                         onClick={() => {
                           setShowMenu(false);
                           setShowShareDialog(true);
                         }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-stone/30"
+                        role="menuitem"
+                        tabIndex={-1}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-stone/30 focus-visible:outline-none focus-visible:bg-stone/30"
                       >
-                        <Share2 size={14} />
+                        <Share2 size={14} aria-hidden="true" />
                         Share Work Set
                       </button>
                       {workspace.is_dynamic && (
@@ -432,16 +461,20 @@ export default function WorkspaceDetailPage() {
                             setShowMenu(false);
                             setShowEditQueryDialog(true);
                           }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-stone/30"
+                          role="menuitem"
+                        tabIndex={-1}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-stone/30 focus-visible:outline-none focus-visible:bg-stone/30"
                         >
-                          <Search size={14} />
+                          <Search size={14} aria-hidden="true" />
                           Edit Search Query
                         </button>
                       )}
                       <Link
                         to={`/organizations/${orgId}/${workSegment}/work/workspaces/${workspaceId}/edit`}
                         onClick={() => setShowMenu(false)}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-stone/30"
+                        role="menuitem"
+                        tabIndex={-1}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-stone/30 focus-visible:outline-none focus-visible:bg-stone/30"
                       >
                         Edit Details
                       </Link>
@@ -450,9 +483,11 @@ export default function WorkspaceDetailPage() {
                           setShowMenu(false);
                           handleDelete();
                         }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-semantic-error hover:bg-semantic-error/10"
+                        role="menuitem"
+                        tabIndex={-1}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-semantic-error hover:bg-semantic-error/10 focus-visible:outline-none focus-visible:bg-semantic-error/10"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={14} aria-hidden="true" />
                         Delete Work Set
                       </button>
                     </div>
@@ -505,24 +540,30 @@ export default function WorkspaceDetailPage() {
             {/* View mode toggle */}
             <div className="flex items-center border border-lichen rounded-lg overflow-hidden">
               <button
+                type="button"
                 onClick={() => handleViewModeChange('grid')}
+                aria-pressed={viewMode === 'grid'}
+                aria-label="Grid view"
                 className={cn(
                   'p-1.5 transition-colors',
                   viewMode === 'grid' ? 'bg-azurite/10 text-azurite' : 'text-archive hover:bg-stone/30'
                 )}
                 title="Grid view"
               >
-                <Grid size={16} />
+                <Grid size={16} aria-hidden="true" />
               </button>
               <button
+                type="button"
                 onClick={() => handleViewModeChange('list')}
+                aria-pressed={viewMode === 'list'}
+                aria-label="List view"
                 className={cn(
                   'p-1.5 transition-colors',
                   viewMode === 'list' ? 'bg-azurite/10 text-azurite' : 'text-archive hover:bg-stone/30'
                 )}
                 title="List view"
               >
-                <List size={16} />
+                <List size={16} aria-hidden="true" />
               </button>
             </div>
             {canEdit && (
@@ -751,6 +792,12 @@ function EditQueryDialog({
   const queryClient = useQueryClient();
   const [queryText, setQueryText] = useState(() => JSON.stringify(currentQuery, null, 2));
   const [error, setError] = useState<string | null>(null);
+  const stableOnClose = useStableCallback(onClose);
+  const { modalRef, titleId } = useAccessibleModal({
+    isOpen,
+    onClose: stableOnClose,
+    titlePrefix: 'edit-query-dialog',
+  });
 
   const saveMutation = useMutation({
     mutationFn: (newQuery: Record<string, unknown>) =>
@@ -796,15 +843,24 @@ function EditQueryDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-ink/40" onClick={onClose} />
-      <div className="relative bg-parchment rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div aria-hidden="true" className="fixed inset-0 bg-ink/40" onClick={onClose} />
+      <div
+        ref={modalRef}
+        {...getModalAriaProps(titleId)}
+        className="relative bg-parchment rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto"
+      >
         <div className="flex items-center justify-between p-4 border-b border-lichen">
           <div className="flex items-center gap-2">
-            <Search size={20} className="text-bark" />
-            <h2 className="text-lg font-semibold text-ink">Edit Search Query</h2>
+            <Search size={20} className="text-bark" aria-hidden="true" />
+            <h2 id={titleId} className="text-lg font-semibold text-ink">Edit Search Query</h2>
           </div>
-          <button onClick={onClose} className="p-1 rounded hover:bg-stone/50 text-archive">
-            <X size={18} />
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="p-1 rounded hover:bg-stone/50 text-archive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+          >
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
 
@@ -812,7 +868,7 @@ function EditQueryDialog({
           {/* Readable summary */}
           {summaryLines.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">Current Query</label>
+              <h3 className="block text-sm font-medium text-ink mb-1">Current Query</h3>
               <div className="bg-stone/20 border border-lichen rounded-lg p-3 space-y-1">
                 {summaryLines.map((line, i) => (
                   <div key={i} className="flex items-center gap-2 text-sm text-archive">
@@ -830,8 +886,9 @@ function EditQueryDialog({
 
           {/* JSON editor */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">Query JSON</label>
+            <label htmlFor="workspace-detail-query-json" className="block text-sm font-medium text-ink mb-1">Query JSON</label>
             <textarea
+              id="workspace-detail-query-json"
               value={queryText}
               onChange={(e) => setQueryText(e.target.value)}
               rows={10}
@@ -840,7 +897,7 @@ function EditQueryDialog({
           </div>
 
           {error && (
-            <div className="text-sm text-semantic-error bg-semantic-error/10 border border-semantic-error/30 rounded-lg p-2">
+            <div role="alert" className="text-sm text-semantic-error bg-semantic-error/10 border border-semantic-error/30 rounded-lg p-2">
               {error}
             </div>
           )}
@@ -890,6 +947,7 @@ function ObjectGridItem({
   onSetCover?: (mediaId: string | null) => void;
   isPinned?: boolean;
 }) {
+  const itemLabel = item.accession_number || 'untitled object';
   const primaryMediaId = (item as WorkspaceItem & { primary_media_id?: string | null }).primary_media_id;
   const handleClick = (e: React.MouseEvent) => {
     if (e.shiftKey) {
@@ -899,6 +957,7 @@ function ObjectGridItem({
   };
 
   return (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- mouse shortcut for selection; the item checkbox is the keyboard path
     <div
       className={cn(
         'group relative bg-parchment border rounded-lg overflow-hidden cursor-pointer transition-all hover:shadow-md select-none',
@@ -907,10 +966,15 @@ function ObjectGridItem({
       onClick={handleClick}
     >
       {canEdit && (
-        <div className="absolute top-2 left-2 z-10" onClick={(e) => e.stopPropagation()}>
+        <div className="absolute top-2 left-2 z-10">
           <Checkbox
             checked={isSelected}
-            onChange={(e) => onSelect(e as unknown as React.MouseEvent)}
+            aria-label={`Select ${itemLabel}`}
+            onChange={() => {}}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(e);
+            }}
             className="bg-parchment/80"
           />
         </div>
@@ -924,10 +988,11 @@ function ObjectGridItem({
       {/* Pin indicator for pinned items */}
       {isPinned && !onSetCover && (
         <div className="absolute top-2 right-8 z-10 p-1 bg-parchment/80 rounded text-bark" title="Pinned">
-          <Pin size={12} />
+          <Pin size={12} aria-hidden="true" />
+          <span className="sr-only">Pinned</span>
         </div>
       )}
-      <div className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
         {/* Set as cover button — only when a primary image exists and we're not already the cover */}
         {onSetCover && primaryMediaId && !isCover && (
           <button
@@ -937,8 +1002,9 @@ function ObjectGridItem({
             }}
             className="p-1 bg-parchment/80 rounded text-archive hover:text-bark hover:bg-parchment"
             title="Set as cover image"
+            aria-label={`Set ${itemLabel} as cover image`}
           >
-            <Image size={14} />
+            <Image size={14} aria-hidden="true" />
           </button>
         )}
         {/* Pin button for dynamic items */}
@@ -950,8 +1016,9 @@ function ObjectGridItem({
             }}
             className="p-1 bg-parchment/80 rounded text-archive hover:text-bark hover:bg-parchment"
             title="Pin to work set"
+            aria-label={`Pin ${itemLabel} to work set`}
           >
-            <Pin size={14} />
+            <Pin size={14} aria-hidden="true" />
           </button>
         )}
         {/* Remove button */}
@@ -963,14 +1030,17 @@ function ObjectGridItem({
             }}
             className="p-1 bg-parchment/80 rounded text-archive hover:text-semantic-error hover:bg-parchment"
             title={isPinned ? 'Unpin from work set' : 'Remove from work set'}
+            aria-label={isPinned ? `Unpin ${itemLabel} from work set` : `Remove ${itemLabel} from work set`}
           >
-            <X size={14} />
+            <X size={14} aria-hidden="true" />
           </button>
         )}
       </div>
       <Link
         to={`/organizations/${orgId}/collections/objects/${item.object_id}`}
         onClick={(e) => e.stopPropagation()}
+        tabIndex={-1}
+        aria-hidden="true"
         className="block aspect-square bg-stone/30"
       >
         {item.thumbnail_url ? (
@@ -1019,8 +1089,10 @@ function ObjectListItem({
   onSetCover?: (mediaId: string | null) => void;
   isPinned?: boolean;
 }) {
+  const itemLabel = item.accession_number || 'untitled object';
   const primaryMediaId = (item as WorkspaceItem & { primary_media_id?: string | null }).primary_media_id;
   return (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- mouse shortcut for selection; the item checkbox is the keyboard path
     <div
       className={cn(
         'flex items-center gap-4 px-4 py-3 hover:bg-stone/30 cursor-pointer group select-none',
@@ -1030,20 +1102,25 @@ function ObjectListItem({
     >
       {canEdit && (
         <>
-          <button className="cursor-move text-archive hover:text-ink">
+          <span aria-hidden="true" className="cursor-move text-archive hover:text-ink">
             <GripVertical size={16} />
-          </button>
+          </span>
           <Checkbox
             checked={isSelected}
+            aria-label={`Select ${itemLabel}`}
             onChange={() => {}}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(e);
+            }}
           />
         </>
       )}
       {/* Pin indicator */}
       {isPinned && (
         <span title="Pinned">
-          <Pin size={14} className="text-bark flex-shrink-0" />
+          <Pin size={14} className="text-bark flex-shrink-0" aria-hidden="true" />
+          <span className="sr-only">Pinned</span>
         </span>
       )}
       <div className="relative flex-shrink-0">
@@ -1082,10 +1159,11 @@ function ObjectListItem({
             e.stopPropagation();
             onSetCover(primaryMediaId);
           }}
-          className="p-1.5 text-archive hover:text-bark rounded hover:bg-bark/10 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="p-1.5 text-archive hover:text-bark rounded hover:bg-bark/10 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
           title="Set as cover image"
+            aria-label={`Set ${itemLabel} as cover image`}
         >
-          <Image size={16} />
+          <Image size={16} aria-hidden="true" />
         </button>
       )}
       {/* Pin button for dynamic items */}
@@ -1095,10 +1173,11 @@ function ObjectListItem({
             e.stopPropagation();
             onPin();
           }}
-          className="p-1.5 text-archive hover:text-bark rounded hover:bg-bark/10 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="p-1.5 text-archive hover:text-bark rounded hover:bg-bark/10 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
           title="Pin to work set"
+            aria-label={`Pin ${itemLabel} to work set`}
         >
-          <Pin size={16} />
+          <Pin size={16} aria-hidden="true" />
         </button>
       )}
       {/* Remove/unpin button */}
@@ -1108,10 +1187,11 @@ function ObjectListItem({
             e.stopPropagation();
             onRemove();
           }}
-          className="p-1.5 text-archive hover:text-semantic-error rounded hover:bg-semantic-error/10 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="p-1.5 text-archive hover:text-semantic-error rounded hover:bg-semantic-error/10 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
           title={isPinned ? 'Unpin from work set' : 'Remove from work set'}
+            aria-label={isPinned ? `Unpin ${itemLabel} from work set` : `Remove ${itemLabel} from work set`}
         >
-          <X size={16} />
+          <X size={16} aria-hidden="true" />
         </button>
       )}
     </div>
@@ -1142,6 +1222,7 @@ function AssetGridItem({
   onSetCover?: (mediaId: string | null) => void;
   onPin?: () => void;
 }) {
+  const itemLabel = item.filename || 'untitled file';
   const handleClick = (e: React.MouseEvent) => {
     if (e.shiftKey) {
       e.preventDefault();
@@ -1150,6 +1231,7 @@ function AssetGridItem({
   };
 
   return (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- mouse shortcut for selection; the item checkbox is the keyboard path
     <div
       className={cn(
         'group relative bg-parchment border rounded-lg overflow-hidden cursor-pointer transition-all hover:shadow-md select-none',
@@ -1158,10 +1240,15 @@ function AssetGridItem({
       onClick={handleClick}
     >
       {canEdit && (
-        <div className="absolute top-2 left-2 z-10" onClick={(e) => e.stopPropagation()}>
+        <div className="absolute top-2 left-2 z-10">
           <Checkbox
             checked={isSelected}
-            onChange={(e) => onSelect(e as unknown as React.MouseEvent)}
+            aria-label={`Select ${itemLabel}`}
+            onChange={() => {}}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(e);
+            }}
             className="bg-parchment/80"
           />
         </div>
@@ -1172,7 +1259,7 @@ function AssetGridItem({
           Cover
         </div>
       )}
-      <div className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
         {onSetCover && !isCover && (
           <button
             onClick={(e) => {
@@ -1181,8 +1268,9 @@ function AssetGridItem({
             }}
             className="p-1 bg-parchment/80 rounded text-archive hover:text-bark hover:bg-parchment"
             title="Set as cover image"
+            aria-label={`Set ${itemLabel} as cover image`}
           >
-            <Image size={14} />
+            <Image size={14} aria-hidden="true" />
           </button>
         )}
         {onPin && (
@@ -1193,8 +1281,9 @@ function AssetGridItem({
             }}
             className="p-1 bg-parchment/80 rounded text-archive hover:text-bark hover:bg-parchment"
             title="Pin to work set"
+            aria-label={`Pin ${itemLabel} to work set`}
           >
-            <Pin size={14} />
+            <Pin size={14} aria-hidden="true" />
           </button>
         )}
         {canEdit && onRemove && (
@@ -1205,14 +1294,17 @@ function AssetGridItem({
             }}
             className="p-1 bg-parchment/80 rounded text-archive hover:text-semantic-error hover:bg-parchment"
             title={isPinned ? 'Unpin from work set' : 'Remove from work set'}
+            aria-label={isPinned ? `Unpin ${itemLabel} from work set` : `Remove ${itemLabel} from work set`}
           >
-            <X size={14} />
+            <X size={14} aria-hidden="true" />
           </button>
         )}
       </div>
       <Link
         to={`/organizations/${orgId}/media/${item.media_id}`}
         onClick={(e) => e.stopPropagation()}
+        tabIndex={-1}
+        aria-hidden="true"
         className="block aspect-square bg-stone/30"
       >
         {item.thumbnail_url ? (
@@ -1261,7 +1353,9 @@ function AssetListItem({
   onSetCover?: (mediaId: string | null) => void;
   onPin?: () => void;
 }) {
+  const itemLabel = item.filename || 'untitled file';
   return (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- mouse shortcut for selection; the item checkbox is the keyboard path
     <div
       className={cn(
         'flex items-center gap-3 px-4 py-3 hover:bg-stone/30 cursor-pointer group',
@@ -1270,15 +1364,19 @@ function AssetListItem({
       onClick={onSelect}
     >
       {canEdit && (
-        <div className="text-archive/40 group-hover:text-archive cursor-grab">
+        <div aria-hidden="true" className="text-archive/40 group-hover:text-archive cursor-grab">
           <GripVertical size={16} />
         </div>
       )}
       {canEdit && (
         <Checkbox
           checked={isSelected}
+          aria-label={`Select ${itemLabel}`}
           onChange={() => {}}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect(e);
+          }}
         />
       )}
       <div className="relative flex-shrink-0">
@@ -1319,10 +1417,11 @@ function AssetListItem({
             e.stopPropagation();
             onSetCover(item.media_id);
           }}
-          className="p-1.5 text-archive hover:text-bark rounded hover:bg-bark/10 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="p-1.5 text-archive hover:text-bark rounded hover:bg-bark/10 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
           title="Set as cover image"
+            aria-label={`Set ${itemLabel} as cover image`}
         >
-          <Image size={16} />
+          <Image size={16} aria-hidden="true" />
         </button>
       )}
       {onPin && (
@@ -1331,10 +1430,11 @@ function AssetListItem({
             e.stopPropagation();
             onPin();
           }}
-          className="p-1.5 text-archive hover:text-bark rounded hover:bg-bark/10 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="p-1.5 text-archive hover:text-bark rounded hover:bg-bark/10 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
           title="Pin to work set"
+            aria-label={`Pin ${itemLabel} to work set`}
         >
-          <Pin size={16} />
+          <Pin size={16} aria-hidden="true" />
         </button>
       )}
       {canEdit && onRemove && (
@@ -1343,10 +1443,11 @@ function AssetListItem({
             e.stopPropagation();
             onRemove();
           }}
-          className="p-1.5 text-archive hover:text-semantic-error rounded hover:bg-semantic-error/10 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="p-1.5 text-archive hover:text-semantic-error rounded hover:bg-semantic-error/10 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
           title={isPinned ? 'Unpin from work set' : 'Remove from work set'}
+            aria-label={isPinned ? `Unpin ${itemLabel} from work set` : `Remove ${itemLabel} from work set`}
         >
-          <X size={16} />
+          <X size={16} aria-hidden="true" />
         </button>
       )}
     </div>

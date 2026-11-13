@@ -43,6 +43,7 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 import { logger } from '../../lib/logger';
 import { useToast } from '../../contexts/ToastContext';
 import { formatDateTime, formatNumber as fmtNumber } from '@/lib/formatters';
+import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
 
 // ============================================================================
 // Types
@@ -1003,6 +1004,21 @@ function EmailTab() {
     before_date?: string;
     delete_all?: boolean;
   }>({});
+  const closeEventDetail = useCallback(() => setSelectedEvent(null), []);
+  const { modalRef: eventDetailModalRef, titleId: eventDetailModalTitleId } = useAccessibleModal({
+    isOpen: !!selectedEvent,
+    onClose: closeEventDetail,
+    titlePrefix: 'email-event-detail',
+  });
+  const closeBulkDelete = useCallback(() => {
+    setShowBulkDeleteModal(false);
+    setBulkDeleteParams({});
+  }, []);
+  const { modalRef: bulkDeleteModalRef, titleId: bulkDeleteModalTitleId } = useAccessibleModal({
+    isOpen: showBulkDeleteModal,
+    onClose: closeBulkDelete,
+    titlePrefix: 'email-events-cleanup',
+  });
 
   const limit = 50;
 
@@ -1496,26 +1512,32 @@ function EmailTab() {
       {/* Event Detail Modal */}
       {selectedEvent && (
         <div className="fixed inset-0 bg-ink/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-parchment rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
+          <div
+            ref={eventDetailModalRef}
+            {...getModalAriaProps(eventDetailModalTitleId)}
+            className="bg-parchment rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto"
+          >
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-ink">Event Details</h2>
+                <h2 id={eventDetailModalTitleId} className="text-xl font-bold text-ink">Event Details</h2>
                 <button
+                  type="button"
                   onClick={() => setSelectedEvent(null)}
+                  aria-label="Close event details"
                   className="text-ink/50 hover:text-ink"
                 >
-                  X
+                  <span aria-hidden="true">X</span>
                 </button>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-ink">Email</label>
+                  <h3 className="block text-sm font-medium text-ink">Email</h3>
                   <p className="mt-1 text-sm text-ink">{selectedEvent.email}</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-ink">Event Type</label>
+                  <h3 className="block text-sm font-medium text-ink">Event Type</h3>
                   <p className="mt-1">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getEventTypeBadgeColor(selectedEvent.event_type)}`}>
                       {selectedEvent.event_type}
@@ -1525,7 +1547,7 @@ function EmailTab() {
 
                 {selectedEvent.bounce_type && (
                   <div>
-                    <label className="block text-sm font-medium text-ink">Bounce Type</label>
+                    <h3 className="block text-sm font-medium text-ink">Bounce Type</h3>
                     <p className="mt-1 text-sm text-ink">
                       {selectedEvent.bounce_type}
                       {selectedEvent.bounce_subtype && ` - ${selectedEvent.bounce_subtype}`}
@@ -1535,27 +1557,33 @@ function EmailTab() {
 
                 {selectedEvent.complaint_feedback_type && (
                   <div>
-                    <label className="block text-sm font-medium text-ink">Complaint Type</label>
+                    <h3 className="block text-sm font-medium text-ink">Complaint Type</h3>
                     <p className="mt-1 text-sm text-ink">{selectedEvent.complaint_feedback_type}</p>
                   </div>
                 )}
 
                 {selectedEvent.message_id && (
                   <div>
-                    <label className="block text-sm font-medium text-ink">SES Message ID</label>
+                    <h3 className="block text-sm font-medium text-ink">SES Message ID</h3>
                     <p className="mt-1 text-sm text-ink font-mono">{selectedEvent.message_id}</p>
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-ink">Date</label>
+                  <h3 className="block text-sm font-medium text-ink">Date</h3>
                   <p className="mt-1 text-sm text-ink">{formatDate(selectedEvent.created_at)}</p>
                 </div>
 
                 {selectedEvent.raw_message && (
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-2">Raw SNS Message</label>
-                    <pre className="mt-1 text-xs bg-parchment p-4 rounded border border-lichen overflow-auto max-h-96">
+                    <h3 id="email-event-raw-heading" className="block text-sm font-medium text-ink mb-2">Raw SNS Message</h3>
+                    <pre
+                      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- scrollable region must take keyboard focus to scroll
+                      tabIndex={0}
+                      role="region"
+                      aria-labelledby="email-event-raw-heading"
+                      className="mt-1 text-xs bg-parchment p-4 rounded border border-lichen overflow-auto max-h-96"
+                    >
                       {JSON.stringify(selectedEvent.raw_message, null, 2)}
                     </pre>
                   </div>
@@ -1578,27 +1606,30 @@ function EmailTab() {
       {/* Bulk Delete Modal */}
       {showBulkDeleteModal && (
         <div className="fixed inset-0 bg-ink/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-parchment rounded-lg max-w-md w-full p-6">
+          <div
+            ref={bulkDeleteModalRef}
+            {...getModalAriaProps(bulkDeleteModalTitleId)}
+            className="bg-parchment rounded-lg max-w-md w-full p-6"
+          >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-ink">Cleanup Email Events</h2>
+              <h2 id={bulkDeleteModalTitleId} className="text-xl font-bold text-ink">Cleanup Email Events</h2>
               <button
-                onClick={() => {
-                  setShowBulkDeleteModal(false);
-                  setBulkDeleteParams({});
-                }}
+                type="button"
+                onClick={closeBulkDelete}
+                aria-label="Close cleanup dialog"
                 className="text-ink/50 hover:text-ink"
               >
-                X
+                <span aria-hidden="true">X</span>
               </button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="flex items-center space-x-2">
+                <label htmlFor="logs-delete-all-events" className="flex items-center space-x-2">
                   <Checkbox
+                    id="logs-delete-all-events"
                     checked={bulkDeleteParams.delete_all || false}
                     onChange={(e) => setBulkDeleteParams({ delete_all: e.target.checked })}
-                    aria-label="Delete ALL events"
                   />
                   <span className="text-sm font-medium text-ink">Delete ALL events</span>
                 </label>

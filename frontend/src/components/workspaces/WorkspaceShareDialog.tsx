@@ -8,7 +8,7 @@
  * - View and manage existing shares
  */
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Search, UserPlus, Users, Trash2, Check, ChevronDown } from 'lucide-react';
 import { useOrganization } from '../../contexts/useOrganization';
@@ -24,6 +24,8 @@ import {
 import type { WorkspaceShare } from '../../lib/schemas';
 import { MadronaLoader } from '../ui/MadronaLoader';
 import { ModalPortal } from '../ModalPortal';
+import { useMenuNavigation } from '../workspace/useMenuNavigation';
+import { useStableCallback } from '../workspace/useStableCallback';
 
 interface WorkspaceShareDialogProps {
   isOpen: boolean;
@@ -53,9 +55,10 @@ export default function WorkspaceShareDialog({
   const orgId = activeOrganization?.organization_id;
   const queryClient = useQueryClient();
 
+  const stableOnClose = useStableCallback(onClose);
   const { modalRef, titleId, descriptionId } = useAccessibleModal({
     isOpen,
-    onClose,
+    onClose: stableOnClose,
     titlePrefix: 'workspace-share-dialog',
   });
 
@@ -67,6 +70,14 @@ export default function WorkspaceShareDialog({
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const permissionButtonRef = useRef<HTMLButtonElement>(null);
+  const permissionMenuRef = useRef<HTMLDivElement>(null);
+  const closePermissionMenu = useCallback(() => setShowPermissionDropdown(false), []);
+  const { onKeyDown: onPermissionMenuKeyDown } = useMenuNavigation({
+    isOpen: showPermissionDropdown,
+    menuRef: permissionMenuRef,
+    triggerRef: permissionButtonRef,
+    onClose: closePermissionMenu,
+  });
 
   // Calculate dropdown position when showing
   useEffect(() => {
@@ -182,14 +193,14 @@ export default function WorkspaceShareDialog({
   return (
     <ModalPortal>
     <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
-      onClick={handleClose}
+      className="fixed inset-0 z-[1000] flex items-center justify-center"
     >
+      {/* Backdrop: mouse dismiss only; Escape closes the dialog */}
+      <div aria-hidden="true" className="absolute inset-0 bg-ink/50" onClick={handleClose} />
       <div
         ref={modalRef}
         {...getModalAriaProps(titleId, descriptionId)}
-        onClick={(e) => e.stopPropagation()}
-        className="bg-parchment rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col"
+        className="relative bg-parchment rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col"
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-lichen">
@@ -199,10 +210,12 @@ export default function WorkspaceShareDialog({
               <p id={descriptionId} className="text-sm text-archive">{workspaceName}</p>
             </div>
             <button
+              type="button"
               onClick={handleClose}
-              className="p-1 text-archive hover:text-ink rounded"
+              aria-label="Close"
+              className="p-1 text-archive hover:text-ink rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             >
-              <X size={20} />
+              <X size={20} aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -211,19 +224,19 @@ export default function WorkspaceShareDialog({
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {/* Messages */}
           {error && (
-            <div className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-sm text-sm text-semantic-error">
+            <div role="alert" className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-sm text-sm text-semantic-error">
               {error}
             </div>
           )}
           {successMessage && (
-            <div className="p-3 bg-semantic-success/10 border border-semantic-success/30 rounded-sm text-sm text-semantic-success">
+            <div role="status" className="p-3 bg-semantic-success/10 border border-semantic-success/30 rounded-sm text-sm text-semantic-success">
               {successMessage}
             </div>
           )}
 
           {/* Add new share section */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-ink mb-1">
+            <label htmlFor="workspace-share-user-search" className="block text-sm font-medium text-ink mb-1">
               Add people
             </label>
 
@@ -232,9 +245,11 @@ export default function WorkspaceShareDialog({
               <div className="relative flex-1">
                 <Search
                   size={16}
+                  aria-hidden="true"
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-archive"
                 />
                 <input
+                  id="workspace-share-user-search"
                   type="text"
                   placeholder="Search by name or email..."
                   value={searchQuery}
@@ -250,42 +265,57 @@ export default function WorkspaceShareDialog({
               <div className="relative">
                 <button
                   ref={permissionButtonRef}
+                  type="button"
                   onClick={() => setShowPermissionDropdown(!showPermissionDropdown)}
-                  className="flex items-center gap-1 px-3 py-2 border border-lichen rounded-sm text-sm hover:border-bark/30"
+                  aria-haspopup="menu"
+                  aria-expanded={showPermissionDropdown}
+                  aria-label={`Permission: ${permissionLabels[selectedPermission].label}`}
+                  className="flex items-center gap-1 px-3 py-2 border border-lichen rounded-sm text-sm hover:border-bark/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                 >
                   {permissionLabels[selectedPermission].label}
-                  <ChevronDown size={14} />
+                  <ChevronDown size={14} aria-hidden="true" />
                 </button>
                 {showPermissionDropdown && (
                   <>
                     <div
+                      aria-hidden="true"
                       className="fixed inset-0 z-[1010]"
                       onClick={() => setShowPermissionDropdown(false)}
                     />
                     <div
+                      ref={permissionMenuRef}
+                      role="menu"
+                      aria-label="Permission level"
+                      tabIndex={-1}
+                      onKeyDown={onPermissionMenuKeyDown}
                       className="fixed w-48 bg-parchment border border-lichen rounded-sm shadow-lg z-[1020]"
                       style={{ top: dropdownPosition.top, left: dropdownPosition.left }}
                     >
                       {(Object.keys(permissionLabels) as PermissionLevel[]).map((perm) => (
                         <button
                           key={perm}
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={selectedPermission === perm}
+                          tabIndex={-1}
                           onClick={() => {
                             setSelectedPermission(perm);
                             setShowPermissionDropdown(false);
+                            permissionButtonRef.current?.focus();
                           }}
                           className={cn(
-                            'w-full flex items-center justify-between px-3 py-2 text-sm text-left hover:bg-stone/50',
+                            'w-full flex items-center justify-between px-3 py-2 text-sm text-left hover:bg-stone/50 focus-visible:outline-none focus-visible:bg-stone/50',
                             selectedPermission === perm && 'bg-bark/5'
                           )}
                         >
-                          <div>
-                            <div className="font-medium text-ink">{permissionLabels[perm].label}</div>
-                            <div className="text-xs text-archive">
+                          <span>
+                            <span className="block font-medium text-ink">{permissionLabels[perm].label}</span>
+                            <span className="block text-xs text-archive">
                               {permissionLabels[perm].description}
-                            </div>
-                          </div>
+                            </span>
+                          </span>
                           {selectedPermission === perm && (
-                            <Check size={14} className="text-bark" />
+                            <Check size={14} className="text-bark" aria-hidden="true" />
                           )}
                         </button>
                       ))}
@@ -355,9 +385,11 @@ export default function WorkspaceShareDialog({
                     setSelectedUser(null);
                     setSearchQuery('');
                   }}
+                  type="button"
+                  aria-label={`Clear selected user ${selectedUser.name || selectedUser.email}`}
                   className="p-1 text-archive hover:text-ink"
                 >
-                  <X size={14} />
+                  <X size={14} aria-hidden="true" />
                 </button>
               </div>
             )}
@@ -423,8 +455,9 @@ export default function WorkspaceShareDialog({
                       disabled={deleteShareMutation.isPending}
                       className="p-1 text-archive hover:text-semantic-error"
                       title="Remove access"
+                      aria-label={`Remove access for ${share.principal_name || share.principal_email || 'unknown user'}`}
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={14} aria-hidden="true" />
                     </button>
                   </div>
                 ))}

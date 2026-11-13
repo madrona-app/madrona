@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import {
   DndContext,
@@ -40,6 +40,7 @@ import { FieldAccessMatrix } from '../../components/admin/FieldAccessMatrix';
 import { logger } from '../../lib/logger';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { useFocusWhen } from '../../components/workspace/useFocusWhen';
 
 interface Role {
   role_id: string;
@@ -106,6 +107,8 @@ export default function RoleManagementPage() {
   const [labelAppKey, setLabelAppKey] = useState<string>('');  // '' = org-wide
   const [editingRole, setEditingRole] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
+  const editLabelInputRef = useRef<HTMLInputElement>(null);
+  useFocusWhen(editLabelInputRef, editingRole !== null);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<AppKey>(() =>
     (availableTabs[0]?.key as AppKey) || 'bridge'
@@ -599,7 +602,9 @@ export default function RoleManagementPage() {
                   <div className="flex-1">
                     {editingRole === rl.role_key ? (
                       <input
+                        ref={editLabelInputRef}
                         type="text"
+                        aria-label={`Display name for ${rl.default_name || rl.role_key}`}
                         value={editValue}
                         onChange={(e) => setEditValue(e.target.value)}
                         onKeyDown={(e) => {
@@ -607,7 +612,6 @@ export default function RoleManagementPage() {
                           if (e.key === 'Escape') cancelEditing();
                         }}
                         className="w-full px-3 py-1.5 border border-forest rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
-                        autoFocus
                         disabled={saving}
                       />
                     ) : (
@@ -638,16 +642,18 @@ export default function RoleManagementPage() {
                           disabled={saving || !editValue.trim()}
                           className="p-2 text-semantic-success hover:bg-semantic-success/10 rounded disabled:opacity-50"
                           title="Save"
+                          aria-label={`Save label for ${rl.role_key}`}
                         >
-                          <Check size={18} />
+                          <Check size={18} aria-hidden="true" />
                         </button>
                         <button
                           onClick={cancelEditing}
                           disabled={saving}
                           className="p-2 text-archive hover:bg-stone rounded disabled:opacity-50"
                           title="Cancel"
+                          aria-label={`Cancel editing label for ${rl.role_key}`}
                         >
-                          <X size={18} />
+                          <X size={18} aria-hidden="true" />
                         </button>
                       </>
                     ) : (
@@ -656,8 +662,9 @@ export default function RoleManagementPage() {
                           onClick={() => startEditing(rl.role_key, rl.display_name)}
                           className="p-2 text-forest hover:bg-forest/10 rounded"
                           title="Edit label"
+                          aria-label={`Edit label for ${rl.display_name}`}
                         >
-                          <Pencil size={18} />
+                          <Pencil size={18} aria-hidden="true" />
                         </button>
                         {rl.is_custom && (
                           <button
@@ -690,6 +697,8 @@ export default function RoleManagementPage() {
       {hasManageRoles && (
         <div className="mb-4 flex gap-2">
           <button
+            type="button"
+            aria-pressed={activeView === 'roles'}
             onClick={() => setActiveView('roles')}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
               activeView === 'roles'
@@ -697,10 +706,12 @@ export default function RoleManagementPage() {
                 : 'bg-parchment text-ink border border-lichen hover:bg-stone'
             }`}
           >
-            <Users size={16} className="inline mr-2" />
+            <Users size={16} className="inline mr-2" aria-hidden="true" />
             Role Assignments
           </button>
           <button
+            type="button"
+            aria-pressed={activeView === 'field-access'}
             onClick={() => setActiveView('field-access')}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
               activeView === 'field-access'
@@ -708,10 +719,12 @@ export default function RoleManagementPage() {
                 : 'bg-parchment text-ink border border-lichen hover:bg-stone'
             }`}
           >
-            <Shield size={16} className="inline mr-2" />
+            <Shield size={16} className="inline mr-2" aria-hidden="true" />
             Field Access
           </button>
           <button
+            type="button"
+            aria-pressed={activeView === 'custom-roles'}
             onClick={() => setActiveView('custom-roles')}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
               activeView === 'custom-roles'
@@ -719,7 +732,7 @@ export default function RoleManagementPage() {
                 : 'bg-parchment text-ink border border-lichen hover:bg-stone'
             }`}
           >
-            <Copy size={16} className="inline mr-2" />
+            <Copy size={16} className="inline mr-2" aria-hidden="true" />
             Custom Roles
           </button>
         </div>
@@ -733,6 +746,8 @@ export default function RoleManagementPage() {
             {availableTabs.map((tab) => (
               <button
                 key={tab.key}
+                type="button"
+                aria-pressed={activeTab === tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === tab.key
@@ -823,14 +838,16 @@ export default function RoleManagementPage() {
       <div>
         {/* Role selector for field access */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-ink mb-2">
+          <p id="field-access-role-label" className="block text-sm font-medium text-ink mb-2">
             Select a role to configure field access
-          </label>
-          <div className="flex flex-wrap gap-2">
+          </p>
+          <div role="group" aria-labelledby="field-access-role-label" className="flex flex-wrap gap-2">
             {appRoles.map((role) => (
               <button
                 key={role.role_id}
+                type="button"
                 onClick={() => setSelectedFieldAccessRole(role.role_id)}
+                aria-pressed={selectedFieldAccessRole === role.role_id}
                 className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
                   selectedFieldAccessRole === role.role_id
                     ? 'bg-azurite/10 text-azurite border-azurite'
@@ -975,8 +992,9 @@ export default function RoleManagementPage() {
             <h3 className="text-lg font-semibold text-ink mb-4">Create Custom Role</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Clone from</label>
+                <label htmlFor="role-management-clone-from" className="block text-sm font-medium text-ink mb-1">Clone from</label>
                 <select
+                  id="role-management-clone-from"
                   value={cloneSourceId}
                   onChange={(e) => setCloneSourceId(e.target.value)}
                   className="w-full px-3 py-2 border border-lichen rounded-lg bg-parchment text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -990,8 +1008,9 @@ export default function RoleManagementPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Display name</label>
+                <label htmlFor="role-management-display-name" className="block text-sm font-medium text-ink mb-1">Display name</label>
                 <input
+                  id="role-management-display-name"
                   type="text"
                   value={cloneName}
                   onChange={(e) => setCloneName(e.target.value)}
@@ -1000,8 +1019,9 @@ export default function RoleManagementPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Description</label>
+                <label htmlFor="role-management-description" className="block text-sm font-medium text-ink mb-1">Description</label>
                 <textarea
+                  id="role-management-description"
                   value={cloneDescription}
                   onChange={(e) => setCloneDescription(e.target.value)}
                   rows={3}

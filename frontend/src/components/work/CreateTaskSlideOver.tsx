@@ -33,6 +33,8 @@ import {
   type RelatedEntityType,
 } from '../../lib/api';
 import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
+import { useFocusWhen } from '../workspace/useFocusWhen';
+import { useStableCallback } from '../workspace/useStableCallback';
 
 // Entity type labels and icons
 const ENTITY_TYPE_CONFIG: Record<string, { label: string; icon: typeof Frame; product?: string }> = {
@@ -71,9 +73,10 @@ export function CreateTaskSlideOver({
 }: CreateTaskSlideOverProps) {
   const isEditMode = !!task;
   const queryClient = useQueryClient();
+  const stableOnClose = useStableCallback(onClose);
   const { modalRef, titleId } = useAccessibleModal({
     isOpen,
-    onClose,
+    onClose: stableOnClose,
     titlePrefix: 'create-task',
   });
 
@@ -88,6 +91,8 @@ export function CreateTaskSlideOver({
   const [entitySearchQuery, setEntitySearchQuery] = useState('');
   const [showEntityDropdown, setShowEntityDropdown] = useState(false);
   const entitySearchRef = useRef<HTMLInputElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  useFocusWhen(titleInputRef, isOpen);
 
   // Fetch users for assignment dropdown
   const { data: usersData } = useQuery({
@@ -258,7 +263,6 @@ export function CreateTaskSlideOver({
           ref={modalRef}
           className="w-screen max-w-md bg-parchment shadow-xl"
           {...getModalAriaProps(titleId)}
-          onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-lichen">
@@ -267,10 +271,11 @@ export function CreateTaskSlideOver({
             </h2>
             <button
               onClick={onClose}
+              type="button"
               aria-label="Close"
-              className="p-1 text-archive hover:text-ink rounded transition-colors"
+              className="p-1 text-archive hover:text-ink rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             >
-              <X size={20} />
+              <X size={20} aria-hidden="true" />
             </button>
           </div>
 
@@ -297,9 +302,10 @@ export function CreateTaskSlideOver({
               {/* Title */}
               <div>
                 <label htmlFor="task-title" className="block text-sm font-medium text-ink mb-1">
-                  Title <span className="text-semantic-error">*</span>
+                  Title <span className="text-semantic-error" aria-hidden="true">*</span>
                 </label>
                 <input
+                  ref={titleInputRef}
                   id="task-title"
                   type="text"
                   value={title}
@@ -307,7 +313,6 @@ export function CreateTaskSlideOver({
                   placeholder="What needs to be done?"
                   className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-transparent"
                   required
-                  autoFocus
                 />
               </div>
 
@@ -381,21 +386,27 @@ export function CreateTaskSlideOver({
               {/* Related Entity (only show if not pre-selected) */}
               {!hasInitialEntity && (
                 <div className="border-t border-lichen pt-4 mt-4">
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <h3 id="task-link-heading" className="block text-sm font-medium text-ink mb-1">
                     <span className="flex items-center gap-1.5">
-                      <Link2 size={14} />
+                      <Link2 size={14} aria-hidden="true" />
                       Link to Record
                     </span>
-                  </label>
-                  <p className="text-xs text-archive mb-2">
+                  </h3>
+                  <p id="task-link-hint" className="text-xs text-archive mb-2">
                     Optionally link this task to a record
                   </p>
 
                   {/* Entity Type Selector — filtered by product */}
-                  <div className="flex gap-2 mb-2 flex-wrap">
+                  <div
+                    role="group"
+                    aria-labelledby="task-link-heading"
+                    aria-describedby="task-link-hint"
+                    className="flex gap-2 mb-2 flex-wrap"
+                  >
                     <button
                       type="button"
                       onClick={() => handleEntityTypeChange('')}
+                      aria-pressed={relatedEntityType === ''}
                       className={cn(
                         'px-3 py-1.5 text-sm rounded-lg border transition-colors',
                         relatedEntityType === ''
@@ -414,6 +425,7 @@ export function CreateTaskSlideOver({
                           key={type}
                           type="button"
                           onClick={() => handleEntityTypeChange(type as RelatedEntityType)}
+                          aria-pressed={relatedEntityType === type}
                           className={cn(
                             'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border transition-colors',
                             relatedEntityType === type
@@ -421,7 +433,7 @@ export function CreateTaskSlideOver({
                               : 'border-lichen text-archive hover:border-bark/50'
                           )}
                         >
-                          <Icon size={14} />
+                          <Icon size={14} aria-hidden="true" />
                           {config.label}
                         </button>
                       );
@@ -441,18 +453,20 @@ export function CreateTaskSlideOver({
                             <button
                               type="button"
                               onClick={handleClearEntity}
+                              aria-label={`Remove link to ${selectedEntityLabel}`}
                               className="p-1 text-archive hover:text-ink rounded transition-colors"
                             >
-                              <X size={14} />
+                              <X size={14} aria-hidden="true" />
                             </button>
                           </div>
                         ) : (
                           <>
                             <div className="relative">
-                              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-archive" />
+                              <Search size={16} aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-archive" />
                               <input
                                 ref={entitySearchRef}
                                 type="text"
+                                aria-label={`Search ${config?.label.toLowerCase()}s to link`}
                                 value={entitySearchQuery}
                                 onChange={(e) => {
                                   setEntitySearchQuery(e.target.value);
@@ -505,7 +519,7 @@ export function CreateTaskSlideOver({
 
               {/* Error message */}
               {saveError && (
-                <div className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-lg text-sm text-semantic-error">
+                <div role="alert" className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-lg text-sm text-semantic-error">
                   Failed to {isEditMode ? 'update' : 'create'} task. Please try again.
                 </div>
               )}

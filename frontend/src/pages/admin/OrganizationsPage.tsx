@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Checkbox from '../../components/Checkbox';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import {
@@ -32,6 +32,9 @@ import { getDefaultLandingPath } from '../../hooks/useActiveProduct';
 import { logger } from '../../lib/logger';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
 import { formatDateShort } from '@/lib/formatters';
+import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
+import { useStableCallback } from '../../components/workspace/useStableCallback';
+import { useFocusWhen } from '../../components/workspace/useFocusWhen';
 
 // Types for organization list
 interface StorageInfo {
@@ -158,10 +161,6 @@ export default function OrganizationsPage() {
     }
   }, [isCreateOpen]);
 
-  // Redirect if not authorized
-  if (!hasPlatformAdmin) {
-    return <Navigate to={orgId ? getDefaultLandingPath(orgId, authApplications) : '/'} replace />;
-  }
 
   const loadOrganizations = async () => {
     try {
@@ -454,6 +453,34 @@ export default function OrganizationsPage() {
     setIsCreateOpen(false);
     resetForm();
   };
+
+
+  // Dialog semantics, focus trap and Escape for the three overlays below.
+  const stableCloseCreate = useStableCallback(closeSlideOver);
+  const stableCloseEdit = useStableCallback(closeEditSlideOver);
+  const stableCloseDelete = useStableCallback(closeDeleteModal);
+  const { modalRef: createModalRef, titleId: createModalTitleId } = useAccessibleModal({
+    isOpen: isCreateOpen,
+    onClose: stableCloseCreate,
+    titlePrefix: 'create-organization',
+  });
+  const { modalRef: editModalRef, titleId: editModalTitleId } = useAccessibleModal({
+    isOpen: !!editingOrg,
+    onClose: stableCloseEdit,
+    titlePrefix: 'edit-organization',
+  });
+  const { modalRef: deleteModalRef, titleId: deleteModalTitleId } = useAccessibleModal({
+    isOpen: !!deletingOrg,
+    onClose: stableCloseDelete,
+    titlePrefix: 'delete-organization',
+  });
+  const deleteConfirmInputRef = useRef<HTMLInputElement>(null);
+  useFocusWhen(deleteConfirmInputRef, !!deletingOrg);
+
+  // Redirect if not authorized (after all hooks)
+  if (!hasPlatformAdmin) {
+    return <Navigate to={orgId ? getDefaultLandingPath(orgId, authApplications) : '/'} replace />;
+  }
 
   if (loading) {
     return (
@@ -778,19 +805,25 @@ export default function OrganizationsPage() {
       {/* Create Organization Slide-over */}
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden">
-          <div className="absolute inset-0 bg-ink/30" onClick={closeSlideOver} />
-          <div className="absolute inset-y-0 right-0 max-w-2xl w-full bg-parchment border-l border-lichen flex flex-col">
+          <div aria-hidden="true" className="absolute inset-0 bg-ink/30" onClick={closeSlideOver} />
+          <div
+            ref={createModalRef}
+            {...getModalAriaProps(createModalTitleId)}
+            className="absolute inset-y-0 right-0 max-w-2xl w-full bg-parchment border-l border-lichen flex flex-col"
+          >
             {/* Header */}
             <div className="px-6 py-4 border-b border-lichen flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Building2 className="w-6 h-6 text-forest" />
-                <h2 className="text-lg font-semibold text-ink">Create Organization</h2>
+                <Building2 className="w-6 h-6 text-forest" aria-hidden="true" />
+                <h2 id={createModalTitleId} className="text-lg font-semibold text-ink">Create Organization</h2>
               </div>
               <button
+                type="button"
                 onClick={closeSlideOver}
+                aria-label="Close"
                 className="p-2 text-ink/50 hover:text-ink hover:bg-lichen/30 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 
@@ -876,10 +909,11 @@ export default function OrganizationsPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-ink mb-1">
+                        <label htmlFor="organizations-organization-name-2" className="block text-sm font-medium text-ink mb-1">
                           Organization Name <span className="text-semantic-error">*</span>
                         </label>
                         <input
+                          id="organizations-organization-name-2"
                           type="text"
                           value={orgName}
                           onChange={(e) => setOrgName(e.target.value)}
@@ -889,10 +923,11 @@ export default function OrganizationsPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-ink mb-1">
+                        <label htmlFor="organizations-slug-auto-generated-if" className="block text-sm font-medium text-ink mb-1">
                           Slug <span className="text-ink/50 text-xs">(auto-generated if empty)</span>
                         </label>
                         <input
+                          id="organizations-slug-auto-generated-if"
                           type="text"
                           value={orgSlug}
                           onChange={(e) => setOrgSlug(e.target.value)}
@@ -949,8 +984,9 @@ export default function OrganizationsPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-ink mb-1">Start Date</label>
+                        <label htmlFor="organizations-start-date" className="block text-sm font-medium text-ink mb-1">Start Date</label>
                         <input
+                          id="organizations-start-date"
                           type="date"
                           value={contractStart}
                           onChange={(e) => setContractStart(e.target.value)}
@@ -958,8 +994,9 @@ export default function OrganizationsPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-ink mb-1">End Date</label>
+                        <label htmlFor="organizations-end-date" className="block text-sm font-medium text-ink mb-1">End Date</label>
                         <input
+                          id="organizations-end-date"
                           type="date"
                           value={contractEnd}
                           onChange={(e) => setContractEnd(e.target.value)}
@@ -967,8 +1004,9 @@ export default function OrganizationsPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-ink mb-1">Annual Value ($)</label>
+                        <label htmlFor="organizations-annual-value" className="block text-sm font-medium text-ink mb-1">Annual Value ($)</label>
                         <input
+                          id="organizations-annual-value"
                           type="number"
                           value={annualValue}
                           onChange={(e) => setAnnualValue(e.target.value)}
@@ -988,10 +1026,11 @@ export default function OrganizationsPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-ink mb-1">
+                        <label htmlFor="organizations-name" className="block text-sm font-medium text-ink mb-1">
                           Name <span className="text-semantic-error">*</span>
                         </label>
                         <input
+                          id="organizations-name"
                           type="text"
                           value={adminName}
                           onChange={(e) => setAdminName(e.target.value)}
@@ -1001,10 +1040,11 @@ export default function OrganizationsPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-ink mb-1">
+                        <label htmlFor="organizations-email" className="block text-sm font-medium text-ink mb-1">
                           Email <span className="text-semantic-error">*</span>
                         </label>
                         <input
+                          id="organizations-email"
                           type="email"
                           value={adminEmail}
                           onChange={(e) => setAdminEmail(e.target.value)}
@@ -1018,8 +1058,9 @@ export default function OrganizationsPage() {
 
                   {/* Sandbox Demo Data Section */}
                   <div className="bg-parchment/50 rounded-lg border border-lichen p-4">
-                    <label className="flex items-start gap-3 cursor-pointer">
+                    <label htmlFor="organizations-include-sandbox-demo-data" className="flex items-start gap-3 cursor-pointer">
                       <Checkbox
+                        id="organizations-include-sandbox-demo-data"
                         checked={withDemoData}
                         onChange={() => setWithDemoData(!withDemoData)}
                       />
@@ -1053,8 +1094,9 @@ export default function OrganizationsPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-ink mb-1">Scheduled Call</label>
+                        <label htmlFor="organizations-scheduled-call" className="block text-sm font-medium text-ink mb-1">Scheduled Call</label>
                         <input
+                          id="organizations-scheduled-call"
                           type="datetime-local"
                           value={onboardingDatetime}
                           onChange={(e) => setOnboardingDatetime(e.target.value)}
@@ -1062,8 +1104,9 @@ export default function OrganizationsPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-ink mb-1">CSM Name</label>
+                        <label htmlFor="organizations-csm-name" className="block text-sm font-medium text-ink mb-1">CSM Name</label>
                         <input
+                          id="organizations-csm-name"
                           type="text"
                           value={csmName}
                           onChange={(e) => setCsmName(e.target.value)}
@@ -1072,8 +1115,9 @@ export default function OrganizationsPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-ink mb-1">CSM Email</label>
+                        <label htmlFor="organizations-csm-email" className="block text-sm font-medium text-ink mb-1">CSM Email</label>
                         <input
+                          id="organizations-csm-email"
                           type="email"
                           value={csmEmail}
                           onChange={(e) => setCsmEmail(e.target.value)}
@@ -1121,19 +1165,25 @@ export default function OrganizationsPage() {
       {/* Edit Organization Slide-over */}
       {editingOrg && (
         <div className="fixed inset-0 z-50 overflow-hidden">
-          <div className="absolute inset-0 bg-ink/30" onClick={closeEditSlideOver} />
-          <div className="absolute inset-y-0 right-0 max-w-lg w-full bg-parchment border-l border-lichen flex flex-col">
+          <div aria-hidden="true" className="absolute inset-0 bg-ink/30" onClick={closeEditSlideOver} />
+          <div
+            ref={editModalRef}
+            {...getModalAriaProps(editModalTitleId)}
+            className="absolute inset-y-0 right-0 max-w-lg w-full bg-parchment border-l border-lichen flex flex-col"
+          >
             {/* Header */}
             <div className="px-6 py-4 border-b border-lichen flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Pencil className="w-5 h-5 text-forest" />
-                <h2 className="text-lg font-semibold text-ink">Edit Organization</h2>
+                <Pencil className="w-5 h-5 text-forest" aria-hidden="true" />
+                <h2 id={editModalTitleId} className="text-lg font-semibold text-ink">Edit Organization</h2>
               </div>
               <button
+                type="button"
                 onClick={closeEditSlideOver}
+                aria-label="Close"
                 className="p-2 text-ink/50 hover:text-ink hover:bg-lichen/30 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 
@@ -1148,10 +1198,11 @@ export default function OrganizationsPage() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <label htmlFor="organizations-organization-name" className="block text-sm font-medium text-ink mb-1">
                     Organization Name <span className="text-semantic-error">*</span>
                   </label>
                   <input
+                    id="organizations-organization-name"
                     type="text"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
@@ -1161,10 +1212,11 @@ export default function OrganizationsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <label htmlFor="organizations-slug" className="block text-sm font-medium text-ink mb-1">
                     Slug <span className="text-semantic-error">*</span>
                   </label>
                   <input
+                    id="organizations-slug"
                     type="text"
                     value={editSlug}
                     onChange={(e) => setEditSlug(e.target.value)}
@@ -1174,8 +1226,9 @@ export default function OrganizationsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">Status</label>
+                  <label htmlFor="organizations-status" className="block text-sm font-medium text-ink mb-1">Status</label>
                   <select
+                    id="organizations-status"
                     value={editStatus}
                     onChange={(e) => setEditStatus(e.target.value)}
                     className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-forest"
@@ -1219,13 +1272,18 @@ export default function OrganizationsPage() {
       {/* Delete Confirmation Modal */}
       {deletingOrg && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-ink/30" onClick={closeDeleteModal} />
-          <div className="relative bg-parchment rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+          <div aria-hidden="true" className="absolute inset-0 bg-ink/30" onClick={closeDeleteModal} />
+          <div
+            ref={deleteModalRef}
+            {...getModalAriaProps(deleteModalTitleId)}
+            role="alertdialog"
+            className="relative bg-parchment rounded-xl shadow-xl max-w-md w-full mx-4 p-6"
+          >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-semantic-error/10 rounded-full flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-semantic-error" />
+                <AlertTriangle className="w-5 h-5 text-semantic-error" aria-hidden="true" />
               </div>
-              <h3 className="text-lg font-semibold text-ink">Delete Organization</h3>
+              <h2 id={deleteModalTitleId} className="text-lg font-semibold text-ink">Delete Organization</h2>
             </div>
 
             <p className="text-ink/70 mb-2">
@@ -1239,22 +1297,23 @@ export default function OrganizationsPage() {
             </ul>
 
             {deleteError && (
-              <div className="mb-4 p-3 bg-semantic-error/10 border border-semantic-error/20 rounded-lg text-sm text-semantic-error">
+              <div role="alert" className="mb-4 p-3 bg-semantic-error/10 border border-semantic-error/20 rounded-lg text-sm text-semantic-error">
                 {deleteError}
               </div>
             )}
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor="organizations-delete-confirm" className="block text-sm font-medium text-ink mb-1">
                 Type <span className="font-mono text-semantic-error">{deletingOrg.name}</span> to confirm
               </label>
               <input
+                ref={deleteConfirmInputRef}
+                id="organizations-delete-confirm"
                 type="text"
                 value={deleteConfirmName}
                 onChange={(e) => setDeleteConfirmName(e.target.value)}
                 placeholder={deletingOrg.name}
                 className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-semantic-error/30 focus-visible:ring-offset-2 focus-visible:border-semantic-error"
-                autoFocus
               />
             </div>
 

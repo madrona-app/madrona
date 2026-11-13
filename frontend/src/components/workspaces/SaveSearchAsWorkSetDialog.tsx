@@ -5,7 +5,7 @@
  * and creates a dynamic workspace backed by the saved search.
  */
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Layers, Search, Filter, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -15,6 +15,8 @@ import { createWorkspace } from '../../lib/api';
 import type { CollectionsSearchFilters } from '../../lib/schemas';
 import { formatNumber } from '../../lib/formatters';
 import { ModalPortal } from '../ModalPortal';
+import { useFocusWhen } from '../workspace/useFocusWhen';
+import { useStableCallback } from '../workspace/useStableCallback';
 
 interface SaveSearchAsWorkSetDialogProps {
   isOpen: boolean;
@@ -36,11 +38,14 @@ export default function SaveSearchAsWorkSetDialog({
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
+  const stableOnClose = useStableCallback(onClose);
   const { modalRef, titleId } = useAccessibleModal({
     isOpen,
-    onClose,
+    onClose: stableOnClose,
     titlePrefix: 'save-search-dialog',
   });
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  useFocusWhen(nameInputRef, isOpen);
 
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -115,7 +120,7 @@ export default function SaveSearchAsWorkSetDialog({
   return (
     <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-ink/40" onClick={handleClose} />
+      <div aria-hidden="true" className="fixed inset-0 bg-ink/40" onClick={handleClose} />
       <div
         ref={modalRef}
         {...getModalAriaProps(titleId)}
@@ -130,10 +135,12 @@ export default function SaveSearchAsWorkSetDialog({
             </h2>
           </div>
           <button
+            type="button"
             onClick={handleClose}
-            className="p-1 rounded hover:bg-stone/50 text-archive"
+            aria-label="Close"
+            className="p-1 rounded hover:bg-stone/50 text-archive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
           >
-            <X size={18} />
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
 
@@ -174,21 +181,21 @@ export default function SaveSearchAsWorkSetDialog({
                   Work Set Name
                 </label>
                 <input
+                  ref={nameInputRef}
                   id="workset-name"
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g., Paintings needing conservation"
                   className="input w-full"
-                  autoFocus
                 />
               </div>
 
               {/* Query summary */}
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">
+                <h3 className="block text-sm font-medium text-ink mb-1">
                   Saved Search
-                </label>
+                </h3>
                 <div className="bg-stone/20 border border-lichen rounded-lg p-3 space-y-1.5">
                   {querySummary.length > 0 ? (
                     querySummary.map((line, i) => (
