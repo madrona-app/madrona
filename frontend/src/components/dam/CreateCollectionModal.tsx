@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import Checkbox from '../Checkbox';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, FolderPlus, Lock, Users, Globe } from 'lucide-react';
@@ -38,6 +38,7 @@ export function CreateCollectionModal({
   onClose,
   onCreated,
 }: CreateCollectionModalProps) {
+  const fid = useId();
   const queryClient = useQueryClient();
   const { modalRef, titleId, descriptionId } = useAccessibleModal({
     isOpen: true,
@@ -75,19 +76,18 @@ export function CreateCollectionModal({
 
   return (
     <ModalPortal>
-    <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50">
+      <div aria-hidden="true" className="absolute inset-0" onClick={onClose} />
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation only: keeps dialog clicks from bubbling to React ancestors through the portal */}
       <div
         ref={modalRef}
         {...getModalAriaProps(titleId, descriptionId)}
-        className="bg-parchment rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="relative bg-parchment rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-6 py-4 border-b border-lichen">
           <h2 id={titleId} className="text-lg font-semibold text-ink flex items-center gap-2">
-            <FolderPlus size={20} />
+            <FolderPlus size={20} aria-hidden="true" />
             Create Lightbox
           </h2>
         </div>
@@ -99,24 +99,25 @@ export function CreateCollectionModal({
 
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">
+            <label htmlFor={`${fid}-name`} className="block text-sm font-medium text-ink mb-1">
               Name <span className="text-semantic-error">*</span>
             </label>
             <input
+              id={`${fid}-name`}
               type="text"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
               placeholder="My Lightbox"
               required
-              autoFocus
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">Description</label>
+            <label htmlFor={`${fid}-description`} className="block text-sm font-medium text-ink mb-1">Description</label>
             <textarea
+              id={`${fid}-description`}
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -126,8 +127,8 @@ export function CreateCollectionModal({
           </div>
 
           {/* Visibility */}
-          <div>
-            <label className="block text-sm font-medium text-ink mb-2">Visibility</label>
+          <fieldset>
+            <legend className="block text-sm font-medium text-ink mb-2">Visibility</legend>
             <div className="space-y-2">
               {VISIBILITY_OPTIONS.map((option) => {
                 const Icon = option.icon;
@@ -148,7 +149,7 @@ export function CreateCollectionModal({
                       onChange={(e) => setForm({ ...form, visibility: e.target.value })}
                       className="mt-1"
                     />
-                    <Icon size={18} className="mt-0.5 text-archive" />
+                    <Icon size={18} className="mt-0.5 text-archive" aria-hidden="true" />
                     <div>
                       <div className="font-medium text-ink">{option.label}</div>
                       <div className="text-sm text-archive">{option.description}</div>
@@ -157,13 +158,14 @@ export function CreateCollectionModal({
                 );
               })}
             </div>
-          </div>
+          </fieldset>
 
           {/* Consent Clearance */}
           {form.visibility === 'public' && (
             <div className="p-3 bg-semantic-warning/10 border border-semantic-warning/30 rounded-sm">
-              <label className="flex items-start gap-3">
+              <label htmlFor={`${fid}-consent`} className="flex items-start gap-3">
                 <Checkbox
+                  id={`${fid}-consent`}
                   checked={form.consent_clearance_required}
                   onChange={(e) =>
                     setForm({ ...form, consent_clearance_required: e.target.checked })

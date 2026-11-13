@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Users, Shield, UserPlus, Search, Check } from 'lucide-react';
 import { getOrganizationUsers, getRoles } from '../../lib/api';
 import { MadronaLoader } from '../ui/MadronaLoader';
+import { handleTabListKeyDown } from './tabListKeyboard';
 
 type PrincipalType = 'user' | 'role';
 type ShareRole = 'viewer' | 'editor';
@@ -33,6 +34,11 @@ export function TeamShareSelector({
   disabled = false,
 }: TeamShareSelectorProps) {
   const [activeTab, setActiveTab] = useState<PrincipalType>('user');
+  const fid = useId();
+  const selectTab = (tab: PrincipalType) => {
+    setActiveTab(tab);
+    setSelectedPrincipal(null);
+  };
   const [search, setSearch] = useState('');
   const [selectedRole, setSelectedRole] = useState<ShareRole>('viewer');
   const [selectedPrincipal, setSelectedPrincipal] = useState<{ type: PrincipalType; id: string; name: string } | null>(null);
@@ -87,12 +93,16 @@ export function TeamShareSelector({
   return (
     <div className="space-y-4">
       {/* Tab Selector */}
-      <div className="flex border-b">
+      <div role="tablist" aria-label="Share with" className="flex border-b">
         <button
-          onClick={() => {
-            setActiveTab('user');
-            setSelectedPrincipal(null);
-          }}
+          type="button"
+          role="tab"
+          id={`${fid}-tab-user`}
+          aria-selected={activeTab === 'user'}
+          aria-controls={`${fid}-panel`}
+          tabIndex={activeTab === 'user' ? 0 : -1}
+          onClick={() => selectTab('user')}
+          onKeyDown={(e) => handleTabListKeyDown(e, ['user', 'role'] as const, activeTab, selectTab)}
           disabled={disabled}
           className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium border-b-2 -mb-px ${
             activeTab === 'user'
@@ -104,10 +114,14 @@ export function TeamShareSelector({
           Users
         </button>
         <button
-          onClick={() => {
-            setActiveTab('role');
-            setSelectedPrincipal(null);
-          }}
+          type="button"
+          role="tab"
+          id={`${fid}-tab-role`}
+          aria-selected={activeTab === 'role'}
+          aria-controls={`${fid}-panel`}
+          tabIndex={activeTab === 'role' ? 0 : -1}
+          onClick={() => selectTab('role')}
+          onKeyDown={(e) => handleTabListKeyDown(e, ['user', 'role'] as const, activeTab, selectTab)}
           disabled={disabled}
           className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium border-b-2 -mb-px ${
             activeTab === 'role'
@@ -120,6 +134,12 @@ export function TeamShareSelector({
         </button>
       </div>
 
+      <div
+        role="tabpanel"
+        id={`${fid}-panel`}
+        aria-labelledby={`${fid}-tab-${activeTab}`}
+        className="space-y-4"
+      >
       {/* Search */}
       <div className="relative">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-archive" />
@@ -128,6 +148,7 @@ export function TeamShareSelector({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={activeTab === 'user' ? 'Search users...' : 'Search roles...'}
+          aria-label={activeTab === 'user' ? 'Search users' : 'Search roles'}
           className="input w-full pl-9"
           disabled={disabled}
         />
@@ -149,6 +170,8 @@ export function TeamShareSelector({
               {filteredUsers.map((user) => (
                 <button
                   key={user.user_id}
+                  type="button"
+                  aria-pressed={selectedPrincipal?.id === user.user_id}
                   onClick={() => handleSelect('user', user.user_id, user.name || user.email)}
                   disabled={disabled}
                   className={`w-full p-3 text-left hover:bg-stone/30 flex items-center justify-between ${
@@ -184,6 +207,8 @@ export function TeamShareSelector({
             {filteredRoles.map((role) => (
               <button
                 key={role.role_id}
+                type="button"
+                aria-pressed={selectedPrincipal?.id === role.role_id}
                 onClick={() => handleSelect('role', role.role_id, role.display_name)}
                 disabled={disabled}
                 className={`w-full p-3 text-left hover:bg-stone/30 flex items-center justify-between ${
@@ -212,14 +237,17 @@ export function TeamShareSelector({
         )}
       </div>
 
+      </div>
+
       {/* Role & Confirm */}
       {selectedPrincipal && (
         <div className="flex items-center gap-3 pt-3 border-t">
           <div className="flex-1">
-            <label className="block text-xs font-medium text-archive mb-1">
+            <label htmlFor={`${fid}-permission`} className="block text-xs font-medium text-archive mb-1">
               Permission
             </label>
             <select
+              id={`${fid}-permission`}
               value={selectedRole}
               onChange={(e) => setSelectedRole(e.target.value as ShareRole)}
               className="input w-full"

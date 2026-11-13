@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useId, useState, useEffect } from 'react';
 import Checkbox from '../Checkbox';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Scale } from 'lucide-react';
@@ -53,6 +53,7 @@ export function AddRightsModal({
 }: AddRightsModalProps) {
   const queryClient = useQueryClient();
   const isEditing = !!existingRights;
+  const fid = useId();
   const { modalRef, titleId, descriptionId } = useAccessibleModal({
     isOpen,
     onClose,
@@ -181,14 +182,13 @@ export function AddRightsModal({
 
   return (
     <ModalPortal>
-    <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50">
+      <div aria-hidden="true" className="absolute inset-0" onClick={onClose} />
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation only: keeps dialog clicks from bubbling to React ancestors through the portal */}
       <div
         ref={modalRef}
         {...getModalAriaProps(titleId, descriptionId)}
-        className="bg-parchment rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="relative bg-parchment rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -215,10 +215,11 @@ export function AddRightsModal({
 
           {/* Rights Type */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">
+            <label htmlFor={`${fid}-rights-type`} className="block text-sm font-medium text-ink mb-1">
               Rights Type <span className="text-semantic-error">*</span>
             </label>
             <select
+              id={`${fid}-rights-type`}
               value={formData.rights_type}
               onChange={(e) => setFormData({ ...formData, rights_type: e.target.value as typeof formData.rights_type })}
               className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -233,10 +234,11 @@ export function AddRightsModal({
 
           {/* Rights Status */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">
+            <label htmlFor={`${fid}-rights-status`} className="block text-sm font-medium text-ink mb-1">
               Rights Status
             </label>
             <select
+              id={`${fid}-rights-status`}
               value={formData.rights_status}
               onChange={(e) => setFormData({ ...formData, rights_status: e.target.value })}
               className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -251,10 +253,11 @@ export function AddRightsModal({
 
           {/* Rights Holder */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">
+            <label htmlFor={`${fid}-rights-holder`} className="block text-sm font-medium text-ink mb-1">
               Rights Holder
             </label>
             <input
+              id={`${fid}-rights-holder`}
               type="text"
               value={formData.rights_holder}
               onChange={(e) => setFormData({ ...formData, rights_holder: e.target.value })}
@@ -265,10 +268,11 @@ export function AddRightsModal({
 
           {/* License Type */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">
+            <label htmlFor={`${fid}-license-type`} className="block text-sm font-medium text-ink mb-1">
               License Type
             </label>
             <select
+              id={`${fid}-license-type`}
               value={formData.license_type}
               onChange={(e) => setFormData({ ...formData, license_type: e.target.value })}
               className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -283,10 +287,11 @@ export function AddRightsModal({
 
           {/* License URL */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">
+            <label htmlFor={`${fid}-license-url`} className="block text-sm font-medium text-ink mb-1">
               License URL
             </label>
             <input
+              id={`${fid}-license-url`}
               type="url"
               value={formData.license_url}
               onChange={(e) => setFormData({ ...formData, license_url: e.target.value })}
@@ -297,10 +302,11 @@ export function AddRightsModal({
 
           {/* Rights Statement */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">
+            <label htmlFor={`${fid}-rights-statement`} className="block text-sm font-medium text-ink mb-1">
               Rights Statement
             </label>
             <textarea
+              id={`${fid}-rights-statement`}
               value={formData.rights_statement}
               onChange={(e) => setFormData({ ...formData, rights_statement: e.target.value })}
               placeholder="Additional rights information or conditions..."
@@ -311,10 +317,11 @@ export function AddRightsModal({
 
           {/* Territory */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">
+            <label htmlFor={`${fid}-territory`} className="block text-sm font-medium text-ink mb-1">
               Territory
             </label>
             <input
+              id={`${fid}-territory`}
               type="text"
               value={formData.territory}
               onChange={(e) => setFormData({ ...formData, territory: e.target.value })}
@@ -326,10 +333,11 @@ export function AddRightsModal({
           {/* Date Range */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${fid}-start-date`} className="block text-sm font-medium text-ink mb-1">
                 Start Date
               </label>
               <input
+                id={`${fid}-start-date`}
                 type="date"
                 value={formData.start_date}
                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
@@ -337,10 +345,11 @@ export function AddRightsModal({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${fid}-end-date`} className="block text-sm font-medium text-ink mb-1">
                 End Date
               </label>
               <input
+                id={`${fid}-end-date`}
                 type="date"
                 value={formData.end_date}
                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
@@ -351,11 +360,12 @@ export function AddRightsModal({
 
           {/* Usage Restrictions */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">
+            <label htmlFor={`${fid}-restriction`} className="block text-sm font-medium text-ink mb-1">
               Usage Restrictions
             </label>
             <div className="flex gap-2">
               <input
+                id={`${fid}-restriction`}
                 type="text"
                 value={restrictionInput}
                 onChange={(e) => setRestrictionInput(e.target.value)}
@@ -382,9 +392,10 @@ export function AddRightsModal({
                     <button
                       type="button"
                       onClick={() => removeRestriction(i)}
+                      aria-label={`Remove restriction ${restriction}`}
                       className="hover:text-semantic-warning"
                     >
-                      <X size={14} />
+                      <X size={14} aria-hidden="true" />
                     </button>
                   </span>
                 ))}

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useId, useState, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Upload, Loader2 } from 'lucide-react';
 import {
@@ -46,6 +46,7 @@ export function AddConsentModal({
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isEditing = !!existingConsent;
+  const fid = useId();
   const { modalRef, titleId, descriptionId } = useAccessibleModal({
     isOpen,
     onClose,
@@ -125,14 +126,13 @@ export function AddConsentModal({
 
   return (
     <ModalPortal>
-    <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50">
+      <div aria-hidden="true" className="absolute inset-0" onClick={onClose} />
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation only: keeps dialog clicks from bubbling to React ancestors through the portal */}
       <div
         ref={modalRef}
         {...getModalAriaProps(titleId, descriptionId)}
-        className="bg-parchment rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="relative bg-parchment rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-6 py-4 border-b border-lichen">
@@ -148,10 +148,11 @@ export function AddConsentModal({
 
           {/* Subject Name */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">
+            <label htmlFor={`${fid}-subject-name`} className="block text-sm font-medium text-ink mb-1">
               Subject Name <span className="text-semantic-error">*</span>
             </label>
             <input
+              id={`${fid}-subject-name`}
               type="text"
               value={form.subject_name}
               onChange={(e) => setForm({ ...form, subject_name: e.target.value })}
@@ -163,8 +164,9 @@ export function AddConsentModal({
 
           {/* Subject Role */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">Subject Role</label>
+            <label htmlFor={`${fid}-subject-role`} className="block text-sm font-medium text-ink mb-1">Subject Role</label>
             <input
+              id={`${fid}-subject-role`}
               type="text"
               value={form.subject_role}
               onChange={(e) => setForm({ ...form, subject_role: e.target.value })}
@@ -176,8 +178,9 @@ export function AddConsentModal({
           {/* Consent Type & Scope */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">Consent Type</label>
+              <label htmlFor={`${fid}-consent-type`} className="block text-sm font-medium text-ink mb-1">Consent Type</label>
               <select
+                id={`${fid}-consent-type`}
                 value={form.consent_type}
                 onChange={(e) => setForm({ ...form, consent_type: e.target.value as typeof form.consent_type })}
                 className="w-full px-3 py-2 border border-lichen rounded-sm text-sm bg-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -191,8 +194,9 @@ export function AddConsentModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">Consent Scope</label>
+              <label htmlFor={`${fid}-consent-scope`} className="block text-sm font-medium text-ink mb-1">Consent Scope</label>
               <select
+                id={`${fid}-consent-scope`}
                 value={form.consent_scope}
                 onChange={(e) => setForm({ ...form, consent_scope: e.target.value as typeof form.consent_scope })}
                 className="w-full px-3 py-2 border border-lichen rounded-sm text-sm bg-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -209,8 +213,9 @@ export function AddConsentModal({
           {/* Dates */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">Consent Date</label>
+              <label htmlFor={`${fid}-consent-date`} className="block text-sm font-medium text-ink mb-1">Consent Date</label>
               <input
+                id={`${fid}-consent-date`}
                 type="date"
                 value={form.consent_date}
                 onChange={(e) => setForm({ ...form, consent_date: e.target.value })}
@@ -219,8 +224,9 @@ export function AddConsentModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">Expiry Date</label>
+              <label htmlFor={`${fid}-expiry-date`} className="block text-sm font-medium text-ink mb-1">Expiry Date</label>
               <input
+                id={`${fid}-expiry-date`}
                 type="date"
                 value={form.expiry_date}
                 onChange={(e) => setForm({ ...form, expiry_date: e.target.value })}
@@ -234,7 +240,7 @@ export function AddConsentModal({
           {/* Document Upload */}
           {!isEditing && (
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">Consent Document</label>
+              <span className="block text-sm font-medium text-ink mb-1">Consent Document</span>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -248,9 +254,10 @@ export function AddConsentModal({
                   <button
                     type="button"
                     onClick={() => setDocumentFile(null)}
+                    aria-label={`Remove ${documentFile.name}`}
                     className="p-1 hover:bg-parchment rounded"
                   >
-                    <X size={14} />
+                    <X size={14} aria-hidden="true" />
                   </button>
                 </div>
               ) : (
@@ -270,8 +277,9 @@ export function AddConsentModal({
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">Notes</label>
+            <label htmlFor={`${fid}-notes`} className="block text-sm font-medium text-ink mb-1">Notes</label>
             <textarea
+              id={`${fid}-notes`}
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
               className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"

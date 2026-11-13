@@ -8,7 +8,7 @@
  * - Add single or multiple assets at once
  */
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Layers, Plus, Check, Search, Lock, Users, Globe, Image } from 'lucide-react';
 import { useOrganization } from '../../contexts/useOrganization';
@@ -42,6 +42,12 @@ export default function AddToMediaWorkspaceDialog({
 
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(null);
   const [showCreateNew, setShowCreateNew] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  // Move focus to the name field when the user switches to "create new"
+  useEffect(() => {
+    if (showCreateNew) nameInputRef.current?.focus();
+  }, [showCreateNew]);
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -167,15 +173,14 @@ export default function AddToMediaWorkspaceDialog({
 
   return (
     <ModalPortal>
-    <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
-      onClick={handleClose}
-    >
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50">
+      <div aria-hidden="true" className="absolute inset-0" onClick={handleClose} />
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation only: keeps dialog clicks from bubbling to React ancestors through the portal */}
       <div
         ref={modalRef}
         {...getModalAriaProps(titleId, descriptionId)}
         onClick={(e) => e.stopPropagation()}
-        className="bg-parchment rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col"
+        className="relative bg-parchment rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col"
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-lichen">
@@ -226,6 +231,7 @@ export default function AddToMediaWorkspaceDialog({
                     <input
                       type="text"
                       placeholder="Search work sets..."
+                      aria-label="Search work sets"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-9 pr-4 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -234,6 +240,7 @@ export default function AddToMediaWorkspaceDialog({
 
                   {/* Create new button */}
                   <button
+                    type="button"
                     onClick={() => setShowCreateNew(true)}
                     className="w-full flex items-center gap-3 p-3 border border-dashed border-lichen rounded-sm hover:border-bark/30 hover:bg-stone/30"
                   >
@@ -259,6 +266,8 @@ export default function AddToMediaWorkspaceDialog({
                       filteredWorkspaces.map((ws) => (
                         <button
                           key={ws.workspace_id}
+                          type="button"
+                          aria-pressed={selectedWorkspaceId === ws.workspace_id}
                           onClick={() => setSelectedWorkspaceId(ws.workspace_id)}
                           className={cn(
                             'w-full flex items-center gap-3 p-3 border rounded-sm text-left transition-colors',
@@ -330,13 +339,13 @@ export default function AddToMediaWorkspaceDialog({
                       Work Set Name
                     </label>
                     <input
+                      ref={nameInputRef}
                       id="workspace-name"
                       type="text"
                       value={newWorkspaceName}
                       onChange={(e) => setNewWorkspaceName(e.target.value)}
                       placeholder="e.g., Website Redesign Assets"
                       className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
-                      autoFocus
                     />
                   </div>
 

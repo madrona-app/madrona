@@ -144,6 +144,10 @@ export function RightsTabContent({
               {media.is_published ? 'Published' : 'Not published'}
             </span>
             <button
+              type="button"
+              role="switch"
+              aria-checked={!!media.is_published}
+              aria-label="Publicly published"
               onClick={async () => {
                 try {
                   if (media.is_published) {
@@ -156,7 +160,7 @@ export function RightsTabContent({
                   logger.error('Failed to toggle publish status:', err);
                 }
               }}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 ${
                 media.is_published ? 'bg-semantic-success' : 'bg-stone'
               }`}
             >

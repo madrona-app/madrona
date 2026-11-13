@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Lightbulb,
@@ -56,6 +56,7 @@ function QuickMapModal({
   tagDefinitions: MediaTagDefinition[];
 }) {
   const queryClient = useQueryClient();
+  const fid = useId();
   const [definitionId, setDefinitionId] = useState('');
   const [mappedValue, setMappedValue] = useState(suggestion?.ai_tag_value || '');
 
@@ -105,7 +106,7 @@ function QuickMapModal({
 
           {/* Source */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-2">AI Detected Tag</label>
+            <p className="block text-sm font-medium text-ink mb-2">AI Detected Tag</p>
             <div className="flex items-center gap-3 p-3 bg-stone rounded-lg">
               <span className={`p-1.5 rounded ${typeConfig.color.split(' ')[1]}`}>
                 <TypeIcon size={16} className={typeConfig.color.split(' ')[0]} />
@@ -122,10 +123,11 @@ function QuickMapModal({
 
           {/* Target Definition */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-2">
+            <label htmlFor={`${fid}-definition`} className="block text-sm font-medium text-ink mb-2">
               Map to Tag Definition <span className="text-semantic-error">*</span>
             </label>
             <select
+              id={`${fid}-definition`}
               value={definitionId}
               onChange={(e) => setDefinitionId(e.target.value)}
               className="w-full px-3 py-2 border border-lichen rounded-md text-sm focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -143,10 +145,11 @@ function QuickMapModal({
 
           {/* Mapped Value */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-2">
+            <label htmlFor={`${fid}-mapped-value`} className="block text-sm font-medium text-ink mb-2">
               Tag Value <span className="text-semantic-error">*</span>
             </label>
             <input
+              id={`${fid}-mapped-value`}
               type="text"
               value={mappedValue}
               onChange={(e) => setMappedValue(e.target.value)}

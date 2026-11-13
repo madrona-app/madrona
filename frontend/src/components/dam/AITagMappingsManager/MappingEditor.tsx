@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import Checkbox from '../../Checkbox';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, Loader2, Save } from 'lucide-react';
@@ -17,6 +17,7 @@ export function MappingEditor({
   mapping,
   tagDefinitions,
 }: MappingEditorProps) {
+  const fid = useId();
   const queryClient = useQueryClient();
   const isEditing = !!mapping;
 
@@ -105,8 +106,9 @@ export function MappingEditor({
             </h3>
 
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">Tag Type</label>
+              <label htmlFor={`${fid}-tag-type`} className="block text-sm font-medium text-ink mb-1">Tag Type</label>
               <select
+                id={`${fid}-tag-type`}
                 value={aiTagType}
                 onChange={(e) => setAiTagType(e.target.value as AITagType)}
                 disabled={isEditing}
@@ -121,10 +123,11 @@ export function MappingEditor({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${fid}-ai-value`} className="block text-sm font-medium text-ink mb-1">
                 AI Tag Value <span className="text-semantic-error">*</span>
               </label>
               <input
+                id={`${fid}-ai-value`}
                 type="text"
                 value={aiTagValue}
                 onChange={(e) => setAiTagValue(e.target.value)}
@@ -146,10 +149,11 @@ export function MappingEditor({
             </h3>
 
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${fid}-definition`} className="block text-sm font-medium text-ink mb-1">
                 Tag Definition <span className="text-semantic-error">*</span>
               </label>
               <select
+                id={`${fid}-definition`}
                 value={definitionId}
                 onChange={(e) => {
                   setDefinitionId(e.target.value);
@@ -173,10 +177,11 @@ export function MappingEditor({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${fid}-mapped-value`} className="block text-sm font-medium text-ink mb-1">
                 Mapped Value <span className="text-semantic-error">*</span>
               </label>
               <input
+                id={`${fid}-mapped-value`}
                 type="text"
                 value={mappedValue}
                 onChange={(e) => setMappedValue(e.target.value)}
@@ -204,8 +209,9 @@ export function MappingEditor({
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-ink border-b border-lichen pb-2">Options</h3>
 
-            <label className="flex items-start gap-3 cursor-pointer">
+            <label htmlFor={`${fid}-auto-apply`} className="flex items-start gap-3 cursor-pointer">
               <Checkbox
+                id={`${fid}-auto-apply`}
                 checked={autoApply}
                 onChange={(e) => setAutoApply(e.target.checked)}
                 className="mt-1"
@@ -219,10 +225,11 @@ export function MappingEditor({
             </label>
 
             <div>
-              <label className="block text-sm font-medium text-ink mb-2">
+              <label htmlFor={`${fid}-min-confidence`} className="block text-sm font-medium text-ink mb-2">
                 Minimum Confidence: {minConfidence}%
               </label>
               <input
+                id={`${fid}-min-confidence`}
                 type="range"
                 min="50"
                 max="99"

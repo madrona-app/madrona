@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useId, useState, useEffect, useCallback } from 'react';
 import Checkbox from '../Checkbox';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
@@ -48,6 +48,7 @@ export function PolicyFormSlideOver({
   organizationId,
   policy,
 }: PolicyFormSlideOverProps) {
+  const fid = useId();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const isEdit = !!policy;
@@ -217,8 +218,9 @@ export function PolicyFormSlideOver({
       <div className="space-y-5">
         {/* Name */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">Name *</label>
+          <label htmlFor={`${fid}-name`} className="block text-sm font-medium text-ink mb-1">Name *</label>
           <input
+            id={`${fid}-name`}
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -229,8 +231,9 @@ export function PolicyFormSlideOver({
 
         {/* Policy Type */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">Policy Type *</label>
+          <label htmlFor={`${fid}-policy-type`} className="block text-sm font-medium text-ink mb-1">Policy Type *</label>
           <select
+            id={`${fid}-policy-type`}
             value={policyType}
             onChange={(e) => setPolicyType(e.target.value as PolicyType)}
             disabled={isEdit}
@@ -245,8 +248,9 @@ export function PolicyFormSlideOver({
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">Description</label>
+          <label htmlFor={`${fid}-description`} className="block text-sm font-medium text-ink mb-1">Description</label>
           <textarea
+            id={`${fid}-description`}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
@@ -257,8 +261,9 @@ export function PolicyFormSlideOver({
 
         {/* Priority */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">Priority</label>
+          <label htmlFor={`${fid}-priority`} className="block text-sm font-medium text-ink mb-1">Priority</label>
           <input
+            id={`${fid}-priority`}
             type="number"
             value={priority}
             onChange={(e) => setPriority(parseInt(e.target.value, 10) || 0)}
@@ -273,6 +278,7 @@ export function PolicyFormSlideOver({
             type="button"
             role="switch"
             aria-checked={isActive}
+            aria-labelledby={`${fid}-active`}
             onClick={() => setIsActive(!isActive)}
             className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
               isActive ? 'bg-bark' : 'bg-stone'
@@ -284,7 +290,7 @@ export function PolicyFormSlideOver({
               }`}
             />
           </button>
-          <span className="text-sm text-ink">Active</span>
+          <span id={`${fid}-active`} className="text-sm text-ink">Active</span>
         </div>
 
         {/* Divider */}
@@ -297,8 +303,9 @@ export function PolicyFormSlideOver({
           {policyType === 'retention' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-archive mb-1">Retain for (years)</label>
+                <label htmlFor={`${fid}-retain-years`} className="block text-xs font-medium text-archive mb-1">Retain for (years)</label>
                 <input
+                  id={`${fid}-retain-years`}
                   type="number"
                   min={1}
                   value={retainYears}
@@ -307,8 +314,9 @@ export function PolicyFormSlideOver({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-archive mb-1">Action after expiry</label>
+                <label htmlFor={`${fid}-retention-action`} className="block text-xs font-medium text-archive mb-1">Action after expiry</label>
                 <select
+                  id={`${fid}-retention-action`}
                   value={retentionAction}
                   onChange={(e) => setRetentionAction(e.target.value as 'review' | 'delete')}
                   className="w-48 px-3 py-2 text-sm border border-lichen rounded-institutional bg-parchment text-ink focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -318,8 +326,9 @@ export function PolicyFormSlideOver({
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-archive mb-1">Notify days before expiry</label>
+                <label htmlFor={`${fid}-notify-days`} className="block text-xs font-medium text-archive mb-1">Notify days before expiry</label>
                 <input
+                  id={`${fid}-notify-days`}
                   type="number"
                   min={0}
                   value={notifyDaysBefore}
@@ -333,8 +342,9 @@ export function PolicyFormSlideOver({
           {policyType === 'format_migration' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-archive mb-1">Source PRONOM PUID</label>
+                <label htmlFor={`${fid}-source-puid`} className="block text-xs font-medium text-archive mb-1">Source PRONOM PUID</label>
                 <input
+                  id={`${fid}-source-puid`}
                   type="text"
                   value={sourcePuid}
                   onChange={(e) => setSourcePuid(e.target.value)}
@@ -343,8 +353,9 @@ export function PolicyFormSlideOver({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-archive mb-1">Target PRONOM PUID</label>
+                <label htmlFor={`${fid}-target-puid`} className="block text-xs font-medium text-archive mb-1">Target PRONOM PUID</label>
                 <input
+                  id={`${fid}-target-puid`}
                   type="text"
                   value={targetPuid}
                   onChange={(e) => setTargetPuid(e.target.value)}
@@ -366,8 +377,9 @@ export function PolicyFormSlideOver({
           {policyType === 'normalization' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-archive mb-1">Target PRONOM PUID</label>
+                <label htmlFor={`${fid}-norm-target-puid`} className="block text-xs font-medium text-archive mb-1">Target PRONOM PUID</label>
                 <input
+                  id={`${fid}-norm-target-puid`}
                   type="text"
                   value={normTargetPuid}
                   onChange={(e) => setNormTargetPuid(e.target.value)}
@@ -409,6 +421,7 @@ export function PolicyFormSlideOver({
           <h3 className="text-sm font-semibold text-ink mb-3">Scope</h3>
           <div className="space-y-3">
             <select
+              aria-label="Scope"
               value={scopeTarget}
               onChange={(e) => {
                 setScopeTarget(e.target.value as ScopeTarget);
@@ -423,6 +436,7 @@ export function PolicyFormSlideOver({
             {scopeTarget !== 'all' && (
               <input
                 type="text"
+                aria-label={scopeTarget === 'media_type' ? 'Media type' : 'PRONOM PUID'}
                 value={scopeValue}
                 onChange={(e) => setScopeValue(e.target.value)}
                 className="w-full px-3 py-2 text-sm border border-lichen rounded-institutional bg-parchment text-ink font-mono focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"

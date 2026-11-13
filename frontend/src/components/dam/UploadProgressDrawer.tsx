@@ -65,10 +65,7 @@ export function UploadProgressDrawer() {
   return (
     <div className="fixed bottom-4 right-4 z-50 w-80 bg-parchment rounded-lg shadow-xl border border-lichen overflow-hidden" role="region" aria-label="Upload progress">
       {/* Header - always visible */}
-      <div
-        className="flex items-center justify-between px-4 py-3 bg-stone/30 cursor-pointer"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
+      <div className="relative flex items-center justify-between px-4 py-3 bg-stone/30 cursor-pointer">
         <div className="flex items-center gap-2">
           {isUploading ? (
             <Loader2 size={18} className="text-bark animate-spin" />
@@ -89,18 +86,23 @@ export function UploadProgressDrawer() {
         <div className="flex items-center gap-2">
           {!isUploading && (
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                clearCompleted();
-              }}
-              className="p-1 hover:bg-stone rounded text-archive hover:text-ink"
+              type="button"
+              onClick={clearCompleted}
+              className="relative z-10 p-1 hover:bg-stone rounded text-archive hover:text-ink"
               title="Clear all"
               aria-label="Clear all uploads"
             >
               <X size={16} />
             </button>
           )}
-          <button className="p-1 text-archive" aria-label={isExpanded ? 'Collapse upload list' : 'Expand upload list'} aria-expanded={isExpanded}>
+          {/* Toggle: its ::after stretches over the whole header so a click anywhere toggles */}
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="p-1 text-archive after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-bark/30 focus-visible:after:ring-inset"
+            aria-label={isExpanded ? 'Collapse upload list' : 'Expand upload list'}
+            aria-expanded={isExpanded}
+          >
             {isExpanded ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
           </button>
         </div>

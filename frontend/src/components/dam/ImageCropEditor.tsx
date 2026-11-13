@@ -2,7 +2,7 @@
  * ImageCropEditor — crop/transform editor for images using react-easy-crop.
  * Used on MediaDetailPage for download transforms.
  */
-import { useState, useCallback } from 'react';
+import { useId, useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
 import type { Area, Point } from 'react-easy-crop';
 import { useMutation } from '@tanstack/react-query';
@@ -48,6 +48,7 @@ export function ImageCropEditor({
   const { showToast } = useToast();
 
   // Crop state
+  const fid = useId();
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
@@ -150,36 +151,40 @@ export function ImageCropEditor({
       <div className="grid grid-cols-2 gap-4">
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="text-xs text-archive flex items-center gap-1">
-              <ZoomIn size={12} />
+            <label htmlFor={`${fid}-zoom`} className="text-xs text-archive flex items-center gap-1">
+              <ZoomIn size={12} aria-hidden="true" />
               Zoom
             </label>
             <span className="text-xs text-archive tabular-nums">{zoom.toFixed(1)}x</span>
           </div>
           <input
+            id={`${fid}-zoom`}
             type="range"
             min={1}
             max={3}
             step={0.05}
             value={zoom}
+            aria-valuetext={`${zoom.toFixed(1)}x`}
             onChange={(e) => setZoom(parseFloat(e.target.value))}
             className="w-full h-1.5 accent-bark cursor-pointer"
           />
         </div>
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="text-xs text-archive flex items-center gap-1">
-              <RotateCw size={12} />
+            <label htmlFor={`${fid}-rotation`} className="text-xs text-archive flex items-center gap-1">
+              <RotateCw size={12} aria-hidden="true" />
               Rotation
             </label>
             <span className="text-xs text-archive tabular-nums">{rotation}°</span>
           </div>
           <input
+            id={`${fid}-rotation`}
             type="range"
             min={0}
             max={360}
             step={1}
             value={rotation}
+            aria-valuetext={`${rotation} degrees`}
             onChange={(e) => setRotation(parseInt(e.target.value))}
             className="w-full h-1.5 accent-bark cursor-pointer"
           />
@@ -188,11 +193,13 @@ export function ImageCropEditor({
 
       {/* Aspect Ratio Presets */}
       <div>
-        <label className="text-xs text-archive block mb-1.5">Aspect Ratio</label>
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <span id={`${fid}-aspect`} className="text-xs text-archive block mb-1.5">Aspect Ratio</span>
+        <div role="group" aria-labelledby={`${fid}-aspect`} className="flex items-center gap-1.5 flex-wrap">
           {ASPECT_PRESETS.map((preset, i) => (
             <button
               key={preset.label}
+              type="button"
+              aria-pressed={aspectPreset === i}
               onClick={() => setAspectPreset(i)}
               className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
                 aspectPreset === i
@@ -212,35 +219,43 @@ export function ImageCropEditor({
           onClick={() => setRotation((r) => (r + 90) % 360)}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-lichen rounded hover:bg-stone/20 transition-colors"
           title="Rotate 90° clockwise"
+          aria-label="Rotate 90° clockwise"
         >
-          <RotateCw size={14} />
+          <RotateCw size={14} aria-hidden="true" />
           +90°
         </button>
         <button
           onClick={() => setRotation((r) => (r + 270) % 360)}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-lichen rounded hover:bg-stone/20 transition-colors"
           title="Rotate 90° counter-clockwise"
+          aria-label="Rotate 90° counter-clockwise"
         >
-          <RotateCcw size={14} />
+          <RotateCcw size={14} aria-hidden="true" />
           −90°
         </button>
         <div className="w-px h-5 bg-lichen" />
         <button
+          type="button"
+          aria-pressed={flipH}
+          aria-label="Flip horizontal"
           onClick={() => setFlipH(!flipH)}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded transition-colors ${
             flipH ? 'border-azurite bg-azurite/10 text-azurite' : 'border-lichen hover:bg-stone/20'
           }`}
         >
-          <FlipHorizontal size={14} />
+          <FlipHorizontal size={14} aria-hidden="true" />
           Flip H
         </button>
         <button
+          type="button"
+          aria-pressed={flipV}
+          aria-label="Flip vertical"
           onClick={() => setFlipV(!flipV)}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded transition-colors ${
             flipV ? 'border-azurite bg-azurite/10 text-azurite' : 'border-lichen hover:bg-stone/20'
           }`}
         >
-          <FlipVertical size={14} />
+          <FlipVertical size={14} aria-hidden="true" />
           Flip V
         </button>
         {hasTransforms && (
@@ -271,8 +286,9 @@ export function ImageCropEditor({
       {/* Output Settings */}
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="text-xs text-archive block mb-1">Format</label>
+          <label htmlFor={`${fid}-format`} className="text-xs text-archive block mb-1">Format</label>
           <select
+            id={`${fid}-format`}
             value={format}
             onChange={(e) => setFormat(e.target.value)}
             className="w-full px-2 py-1.5 text-sm border border-lichen rounded bg-parchment"
@@ -284,8 +300,9 @@ export function ImageCropEditor({
           </select>
         </div>
         <div>
-          <label className="text-xs text-archive block mb-1">Quality</label>
+          <label htmlFor={`${fid}-quality`} className="text-xs text-archive block mb-1">Quality</label>
           <input
+            id={`${fid}-quality`}
             type="number"
             min={1}
             max={100}
@@ -295,8 +312,9 @@ export function ImageCropEditor({
           />
         </div>
         <div>
-          <label className="text-xs text-archive block mb-1">Max Width</label>
+          <label htmlFor={`${fid}-max-width`} className="text-xs text-archive block mb-1">Max Width</label>
           <input
+            id={`${fid}-max-width`}
             type="number"
             min={100}
             value={maxWidth || ''}

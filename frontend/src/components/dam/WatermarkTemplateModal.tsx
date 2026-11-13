@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import Checkbox from '../Checkbox';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Type, Image } from 'lucide-react';
@@ -29,6 +29,8 @@ export function WatermarkTemplateModal({
   onClose,
 }: WatermarkTemplateModalProps) {
   const queryClient = useQueryClient();
+  const fid = useId();
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const { modalRef, titleId, descriptionId } = useAccessibleModal({
     isOpen: true,
     onClose,
@@ -95,14 +97,13 @@ export function WatermarkTemplateModal({
 
   return (
     <ModalPortal>
-    <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50">
+      <div aria-hidden="true" className="absolute inset-0" onClick={onClose} />
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation only: keeps dialog clicks from bubbling to React ancestors through the portal */}
       <div
         ref={modalRef}
         {...getModalAriaProps(titleId, descriptionId)}
-        className="bg-parchment rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="relative bg-parchment rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-6 py-4 border-b border-lichen">
@@ -116,10 +117,11 @@ export function WatermarkTemplateModal({
 
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">
+            <label htmlFor={`${fid}-name`} className="block text-sm font-medium text-ink mb-1">
               Template Name <span className="text-semantic-error">*</span>
             </label>
             <input
+              id={`${fid}-name`}
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -131,10 +133,11 @@ export function WatermarkTemplateModal({
 
           {/* Watermark Type */}
           <div>
-            <label className="block text-sm font-medium text-ink mb-2">Watermark Type</label>
-            <div className="grid grid-cols-2 gap-3">
+            <span id={`${fid}-type`} className="block text-sm font-medium text-ink mb-2">Watermark Type</span>
+            <div role="group" aria-labelledby={`${fid}-type`} className="grid grid-cols-2 gap-3">
               <button
                 type="button"
+                aria-pressed={watermarkType === 'text'}
                 onClick={() => setWatermarkType('text')}
                 className={`p-4 rounded-sm border-2 flex flex-col items-center gap-2 transition-colors ${
                   watermarkType === 'text'
@@ -147,6 +150,7 @@ export function WatermarkTemplateModal({
               </button>
               <button
                 type="button"
+                aria-pressed={watermarkType === 'image'}
                 onClick={() => setWatermarkType('image')}
                 className={`p-4 rounded-sm border-2 flex flex-col items-center gap-2 transition-colors ${
                   watermarkType === 'image'
@@ -164,10 +168,11 @@ export function WatermarkTemplateModal({
           {watermarkType === 'text' && (
             <div className="space-y-4 p-4 bg-stone/30 rounded-sm border border-lichen">
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">
+                <label htmlFor={`${fid}-text`} className="block text-sm font-medium text-ink mb-1">
                   Watermark Text <span className="text-semantic-error">*</span>
                 </label>
                 <input
+                  id={`${fid}-text`}
                   type="text"
                   value={text}
                   onChange={(e) => setText(e.target.value)}
@@ -179,8 +184,9 @@ export function WatermarkTemplateModal({
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">Font Size</label>
+                  <label htmlFor={`${fid}-font-size`} className="block text-sm font-medium text-ink mb-1">Font Size</label>
                   <input
+                    id={`${fid}-font-size`}
                     type="number"
                     value={fontSize}
                     onChange={(e) => setFontSize(Number(e.target.value))}
@@ -190,9 +196,10 @@ export function WatermarkTemplateModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">Font Color</label>
+                  <label htmlFor={`${fid}-font-color`} className="block text-sm font-medium text-ink mb-1">Font Color</label>
                   <div className="flex gap-2">
                     <input
+                      id={`${fid}-font-color`}
                       type="color"
                       value={fontColor}
                       onChange={(e) => setFontColor(e.target.value)}
@@ -204,6 +211,7 @@ export function WatermarkTemplateModal({
                       onChange={(e) => setFontColor(e.target.value)}
                       className="flex-1 px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                       placeholder="#ffffff"
+                      aria-label="Font color hex value"
                     />
                   </div>
                 </div>
@@ -215,7 +223,7 @@ export function WatermarkTemplateModal({
           {watermarkType === 'image' && (
             <div className="space-y-4 p-4 bg-stone/30 rounded-sm border border-lichen">
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Watermark Image</label>
+                <span className="block text-sm font-medium text-ink mb-1">Watermark Image</span>
                 <div className="border-2 border-dashed border-lichen rounded-sm p-6 text-center bg-parchment">
                   {imageFile ? (
                     <div className="space-y-2">
@@ -223,6 +231,7 @@ export function WatermarkTemplateModal({
                       <button
                         type="button"
                         onClick={() => setImageFile(null)}
+                        aria-label={`Remove ${imageFile.name}`}
                         className="text-sm text-semantic-error hover:underline"
                       >
                         Remove
@@ -235,29 +244,35 @@ export function WatermarkTemplateModal({
                         Upload a PNG or SVG with transparency
                       </p>
                       <input
+                        ref={imageInputRef}
                         type="file"
                         accept="image/png,image/svg+xml"
                         onChange={(e) => setImageFile(e.target.files?.[0] || null)}
                         className="hidden"
                         id="watermark-image"
+                        tabIndex={-1}
+                        aria-hidden="true"
                       />
-                      <label
-                        htmlFor="watermark-image"
+                      <button
+                        type="button"
+                        onClick={() => imageInputRef.current?.click()}
                         className="px-4 py-2 border border-stone rounded-sm bg-parchment text-sm text-ink cursor-pointer inline-block hover:bg-stone/20 transition-colors"
                       >
                         Select Image
-                      </label>
+                      </button>
                     </>
                   )}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">
+                <label htmlFor={`${fid}-scale`} className="block text-sm font-medium text-ink mb-1">
                   Scale ({Math.round(scale * 100)}%)
                 </label>
                 <input
+                  id={`${fid}-scale`}
                   type="range"
+                  aria-valuetext={`${Math.round(scale * 100)}%`}
                   value={scale}
                   onChange={(e) => setScale(Number(e.target.value))}
                   min={0.05}
@@ -275,8 +290,9 @@ export function WatermarkTemplateModal({
           {/* Common Config */}
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">Position</label>
+              <label htmlFor={`${fid}-position`} className="block text-sm font-medium text-ink mb-1">Position</label>
               <select
+                id={`${fid}-position`}
                 value={position}
                 onChange={(e) => setPosition(e.target.value as Position)}
                 className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -290,11 +306,13 @@ export function WatermarkTemplateModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${fid}-opacity`} className="block text-sm font-medium text-ink mb-1">
                 Opacity ({Math.round(opacity * 100)}%)
               </label>
               <input
+                id={`${fid}-opacity`}
                 type="range"
+                aria-valuetext={`${Math.round(opacity * 100)}%`}
                 value={opacity}
                 onChange={(e) => setOpacity(Number(e.target.value))}
                 min={0.1}
