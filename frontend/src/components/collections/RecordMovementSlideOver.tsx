@@ -253,7 +253,7 @@ export function RecordMovementSlideOver({
           <div className="flex items-center justify-between mb-1.5">
             <label id={`${fid}-to-location-label`} htmlFor={`${fid}-to-location`} className="text-sm font-medium text-ink">
               To Location <span className="text-semantic-error" aria-hidden="true">*</span>
-              <span className="sr-only"> (required)</span>
+              {' '}<span className="sr-only">(required)</span>
             </label>
             {homeLocationId && homeLocationId !== fromLocationId && (
               <button

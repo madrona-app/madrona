@@ -91,6 +91,7 @@ export function ObjectEventLinker({
       linkedItems={linkedEvents}
       isLoading={isLoading}
       getItemId={(event) => event.event_id}
+      getItemLabel={(event) => event.title}
       renderItem={(event) => (
         <>
           <Calendar size={16} className="text-archive shrink-0" />

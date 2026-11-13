@@ -521,7 +521,13 @@ export function LocationPickerButton({
           onClick={() => setIsOpen(true)}
           disabled={disabled}
           aria-haspopup="dialog"
-          aria-labelledby={labelId ? `${labelId} ${valueId}` : undefined}
+          aria-labelledby={
+            labelId
+              ? [labelId, valueId, selectedLocation?.on_display ? `${generatedId}-display` : null]
+                  .filter(Boolean)
+                  .join(' ')
+              : undefined
+          }
           className={`flex flex-1 min-w-0 items-center gap-2 text-left rounded
                      ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2`}
@@ -531,7 +537,7 @@ export function LocationPickerButton({
             {displayValue || placeholder}
           </span>
           {selectedLocation?.on_display && (
-            <span className="flex items-center gap-0.5 text-xs px-1.5 py-0.5 bg-meadow/10 text-meadow-dark rounded flex-shrink-0">
+            <span id={`${generatedId}-display`} className="flex items-center gap-0.5 text-xs px-1.5 py-0.5 bg-meadow/10 text-meadow-dark rounded flex-shrink-0">
               <Eye size={10} aria-hidden="true" />
               Display
             </span>
@@ -654,7 +660,7 @@ export function EditableLocationPicker({
         {required && (
           <>
             <span className="text-semantic-error ml-0.5" aria-hidden="true">*</span>
-            <span className="sr-only"> (required)</span>
+            {' '}<span className="sr-only">(required)</span>
           </>
         )}
       </label>

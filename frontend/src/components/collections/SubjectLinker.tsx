@@ -85,6 +85,7 @@ export function SubjectLinker({
       linkedItems={items}
       isLoading={isLoading}
       getItemId={(link) => link.link_id}
+      getItemLabel={(link) => link.subject_authority?.preferred_term || 'Unknown'}
       getLinkedEntityId={(link) => link.subject_authority_id}
       renderItem={(link) => (
         <>

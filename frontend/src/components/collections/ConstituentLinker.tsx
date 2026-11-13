@@ -104,6 +104,7 @@ export function ConstituentLinker({
       linkedItems={xrefs}
       isLoading={isLoading}
       getItemId={(xref) => xref.xref_id}
+      getItemLabel={(xref) => xref.display_name_override || xref.constituent?.name || 'Unknown'}
       getLinkedEntityId={(xref) => xref.constituent_id}
       getItemGroup={(xref) => xref.role}
       groupLabels={roleLabels}

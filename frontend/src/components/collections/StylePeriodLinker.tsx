@@ -80,6 +80,7 @@ export function StylePeriodLinker({
       linkedItems={items}
       isLoading={isLoading}
       getItemId={(link) => link.link_id}
+      getItemLabel={(link) => link.authority?.preferred_term || 'Unknown'}
       getLinkedEntityId={(link) => link.authority_id}
       renderItem={(link) => (
         <>

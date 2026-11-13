@@ -160,6 +160,7 @@ export function PlaceAuthorityLinker({
       linkedItems={items}
       isLoading={isLoading}
       getItemId={(link) => link.link_id}
+      getItemLabel={(link) => link.place_authority?.preferred_name || 'Unknown'}
       getLinkedEntityId={(link) => link.place_authority_id}
       getItemGroup={(link) => link.role}
       groupLabels={filteredRoleLabels}
