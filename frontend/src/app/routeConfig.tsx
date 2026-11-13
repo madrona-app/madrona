@@ -104,6 +104,7 @@ import {
   DiscoverSettingsPage,
   ProcedureEnforcementSettingsPage,
   RecordRulesSettingsPage,
+  EadImportPage,
   VocabularyValidationSettingsPage,
   MediaRightsEnforcementSettingsPage,
   EmergencyPlansPage,
@@ -376,6 +377,7 @@ export function AppRoutes() {
         <Route path="/organizations/:orgId/collections/work/workspaces/:workspaceId/edit" element={<WorkspaceEditPage />} />
         <Route path="/organizations/:orgId/collections/work/workspaces/:workspaceId" element={<WorkspaceDetailPage />} />
         <Route path="/organizations/:orgId/collections/objects" element={<CollectionObjectsPage />} />
+        <Route path="/organizations/:orgId/collections/ead-import" element={<EadImportPage />} />
         <Route path="/organizations/:orgId/collections/objects/create" element={<RemountOnParams><CollectionObjectWorkspacePage /></RemountOnParams>} />
         <Route path="/organizations/:orgId/collections/objects/:objectId" element={<RemountOnParams><CollectionObjectWorkspacePage /></RemountOnParams>} />
         <Route path="/organizations/:orgId/collections/objects/:objectId/edit" element={<RemountOnParams><CollectionObjectWorkspacePage /></RemountOnParams>} />

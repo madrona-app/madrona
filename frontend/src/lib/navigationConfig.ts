@@ -257,6 +257,13 @@ export const products: Product[] = [
             icon: BookOpen,
             requiresPermission: 'collections.view',
           },
+          {
+            id: 'ead-import',
+            label: 'Import Finding Aid (EAD)',
+            path: '/organizations/:orgId/collections/ead-import',
+            icon: BookOpen,
+            requiresPermission: 'collections.create',
+          },
         ],
       },
       // ============================================================================

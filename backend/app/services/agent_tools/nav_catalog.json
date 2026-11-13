@@ -420,6 +420,27 @@
       "appKey": "collections"
     },
     {
+      "id": "collections:ead-import",
+      "product": "collections",
+      "label": "Import Finding Aid (EAD)",
+      "pathPattern": "/organizations/:orgId/collections/ead-import",
+      "breadcrumb": [
+        "Collection",
+        "Import Finding Aid (EAD)"
+      ],
+      "keywords": [
+        "aid",
+        "collection",
+        "collections",
+        "ead",
+        "finding",
+        "import",
+        "import finding aid (ead)"
+      ],
+      "permission": "collections.create",
+      "appKey": "collections"
+    },
+    {
       "id": "collections:emergency-plans",
       "product": "collections",
       "label": "Emergency Plans",
