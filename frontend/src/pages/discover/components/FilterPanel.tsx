@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { X, Grid3X3, List } from 'lucide-react';
 import type { DiscoverFacet, DiscoverSearchParams } from '../../../types/discover';
 import { FilterGroup } from './FilterGroup';
+import { useAccessibleModal } from '../../../hooks/useAccessibleModal';
 
 const SORT_OPTIONS = [
   { value: 'relevance', label: 'Relevance' },
@@ -62,17 +63,9 @@ export function FilterPanel({
   onToggleOnDisplay,
   updateParams,
 }: FilterPanelProps) {
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  // Close on Escape
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
-  }, [isOpen, onClose]);
+  // Focus moves into the panel on open, is trapped while open, Escape
+  // closes it, and focus returns to the button that opened it.
+  const { modalRef: panelRef, titleId } = useAccessibleModal({ isOpen, onClose, titlePrefix: 'discover-filters' });
 
   // Prevent body scroll when open
   useEffect(() => {
@@ -100,22 +93,30 @@ export function FilterPanel({
       />
 
       {/* Panel */}
+      {/* Closed: inert + hidden, so its controls are neither focusable nor
+          announced while it is off-screen. */}
       <div
         ref={panelRef}
-        className={`fixed top-0 right-0 bottom-0 z-50 w-96 max-w-[90vw] bg-forest text-parchment shadow-2xl transform transition-transform duration-300 ease-out ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-hidden={!isOpen || undefined}
+        inert={!isOpen}
+        className={`fixed top-0 right-0 bottom-0 z-50 w-96 max-w-[90vw] bg-forest text-parchment shadow-2xl transform transition-[transform,visibility] duration-300 ease-out ${
+          isOpen ? 'translate-x-0 visible' : 'translate-x-full invisible'
         }`}
       >
         <div className="h-full flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-5 border-b border-parchment/10">
-            <h2 className="text-lg font-medium text-parchment">Filters</h2>
+            <h2 id={titleId} className="text-lg font-medium text-parchment">Filters</h2>
             <button
+              type="button"
               onClick={onClose}
               aria-label="Close filters"
-              className="text-parchment/60 hover:text-parchment transition-colors"
+              className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded text-parchment/60 hover:text-parchment transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-parchment/40"
             >
-              <X size={20} />
+              <X size={20} aria-hidden="true" />
             </button>
           </div>
 
@@ -123,10 +124,11 @@ export function FilterPanel({
           <div className="flex-1 overflow-y-auto px-6 py-4">
             {/* Sort */}
             <div className="mb-6">
-              <label className="block text-xs font-medium text-parchment/60 uppercase tracking-wide mb-2">
+              <label htmlFor="discover-sort" className="block text-xs font-medium text-parchment/60 uppercase tracking-wide mb-2">
                 Sort by
               </label>
               <select
+                id="discover-sort"
                 value={params.sort || 'relevance'}
                 onChange={(e) => onSortChange(e.target.value)}
                 className="w-full border border-parchment/20 rounded-lg px-3 py-2.5 text-sm text-parchment bg-parchment/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-parchment/30 focus-visible:ring-offset-2"
@@ -141,11 +143,13 @@ export function FilterPanel({
 
             {/* View mode */}
             <div className="mb-6">
-              <label className="block text-xs font-medium text-parchment/60 uppercase tracking-wide mb-2">
+              <p id="discover-view-label" className="block text-xs font-medium text-parchment/60 uppercase tracking-wide mb-2">
                 View
-              </label>
-              <div className="flex border border-parchment/20 rounded-lg overflow-hidden">
+              </p>
+              <div role="group" aria-labelledby="discover-view-label" className="flex border border-parchment/20 rounded-lg overflow-hidden">
                 <button
+                  type="button"
+                  aria-pressed={viewMode === 'grid'}
                   onClick={() => onViewModeChange('grid')}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm transition-colors ${
                     viewMode === 'grid'
@@ -153,10 +157,12 @@ export function FilterPanel({
                       : 'text-parchment/50 hover:text-parchment'
                   }`}
                 >
-                  <Grid3X3 size={16} />
+                  <Grid3X3 size={16} aria-hidden="true" />
                   Grid
                 </button>
                 <button
+                  type="button"
+                  aria-pressed={viewMode === 'list'}
                   onClick={() => onViewModeChange('list')}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm transition-colors ${
                     viewMode === 'list'
@@ -164,7 +170,7 @@ export function FilterPanel({
                       : 'text-parchment/50 hover:text-parchment'
                   }`}
                 >
-                  <List size={16} />
+                  <List size={16} aria-hidden="true" />
                   List
                 </button>
               </div>
@@ -208,11 +214,14 @@ export function FilterPanel({
             })}
 
             {/* Date Range */}
-            <div className="border-b border-parchment/10 pb-4 mb-4">
-              <p className="text-sm font-medium text-parchment mb-2">Date Range</p>
+            <fieldset className="border-b border-parchment/10 pb-4 mb-4">
+              <legend className="text-sm font-medium text-parchment mb-2">Date Range</legend>
               <div className="flex gap-2">
+                <label htmlFor="discover-date-from" className="sr-only">From year</label>
                 <input
+                  id="discover-date-from"
                   type="text"
+                  inputMode="numeric"
                   placeholder="e.g. 1850"
                   value={params.date_from || ''}
                   onChange={(e) =>
@@ -220,8 +229,11 @@ export function FilterPanel({
                   }
                   className="w-full text-sm border border-parchment/20 rounded px-2 py-1.5 bg-parchment/5 text-parchment placeholder:text-parchment/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-parchment/30 focus-visible:ring-offset-2"
                 />
+                <label htmlFor="discover-date-to" className="sr-only">To year</label>
                 <input
+                  id="discover-date-to"
                   type="text"
+                  inputMode="numeric"
                   placeholder="e.g. 2025"
                   value={params.date_to || ''}
                   onChange={(e) =>
@@ -230,7 +242,7 @@ export function FilterPanel({
                   className="w-full text-sm border border-parchment/20 rounded px-2 py-1.5 bg-parchment/5 text-parchment placeholder:text-parchment/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-parchment/30 focus-visible:ring-offset-2"
                 />
               </div>
-            </div>
+            </fieldset>
           </div>
         </div>
       </div>

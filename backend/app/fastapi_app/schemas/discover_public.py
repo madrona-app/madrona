@@ -345,6 +345,7 @@ class DiscoverExhibitionDetailOut(BaseModel):
     thumbnail_url: str | None = None
     tags: Any | None = None
     related_objects: list[DiscoverRelatedObjectOut] | None = None
+    public_object_count: int = 0
 
 
 # ---- Gallery ----

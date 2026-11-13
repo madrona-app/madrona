@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useNavigate, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { useDiscoverSearch } from '../../pages/discover/hooks/useDiscoverSearch';
 
@@ -151,5 +151,34 @@ describe('useDiscoverSearch', () => {
     });
 
     expect(result.current.params.object_type).toEqual(['sculpture']);
+  });
+
+  it('writes a canonical permalink whatever order facets are chosen in', () => {
+    const { result } = renderHook(() => ({ search: useDiscoverSearch(), location: useLocation() }), {
+      wrapper: wrapperFor(['/?q=vase']),
+    });
+    act(() => result.current.search.handleFacetToggle('object_type', 'sculpture'));
+    act(() => result.current.search.handleFacetToggle('object_type', 'painting'));
+    act(() => result.current.search.handleSortChange('title_asc'));
+    act(() => result.current.search.handlePageChange(2));
+
+    const expected = '?q=vase&object_type=painting&object_type=sculpture&sort=title_asc&page=2';
+    expect(result.current.location.search).toBe(expected);
+    expect(result.current.search.resultsSearch).toBe(expected);
+  });
+
+  it('search box follows the URL when it changes from outside (back, breadcrumb)', () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => ({ search: useDiscoverSearch(), navigate: useNavigate() }), {
+      wrapper: wrapperFor(['/?q=vase']),
+    });
+    act(() => result.current.navigate('/?q=bowl&has_image=true'));
+    expect(result.current.search.searchInput).toBe('bowl');
+    act(() => {
+      vi.advanceTimersByTime(350);
+    });
+    // The stale input did not overwrite the new URL.
+    expect(result.current.search.params.q).toBe('bowl');
+    expect(result.current.search.params.has_image).toBe(true);
   });
 });

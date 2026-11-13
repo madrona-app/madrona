@@ -2,6 +2,7 @@
  * Public Discover / Gallery API
  */
 import { apiFetch, buildQueryString, validate } from './_utils';
+import { API_BASE_URL } from '../apiClient';
 import { z } from 'zod';
 import {
   DiscoverCollectionInfoSchema,
@@ -234,4 +235,41 @@ export async function getPublicVenueDetail(
 ): Promise<{ data: import('../../types/discover').PublicVenue & { upcoming_exhibitions?: Array<{ exhibition_id: string; title: string; subtitle: string | null; public_url_slug: string | null; planned_start_date: string | null; planned_end_date: string | null; short_description: string | null; thumbnail_url: string | null }> } }> {
   const data = await apiFetch(`/discover/${orgSlug}/venues/${encodeURIComponent(venueSlug)}`, { skipAuth: true });
   return validate(z.object({ data: PublicVenueSchema }).passthrough(), data) as any;
+}
+
+// ── Exports (plain download links, not fetched) ─────────────────────────────
+
+export type DiscoverExportFormat = 'csv' | 'json';
+
+function discoverExportUrl(path: string, query: string, format: DiscoverExportFormat): string {
+  const base = API_BASE_URL.replace(/\/$/, '');
+  const qs = new URLSearchParams(query.replace(/^\?/, ''));
+  qs.delete('page'); // an export is the whole result set, not one page
+  qs.set('format', format);
+  return `${base}${path}?${qs.toString()}`;
+}
+
+/**
+ * Download URL for the current search results. `canonicalQuery` is the
+ * results permalink query (see pages/discover/searchUrl.ts).
+ */
+export function getDiscoverSearchExportUrl(
+  orgSlug: string,
+  canonicalQuery: string,
+  format: DiscoverExportFormat,
+): string {
+  return discoverExportUrl(`/discover/${encodeURIComponent(orgSlug)}/search/export`, canonicalQuery, format);
+}
+
+/** Download URL for a public exhibition's objects. */
+export function getExhibitionExportUrl(
+  orgSlug: string,
+  exhibitionSlug: string,
+  format: DiscoverExportFormat,
+): string {
+  return discoverExportUrl(
+    `/discover/${encodeURIComponent(orgSlug)}/exhibitions/${encodeURIComponent(exhibitionSlug)}/export`,
+    '',
+    format,
+  );
 }

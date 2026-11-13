@@ -3592,6 +3592,7 @@ export const DiscoverExhibitionDetailOutSchema = z.object({
   thumbnail_url: z.string().nullable().optional(),
   tags: z.any().nullable().optional(),
   related_objects: z.array(DiscoverRelatedObjectOutSchema).nullable().optional(),
+  public_object_count: z.number().optional(),
 }).passthrough();
 
 export type DiscoverExhibitionDetailOut = z.infer<typeof DiscoverExhibitionDetailOutSchema>;
