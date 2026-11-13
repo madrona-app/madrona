@@ -8,7 +8,6 @@ import {
   Trash2,
   Loader2,
   AlertCircle,
-  MoreVertical,
   CheckCircle,
 } from 'lucide-react';
 import {
@@ -21,6 +20,7 @@ import { ROLE_LABELS, ROLE_ORDER } from './constants';
 import { AddAuthoritySlideOver } from './AddAuthoritySlideOver';
 import { EditAuthoritySlideOver } from './EditAuthoritySlideOver';
 import ConfirmDialog from '../../ConfirmDialog';
+import { RowActionsMenu } from '../RowActionsMenu';
 
 export function ObjectAuthoritiesManager({
   organizationId,
@@ -175,36 +175,18 @@ export function ObjectAuthoritiesManager({
                       </div>
 
                       {!readOnly && (
-                        <div className="relative">
-                          <button
-                            onClick={() => setActiveMenu(activeMenu === link.link_id ? null : link.link_id)}
-                            className="p-1 text-archive hover:text-ink opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <MoreVertical size={16} />
-                          </button>
-
-                          {activeMenu === link.link_id && (
-                            <div className="absolute right-0 top-full mt-1 bg-parchment border border-lichen rounded-institutional shadow-lg z-10 py-1 min-w-[120px]">
-                              <button
-                                onClick={() => {
-                                  setEditingLink(link);
-                                  setActiveMenu(null);
-                                }}
-                                className="w-full text-left px-3 py-1.5 text-sm hover:bg-stone/50 flex items-center gap-2"
-                              >
-                                <Edit2 size={14} />
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleUnlink(link)}
-                                className="w-full text-left px-3 py-1.5 text-sm hover:bg-stone/50 text-semantic-error flex items-center gap-2"
-                              >
-                                <Trash2 size={14} />
-                                Remove
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                        <RowActionsMenu
+                          targetLabel={link.display_name_override || link.authority?.preferred_name || 'biography'}
+                          open={activeMenu === link.link_id}
+                          onOpenChange={(open) => setActiveMenu(open ? link.link_id : null)}
+                          triggerClassName="p-1 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity hover:text-ink"
+                          menuClassName="rounded-institutional min-w-[120px]"
+                          itemClassName="px-3 py-1.5"
+                          actions={[
+                            { label: 'Edit', icon: Edit2, onSelect: () => setEditingLink(link) },
+                            { label: 'Remove', icon: Trash2, onSelect: () => handleUnlink(link), destructive: true },
+                          ]}
+                        />
                       )}
                     </div>
                   ))}

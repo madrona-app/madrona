@@ -45,10 +45,12 @@ export function DiscoverPreviewModal({
             )}
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1 text-archive hover:text-ink hover:bg-stone/50 transition-colors rounded"
+            aria-label="Close"
+            className="p-1 text-archive hover:text-ink hover:bg-stone/50 transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
           >
-            <X size={18} />
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
 
