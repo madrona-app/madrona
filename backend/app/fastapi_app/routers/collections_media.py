@@ -18,7 +18,7 @@ from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import CollectionObject, CollectionObjectMedia, Media
 from app.permissions import Permission
-from app.services.uploads import get_org_media_url, detect_media_type, upload_org_media, StorageLimitExceeded
+from app.services.uploads import get_org_media_url, detect_media_type, normalize_upload_content_type, upload_org_media, StorageLimitExceeded
 from app.services.api_security import sanitize_error_message
 from app.fastapi_app.serializers.collections import _serialize_collection_object_media
 from app.fastapi_app.serializers.collections_helpers import _index_collection_object, _reindex_linked_media
@@ -157,6 +157,7 @@ def upload_and_link_media_to_object(
         raise HTTPException(status_code=400, detail={"code": "bad_request", "message": "No filename provided"})
 
     content_type = file.content_type or 'application/octet-stream'
+    content_type = normalize_upload_content_type(content_type, file.filename)
     media_type = detect_media_type(content_type)
     if not media_type:
         raise HTTPException(status_code=400, detail={"code": "bad_request", "message": f"Unsupported file type: {content_type}"})

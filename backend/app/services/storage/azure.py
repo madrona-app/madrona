@@ -314,6 +314,7 @@ class AzureBlobStorageBackend(StorageBackend):
         metadata: Optional[dict[str, str]] = None,
         cache_control: Optional[str] = None,
         tags: Optional[dict[str, str]] = None,
+        content_disposition: Optional[str] = None,
     ) -> StorageObject:
         """Synchronous version of put_object."""
         try:
@@ -323,6 +324,7 @@ class AzureBlobStorageBackend(StorageBackend):
             content_settings = ContentSettings(
                 content_type=content_type,
                 cache_control=cache_control,
+                content_disposition=content_disposition,
             )
 
             # Handle bytes vs file-like object

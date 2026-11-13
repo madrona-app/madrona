@@ -744,6 +744,10 @@ def upload_from_url_task(
         mime_type = resp.headers.get("Content-Type", "").split(";")[0].strip()
         if not mime_type or mime_type == "application/octet-stream":
             mime_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+            # .brf has no registered type; objects are stored without a ContentType
+            # here, so S3 serves them (and any HTML) as a download.
+            from app.services.uploads import normalize_upload_content_type
+            mime_type = normalize_upload_content_type(mime_type, filename)
 
         media_type = detect_media_type(mime_type)
 

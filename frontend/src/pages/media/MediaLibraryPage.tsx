@@ -1198,7 +1198,7 @@ export default function MediaLibraryPage() {
                 ref={fileInputRef}
                 type="file"
                 multiple
-                accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.glb,.gltf"
+                accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.html,.htm,.brf,.glb,.gltf"
                 onChange={handleFileSelect}
                 className="hidden"
               />

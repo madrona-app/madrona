@@ -48,6 +48,7 @@ from app.services.uploads import (
     delete_org_media,
     get_org_media_url,
     detect_media_type,
+    normalize_upload_content_type,
 )
 from app.services.api_security import escape_ilike, sanitize_error_message
 from app.fastapi_app.schemas.common import SuccessResponse
@@ -165,6 +166,7 @@ def upload_media(
         raise HTTPException(status_code=400, detail={"code": "bad_request", "message": "No filename provided"})
 
     content_type = file.content_type or 'application/octet-stream'
+    content_type = normalize_upload_content_type(content_type, file.filename)
     media_type = detect_media_type(content_type)
     if not media_type:
         raise HTTPException(status_code=400, detail={"code": "bad_request", "message": f"Unsupported file type: {content_type}"})
@@ -1142,6 +1144,7 @@ def upload_media_version(
         raise HTTPException(status_code=400, detail={"code": "bad_request", "message": "No filename provided"})
 
     content_type = file.content_type or media.mime_type
+    content_type = normalize_upload_content_type(content_type, file.filename)
 
     version = MediaVersion(
         media_id=media_id,

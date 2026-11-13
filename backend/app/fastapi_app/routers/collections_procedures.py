@@ -35,6 +35,7 @@ from app.services.uploads import (
     delete_org_media,
     get_org_media_url,
     detect_media_type,
+    normalize_upload_content_type,
 )
 from app.permissions import Permission
 from app.services.api_security import escape_ilike, sanitize_error_message
@@ -920,6 +921,7 @@ async def add_object_entry_item_media(
     if file and file.filename:
         # Upload new file
         content_type = file.content_type or 'application/octet-stream'
+        content_type = normalize_upload_content_type(content_type, file.filename)
         media_type = detect_media_type(content_type)
         if not media_type:
             raise HTTPException(status_code=400, detail={

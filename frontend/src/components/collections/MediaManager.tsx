@@ -17,7 +17,8 @@ const ACCEPTED_FILE_TYPES = {
   image: 'image/jpeg,image/png,image/gif,image/webp,image/svg+xml,image/tiff',
   video: 'video/mp4,video/webm,video/quicktime',
   audio: 'audio/mpeg,audio/wav,audio/ogg,audio/flac',
-  document: 'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain',
+  document:
+    'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain,text/csv,text/html,.html,.htm,.brf',
 };
 
 /**
