@@ -489,6 +489,8 @@ def _serialize_collection_object_full(
         "watermarks": obj.watermarks,
         "external_links": obj.external_links or [],
         "cataloging_status": obj.cataloging_status,
+        "parent_object_id": str(obj.parent_object_id) if obj.parent_object_id else None,
+        "sibling_order": obj.sibling_order,
         # Written by the workspace bulk actions (cataloging status, loan
         # availability, status-change notes). Exposed under its own name
         # rather than "metadata" — that word is what collided with

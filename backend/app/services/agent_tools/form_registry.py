@@ -760,7 +760,8 @@ _COLLECTION_OBJECT = FormDefinition(
         FieldMeta("edition_note", "Edition note", "edition", "text"),
         # Catalog level
         FieldMeta("catalog_level", "Catalog level", "catalog", "enum",
-                  enum_values=["item", "group", "collection", "series", "component", "volume"]),
+                  enum_values=["collection", "subcollection", "series", "subseries", "file", "box",
+                               "folder", "item", "group", "component", "volume"]),
         FieldMeta("orientation", "Orientation", "catalog", "enum",
                   enum_values=["portrait", "landscape", "square", "vertical",
                                "horizontal", "variable", "site_specific"]),

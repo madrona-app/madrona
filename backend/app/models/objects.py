@@ -129,6 +129,19 @@ class CollectionObject(Base):
     # Catalog Level (CDWA 1.1)
     catalog_level: Mapped[str | None] = mapped_column(String(20), nullable=True, default="item")
 
+    # Archival hierarchy: collection > series > box > folder > item (and the
+    # intermediate levels in check_catalog_level). Real parent/child records;
+    # invariants (same org, no cycles, items have no children) are enforced in
+    # app.services.archival_hierarchy. RESTRICT: a record with children cannot
+    # be hard-deleted out from under them.
+    parent_object_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("collections.collection_objects.object_id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+    # Order among siblings (folder 1, 2, 3...). NULL sorts after numbered ones.
+    sibling_order: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     # Orientation/Arrangement (CDWA 12)
     orientation: Mapped[str | None] = mapped_column(String(50), nullable=True)
     arrangement: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -485,6 +498,7 @@ class CollectionObject(Base):
             "object_status IN ('pending', 'accessioned', 'on_loan', 'deaccessioned', 'missing', 'destroyed')",
             name="check_object_status",
         ),
+        Index("ix_objects_parent_order", "organization_id", "parent_object_id", "sibling_order"),
         CheckConstraint(
             "cataloging_status IS NULL OR cataloging_status IN "
             "('not_started', 'in_progress', 'pending_review', 'needs_research', 'cataloged')",
@@ -507,7 +521,7 @@ class CollectionObject(Base):
             name="check_acquisition_method",
         ),
         CheckConstraint(
-            "catalog_level IS NULL OR catalog_level IN ('item', 'group', 'collection', 'series', 'component', 'volume')",
+            "catalog_level IS NULL OR catalog_level IN ('collection', 'subcollection', 'series', 'subseries', 'file', 'box', 'folder', 'item', 'group', 'component', 'volume')",
             name="check_catalog_level",
         ),
         CheckConstraint(

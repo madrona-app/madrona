@@ -159,6 +159,33 @@ def _sync_completeness_flags(db: Session, organization_id: UUID, obj) -> None:
         logger.exception("Completeness rule evaluation failed for object %s", getattr(obj, "object_id", None))
 
 
+def _hierarchy_error(e):
+    raise HTTPException(status_code=e.status, detail={"code": e.code, "message": str(e),
+                                                       "field": "parent_object_id"})
+
+
+def _pop_hierarchy(data: dict, protected_fields: set) -> tuple[bool, object, object]:
+    """Take parent_object_id / sibling_order out of the payload.
+
+    They are applied through app.services.archival_hierarchy, which enforces
+    the hierarchy's invariants. Returns (parent_given, parent_id, order).
+    """
+    parent_given = "parent_object_id" in data and "parent_object_id" not in protected_fields
+    raw = data.pop("parent_object_id", None)
+    order = data.pop("sibling_order", None) if "sibling_order" not in protected_fields else None
+    if "sibling_order" in protected_fields:
+        data.pop("sibling_order", None)
+    parent_id = None
+    if parent_given and raw:
+        try:
+            parent_id = UUID(str(raw))
+        except ValueError:
+            raise HTTPException(status_code=422, detail={"code": "validation_error",
+                                                         "message": "parent_object_id is not valid",
+                                                         "field": "parent_object_id"})
+    return parent_given, parent_id, order
+
+
 def _validated_external_links(value):
     try:
         return normalize_external_links(value)
@@ -410,6 +437,12 @@ def create_collection_object(
     protected_fields |= get_write_restricted_fields('collection_object', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
     _reject_publish_fields(data)
     _check_cataloging_status(data)
+    parent_given, parent_id, sibling_order = _pop_hierarchy(data, protected_fields)
+    from app.services import archival_hierarchy as _ah
+    try:
+        _ah.validate_parent(db, organization_id, None, parent_id, data.get("catalog_level"))
+    except _ah.HierarchyError as e:
+        _hierarchy_error(e)
     if "external_links" in data:
         data["external_links"] = _validated_external_links(data["external_links"])
     _enforce_strict_vocabulary(db, organization_id, data, None, protected_fields)
@@ -426,6 +459,10 @@ def create_collection_object(
     )
 
     obj = _create_collection_object(db, organization_id, filtered_data, user_uuid, open_approval=True)
+    if parent_id is not None:
+        obj.parent_object_id = parent_id
+        obj.sibling_order = int(sibling_order) if sibling_order is not None else \
+            _ah.next_sibling_order(db, organization_id, parent_id)
 
     # Create link table records
     sync_warnings = _sync_link_tables(obj, link_data, organization_id, user_uuid)
@@ -762,6 +799,21 @@ def update_collection_object(
     protected_fields |= get_write_restricted_fields('collection_object', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
     _reject_publish_fields(data, obj)
     _check_cataloging_status(data, obj)
+    parent_given, parent_id, sibling_order = _pop_hierarchy(data, protected_fields)
+    from app.services import archival_hierarchy as _ah
+    try:
+        if "catalog_level" in data and "catalog_level" not in protected_fields \
+                and data["catalog_level"] != obj.catalog_level:
+            _ah.check_level_change(db, organization_id, obj, data["catalog_level"] or None)
+        if parent_given and parent_id != obj.parent_object_id:
+            if "catalog_level" in data and "catalog_level" not in protected_fields:
+                obj.catalog_level = data["catalog_level"] or None
+            _ah.set_parent(db, organization_id, obj, parent_id, sibling_order)
+        elif sibling_order is not None and obj.parent_object_id:
+            obj.sibling_order = int(sibling_order)
+    except _ah.HierarchyError as e:
+        db.rollback()
+        _hierarchy_error(e)
     if "external_links" in data:
         data["external_links"] = _validated_external_links(data["external_links"])
     _enforce_strict_vocabulary(db, organization_id, data, obj, protected_fields)
@@ -824,6 +876,15 @@ def delete_collection_object(
         raise HTTPException(status_code=404, detail={
             "code": "not_found",
             "message": "Object not found",
+        })
+
+    from app.services.archival_hierarchy import child_counts as _child_counts
+    n_children = _child_counts(db, organization_id, [obj.object_id]).get(obj.object_id, 0)
+    if n_children:
+        raise HTTPException(status_code=409, detail={
+            "code": "has_children",
+            "message": f"This record contains {n_children} other record{'s' if n_children != 1 else ''}. "
+                       "Move or delete them first.",
         })
 
     obj.is_deleted = True
