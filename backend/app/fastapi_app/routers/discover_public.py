@@ -302,7 +302,18 @@ def _public_object_fields(obj: CollectionObject, org_slug: str) -> dict:
             for l in (obj.external_links or [])
             if isinstance(l, dict) and str(l.get("url", "")).startswith(("http://", "https://"))
         ],
+        # Only user-defined fields the administrator marked public.
+        "additional_fields": _public_custom_fields(obj),
     }
+
+
+def _public_custom_fields(obj: CollectionObject) -> list[dict]:
+    if not obj.custom_fields:
+        return []
+    from sqlalchemy.orm import object_session
+    from app.services.custom_fields import public_display
+    db = object_session(obj)
+    return public_display(db, obj.organization_id, obj.custom_fields) if db is not None else []
 
 
 def _build_discover_search_request(

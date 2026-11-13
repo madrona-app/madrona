@@ -28,7 +28,7 @@ EXPECTED_FIELDS = {
     "classifications", "creators", "creation_date_display",
     "creation_date_earliest", "creation_date_latest", "creation_place",
     "materials", "techniques", "measurements", "inscriptions", "style_period",
-    "provenance", "credit_line", "external_links",
+    "provenance", "credit_line", "external_links", "additional_fields",
 }
 
 

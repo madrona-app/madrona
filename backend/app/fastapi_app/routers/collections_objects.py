@@ -186,6 +186,30 @@ def _pop_hierarchy(data: dict, protected_fields: set) -> tuple[bool, object, obj
     return parent_given, parent_id, order
 
 
+def _apply_custom_fields(db, organization_id, auth, obj, data, *, creating: bool):
+    """Validate custom field values (type, choices, required, per-field role permissions)."""
+    from app.services import custom_fields as cf
+    incoming = data.pop("custom_fields", None) if "custom_fields" in data else None
+    if incoming is None and not creating:
+        return None
+    ctx = cf.role_context(db, organization_id, auth.user_id, auth.role_override)
+    try:
+        return cf.apply_values(db, organization_id, getattr(obj, "custom_fields", None) if obj else None,
+                               incoming, ctx, creating=creating)
+    except cf.CustomFieldError as e:
+        raise HTTPException(status_code=e.status, detail={"code": "validation_error", "message": str(e),
+                                                           "field": f"custom_fields.{e.field}" if e.field else "custom_fields"})
+
+
+def _filter_custom_fields(db, organization_id, auth, serialized: dict) -> dict:
+    """Hide custom fields the caller's role may not view."""
+    if serialized.get("custom_fields"):
+        from app.services import custom_fields as cf
+        ctx = cf.role_context(db, organization_id, auth.user_id, auth.role_override)
+        serialized["custom_fields"] = cf.visible_values(db, organization_id, serialized["custom_fields"], ctx)
+    return serialized
+
+
 def _validated_external_links(value):
     try:
         return normalize_external_links(value)
@@ -437,6 +461,7 @@ def create_collection_object(
     protected_fields |= get_write_restricted_fields('collection_object', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
     _reject_publish_fields(data)
     _check_cataloging_status(data)
+    custom_values = _apply_custom_fields(db, organization_id, auth, None, data, creating=True)
     parent_given, parent_id, sibling_order = _pop_hierarchy(data, protected_fields)
     from app.services import archival_hierarchy as _ah
     try:
@@ -459,6 +484,7 @@ def create_collection_object(
     )
 
     obj = _create_collection_object(db, organization_id, filtered_data, user_uuid, open_approval=True)
+    obj.custom_fields = custom_values
     if parent_id is not None:
         obj.parent_object_id = parent_id
         obj.sibling_order = int(sibling_order) if sibling_order is not None else \
@@ -477,7 +503,7 @@ def create_collection_object(
         # Index in OpenSearch (async, don't fail if unavailable)
         _index_collection_object(obj)
 
-        result = _serialize_collection_object_full(obj, session=db)
+        result = _filter_custom_fields(db, organization_id, auth, _serialize_collection_object_full(obj, session=db))
         if sync_warnings:
             result["_warnings"] = sync_warnings
         return result
@@ -747,7 +773,7 @@ def get_collection_object(
 
     serialized = _serialize_collection_object_full(obj, include_constituents=True, session=db)
     filtered = apply_field_access(serialized, 'collection_object', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
-    return filtered
+    return _filter_custom_fields(db, organization_id, auth, filtered)
 
 
 @router.put("/api/organizations/{organization_id}/collections/objects/{object_id}", response_model=dict, summary="Update collection object")
@@ -799,6 +825,8 @@ def update_collection_object(
     protected_fields |= get_write_restricted_fields('collection_object', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
     _reject_publish_fields(data, obj)
     _check_cataloging_status(data, obj)
+    if "custom_fields" in data:
+        obj.custom_fields = _apply_custom_fields(db, organization_id, auth, obj, data, creating=False)
     parent_given, parent_id, sibling_order = _pop_hierarchy(data, protected_fields)
     from app.services import archival_hierarchy as _ah
     try:
@@ -840,7 +868,7 @@ def update_collection_object(
         # Re-index linked media so denormalized object metadata stays in sync
         _reindex_linked_media(obj)
 
-        result = _serialize_collection_object_full(obj, session=db)
+        result = _filter_custom_fields(db, organization_id, auth, _serialize_collection_object_full(obj, session=db))
         if sync_warnings:
             result["_warnings"] = sync_warnings
         return result

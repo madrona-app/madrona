@@ -331,6 +331,10 @@ class CollectionObject(Base):
     # app.services.external_links on every write.
     external_links: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True)
 
+    # Values of the organization's user-defined fields, keyed by field key
+    # (collections.custom_field_definitions); validated in app.services.custom_fields.
+    custom_fields: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+
     # Free-form key/value store for facts that have no column of their own —
     # bulk-action outputs such as cataloging status, loan availability and the
     # notes that accompany a status change. Named extra_metadata rather than
@@ -499,6 +503,7 @@ class CollectionObject(Base):
             name="check_object_status",
         ),
         Index("ix_objects_parent_order", "organization_id", "parent_object_id", "sibling_order"),
+        Index("ix_objects_custom_fields", "custom_fields", postgresql_using="gin"),
         CheckConstraint(
             "cataloging_status IS NULL OR cataloging_status IN "
             "('not_started', 'in_progress', 'pending_review', 'needs_research', 'cataloged')",

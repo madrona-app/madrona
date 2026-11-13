@@ -165,6 +165,7 @@ def create_app() -> FastAPI:
     from app.fastapi_app.routers.collections_objects import router as collections_objects_router
     from app.fastapi_app.routers.record_workflow import router as record_workflow_router
     from app.fastapi_app.routers.archival_hierarchy import router as archival_hierarchy_router
+    from app.fastapi_app.routers.custom_fields import router as custom_fields_router
     from app.fastapi_app.routers.collections_media import router as collections_media_router
     from app.fastapi_app.routers.collections_constituents import router as collections_constituents_router
     from app.fastapi_app.routers.collections_procedures import router as collections_procedures_router
@@ -284,6 +285,7 @@ def create_app() -> FastAPI:
     app.include_router(collections_objects_router)
     app.include_router(record_workflow_router)
     app.include_router(archival_hierarchy_router)
+    app.include_router(custom_fields_router)
     app.include_router(collections_media_router)
     app.include_router(collections_constituents_router)
     app.include_router(collections_procedures_router)

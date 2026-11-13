@@ -489,6 +489,7 @@ def _serialize_collection_object_full(
         "watermarks": obj.watermarks,
         "external_links": obj.external_links or [],
         "cataloging_status": obj.cataloging_status,
+        "custom_fields": obj.custom_fields or {},
         "parent_object_id": str(obj.parent_object_id) if obj.parent_object_id else None,
         "sibling_order": obj.sibling_order,
         # Written by the workspace bulk actions (cataloging status, loan

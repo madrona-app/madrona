@@ -61,6 +61,7 @@ from app.models.layout_preferences import *  # noqa: F401,F403
 from app.models.guide_document import *  # noqa: F401,F403
 from app.models.sequence import *  # noqa: F401,F403
 from app.models.record_workflow import *  # noqa: F401,F403
+from app.models.custom_fields import *  # noqa: F401,F403
 
 # Orphan: GuideMetric lives under services/ but inherits from Base. Without
 # this import, the alembic-fallback path (Base.metadata.create_all) does not
