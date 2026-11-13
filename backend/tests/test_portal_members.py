@@ -127,17 +127,30 @@ def _sign_in(client, db, org, member):
 
 
 @pytest.fixture
-def real_rate_limits(monkeypatch):
-    """Real sliding-window limits, in memory, with fresh buckets."""
-    monkeypatch.setattr(RateLimiter, "allow", _REAL_ALLOW)
-    monkeypatch.setattr(RateLimiter, "_allow_redis", lambda self, a, b: None)
-    monkeypatch.setattr(discover_members, "_signin_ip_limiter", RateLimiter(max_requests=10, window_seconds=900))
-    monkeypatch.setattr(discover_members, "_signin_email_limiter", RateLimiter(max_requests=5, window_seconds=900))
-    monkeypatch.setattr(discover_members, "_exchange_ip_limiter", RateLimiter(max_requests=20, window_seconds=900))
-    # The global per-IP middleware buckets must not interfere.
+def real_rate_limits():
+    """Real sliding-window limits, in memory, with fresh buckets.
+
+    Uses patch.object (undone when this fixture tears down) rather than
+    monkeypatch. monkeypatch is set up before the suite's autouse
+    _disable_rate_limiting fixture and torn down after it, so restoring
+    RateLimiter.allow through monkeypatch put the suite's mock back
+    permanently and disabled rate limiting for every later test in the worker.
+    """
+    from contextlib import ExitStack
+    from unittest.mock import patch
+
     from app.fastapi_app.middleware import rate_limit as rl_mw
-    monkeypatch.setattr(rl_mw, "_read_limiter", RateLimiter(max_requests=10_000, window_seconds=60))
-    monkeypatch.setattr(rl_mw, "_write_limiter", RateLimiter(max_requests=10_000, window_seconds=60))
+
+    with ExitStack() as stack:
+        stack.enter_context(patch.object(RateLimiter, "allow", _REAL_ALLOW))
+        stack.enter_context(patch.object(RateLimiter, "_allow_redis", lambda self, a, b: None))
+        stack.enter_context(patch.object(discover_members, "_signin_ip_limiter", RateLimiter(max_requests=10, window_seconds=900)))
+        stack.enter_context(patch.object(discover_members, "_signin_email_limiter", RateLimiter(max_requests=5, window_seconds=900)))
+        stack.enter_context(patch.object(discover_members, "_exchange_ip_limiter", RateLimiter(max_requests=20, window_seconds=900)))
+        # The global per-IP middleware buckets must not interfere.
+        stack.enter_context(patch.object(rl_mw, "_read_limiter", RateLimiter(max_requests=10_000, window_seconds=60)))
+        stack.enter_context(patch.object(rl_mw, "_write_limiter", RateLimiter(max_requests=10_000, window_seconds=60)))
+        yield
 
 
 # =============================================================================
