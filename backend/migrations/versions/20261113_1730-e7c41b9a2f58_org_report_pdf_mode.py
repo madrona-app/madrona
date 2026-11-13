@@ -6,12 +6,12 @@ tagged for access technology), or 'none' (accessible formats only: HTML,
 Word, plain text, CSV, Excel).
 
 Revision ID: e7c41b9a2f58
-Revises: d2b8e4f0c312
+Revises: 7c4e1a9b2d58
 """
 from alembic import op
 
 revision = "e7c41b9a2f58"
-down_revision = "d2b8e4f0c312"
+down_revision = "7c4e1a9b2d58"
 branch_labels = None
 depends_on = None
 
