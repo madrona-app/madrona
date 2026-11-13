@@ -111,6 +111,12 @@ class DiscoverConfig(Base):
     #   "distribution_id": "..." (cloudfront only) }
     cdn_config = mapped_column(JSONB, nullable=True)
 
+    # Saved personal collections for approved portal members. Off by default;
+    # while off, every member endpoint answers 404.
+    member_collections_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+
     # Audit
     created_at: Mapped[datetime] = timestamp_now()
     updated_at: Mapped[datetime] = timestamp_updated()

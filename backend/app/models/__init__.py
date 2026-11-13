@@ -38,6 +38,7 @@ from app.models.authorities import *  # noqa: F401,F403
 from app.models.workspaces import *  # noqa: F401,F403
 from app.models.events import *  # noqa: F401,F403
 from app.models.discover import *  # noqa: F401,F403
+from app.models.portal_members import *  # noqa: F401,F403
 from app.models.exhibit import *  # noqa: F401,F403
 from app.models.content import *  # noqa: F401,F403
 from app.models.budget import *  # noqa: F401,F403

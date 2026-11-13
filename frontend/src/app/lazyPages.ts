@@ -173,6 +173,10 @@ export const ContentPage = React.lazy(() => import('../pages/discover/ContentPag
 export const DiscoverObjectPage = React.lazy(() => import('../pages/discover/DiscoverObjectPage').then(m => ({ default: m.DiscoverObjectPage })));
 export const GuideStandalonePage = React.lazy(() => import('../pages/discover/GuideStandalonePage'));
 export const DiscoverPage = React.lazy(() => import('../pages/discover/DiscoverPage').then(m => ({ default: m.DiscoverPage })));
+export const MemberSignInPage = React.lazy(() => import('../pages/discover/members/MemberSignInPage'));
+export const MemberWelcomePage = React.lazy(() => import('../pages/discover/members/MemberWelcomePage'));
+export const MyCollectionsPage = React.lazy(() => import('../pages/discover/members/MyCollectionsPage'));
+export const MemberCollectionPage = React.lazy(() => import('../pages/discover/members/MemberCollectionPage'));
 export const EventDetailPublicPage = React.lazy(() => import('../pages/discover/EventDetailPage'));
 export const EventListPublicPage = React.lazy(() => import('../pages/discover/EventListPage'));
 export const ExhibitionDetailPublicPage = React.lazy(() => import('../pages/discover/ExhibitionDetailPage'));
