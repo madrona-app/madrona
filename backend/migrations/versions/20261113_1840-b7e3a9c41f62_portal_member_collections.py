@@ -17,12 +17,12 @@ Row-level security is applied by seeds/seed_rls_policies.py, which runs at
 boot (all four tables are in RLS_TABLES/RLS_POLICIES).
 
 Revision ID: b7e3a9c41f62
-Revises: d5f2b8c4a016
+Revises: b7a3e91c4d62
 """
 from alembic import op
 
 revision = "b7e3a9c41f62"
-down_revision = "d5f2b8c4a016"
+down_revision = "b7a3e91c4d62"
 branch_labels = None
 depends_on = None
 

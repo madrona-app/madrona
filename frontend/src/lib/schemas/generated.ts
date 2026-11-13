@@ -7127,6 +7127,7 @@ export type MFASetupStartBody = z.infer<typeof MFASetupStartBodySchema>;
 export const MFASetupStartResponseSchema = z.object({
   secret: z.string(),
   otpauthUrl: z.string(),
+  qrSvg: z.string().nullable().optional(),
   session: z.string(),
 }).passthrough();
 
