@@ -202,7 +202,7 @@ export default function SignInPage() {
   // Render MFA verify form
   if (mfaState.type === 'verify') {
     return (
-      <div className="min-h-screen bg-stone/40 flex items-center justify-center px-4">
+      <main className="min-h-screen bg-stone/40 flex items-center justify-center px-4">
         <MfaVerifyForm
           email={mfaState.email}
           session={mfaState.session}
@@ -211,14 +211,14 @@ export default function SignInPage() {
           onCancel={handleMfaCancel}
           onVerify={handleMfaVerify}
         />
-      </div>
+      </main>
     );
   }
 
   // Render MFA setup form
   if (mfaState.type === 'setup') {
     return (
-      <div className="min-h-screen bg-stone/40 flex items-center justify-center px-4">
+      <main className="min-h-screen bg-stone/40 flex items-center justify-center px-4">
         <MfaSetupForm
           email={mfaState.email}
           session={mfaState.session}
@@ -227,7 +227,7 @@ export default function SignInPage() {
           onSetupStart={handleMfaSetupStart}
           onSetupVerify={handleMfaSetupVerify}
         />
-      </div>
+      </main>
     );
   }
 

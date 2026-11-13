@@ -126,7 +126,6 @@ export default function InstallPage() {
           placeholder="Museum of Somewhere"
           required
           disabled={isLoading}
-          autoFocus
         />
 
         <AuthInput

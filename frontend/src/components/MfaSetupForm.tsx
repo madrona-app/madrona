@@ -121,11 +121,11 @@ export default function MfaSetupForm({
       <div className="max-w-md w-full bg-parchment rounded-institutional shadow-archival-md border border-lichen p-8">
         <div className="text-center mb-6">
           <div className="mx-auto w-12 h-12 bg-semantic-success/20 rounded-full flex items-center justify-center mb-4">
-            <CheckCircle className="w-6 h-6 text-semantic-success" />
+            <CheckCircle className="w-6 h-6 text-semantic-success" aria-hidden="true" />
           </div>
-          <h2 className="text-2xl font-bold text-ink mb-2">
+          <h1 className="text-2xl font-bold text-ink mb-2">
             MFA Setup Complete
-          </h2>
+          </h1>
           <p className="text-archive text-sm">
             Two-factor authentication has been enabled for your account.
             You'll need to enter a code from your authenticator app each time you sign in.
@@ -148,19 +148,19 @@ export default function MfaSetupForm({
       <div className="max-w-md w-full bg-parchment rounded-institutional shadow-archival-md border border-lichen p-8">
         <div className="text-center mb-6">
           <div className="mx-auto w-12 h-12 bg-bark/10 rounded-full flex items-center justify-center mb-4">
-            <ShieldCheck className="w-6 h-6 text-bark" />
+            <ShieldCheck className="w-6 h-6 text-bark" aria-hidden="true" />
           </div>
-          <h2 className="text-2xl font-bold text-ink mb-2">
+          <h1 className="text-2xl font-bold text-ink mb-2">
             Set Up Authenticator
-          </h2>
+          </h1>
           <p className="text-archive text-sm">
             Scan this QR code with your authenticator app (Google Authenticator, Authy, 1Password, etc.)
           </p>
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 bg-semantic-error/10 border border-semantic-error/30 text-semantic-error px-4 py-3 rounded-institutional text-sm mb-6">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <div role="alert" className="flex items-center gap-2 bg-semantic-error/10 border border-semantic-error/30 text-semantic-error px-4 py-3 rounded-institutional text-sm mb-6">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
             <span>{error}</span>
           </div>
         )}
@@ -241,11 +241,11 @@ export default function MfaSetupForm({
     <div className="max-w-md w-full bg-parchment rounded-institutional shadow-archival-md border border-lichen p-8">
       <div className="text-center mb-6">
         <div className="mx-auto w-12 h-12 bg-bark/10 rounded-full flex items-center justify-center mb-4">
-          <ShieldCheck className="w-6 h-6 text-bark" />
+          <ShieldCheck className="w-6 h-6 text-bark" aria-hidden="true" />
         </div>
-        <h2 className="text-2xl font-bold text-ink mb-2">
+        <h1 className="text-2xl font-bold text-ink mb-2">
           Verify Setup
-        </h2>
+        </h1>
         <p className="text-archive text-sm">
           Enter the 6-digit code from your authenticator app to complete setup
         </p>
@@ -274,8 +274,8 @@ export default function MfaSetupForm({
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 bg-semantic-error/10 border border-semantic-error/30 text-semantic-error px-4 py-3 rounded-institutional text-sm">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <div role="alert" className="flex items-center gap-2 bg-semantic-error/10 border border-semantic-error/30 text-semantic-error px-4 py-3 rounded-institutional text-sm">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
             <span>{error}</span>
           </div>
         )}
@@ -288,7 +288,7 @@ export default function MfaSetupForm({
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                 Verifying...
               </>
             ) : (
