@@ -25,7 +25,6 @@ export default function MfaSetupForm({
 }: MfaSetupFormProps) {
   const [step, setStep] = useState<'loading' | 'scan' | 'verify' | 'complete'>('loading');
   const [secret, setSecret] = useState('');
-  const [otpauthUrl, setOtpauthUrl] = useState('');
   const [qrSvg, setQrSvg] = useState('');
   const [currentSession, setCurrentSession] = useState(session);
   const [code, setCode] = useState('');
@@ -41,7 +40,6 @@ export default function MfaSetupForm({
       try {
         const result = await onSetupStart(email, session);
         setSecret(result.secret);
-        setOtpauthUrl(result.otpauthUrl);
         // Only a locally generated image is used: the otpauth URL carries the secret.
         setQrSvg(result.qrSvg && result.qrSvg.startsWith('data:image/svg+xml') ? result.qrSvg : '');
         setCurrentSession(result.session);
