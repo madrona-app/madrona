@@ -8,7 +8,8 @@
  * Lives in global shell at /organizations/:orgId/work/workspaces
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useMenuNavigation } from '../../components/workspace/useMenuNavigation';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -71,6 +72,15 @@ export default function WorkspacesListPage() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  const menuListRef = useRef<HTMLDivElement>(null);
+  const closeMenu = useCallback(() => setMenuOpenId(null), []);
+  const { onKeyDown: onMenuKeyDown } = useMenuNavigation({
+    isOpen: menuOpenId !== null,
+    menuRef: menuListRef,
+    triggerRef: menuTriggerRef,
+    onClose: closeMenu,
+  });
   const [deleteTarget, setDeleteTarget] = useState<UnifiedWorkspace | null>(null);
   const [gridSize, setGridSize] = useState<2 | 4 | 6>(() => {
     try {
@@ -483,36 +493,56 @@ export default function WorkspacesListPage() {
                 </Link>
                 <div className="relative ml-2">
                   <button
+                    ref={menuOpenId === workspace.id ? menuTriggerRef : undefined}
+                    type="button"
                     onClick={() => setMenuOpenId(
                       menuOpenId === workspace.id ? null : workspace.id
                     )}
-                    className="p-1 rounded hover:bg-stone/50"
+                    aria-label={`Actions for ${workspace.name}`}
+                    aria-haspopup="menu"
+                    aria-expanded={menuOpenId === workspace.id}
+                    className="p-1 rounded hover:bg-stone/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                   >
-                    <MoreHorizontal size={16} className="text-archive" />
+                    <MoreHorizontal size={16} className="text-archive" aria-hidden="true" />
                   </button>
                   {menuOpenId === workspace.id && (
-                    <div className="absolute right-0 top-8 w-48 bg-parchment border border-lichen rounded-lg shadow-lg py-1 z-10">
+                    <div
+                      ref={menuListRef}
+                      role="menu"
+                      aria-label={`Actions for ${workspace.name}`}
+                      tabIndex={-1}
+                      onKeyDown={onMenuKeyDown}
+                      className="absolute right-0 top-8 w-48 bg-parchment border border-lichen rounded-lg shadow-lg py-1 z-10"
+                    >
                       <button
+                        type="button"
+                        role="menuitem"
+                        tabIndex={-1}
                         onClick={() => handleSetContext(workspace)}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-stone/30"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-stone/30 focus-visible:outline-none focus-visible:bg-stone/30"
                       >
-                        <Layers size={14} />
+                        <Layers size={14} aria-hidden="true" />
                         Set as Active Context
                       </button>
                       {workspace.is_owner && (
                         <>
                           <Link
                             to={getWorkspaceEditPath(workspace)}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-stone/30"
+                            role="menuitem"
+                            tabIndex={-1}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-stone/30 focus-visible:outline-none focus-visible:bg-stone/30"
                           >
-                            <Edit2 size={14} />
+                            <Edit2 size={14} aria-hidden="true" />
                             Edit Work Set
                           </Link>
                           <button
+                            type="button"
+                            role="menuitem"
+                            tabIndex={-1}
                             onClick={() => handleDelete(workspace)}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-semantic-error hover:bg-semantic-error/10"
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-semantic-error hover:bg-semantic-error/10 focus-visible:outline-none focus-visible:bg-semantic-error/10"
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={14} aria-hidden="true" />
                             Delete
                           </button>
                         </>
@@ -566,6 +596,7 @@ export default function WorkspacesListPage() {
       {/* Click outside to close menu */}
       {menuOpenId && (
         <div
+          aria-hidden="true"
           className="fixed inset-0 z-5"
           onClick={() => setMenuOpenId(null)}
         />
