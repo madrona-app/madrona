@@ -17,6 +17,7 @@ import {
 import { apiFetch } from '../../lib/apiClient';
 import { useOrganization } from '../../contexts/useOrganization';
 import { useState, useEffect, useMemo } from 'react';
+import FileSourceWizard from '../../components/FileSourceWizard';
 
 interface WizardStep {
   id: string;
@@ -52,6 +53,7 @@ export default function SetupWizardPage() {
     config: '{}',
   });
   const [connectorErrors, setConnectorErrors] = useState<Record<string, string>>({});
+  const [fileWizardOpen, setFileWizardOpen] = useState(false);
 
   // Pipeline form state
   const [pipelineForm, setPipelineForm] = useState({
@@ -114,12 +116,17 @@ export default function SetupWizardPage() {
 
   const isLoading = datasetsLoading || definitionsLoading || connectorsLoading || pipelinesLoading || runsLoading || entitiesLoading;
 
+  const selectedConnectorDefinition = connectorDefinitions?.find(
+    (d) => d.connector_definition_id === connectorForm.connector_definition_id,
+  );
+
   // Category display labels
   const categoryLabels: Record<string, string> = {
     database: 'Databases',
     api: 'APIs',
-    file: 'File Systems',
+    file: 'Files',
     cloud: 'Cloud Services',
+    madrona: 'Madrona',
   };
 
   // Group definitions by category
@@ -841,6 +848,21 @@ export default function SetupWizardPage() {
                   )}
                 </div>
 
+                {selectedConnectorDefinition?.category === 'file' ? (
+                  <div className="space-y-2">
+                    <p className="text-sm text-archive">
+                      Upload a CSV or Excel file, check the preview, and choose which columns hold the object number and title.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setFileWizardOpen(true)}
+                      className="btn-primary w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+                    >
+                      Upload a spreadsheet
+                    </button>
+                  </div>
+                ) : (
+                <>
                 <div>
                   <label htmlFor="connector-name" className="block text-sm font-medium text-ink mb-1">
                     Name <span className="text-semantic-error">*</span>
@@ -895,6 +917,8 @@ export default function SetupWizardPage() {
                 >
                   {createConnectorMutation.isPending ? 'Creating...' : 'Create Connector'}
                 </button>
+                </>
+                )}
               </div>
             )}
           </div>
@@ -1168,6 +1192,20 @@ export default function SetupWizardPage() {
           )}
         </div>
       </div>
+
+      {fileWizardOpen && selectedConnectorDefinition && organizationId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4">
+          <FileSourceWizard
+            definition={selectedConnectorDefinition}
+            organizationId={organizationId}
+            onComplete={() => {
+              setFileWizardOpen(false);
+              queryClient.invalidateQueries({ queryKey: ['connector-instances'] });
+            }}
+            onCancel={() => setFileWizardOpen(false)}
+          />
+        </div>
+      )}
     </div>
   );
 }
