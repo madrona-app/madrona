@@ -442,3 +442,105 @@ class TestObjectMediaInReports:
         obj = _make_object_with_media(s, org.organization_id, alt_text="  ", title=None)
         alt = _parse(_render_record_sheet(obj, org.organization_id, "html", monkeypatch)).find("img")[0]["alt"]
         assert alt == f"Image of {obj.object_number} — Bowl"
+
+
+def _attach_document(session, org_id, obj, filename, title):
+    import uuid as _uuid
+    from app.models import CollectionObjectMedia, Media
+    media = Media(organization_id=org_id, s3_key=f"orgs/{org_id}/media/{_uuid.uuid4().hex}.pdf",
+                  filename=filename, file_size=10, mime_type="application/pdf", media_type="document",
+                  title=title, processing_status="completed")
+    session.add(media)
+    session.flush()
+    session.add(CollectionObjectMedia(object_id=obj.object_id, media_id=media.media_id,
+                                      is_primary=False, sort_order=1))
+    session.flush()
+
+
+class TestAttachmentFilenames:
+    def test_record_sheet_lists_attachments_in_every_format(self, auth_setup, monkeypatch):
+        from app.database import current_session
+        _, org, _ = auth_setup
+        s = current_session()
+        obj = _make_object_with_media(s, org.organization_id, alt_text="Green bowl")
+        _attach_document(s, org.organization_id, obj, "condition-2019.pdf", "Condition report 2019")
+
+        tree = _parse(_render_record_sheet(obj, org.organization_id, "html", monkeypatch))
+        assert "Attached files" in tree.text_by_tag["caption"]
+        assert tree.text_by_tag["th"][3:] == ["bowl-front.png", "condition-2019.pdf"]
+        assert "Condition report 2019" in tree.text_by_tag["td"]
+        assert "Document" in tree.text_by_tag["td"]
+
+        text = _render_record_sheet(obj, org.organization_id, "txt", monkeypatch).decode()
+        assert "File name: bowl-front.png\nType: Image\nTitle: Front view" in text
+        assert "File name: condition-2019.pdf\nType: Document\nTitle: Condition report 2019" in text
+
+        xml = _docx_parts(_render_record_sheet(obj, org.organization_id, "docx", monkeypatch))["word/document.xml"]
+        assert "condition-2019.pdf" in xml and '<w:tblCaption w:val="Attached files"/>' in xml
+
+    def test_pdf_template_lists_attachments(self, auth_setup, monkeypatch):
+        import weasyprint
+        from app.database import current_session
+        _, org, _ = auth_setup
+        s = current_session()
+        obj = _make_object_with_media(s, org.organization_id, alt_text="Green bowl")
+        _attach_document(s, org.organization_id, obj, "condition-2019.pdf", None)
+        seen = {}
+
+        class _HTML:
+            def __init__(self, string=None, **kw):
+                seen["html"] = string
+
+            def write_pdf(self, **kw):
+                return b"%PDF-1.7 stub"
+
+        monkeypatch.setattr(weasyprint, "HTML", _HTML)
+        _render_record_sheet(obj, org.organization_id, "pdf", monkeypatch)
+        assert "<caption>Attached files</caption>" in seen["html"]
+        assert '<th scope="row">condition-2019.pdf</th>' in seen["html"]
+
+    def test_object_without_files_says_so(self, auth_setup, monkeypatch):
+        from app.database import current_session
+        from app.models import CollectionObject
+        _, org, _ = auth_setup
+        s = current_session()
+        obj = CollectionObject(organization_id=org.organization_id, object_number="NOFILE-1", object_name="Cup")
+        s.add(obj)
+        s.flush()
+        out = _render_record_sheet(obj, org.organization_id, "html", monkeypatch)
+        assert b"No files are attached to this object." in out
+
+    def test_attached_files_list_report(self, auth_setup, monkeypatch):
+        from app.database import current_session
+        from app.models import CollectionObject
+        from app.services.report_definitions import tabular_exports
+        from app.services.report_registry import get_registry
+        _, org, _ = auth_setup
+        s = current_session()
+        a = _make_object_with_media(s, org.organization_id, alt_text="Green bowl")
+        _attach_document(s, org.organization_id, a, "condition-2019.pdf", "Condition report")
+        b = CollectionObject(organization_id=org.organization_id, object_number="ZZZ-9", object_name="Cup")
+        s.add(b)
+        s.flush()
+        monkeypatch.setattr(tabular_exports, "search_object_ids", lambda params, org_id: [a.object_id, b.object_id])
+
+        definition = get_registry().get("collection_objects_attachments")
+        assert definition.supported_formats[:2] == ["html", "txt"]
+        rows, cols, meta = definition.resolver("search", {"search_request": {}}, org.organization_id)
+        assert [r["filename"] for r in rows] == ["bowl-front.png", "condition-2019.pdf", "No attached files"]
+        assert rows[0]["is_primary"] is True and rows[0]["alt_text"] == "Green bowl"
+
+        content, _, _ = definition.renderer(data=rows, export_format="html", columns=cols,
+                                            report_name=definition.name)
+        tree = _parse(content)
+        assert [h for h in tree.text_by_tag["th"]][:8] == [c["label"] for c in cols]
+        assert "condition-2019.pdf" in tree.text_by_tag["td"]
+
+    def test_workspace_not_found(self, auth_setup):
+        import uuid as _uuid
+        from app.services.report_registry import get_registry
+        _, org, _ = auth_setup
+        definition = get_registry().get("collection_objects_attachments")
+        rows, _, meta = definition.resolver("workspace", {"workspace_id": str(_uuid.uuid4())},
+                                            org.organization_id)
+        assert rows == [] and meta["error"] == "workspace_not_found"

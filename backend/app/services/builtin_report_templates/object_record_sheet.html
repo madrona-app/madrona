@@ -196,6 +196,20 @@
     font-size: 8pt;
   }
 
+  table.data-table caption {
+    text-align: left;
+    font-weight: bold;
+    padding-bottom: 3pt;
+  }
+
+  table.data-table tbody th {
+    text-align: left;
+    font-weight: normal;
+    padding: 4pt 6pt;
+    border-bottom: 0.5pt solid var(--stone);
+    vertical-align: top;
+  }
+
   table.data-table tbody td {
     padding: 4pt 6pt;
     border-bottom: 0.5pt solid var(--stone);
@@ -627,6 +641,34 @@
   </div>
   {% endif %}
 </div>
+{% endif %}
+
+{# ── Attachments ── #}
+{% if attachments is not none %}
+<h2 class="section-header">Attachments</h2>
+{% if attachments %}
+<table class="data-table">
+  <caption>Attached files</caption>
+  <thead>
+    <tr>
+      <th scope="col">File name</th>
+      <th scope="col">Type</th>
+      <th scope="col">Title</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for a in attachments %}
+    <tr>
+      <th scope="row">{{ a.filename }}</th>
+      <td>{{ a.type_label }}</td>
+      <td>{{ a.title or "" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>No files are attached to this object.</p>
+{% endif %}
 {% endif %}
 
 {# ── Record Information ── #}

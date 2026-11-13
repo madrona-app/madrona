@@ -1473,6 +1473,69 @@ def _media_alt_text(media: Any, link: Any = None) -> str | None:
     return None
 
 
+MEDIA_TYPE_LABELS = {
+    "image": "Image",
+    "video": "Video",
+    "audio": "Audio",
+    "document": "Document",
+    "model_3d": "3D model",
+}
+
+
+def fetch_object_attachments(object_ids: list[Any], org_id: Any) -> dict[Any, list[dict[str, Any]]]:
+    """Files attached to each object: filename, type and title.
+
+    Ordered primary first, then by the object's media sort order. Objects with
+    no attached files map to an empty list.
+    """
+    from sqlalchemy import select
+
+    from app.database import current_session
+    from app.models.media import CollectionObjectMedia, Media
+
+    result: dict[Any, list[dict[str, Any]]] = {oid: [] for oid in object_ids}
+    if not object_ids:
+        return result
+    rows = current_session().execute(
+        select(CollectionObjectMedia, Media)
+        .join(Media, Media.media_id == CollectionObjectMedia.media_id)
+        .where(
+            CollectionObjectMedia.object_id.in_(object_ids),
+            Media.organization_id == org_id,
+        )
+        .order_by(
+            CollectionObjectMedia.object_id,
+            CollectionObjectMedia.is_primary.desc(),
+            CollectionObjectMedia.sort_order,
+            Media.filename,
+        )
+    ).all()
+    for link, media in rows:
+        result.setdefault(link.object_id, []).append({
+            "filename": media.filename,
+            "media_type": media.media_type,
+            "type_label": MEDIA_TYPE_LABELS.get(media.media_type, (media.media_type or "").title()),
+            "mime_type": media.mime_type,
+            "title": link.caption_override or media.title,
+            "alt_text": media.alt_text,
+            "is_primary": bool(link.is_primary),
+        })
+    return result
+
+
+def _fetch_attachments_for_record(record: dict[str, Any]) -> list[dict[str, Any]] | None:
+    """Attachment list for one object, or None when it cannot be looked up."""
+    object_id = record.get("object_id")
+    org_id = record.get("organization_id")
+    if not object_id or not org_id:
+        return None
+    try:
+        return fetch_object_attachments([object_id], org_id).get(object_id, [])
+    except Exception:
+        logger.debug("Could not fetch attachments for object %s", object_id, exc_info=True)
+        return None
+
+
 def _fetch_primary_image_b64(
     record: dict[str, Any],
     metadata: dict[str, Any],
@@ -1604,6 +1667,9 @@ def render_object_record_sheet_html(
     # else a description naming the object the image depicts.
     image_alt = (image_result[2] if image_result else None) or f"Image of {title}"
 
+    # Attached files (filename, type, title) — listed in every format
+    attachments = _fetch_attachments_for_record(record)
+
     # Timestamp
     generated_at = datetime.now(timezone.utc).strftime("%B %d, %Y at %H:%M UTC")
 
@@ -1619,6 +1685,7 @@ def render_object_record_sheet_html(
         "image_b64": image_b64,
         "image_mime": image_mime,
         "image_alt": image_alt,
+        "attachments": attachments,
         # Creators
         "creators": creators,
         # Description
