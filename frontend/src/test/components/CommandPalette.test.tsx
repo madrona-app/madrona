@@ -98,7 +98,7 @@ describe('CommandPalette', () => {
     const input = screen.getByPlaceholderText(/Jump to a page/i);
     fireEvent.change(input, { target: { value: 'conservation' } });
     // First row is selected by default — press Enter
-    fireEvent.keyDown(input.closest('div')!, { key: 'Enter' });
+    fireEvent.keyDown(input, { key: 'Enter' });
     // LocationProbe reflects the new path with :orgId substituted
     expect(screen.getByTestId('location').textContent).toBe(
       '/organizations/test-org/collections/conservation',
@@ -112,7 +112,8 @@ describe('CommandPalette', () => {
     // Nonsense for nav matching — Ask Guide row should be the only non-header row
     // Navigate to the last row (Ask Guide) via ArrowDown once (matching nav rows
     // may be zero, so first ArrowDown lands on Ask Guide either way).
-    const container = input.closest('div')!;
+    // Keyboard handling lives on the combobox input, where focus stays.
+    const container = input;
     fireEvent.keyDown(container, { key: 'ArrowDown' });
     fireEvent.keyDown(container, { key: 'ArrowDown' });
     fireEvent.keyDown(container, { key: 'ArrowDown' });
@@ -132,7 +133,8 @@ describe('CommandPalette', () => {
     renderPalette();
     const input = screen.getByPlaceholderText(/Jump to a page/i);
     fireEvent.change(input, { target: { value: 'conservation' } });
-    const container = input.closest('div')!;
+    // Keyboard handling lives on the combobox input, where focus stays.
+    const container = input;
     // Going up from index 0 wraps to the last row (Ask Guide)
     fireEvent.keyDown(container, { key: 'ArrowUp' });
     // Pressing Enter should fire Ask Guide, not a navigation

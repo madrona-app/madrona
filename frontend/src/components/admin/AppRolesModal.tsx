@@ -218,6 +218,7 @@ export default function AppRolesModal({
       onClick={onClose}
       role="presentation"
     >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation wrapper so clicks inside do not dismiss; not itself interactive */}
       <div
         ref={modalRef}
         className="bg-parchment rounded-lg border border-lichen w-full max-w-lg max-h-[90vh] overflow-y-auto"

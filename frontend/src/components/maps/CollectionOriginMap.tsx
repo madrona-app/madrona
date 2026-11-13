@@ -320,6 +320,8 @@ export default function CollectionOriginMap({
       {/* Display mode toggle */}
       <div className="absolute top-4 right-4 bg-parchment rounded-lg shadow-md overflow-hidden">
         <button
+          type="button"
+          aria-pressed={displayMode === 'markers'}
           className={`px-3 py-2 text-sm ${displayMode === 'markers' ? 'bg-bark text-parchment' : 'text-ink hover:bg-stone'}`}
           onClick={() => {
             // This would be controlled by parent, but for now just show state
@@ -329,6 +331,8 @@ export default function CollectionOriginMap({
           Markers
         </button>
         <button
+          type="button"
+          aria-pressed={displayMode === 'heatmap'}
           className={`px-3 py-2 text-sm ${displayMode === 'heatmap' ? 'bg-bark text-parchment' : 'text-ink hover:bg-stone'}`}
           onClick={() => {
             // This would be controlled by parent
@@ -341,24 +345,29 @@ export default function CollectionOriginMap({
 
       {/* Top places list */}
       <div className="absolute bottom-4 right-4 bg-parchment rounded-lg shadow-md p-3 text-sm max-h-[200px] overflow-y-auto">
-        <div className="font-medium text-ink mb-2">Top Origins</div>
-        <div className="space-y-1">
+        <h3 id="collection-origin-top-places" className="font-medium text-ink mb-2 text-sm">Top Origins</h3>
+        <ol className="space-y-1" aria-labelledby="collection-origin-top-places">
           {[...filteredPlaces]
             .sort((a, b) => b.object_count - a.object_count)
             .slice(0, 5)
             .map((place, index) => (
-              <div
-                key={place.place_id}
-                className="flex items-center justify-between gap-4 cursor-pointer hover:bg-stone px-1 py-0.5 rounded"
-                onClick={() => handlePlaceClick(place)}
-              >
-                <span className="text-archive">
-                  {index + 1}. {place.name}
-                </span>
-                <span className="font-medium text-ink">{place.object_count}</span>
-              </div>
+              <li key={place.place_id}>
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between gap-4 cursor-pointer hover:bg-stone px-1 py-0.5 rounded text-left focus-visible:ring-2 ring-bark/30 ring-offset-2"
+                  onClick={() => handlePlaceClick(place)}
+                >
+                  <span className="text-archive">
+                    {index + 1}. {place.name}
+                  </span>
+                  <span className="font-medium text-ink">
+                    {place.object_count}
+                    <span className="sr-only"> objects</span>
+                  </span>
+                </button>
+              </li>
             ))}
-        </div>
+        </ol>
       </div>
     </div>
   );

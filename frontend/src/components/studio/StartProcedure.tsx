@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Play, X, Cog, Network, Hourglass, Split, ArrowRight, type LucideIcon } from 'lucide-react';
@@ -7,6 +7,7 @@ import { ErrorState } from '../ui/ErrorState';
 import { StudioAvatar } from './StudioAvatar';
 import { StudioEntityPicker } from './StudioEntityPicker';
 import { useAuth } from '../../hooks/useAuth';
+import { useAccessibleModal } from '../../hooks/useAccessibleModal';
 import { useActiveProduct, workBasePath } from '../../hooks/useActiveProduct';
 import {
   listPlanTemplates,
@@ -129,6 +130,22 @@ export function StartProcedure({
     run.reset();
   }
 
+  // Escape / backdrop dismiss is ignored while a run is in flight. The hook
+  // needs a stable onClose (it re-arms its focus handling when onClose changes),
+  // so the latest dismiss logic is read through a ref.
+  const dismissRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    dismissRef.current = () => {
+      if (!run.isPending) reset();
+    };
+  });
+  const handleDismiss = useCallback(() => dismissRef.current(), []);
+  const { modalRef } = useAccessibleModal({
+    isOpen: phase === 'launch',
+    onClose: handleDismiss,
+    titlePrefix: 'start-procedure',
+  });
+
   const hasContext = !!contextEntityId;
   const required = selected ? formParams(selected, hasContext).filter((p) => p.required) : [];
   const canRun = !!selected && !run.isPending && required.every((p) =>
@@ -152,8 +169,8 @@ export function StartProcedure({
           Studio drafted your records
           <span className="text-copper inline-flex items-center gap-0.5">Review <ArrowRight size={13} aria-hidden /></span>
         </Link>
-        <button onClick={reset} className="ml-1 text-archive hover:text-ink" aria-label="Dismiss" title="Dismiss">
-          <X size={14} />
+        <button type="button" onClick={reset} className="ml-1 text-archive hover:text-ink" aria-label="Dismiss Studio drafts notice" title="Dismiss">
+          <X size={14} aria-hidden="true" />
         </button>
       </span>
     );
@@ -166,15 +183,18 @@ export function StartProcedure({
       </button>
 
       {phase === 'launch' && (
+        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- backdrop click-to-dismiss; Escape closes via useAccessibleModal
         <div
           className="sidebar-aware-modal fixed top-0 right-0 bottom-0 z-[1000] flex items-center justify-center bg-ink/50 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Start a Studio procedure"
-          onClick={() => !run.isPending && reset()}
-          onKeyDown={(e) => { if (e.key === 'Escape' && !run.isPending) reset(); }}
+          onClick={handleDismiss}
         >
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation wrapper so clicks inside do not dismiss; not itself interactive */}
           <div
+            ref={modalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Start a Studio procedure"
+            tabIndex={-1}
             className="w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden rounded-xl bg-parchment shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
@@ -190,8 +210,8 @@ export function StartProcedure({
                 </div>
               </div>
               {!run.isPending && (
-                <button onClick={reset} className="ml-auto text-parchment/70 hover:text-parchment" aria-label="Close">
-                  <X size={18} />
+                <button type="button" onClick={reset} className="ml-auto text-parchment/70 hover:text-parchment" aria-label="Close Studio procedure">
+                  <X size={18} aria-hidden="true" />
                 </button>
               )}
             </div>
