@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { Link2, Loader2 } from 'lucide-react';
 import { apiFetch } from '../../../lib/apiClient';
 import { formatDateShort, formatDateTime } from '../../../lib/formatters';
@@ -25,6 +25,7 @@ export function ItemDetailSlideOver({
   canEdit,
   organizationId,
 }: ItemDetailSlideOverProps) {
+  const fieldId = useId();
   const [editedNotes, setEditedNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [links, setLinks] = useState<ChecklistItemLink[]>([]);
@@ -96,9 +97,10 @@ export function ItemDetailSlideOver({
         {/* Status and Details */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium text-archive">Status</label>
+            <span id={`${fieldId}-status`} className="text-sm font-medium text-archive">Status</span>
             <div className="mt-1">
               <StatusDropdown
+                labelledBy={`${fieldId}-status`}
                 currentStatus={item.status}
                 onStatusChange={async (status) => {
                   await onSave(item.item_id, { status });
@@ -108,11 +110,11 @@ export function ItemDetailSlideOver({
             </div>
           </div>
           <div>
-            <label className="text-sm font-medium text-archive">Responsible Role</label>
+            <span className="text-sm font-medium text-archive">Responsible Role</span>
             <div className="mt-1 text-ink">{ROLE_LABELS[item.responsible_role]}</div>
           </div>
           <div>
-            <label className="text-sm font-medium text-archive">Due Date</label>
+            <span className="text-sm font-medium text-archive">Due Date</span>
             <div className="mt-1 text-ink">
               {item.due_date
                 ? formatDateShort(item.due_date)
@@ -121,7 +123,7 @@ export function ItemDetailSlideOver({
           </div>
           {item.completed_at && (
             <div>
-              <label className="text-sm font-medium text-archive">Completed</label>
+              <span className="text-sm font-medium text-archive">Completed</span>
               <div className="mt-1 text-ink text-sm">
                 {formatDateTime(item.completed_at)}
               </div>
@@ -132,16 +134,17 @@ export function ItemDetailSlideOver({
         {/* Description */}
         {item.description && (
           <div>
-            <label className="text-sm font-medium text-archive">Description</label>
+            <span className="text-sm font-medium text-archive">Description</span>
             <p className="mt-1 text-ink/70">{item.description}</p>
           </div>
         )}
 
         {/* Notes */}
         <div>
-          <label className="text-sm font-medium text-archive">Notes</label>
+          <label htmlFor={`${fieldId}-notes`} className="text-sm font-medium text-archive">Notes</label>
           {canEdit ? (
             <textarea
+              id={`${fieldId}-notes`}
               value={editedNotes}
               onChange={(e) => setEditedNotes(e.target.value)}
               rows={4}
@@ -155,10 +158,10 @@ export function ItemDetailSlideOver({
 
         {/* Linked Items */}
         <div>
-          <label className="text-sm font-medium text-archive flex items-center gap-2">
-            <Link2 className="w-4 h-4" />
+          <h3 className="text-sm font-medium text-archive flex items-center gap-2">
+            <Link2 className="w-4 h-4" aria-hidden="true" />
             Linked Items
-          </label>
+          </h3>
           {loadingLinks ? (
             <div className="mt-2 flex items-center gap-2 text-archive">
               <Loader2 className="w-4 h-4 animate-spin" />

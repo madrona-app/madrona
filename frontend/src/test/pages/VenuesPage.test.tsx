@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import VenuesPage from '../../pages/exhibit/VenuesPage';
 import * as apiClient from '../../lib/apiClient';
 import * as usePermissionsHook from '../../hooks/usePermissions';
+import { checkA11y, formatViolations } from '../a11y';
 
 vi.mock('../../lib/apiClient', () => ({
   apiFetch: vi.fn(),
@@ -162,5 +163,40 @@ describe('VenuesPage', () => {
       expect(screen.getByText(/no venues found/i)).toBeInTheDocument();
     });
     expect(screen.queryByRole('button', { name: /new venue/i })).not.toBeInTheDocument();
+  });
+
+  describe('accessibility', () => {
+    const venue = {
+      venue_id: 'v-1',
+      name: 'Main Building',
+      description: null,
+      address: '123 Museum Way',
+      default_ceiling_height_cm: 300,
+      default_wall_color: '#ffffff',
+      floor_plan_count: 0,
+      created_at: '2025-12-01T00:00:00Z',
+    };
+
+    it('has no axe violations and exposes the venue header as a disclosure', async () => {
+      mockApiFetch.mockResolvedValue({ venues: [venue] });
+      const { container } = renderPage();
+      const toggle = await screen.findByRole('button', { name: 'Main Building' });
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.getByRole('button', { name: 'Edit Main Building' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Delete Main Building' })).toBeInTheDocument();
+      const results = await checkA11y(container);
+      expect(results.violations, formatViolations(results)).toEqual([]);
+    });
+
+    it('venue dialog is labelled and its fields have labels', async () => {
+      mockApiFetch.mockResolvedValue({ venues: [venue] });
+      const { container } = renderPage();
+      fireEvent.click(await screen.findByRole('button', { name: 'Edit Main Building' }));
+      const dialog = await screen.findByRole('dialog', { name: 'Edit Venue' });
+      expect(dialog).toBeInTheDocument();
+      expect(screen.getByLabelText('Name *')).toBeInTheDocument();
+      const results = await checkA11y(container);
+      expect(results.violations, formatViolations(results)).toEqual([]);
+    });
   });
 });

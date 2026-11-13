@@ -7,7 +7,7 @@
  * - Object checklists (condition check boxes)
  * - Execution Pack: Checklist PDF, Shipment PDF, Object List CSV/PDF, Budget CSV
  */
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import Checkbox from '../../Checkbox';
 import { FileDown, Ruler, ClipboardList, Wrench, Loader2, Check, AlertCircle, Package, Truck, DollarSign, List } from 'lucide-react';
 
@@ -38,6 +38,7 @@ export default function ExportPanel({
   floorPlanId,
   walls,
 }: ExportPanelProps) {
+  const fieldId = useId();
   const [selectedWall, setSelectedWall] = useState<string | 'all'>('all');
   const [scale, setScale] = useState(50);
   const [includeDimensions, setIncludeDimensions] = useState(true);
@@ -243,8 +244,8 @@ export default function ExportPanel({
 
           <div className="space-y-2">
             <div>
-              <label className="text-xs text-ink/70">Wall Selection</label>
-              <select
+              <label htmlFor={`${fieldId}-wall-selection`} className="text-xs text-ink/70">Wall Selection</label>
+              <select id={`${fieldId}-wall-selection`}
                 value={selectedWall}
                 onChange={(e) => setSelectedWall(e.target.value)}
                 className="w-full mt-1 px-3 py-2 border border-fog rounded-lg text-sm"
@@ -259,8 +260,8 @@ export default function ExportPanel({
             </div>
 
             <div>
-              <label className="text-xs text-ink/70">Scale</label>
-              <select
+              <label htmlFor={`${fieldId}-scale`} className="text-xs text-ink/70">Scale</label>
+              <select id={`${fieldId}-scale`}
                 value={scale}
                 onChange={(e) => setScale(Number(e.target.value))}
                 className="w-full mt-1 px-3 py-2 border border-fog rounded-lg text-sm"
@@ -271,8 +272,8 @@ export default function ExportPanel({
               </select>
             </div>
 
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox
+            <label htmlFor={`${fieldId}-include-dimension-lines`} className="flex items-center gap-2 text-sm">
+              <Checkbox id={`${fieldId}-include-dimension-lines`}
                 checked={includeDimensions}
                 onChange={(e) => setIncludeDimensions(e.target.checked)}
               />
@@ -318,8 +319,8 @@ export default function ExportPanel({
             Artwork list with condition check boxes and installation sign-off fields.
           </p>
 
-          <label className="flex items-center gap-2 text-sm">
-            <Checkbox
+          <label htmlFor={`${fieldId}-include-artwork-thumbnails`} className="flex items-center gap-2 text-sm">
+            <Checkbox id={`${fieldId}-include-artwork-thumbnails`}
               checked={includeImages}
               onChange={(e) => setIncludeImages(e.target.checked)}
             />
@@ -356,8 +357,8 @@ export default function ExportPanel({
             </p>
 
             <div>
-              <label className="text-xs text-ink/70">Filter by Phase</label>
-              <select
+              <label htmlFor={`${fieldId}-filter-by-phase`} className="text-xs text-ink/70">Filter by Phase</label>
+              <select id={`${fieldId}-filter-by-phase`}
                 value={checklistPhase}
                 onChange={(e) => setChecklistPhase(e.target.value)}
                 className="w-full mt-1 px-3 py-1.5 border border-fog rounded-lg text-sm"
@@ -435,8 +436,8 @@ export default function ExportPanel({
               Category totals and line items with estimated vs actual.
             </p>
 
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox
+            <label htmlFor={`${fieldId}-include-line-items`} className="flex items-center gap-2 text-sm">
+              <Checkbox id={`${fieldId}-include-line-items`}
                 checked={includeLineItems}
                 onChange={(e) => setIncludeLineItems(e.target.checked)}
               />

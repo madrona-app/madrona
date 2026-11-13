@@ -44,14 +44,16 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
           currentStatus={item.status}
           onStatusChange={(status) => onStatusChange(item.item_id, status)}
           disabled={!canEdit}
+          label={item.title}
         />
       </td>
 
       {/* Title + Description preview */}
       <td className="px-2 py-3">
         <button
+          type="button"
           onClick={() => onItemClick(item)}
-          className="text-left w-full group"
+          className="text-left w-full group rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
         >
           <div className="font-medium text-ink group-hover:text-bark">
             {item.title}
@@ -67,7 +69,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
       {/* Role / Assignee */}
       <td className="w-40 px-2 py-3 text-sm text-ink/70">
         <div className="flex items-center gap-1.5">
-          <User className="w-3.5 h-3.5 text-archive" />
+          <User className="w-3.5 h-3.5 text-archive" aria-hidden="true" />
           {item.assigned_user_name || ROLE_LABELS[item.responsible_role]}
         </div>
       </td>
@@ -76,7 +78,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
       <td className={`w-28 px-2 py-3 text-sm ${isOverdue ? 'text-semantic-error font-medium' : 'text-ink/70'}`}>
         {item.due_date ? (
           <div className="flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5" />
+            <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
             {formatDateShort(item.due_date)}
           </div>
         ) : (
@@ -89,13 +91,15 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
         <div className="flex items-center gap-2">
           {item.links_count > 0 && (
             <span className="inline-flex items-center gap-0.5 text-xs text-archive" title={`${item.links_count} linked items`}>
-              <Link2 className="w-3.5 h-3.5" />
+              <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
+              <span className="sr-only">Linked items: </span>
               {item.links_count}
             </span>
           )}
           {item.notes && (
             <span title="Has notes">
-              <FileText className="w-3.5 h-3.5 text-archive" />
+              <FileText className="w-3.5 h-3.5 text-archive" aria-hidden="true" />
+              <span className="sr-only">Has notes</span>
             </span>
           )}
         </div>

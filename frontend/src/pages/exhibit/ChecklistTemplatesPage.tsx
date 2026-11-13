@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import Checkbox from '../../components/Checkbox';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
@@ -6,7 +6,6 @@ import {
   Plus,
   ChevronLeft,
   Search,
-  MoreVertical,
   Copy,
   Archive,
   Trash2,
@@ -17,9 +16,11 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '../../lib/apiClient';
 import { usePermissions } from '../../hooks/usePermissions';
+import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { logger } from '../../lib/logger';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
+import { RowActionMenu } from '../../components/exhibit/RowActionMenu';
 
 interface ChecklistTemplateVersion {
   version_id: string;
@@ -49,6 +50,7 @@ const EXHIBITION_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function ChecklistTemplatesPage() {
+  const fieldId = useId();
   const { orgId } = useParams<{ orgId: string }>();
   const navigate = useNavigate();
   const { hasPermission } = usePermissions();
@@ -59,8 +61,12 @@ export default function ChecklistTemplatesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showArchived, setShowArchived] = useState(false);
   const [exhibitionTypeFilter, setExhibitionTypeFilter] = useState<string>('');
-  const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const { modalRef: createModalRef, titleId: createModalTitleId } = useAccessibleModal({
+    isOpen: showCreateModal,
+    onClose: () => setShowCreateModal(false),
+    titlePrefix: 'create-checklist-template',
+  });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<ChecklistTemplate | null>(null);
   const [showArchiveConfirm, setShowArchiveConfirm] = useState<ChecklistTemplate | null>(null);
   const [creating, setCreating] = useState(false);
@@ -150,7 +156,6 @@ export default function ChecklistTemplatesPage() {
       }
 
       await loadTemplates();
-      setMenuOpen(null);
       navigate(`/organizations/${orgId}/collections/exhibitions/settings/checklist-templates/${data.template.template_id}`);
     } catch (err) {
       logger.error('Failed to clone template:', err);
@@ -171,7 +176,6 @@ export default function ChecklistTemplatesPage() {
       );
       await loadTemplates();
       setShowArchiveConfirm(null);
-      setMenuOpen(null);
     } catch (err) {
       logger.error('Failed to archive template:', err);
       setError(err instanceof Error ? err.message : 'Failed to archive template');
@@ -188,7 +192,6 @@ export default function ChecklistTemplatesPage() {
       );
       await loadTemplates();
       setShowDeleteConfirm(null);
-      setMenuOpen(null);
     } catch (err) {
       logger.error('Failed to delete template:', err);
       setError(err instanceof Error ? err.message : 'Failed to delete template');
@@ -289,8 +292,8 @@ export default function ChecklistTemplatesPage() {
           </div>
 
           {/* Show Archived Toggle */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <Checkbox
+          <label htmlFor={`${fieldId}-show-archived`} className="flex items-center gap-2 cursor-pointer">
+            <Checkbox id={`${fieldId}-show-archived`}
               checked={showArchived}
               onChange={(e) => setShowArchived(e.target.checked)}
             />
@@ -395,47 +398,29 @@ export default function ChecklistTemplatesPage() {
                       {template.versions.length}
                     </td>
                     <td className="px-4 py-4">
-                      <div className="relative">
-                        <button
-                          onClick={() => setMenuOpen(menuOpen === template.template_id ? null : template.template_id)}
-                          className="p-1 text-archive hover:text-ink rounded"
-                        >
-                          <MoreVertical className="w-5 h-5" />
-                        </button>
-                        {menuOpen === template.template_id && (
-                          <div className="absolute right-0 top-full mt-1 w-48 bg-parchment border border-lichen rounded-lg shadow-lg py-1 z-20">
-                            <button
-                              onClick={() => handleCloneTemplate(template)}
-                              className="w-full flex items-center gap-2 px-4 py-2 text-sm text-ink hover:bg-stone"
-                            >
-                              <Copy className="w-4 h-4" />
-                              Clone Template
-                            </button>
-                            <button
-                              onClick={() => {
-                                setShowArchiveConfirm(template);
-                                setMenuOpen(null);
-                              }}
-                              className="w-full flex items-center gap-2 px-4 py-2 text-sm text-ink hover:bg-stone"
-                            >
-                              <Archive className="w-4 h-4" />
-                              {template.is_archived ? 'Unarchive' : 'Archive'}
-                            </button>
-                            {!template.versions.some((v) => v.is_locked) && (
-                              <button
-                                onClick={() => {
-                                  setShowDeleteConfirm(template);
-                                  setMenuOpen(null);
-                                }}
-                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-semantic-error hover:bg-semantic-error/10"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                                Delete
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
+                      <RowActionMenu
+                        label={`Actions for ${template.name}`}
+                        widthClassName="w-48 py-1"
+                        items={[
+                          {
+                            label: 'Clone Template',
+                            icon: <Copy className="w-4 h-4" aria-hidden="true" />,
+                            onSelect: () => handleCloneTemplate(template),
+                          },
+                          {
+                            label: template.is_archived ? 'Unarchive' : 'Archive',
+                            icon: <Archive className="w-4 h-4" aria-hidden="true" />,
+                            onSelect: () => setShowArchiveConfirm(template),
+                          },
+                          {
+                            label: 'Delete',
+                            icon: <Trash2 className="w-4 h-4" aria-hidden="true" />,
+                            onSelect: () => setShowDeleteConfirm(template),
+                            destructive: true,
+                            hidden: template.versions.some((v) => v.is_locked),
+                          },
+                        ]}
+                      />
                     </td>
                   </tr>
                 );
@@ -449,30 +434,33 @@ export default function ChecklistTemplatesPage() {
       {showCreateModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4">
-            <div className="fixed inset-0 bg-ink/30" onClick={() => setShowCreateModal(false)} />
-            <div className="relative bg-parchment rounded-lg shadow-xl w-full max-w-md">
+            <div className="fixed inset-0 bg-ink/30" aria-hidden="true" onClick={() => setShowCreateModal(false)} />
+            <div
+              ref={createModalRef}
+              {...getModalAriaProps(createModalTitleId)}
+              className="relative bg-parchment rounded-lg shadow-xl w-full max-w-md"
+            >
               <div className="px-6 py-4 border-b border-lichen">
-                <h2 className="text-lg font-semibold text-ink">Create Checklist Template</h2>
+                <h2 id={createModalTitleId} className="text-lg font-semibold text-ink">Create Checklist Template</h2>
               </div>
               <div className="p-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <label htmlFor={`${fieldId}-template-name`} className="block text-sm font-medium text-ink mb-1">
                     Template Name <span className="text-semantic-error">*</span>
                   </label>
-                  <input
+                  <input id={`${fieldId}-template-name`}
                     type="text"
                     value={newTemplateName}
                     onChange={(e) => setNewTemplateName(e.target.value)}
                     placeholder="e.g., Standard Exhibition Checklist"
                     className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
-                    autoFocus
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <label htmlFor={`${fieldId}-description`} className="block text-sm font-medium text-ink mb-1">
                     Description
                   </label>
-                  <textarea
+                  <textarea id={`${fieldId}-description`}
                     value={newTemplateDescription}
                     onChange={(e) => setNewTemplateDescription(e.target.value)}
                     placeholder="Brief description of when to use this template..."
@@ -481,10 +469,10 @@ export default function ChecklistTemplatesPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <label htmlFor={`${fieldId}-exhibition-type`} className="block text-sm font-medium text-ink mb-1">
                     Exhibition Type
                   </label>
-                  <select
+                  <select id={`${fieldId}-exhibition-type`}
                     value={newTemplateType}
                     onChange={(e) => setNewTemplateType(e.target.value)}
                     className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -499,6 +487,7 @@ export default function ChecklistTemplatesPage() {
               </div>
               <div className="px-6 py-4 border-t border-lichen flex justify-end gap-2">
                 <button
+                  type="button"
                   onClick={() => setShowCreateModal(false)}
                   className="px-4 py-2 text-sm text-archive hover:text-ink"
                 >
@@ -544,13 +533,6 @@ export default function ChecklistTemplatesPage() {
         confirmStyle="danger"
       />
 
-      {/* Click outside to close menu */}
-      {menuOpen && (
-        <div
-          className="fixed inset-0 z-10"
-          onClick={() => setMenuOpen(null)}
-        />
-      )}
     </div>
   );
 }

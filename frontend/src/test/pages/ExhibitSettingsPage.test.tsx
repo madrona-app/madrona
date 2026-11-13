@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ExhibitSettingsPage from '../../pages/exhibit/ExhibitSettingsPage';
 import * as api from '../../lib/api';
 import * as usePermissionsHook from '../../hooks/usePermissions';
+import { checkA11y, formatViolations } from '../a11y';
 
 vi.mock('../../lib/api', () => ({
   getFrameStyles: vi.fn(),
@@ -68,8 +69,8 @@ describe('ExhibitSettingsPage', () => {
 
   it('renders the Frames and Mounts tabs', () => {
     renderPage();
-    expect(screen.getByRole('button', { name: /frame styles/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /mount configurations/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /frame styles/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /mount configurations/i })).toBeInTheDocument();
   });
 
   it('shows empty state for frame styles', async () => {
@@ -85,7 +86,7 @@ describe('ExhibitSettingsPage', () => {
       expect(screen.getByText(/no frame styles$/i)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /mount configurations/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /mount configurations/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/no mount configurations$/i)).toBeInTheDocument();
@@ -132,7 +133,7 @@ describe('ExhibitSettingsPage', () => {
 
     renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: /mount configurations/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /mount configurations/i }));
 
     await waitFor(() => {
       expect(screen.getByText('Standard Plinth')).toBeInTheDocument();
@@ -178,5 +179,57 @@ describe('ExhibitSettingsPage', () => {
     renderPage('org-42');
     const link = screen.getByRole('link', { name: /back to exhibitions/i });
     expect(link).toHaveAttribute('href', '/organizations/org-42/collections/exhibitions');
+  });
+
+  describe('accessibility', () => {
+    const frame = {
+      frame_style_id: 'f-1',
+      name: 'Gallery Black',
+      description: 'Standard black frame',
+      profile_type: 'flat',
+      default_width_cm: 5,
+      default_depth_cm: 2,
+      color: '#000',
+      material: 'Wood',
+      is_system: false,
+    };
+
+    it('has no axe violations with a frame card and its action menu open', async () => {
+      mockGetFrameStyles.mockResolvedValue({ frame_styles: [frame] } as never);
+      const { container } = renderPage();
+      await waitFor(() => screen.getByText('Gallery Black'));
+      let results = await checkA11y(container);
+      expect(results.violations, formatViolations(results)).toEqual([]);
+
+      const trigger = screen.getByRole('button', { name: 'Actions for Gallery Black' });
+      expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+      fireEvent.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      const menu = screen.getByRole('menu');
+      expect(screen.getAllByRole('menuitem').map((m) => m.textContent)).toEqual(['Edit', 'Delete']);
+      results = await checkA11y(container);
+      expect(results.violations, formatViolations(results)).toEqual([]);
+
+      // Arrow keys move between items, Escape closes and returns focus
+      expect(screen.getByRole('menuitem', { name: 'Edit' })).toHaveFocus();
+      fireEvent.keyDown(menu, { key: 'ArrowDown' });
+      expect(screen.getByRole('menuitem', { name: 'Delete' })).toHaveFocus();
+      fireEvent.keyDown(menu, { key: 'Escape' });
+      expect(screen.queryByRole('menu')).toBeNull();
+      expect(trigger).toHaveFocus();
+    });
+
+    it('settings tabs follow the tab pattern with arrow-key navigation', async () => {
+      renderPage();
+      const frames = screen.getByRole('tab', { name: /frame styles/i });
+      const mounts = screen.getByRole('tab', { name: /mount configurations/i });
+      expect(frames).toHaveAttribute('aria-selected', 'true');
+      expect(mounts).toHaveAttribute('tabindex', '-1');
+      expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', frames.id);
+      frames.focus();
+      fireEvent.keyDown(frames, { key: 'ArrowRight' });
+      expect(mounts).toHaveAttribute('aria-selected', 'true');
+      expect(mounts).toHaveFocus();
+    });
   });
 });
