@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useId } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import {
@@ -25,6 +25,7 @@ import { useOrganization } from '../../contexts/useOrganization';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
 
 export default function BrandingSettingsPage() {
+  const uid = useId();
   const { orgId } = useParams<{ orgId: string }>();
   const { activeOrganizationId } = useOrganization();
   const organizationId = orgId || activeOrganizationId;
@@ -269,10 +270,11 @@ export default function BrandingSettingsPage() {
 
         <div className="px-6 py-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">
+            <label htmlFor={`${uid}-organization-name`} className="block text-sm font-medium text-ink mb-1">
               Organization Name
             </label>
             <input
+              id={`${uid}-organization-name`}
               type="text"
               value={formData.letterhead_name || ''}
               onChange={(e) => handleInputChange('letterhead_name', e.target.value || null)}
@@ -283,10 +285,11 @@ export default function BrandingSettingsPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${uid}-address-line-1`} className="block text-sm font-medium text-ink mb-1">
                 Address Line 1
               </label>
               <input
+                id={`${uid}-address-line-1`}
                 type="text"
                 value={formData.letterhead_address_line1 || ''}
                 onChange={(e) => handleInputChange('letterhead_address_line1', e.target.value || null)}
@@ -295,10 +298,11 @@ export default function BrandingSettingsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${uid}-address-line-2`} className="block text-sm font-medium text-ink mb-1">
                 Address Line 2
               </label>
               <input
+                id={`${uid}-address-line-2`}
                 type="text"
                 value={formData.letterhead_address_line2 || ''}
                 onChange={(e) => handleInputChange('letterhead_address_line2', e.target.value || null)}
@@ -310,10 +314,11 @@ export default function BrandingSettingsPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${uid}-city-state-zip`} className="block text-sm font-medium text-ink mb-1">
                 City, State, ZIP
               </label>
               <input
+                id={`${uid}-city-state-zip`}
                 type="text"
                 value={formData.letterhead_city_state_zip || ''}
                 onChange={(e) => handleInputChange('letterhead_city_state_zip', e.target.value || null)}
@@ -322,10 +327,11 @@ export default function BrandingSettingsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${uid}-country`} className="block text-sm font-medium text-ink mb-1">
                 Country
               </label>
               <input
+                id={`${uid}-country`}
                 type="text"
                 value={formData.letterhead_country || ''}
                 onChange={(e) => handleInputChange('letterhead_country', e.target.value || null)}
@@ -337,10 +343,11 @@ export default function BrandingSettingsPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${uid}-phone`} className="block text-sm font-medium text-ink mb-1">
                 Phone
               </label>
               <input
+                id={`${uid}-phone`}
                 type="text"
                 value={formData.letterhead_phone || ''}
                 onChange={(e) => handleInputChange('letterhead_phone', e.target.value || null)}
@@ -349,10 +356,11 @@ export default function BrandingSettingsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${uid}-email`} className="block text-sm font-medium text-ink mb-1">
                 Email
               </label>
               <input
+                id={`${uid}-email`}
                 type="email"
                 value={formData.letterhead_email || ''}
                 onChange={(e) => handleInputChange('letterhead_email', e.target.value || null)}
@@ -363,10 +371,11 @@ export default function BrandingSettingsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">
+            <label htmlFor={`${uid}-website`} className="block text-sm font-medium text-ink mb-1">
               Website
             </label>
             <input
+              id={`${uid}-website`}
               type="url"
               value={formData.letterhead_website || ''}
               onChange={(e) => handleInputChange('letterhead_website', e.target.value || null)}
@@ -376,10 +385,11 @@ export default function BrandingSettingsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">
+            <label htmlFor={`${uid}-footer-text`} className="block text-sm font-medium text-ink mb-1">
               Footer Text
             </label>
             <textarea
+              id={`${uid}-footer-text`}
               value={formData.footer_text || ''}
               onChange={(e) => handleInputChange('footer_text', e.target.value || null)}
               rows={2}
@@ -408,11 +418,12 @@ export default function BrandingSettingsPage() {
         <div className="px-6 py-5">
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${uid}-primary-color`} className="block text-sm font-medium text-ink mb-1">
                 Primary Color
               </label>
               <div className="flex items-center gap-2">
                 <input
+                  id={`${uid}-primary-color`}
                   type="color"
                   value={formData.primary_color || '#1a365d'}
                   onChange={(e) => handleInputChange('primary_color', e.target.value)}
@@ -420,6 +431,7 @@ export default function BrandingSettingsPage() {
                 />
                 <input
                   type="text"
+                  aria-label="Primary Color hex value"
                   value={formData.primary_color || '#1a365d'}
                   onChange={(e) => handleInputChange('primary_color', e.target.value)}
                   className="flex-1 px-3 py-2 border border-lichen rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-forest text-sm font-mono"
@@ -430,11 +442,12 @@ export default function BrandingSettingsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${uid}-secondary-color`} className="block text-sm font-medium text-ink mb-1">
                 Secondary Color
               </label>
               <div className="flex items-center gap-2">
                 <input
+                  id={`${uid}-secondary-color`}
                   type="color"
                   value={formData.secondary_color || 'rgb(var(--color-accessible-gray))'}
                   onChange={(e) => handleInputChange('secondary_color', e.target.value)}
@@ -442,6 +455,7 @@ export default function BrandingSettingsPage() {
                 />
                 <input
                   type="text"
+                  aria-label="Secondary Color hex value"
                   value={formData.secondary_color || 'rgb(var(--color-accessible-gray))'}
                   onChange={(e) => handleInputChange('secondary_color', e.target.value)}
                   className="flex-1 px-3 py-2 border border-lichen rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-forest text-sm font-mono"
@@ -452,11 +466,12 @@ export default function BrandingSettingsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${uid}-accent-color`} className="block text-sm font-medium text-ink mb-1">
                 Accent Color
               </label>
               <div className="flex items-center gap-2">
                 <input
+                  id={`${uid}-accent-color`}
                   type="color"
                   value={formData.accent_color || '#3182ce'}
                   onChange={(e) => handleInputChange('accent_color', e.target.value)}
@@ -464,6 +479,7 @@ export default function BrandingSettingsPage() {
                 />
                 <input
                   type="text"
+                  aria-label="Accent Color hex value"
                   value={formData.accent_color || '#3182ce'}
                   onChange={(e) => handleInputChange('accent_color', e.target.value)}
                   className="flex-1 px-3 py-2 border border-lichen rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-forest text-sm font-mono"
@@ -554,10 +570,11 @@ export default function BrandingSettingsPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${uid}-signatory-name`} className="block text-sm font-medium text-ink mb-1">
                 Signatory Name
               </label>
               <input
+                id={`${uid}-signatory-name`}
                 type="text"
                 value={formData.signature_name || ''}
                 onChange={(e) => handleInputChange('signature_name', e.target.value || null)}
@@ -566,10 +583,11 @@ export default function BrandingSettingsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${uid}-signatory-title`} className="block text-sm font-medium text-ink mb-1">
                 Signatory Title
               </label>
               <input
+                id={`${uid}-signatory-title`}
                 type="text"
                 value={formData.signature_title || ''}
                 onChange={(e) => handleInputChange('signature_title', e.target.value || null)}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useId } from 'react';
 import Checkbox from '../../components/Checkbox';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
@@ -62,6 +62,7 @@ function ValuationRow({ valuation, onClick, formatCurrency }: { valuation: Valua
 }
 
 export default function ValuationsPage() {
+  const uid = useId();
   const { orgId } = useParams<{ orgId: string }>();
   const navigate = useNavigate();
   const { hasPermission } = usePermissions();
@@ -274,8 +275,8 @@ export default function ValuationsPage() {
             <option value="donation">Donation</option>
             <option value="internal">Internal</option>
           </select>
-          <label className="flex items-center gap-2">
-            <Checkbox
+          <label htmlFor={`${uid}-current-valuations-only`} className="flex items-center gap-2">
+            <Checkbox id={`${uid}-current-valuations-only`}
               checked={currentOnly}
               onChange={(e) => { setCurrentOnly(e.target.checked); setOffset(0); }}
             />

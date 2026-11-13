@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useId } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Checkbox from '../../components/Checkbox';
@@ -47,27 +47,34 @@ function CollapsibleSection({
   children,
 }: {
   title: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: React.ComponentType<{ size?: number; className?: string; 'aria-hidden'?: boolean | 'true' | 'false' }>;
   defaultOpen?: boolean;
   children: React.ReactNode;
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const panelId = useId();
   return (
     <div className="bg-parchment border border-lichen rounded-lg">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-2 p-4 text-left"
-      >
-        <Icon size={18} className="text-bark" />
-        <h3 className="text-sm font-semibold text-ink uppercase tracking-wide flex-1">{title}</h3>
-        {isOpen ? <ChevronDown size={16} className="text-archive" /> : <ChevronRight size={16} className="text-archive" />}
-      </button>
-      {isOpen && <div className="px-4 pb-4 border-t border-lichen pt-4">{children}</div>}
+      <h3 className="text-sm font-semibold text-ink uppercase tracking-wide">
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-expanded={isOpen}
+          aria-controls={panelId}
+          className="w-full flex items-center gap-2 p-4 text-left uppercase rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+        >
+          <Icon size={18} className="text-bark" aria-hidden="true" />
+          <span className="flex-1">{title}</span>
+          {isOpen ? <ChevronDown size={16} className="text-archive" aria-hidden="true" /> : <ChevronRight size={16} className="text-archive" aria-hidden="true" />}
+        </button>
+      </h3>
+      <div id={panelId} hidden={!isOpen} className="px-4 pb-4 border-t border-lichen pt-4">{isOpen && children}</div>
     </div>
   );
 }
 
 export default function DiscoverSettingsPage() {
+  const uid = useId();
   const { orgId } = useParams<{ orgId: string }>();
   const queryClient = useQueryClient();
 
@@ -341,8 +348,9 @@ export default function DiscoverSettingsPage() {
 
         <div className="grid md:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block text-xs font-medium text-ink mb-1">Object Type</label>
+            <label htmlFor={`${uid}-object-type`} className="block text-xs font-medium text-ink mb-1">Object Type</label>
             <input
+              id={`${uid}-object-type`}
               type="text"
               placeholder="e.g. Painting, Sculpture"
               onChange={(e) => handleCriteriaChange('object_type', e.target.value)}
@@ -350,8 +358,9 @@ export default function DiscoverSettingsPage() {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-ink mb-1">Object Status</label>
+            <label htmlFor={`${uid}-object-status`} className="block text-xs font-medium text-ink mb-1">Object Status</label>
             <input
+              id={`${uid}-object-status`}
               type="text"
               placeholder="e.g. approved"
               onChange={(e) => handleCriteriaChange('object_status', e.target.value)}
@@ -359,8 +368,9 @@ export default function DiscoverSettingsPage() {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-ink mb-1">Has Image</label>
+            <label htmlFor={`${uid}-has-image`} className="block text-xs font-medium text-ink mb-1">Has Image</label>
             <select
+              id={`${uid}-has-image`}
               onChange={(e) => handleCriteriaChange('has_image', e.target.value)}
               className="w-full border border-lichen rounded-lg px-3 py-1.5 text-sm text-ink bg-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             >
@@ -370,8 +380,9 @@ export default function DiscoverSettingsPage() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-ink mb-1">Creator</label>
+            <label htmlFor={`${uid}-creator`} className="block text-xs font-medium text-ink mb-1">Creator</label>
             <input
+              id={`${uid}-creator`}
               type="text"
               placeholder="Search by creator name"
               onChange={(e) => handleCriteriaChange('creator', e.target.value)}
@@ -379,8 +390,9 @@ export default function DiscoverSettingsPage() {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-ink mb-1">Classification</label>
+            <label htmlFor={`${uid}-classification`} className="block text-xs font-medium text-ink mb-1">Classification</label>
             <input
+              id={`${uid}-classification`}
               type="text"
               placeholder="Search by classification"
               onChange={(e) => handleCriteriaChange('classification', e.target.value)}
@@ -388,8 +400,9 @@ export default function DiscoverSettingsPage() {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-ink mb-1">Material</label>
+            <label htmlFor={`${uid}-material`} className="block text-xs font-medium text-ink mb-1">Material</label>
             <input
+              id={`${uid}-material`}
               type="text"
               placeholder="Search by material"
               onChange={(e) => handleCriteriaChange('material', e.target.value)}
@@ -398,9 +411,11 @@ export default function DiscoverSettingsPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 mb-4">
-          <label className="text-sm text-ink">Action:</label>
+        <div role="group" aria-labelledby={`${uid}-criteria-action`} className="flex items-center gap-3 mb-4">
+          <span id={`${uid}-criteria-action`} className="text-sm text-ink">Action:</span>
           <button
+            type="button"
+            aria-pressed={criteriaAction}
             onClick={() => setCriteriaAction(true)}
             className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
               criteriaAction
@@ -411,6 +426,8 @@ export default function DiscoverSettingsPage() {
             Publish
           </button>
           <button
+            type="button"
+            aria-pressed={!criteriaAction}
             onClick={() => setCriteriaAction(false)}
             className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
               !criteriaAction
@@ -498,8 +515,9 @@ export default function DiscoverSettingsPage() {
 
         <div className="grid md:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block text-xs font-medium text-ink mb-1">Action</label>
+            <label htmlFor={`${uid}-action`} className="block text-xs font-medium text-ink mb-1">Action</label>
             <select
+              id={`${uid}-action`}
               value={scheduleAction}
               onChange={(e) => setScheduleAction(e.target.value as 'publish' | 'unpublish')}
               className="w-full border border-lichen rounded-lg px-3 py-1.5 text-sm text-ink bg-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -509,8 +527,9 @@ export default function DiscoverSettingsPage() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-ink mb-1">Scheduled For</label>
+            <label htmlFor={`${uid}-scheduled-for`} className="block text-xs font-medium text-ink mb-1">Scheduled For</label>
             <input
+              id={`${uid}-scheduled-for`}
               type="datetime-local"
               value={scheduleDate}
               onChange={(e) => setScheduleDate(e.target.value)}
@@ -519,10 +538,12 @@ export default function DiscoverSettingsPage() {
           </div>
         </div>
 
-        <div className="mb-4">
-          <label className="block text-xs font-medium text-ink mb-1">Target</label>
+        <div role="group" aria-labelledby={`${uid}-target`} className="mb-4">
+          <span id={`${uid}-target`} className="block text-xs font-medium text-ink mb-1">Target</span>
           <div className="flex gap-2 mb-2">
             <button
+              type="button"
+              aria-pressed={scheduleMode === 'criteria'}
               onClick={() => setScheduleMode('criteria')}
               className={`px-3 py-1 text-xs rounded border transition-colors ${
                 scheduleMode === 'criteria'
@@ -533,6 +554,8 @@ export default function DiscoverSettingsPage() {
               Use criteria filters above
             </button>
             <button
+              type="button"
+              aria-pressed={scheduleMode === 'objects'}
               onClick={() => setScheduleMode('objects')}
               className={`px-3 py-1 text-xs rounded border transition-colors ${
                 scheduleMode === 'objects'
@@ -547,6 +570,7 @@ export default function DiscoverSettingsPage() {
             <textarea
               value={scheduleObjectIds}
               onChange={(e) => setScheduleObjectIds(e.target.value)}
+              aria-label="Object IDs"
               placeholder="Paste comma-separated object UUIDs"
               rows={2}
               className="w-full border border-lichen rounded-lg px-3 py-2 text-sm text-ink font-mono placeholder:text-archive/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -632,8 +656,9 @@ export default function DiscoverSettingsPage() {
                           });
                         }}
                         className="text-archive hover:text-semantic-error transition-colors"
+                        aria-label="Cancel schedule"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={14} aria-hidden="true" />
                       </button>
                     )}
                   </div>
@@ -652,10 +677,11 @@ export default function DiscoverSettingsPage() {
           <div className="space-y-6 max-w-2xl">
             {/* Page Title */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${uid}-page-title`} className="block text-sm font-medium text-ink mb-1">
                 Page Title
               </label>
               <input
+                id={`${uid}-page-title`}
                 type="text"
                 value={formData.page_title || ''}
                 onChange={(e) => handleChange('page_title', e.target.value || null)}
@@ -669,10 +695,11 @@ export default function DiscoverSettingsPage() {
 
             {/* Page Subtitle */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${uid}-page-subtitle`} className="block text-sm font-medium text-ink mb-1">
                 Page Subtitle
               </label>
               <input
+                id={`${uid}-page-subtitle`}
                 type="text"
                 value={formData.page_subtitle || ''}
                 onChange={(e) => handleChange('page_subtitle', e.target.value || null)}
@@ -683,11 +710,12 @@ export default function DiscoverSettingsPage() {
 
             {/* Hero Media ID */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${uid}-hero-image-media-id`} className="block text-sm font-medium text-ink mb-1">
                 Hero Image Media ID
               </label>
               <div className="flex gap-2">
                 <input
+                  id={`${uid}-hero-image-media-id`}
                   type="text"
                   value={formData.hero_media_id || ''}
                   onChange={(e) => handleChange('hero_media_id', e.target.value || null)}
@@ -696,10 +724,12 @@ export default function DiscoverSettingsPage() {
                 />
                 {formData.hero_media_id && (
                   <button
+                    type="button"
                     onClick={() => handleChange('hero_media_id', null)}
+                    aria-label="Clear hero image media ID"
                     className="px-3 py-2 border border-lichen rounded-lg text-archive hover:text-ink hover:border-bark/30 transition-colors"
                   >
-                    <X size={16} />
+                    <X size={16} aria-hidden="true" />
                   </button>
                 )}
               </div>
@@ -710,8 +740,8 @@ export default function DiscoverSettingsPage() {
 
             {/* Show Object Count */}
             <div>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
+              <label htmlFor={`${uid}-handlechange-show-object-count-e-target-`} className="flex items-center gap-2 cursor-pointer">
+                <Checkbox id={`${uid}-handlechange-show-object-count-e-target-`}
                   checked={formData.show_object_count ?? true}
                   onChange={(e) => handleChange('show_object_count', e.target.checked)}
                 />
@@ -720,12 +750,14 @@ export default function DiscoverSettingsPage() {
             </div>
 
             {/* Default View Mode */}
-            <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+            <div role="group" aria-labelledby={`${uid}-default-view-mode`}>
+              <span id={`${uid}-default-view-mode`} className="block text-sm font-medium text-ink mb-1">
                 Default View Mode
-              </label>
+              </span>
               <div className="flex gap-2">
                 <button
+                  type="button"
+                  aria-pressed={formData.default_view_mode === 'grid'}
                   onClick={() => handleChange('default_view_mode', 'grid')}
                   className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg border transition-colors ${
                     formData.default_view_mode === 'grid'
@@ -733,10 +765,12 @@ export default function DiscoverSettingsPage() {
                       : 'border-lichen text-archive hover:text-ink'
                   }`}
                 >
-                  <Image size={16} />
+                  <Image size={16} aria-hidden="true" />
                   Grid
                 </button>
                 <button
+                  type="button"
+                  aria-pressed={formData.default_view_mode === 'list'}
                   onClick={() => handleChange('default_view_mode', 'list')}
                   className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg border transition-colors ${
                     formData.default_view_mode === 'list'
@@ -751,10 +785,11 @@ export default function DiscoverSettingsPage() {
 
             {/* Default Sort */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${uid}-default-sort`} className="block text-sm font-medium text-ink mb-1">
                 Default Sort
               </label>
               <select
+                id={`${uid}-default-sort`}
                 value={formData.default_sort || 'relevance'}
                 onChange={(e) => handleChange('default_sort', e.target.value)}
                 className="w-full border border-lichen rounded-lg px-3 py-2 text-sm text-ink bg-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -776,11 +811,12 @@ export default function DiscoverSettingsPage() {
           <div className="space-y-6 max-w-2xl">
             {/* Header Logo Media ID */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${uid}-header-logo-media-id`} className="block text-sm font-medium text-ink mb-1">
                 Header Logo Media ID
               </label>
               <div className="flex gap-2">
                 <input
+                  id={`${uid}-header-logo-media-id`}
                   type="text"
                   value={formData.header_logo_media_id || ''}
                   onChange={(e) => handleChange('header_logo_media_id', e.target.value || null)}
@@ -789,10 +825,12 @@ export default function DiscoverSettingsPage() {
                 />
                 {formData.header_logo_media_id && (
                   <button
+                    type="button"
                     onClick={() => handleChange('header_logo_media_id', null)}
+                    aria-label="Clear header logo media ID"
                     className="px-3 py-2 border border-lichen rounded-lg text-archive hover:text-ink hover:border-bark/30 transition-colors"
                   >
-                    <X size={16} />
+                    <X size={16} aria-hidden="true" />
                   </button>
                 )}
               </div>
@@ -819,10 +857,10 @@ export default function DiscoverSettingsPage() {
         <CollapsibleSection title="Navigation" icon={Navigation}>
           <div className="space-y-6 max-w-2xl">
             {/* Nav Items */}
-            <div>
-              <label className="block text-sm font-medium text-ink mb-2">
+            <div role="group" aria-labelledby={`${uid}-navigation-links`}>
+              <span id={`${uid}-navigation-links`} className="block text-sm font-medium text-ink mb-2">
                 Navigation Links
-              </label>
+              </span>
               <p className="text-xs text-archive mb-3">
                 Links shown in the site header. Up to 8 items.
               </p>
@@ -833,6 +871,7 @@ export default function DiscoverSettingsPage() {
                       type="text"
                       value={item.label}
                       onChange={(e) => updateNavItem(i, 'label', e.target.value)}
+                      aria-label={`Link ${i + 1} label`}
                       placeholder="Label"
                       className="w-40 border border-lichen rounded-lg px-3 py-1.5 text-sm text-ink placeholder:text-archive/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                     />
@@ -840,14 +879,17 @@ export default function DiscoverSettingsPage() {
                       type="text"
                       value={item.url}
                       onChange={(e) => updateNavItem(i, 'url', e.target.value)}
+                      aria-label={`Link ${i + 1} URL`}
                       placeholder="https://..."
                       className="flex-1 border border-lichen rounded-lg px-3 py-1.5 text-sm text-ink font-mono placeholder:text-archive/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                     />
                     <button
+                      type="button"
                       onClick={() => removeNavItem(i)}
+                      aria-label={`Remove link ${i + 1}${item.label ? ` (${item.label})` : ''}`}
                       className="p-1.5 text-archive hover:text-semantic-error transition-colors"
                     >
-                      <X size={14} />
+                      <X size={14} aria-hidden="true" />
                     </button>
                   </div>
                 ))}
@@ -857,7 +899,7 @@ export default function DiscoverSettingsPage() {
                   onClick={addNavItem}
                   className="mt-2 inline-flex items-center gap-1 text-xs text-bark hover:text-copper-dark transition-colors"
                 >
-                  <Plus size={14} />
+                  <Plus size={14} aria-hidden="true" />
                   Add link
                 </button>
               )}
@@ -951,13 +993,14 @@ export default function DiscoverSettingsPage() {
                       key={id}
                       className="flex items-center gap-2 px-3 py-2 bg-parchment border border-lichen rounded-lg text-sm"
                     >
-                      <GripVertical size={14} className="text-archive/40" />
+                      <GripVertical size={14} className="text-archive/40" aria-hidden="true" />
                       <span className="text-xs font-mono text-archive flex-1 truncate">{id}</span>
                       <button
                         onClick={() => moveFeaturedObject(i, 'up')}
                         disabled={i === 0}
                         className="text-xs text-archive hover:text-ink disabled:opacity-30 transition-colors"
                         title="Move up"
+                        aria-label={`Move ${id} up`}
                       >
                         ↑
                       </button>
@@ -966,14 +1009,16 @@ export default function DiscoverSettingsPage() {
                         disabled={i === featuredIds.length - 1}
                         className="text-xs text-archive hover:text-ink disabled:opacity-30 transition-colors"
                         title="Move down"
+                        aria-label={`Move ${id} down`}
                       >
                         ↓
                       </button>
                       <button
                         onClick={() => removeFeaturedObject(id)}
+                        aria-label={`Remove ${id} from featured objects`}
                         className="text-archive hover:text-semantic-error transition-colors"
                       >
-                        <X size={14} />
+                        <X size={14} aria-hidden="true" />
                       </button>
                     </div>
                   ))}

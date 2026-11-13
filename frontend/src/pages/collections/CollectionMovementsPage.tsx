@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useId } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -121,6 +121,7 @@ function formatDate(dateString: string | null | undefined): string {
 }
 
 export default function CollectionMovementsPage() {
+  const uid = useId();
   const { orgId } = useParams<{ orgId: string }>();
   const [searchParams] = useSearchParams();
   const { hasPermission } = usePermissions();
@@ -293,10 +294,11 @@ export default function CollectionMovementsPage() {
           <div className="mt-4 pt-4 border-t border-lichen">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">
+                <label htmlFor={`${uid}-status`} className="block text-sm font-medium text-ink mb-1">
                   Status
                 </label>
                 <select
+                  id={`${uid}-status`}
                   value={statusFilter}
                   onChange={(e) => { setStatusFilter(e.target.value); setOffset(0); }}
                   className="input w-full text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -310,10 +312,11 @@ export default function CollectionMovementsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">
+                <label htmlFor={`${uid}-reason`} className="block text-sm font-medium text-ink mb-1">
                   Reason
                 </label>
                 <select
+                  id={`${uid}-reason`}
                   value={reasonFilter}
                   onChange={(e) => { setReasonFilter(e.target.value); setOffset(0); }}
                   className="input w-full text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -326,10 +329,11 @@ export default function CollectionMovementsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">
+                <label htmlFor={`${uid}-missing-fields`} className="block text-sm font-medium text-ink mb-1">
                   Missing Fields
                 </label>
                 <select
+                  id={`${uid}-missing-fields`}
                   value={missingFieldFilter}
                   onChange={(e) => { setMissingFieldFilter(e.target.value); setOffset(0); }}
                   className="input w-full text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
