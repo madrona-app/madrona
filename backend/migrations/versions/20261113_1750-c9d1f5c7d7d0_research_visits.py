@@ -13,12 +13,12 @@ boot (both tables are in RLS_TABLES/RLS_POLICIES), the same as every other
 org-scoped table since the consolidated schema.
 
 Revision ID: c9d1f5c7d7d0
-Revises: d2b8e4f0c312
+Revises: e7c4a91b5d23
 """
 from alembic import op
 
 revision = "c9d1f5c7d7d0"
-down_revision = "d2b8e4f0c312"
+down_revision = "e7c4a91b5d23"
 branch_labels = None
 depends_on = None
 
