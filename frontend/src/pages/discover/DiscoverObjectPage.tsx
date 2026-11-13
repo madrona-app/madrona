@@ -24,6 +24,7 @@ import { describeSearch, hasSearchCriteria, parseSearchParams } from './searchUr
 import { ResponsiveImage } from '../../components/ui/ResponsiveImage';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
 import { useAccessibleModal } from '../../hooks/useAccessibleModal';
+import { SaveToCollection } from './members/SaveToCollection';
 
 // ============================================================================
 // Lightbox
@@ -487,6 +488,8 @@ export function DiscoverObjectPage() {
             {obj.creation_date_display && (
               <p className="text-sm text-archive mb-6">{obj.creation_date_display}</p>
             )}
+
+            <SaveToCollection orgSlug={orgSlug!} objectId={obj.object_id} objectTitle={obj.title || 'Untitled'} />
 
             {obj.brief_description && (
               <div className="mb-6">

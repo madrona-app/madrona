@@ -23,6 +23,7 @@ import { StatCard } from '../../components/reports/StatCard';
 import { useAuth } from '../../hooks/useAuth';
 import { formatDateTime } from '@/lib/formatters';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
+import { PortalMembersSection } from './discover/PortalMembersSection';
 
 const SORT_OPTIONS = [
   { value: 'relevance', label: 'Relevance' },
@@ -996,6 +997,8 @@ export default function DiscoverSettingsPage() {
           </div>
         </CollapsibleSection>
       </div>
+
+      <PortalMembersSection organizationId={orgId!} />
 
       {/* ================================================================ */}
       {/* Save Button (sticky)                                               */}

@@ -204,6 +204,10 @@ import {
   EventListPublicPage,
   ExhibitionDetailPublicPage,
   ExhibitionListPublicPage,
+  MemberCollectionPage,
+  MemberSignInPage,
+  MemberWelcomePage,
+  MyCollectionsPage,
   NotFoundPublicPage,
   PublicCollectionPage,
   VenueDetailPage,
@@ -298,6 +302,10 @@ export function AppRoutes() {
       <Route path="/c/:orgSlug/events" element={<Suspense fallback={<PageLoadingFallback />}><EventListPublicPage /></Suspense>} />
       <Route path="/c/:orgSlug/events/:slug" element={<Suspense fallback={<PageLoadingFallback />}><EventDetailPublicPage /></Suspense>} />
       {/* Public 404 catch-all for discover site */}
+      <Route path="/c/:orgSlug/member/sign-in" element={<Suspense fallback={<PageLoadingFallback />}><MemberSignInPage /></Suspense>} />
+      <Route path="/c/:orgSlug/member/welcome" element={<Suspense fallback={<PageLoadingFallback />}><MemberWelcomePage /></Suspense>} />
+      <Route path="/c/:orgSlug/member/collections" element={<Suspense fallback={<PageLoadingFallback />}><MyCollectionsPage /></Suspense>} />
+      <Route path="/c/:orgSlug/member/collections/:collectionId" element={<Suspense fallback={<PageLoadingFallback />}><MemberCollectionPage /></Suspense>} />
       <Route path="/c/:orgSlug/*" element={<Suspense fallback={<PageLoadingFallback />}><NotFoundPublicPage /></Suspense>} />
 
       {/* Legacy routes - redirect to org-scoped routes */}
