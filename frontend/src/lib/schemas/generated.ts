@@ -1079,6 +1079,261 @@ export const BboxSearchResponseSchema = z.object({
 
 export type BboxSearchResponse = z.infer<typeof BboxSearchResponseSchema>;
 
+export const _HoldingFieldsSchema = z.object({
+  location_id: z.string().nullable().optional(),
+  call_number: z.string().nullable().optional(),
+  holdings_statement: z.string().nullable().optional(),
+  shelving_notes: z.string().nullable().optional(),
+  public_note: z.string().nullable().optional(),
+  staff_note: z.string().nullable().optional(),
+}).passthrough();
+
+export type _HoldingFields = z.infer<typeof _HoldingFieldsSchema>;
+
+export const BibHoldingCreateSchema = z.object({
+  location_id: z.string().nullable().optional(),
+  call_number: z.string().nullable().optional(),
+  holdings_statement: z.string().nullable().optional(),
+  shelving_notes: z.string().nullable().optional(),
+  public_note: z.string().nullable().optional(),
+  staff_note: z.string().nullable().optional(),
+}).passthrough();
+
+export type BibHoldingCreate = z.infer<typeof BibHoldingCreateSchema>;
+
+export const BibItemOutSchema = z.object({
+  item_id: z.string(),
+  holding_id: z.string(),
+  barcode: z.string().nullable().optional(),
+  copy_number: z.string().nullable().optional(),
+  enumeration: z.string().nullable().optional(),
+  chronology: z.string().nullable().optional(),
+  status: z.string(),
+  condition_note: z.string().nullable().optional(),
+  collection_object_id: z.string().nullable().optional(),
+  collection_object_number: z.string().nullable().optional(),
+  created_at: z.string().nullable().optional(),
+  updated_at: z.string().nullable().optional(),
+}).passthrough();
+
+export type BibItemOut = z.infer<typeof BibItemOutSchema>;
+
+export const BibHoldingOutSchema = z.object({
+  holding_id: z.string(),
+  bib_record_id: z.string(),
+  location_id: z.string().nullable().optional(),
+  location_name: z.string().nullable().optional(),
+  call_number: z.string().nullable().optional(),
+  holdings_statement: z.string().nullable().optional(),
+  shelving_notes: z.string().nullable().optional(),
+  public_note: z.string().nullable().optional(),
+  staff_note: z.string().nullable().optional(),
+  items: z.array(BibItemOutSchema).optional(),
+  created_at: z.string().nullable().optional(),
+  updated_at: z.string().nullable().optional(),
+}).passthrough();
+
+export type BibHoldingOut = z.infer<typeof BibHoldingOutSchema>;
+
+export const BibHoldingUpdateSchema = z.object({
+  location_id: z.string().nullable().optional(),
+  call_number: z.string().nullable().optional(),
+  holdings_statement: z.string().nullable().optional(),
+  shelving_notes: z.string().nullable().optional(),
+  public_note: z.string().nullable().optional(),
+  staff_note: z.string().nullable().optional(),
+}).passthrough();
+
+export type BibHoldingUpdate = z.infer<typeof BibHoldingUpdateSchema>;
+
+export const _ItemFieldsSchema = z.object({
+  barcode: z.string().nullable().optional(),
+  copy_number: z.string().nullable().optional(),
+  enumeration: z.string().nullable().optional(),
+  chronology: z.string().nullable().optional(),
+  status: z.enum(['available', 'on_loan', 'missing', 'withdrawn', 'in_processing']).nullable().optional(),
+  condition_note: z.string().nullable().optional(),
+  collection_object_id: z.string().nullable().optional(),
+}).passthrough();
+
+export type _ItemFields = z.infer<typeof _ItemFieldsSchema>;
+
+export const BibItemCreateSchema = z.object({
+  barcode: z.string().nullable().optional(),
+  copy_number: z.string().nullable().optional(),
+  enumeration: z.string().nullable().optional(),
+  chronology: z.string().nullable().optional(),
+  status: z.enum(['available', 'on_loan', 'missing', 'withdrawn', 'in_processing']).optional(),
+  condition_note: z.string().nullable().optional(),
+  collection_object_id: z.string().nullable().optional(),
+}).passthrough();
+
+export type BibItemCreate = z.infer<typeof BibItemCreateSchema>;
+
+export const BibItemUpdateSchema = z.object({
+  barcode: z.string().nullable().optional(),
+  copy_number: z.string().nullable().optional(),
+  enumeration: z.string().nullable().optional(),
+  chronology: z.string().nullable().optional(),
+  status: z.enum(['available', 'on_loan', 'missing', 'withdrawn', 'in_processing']).nullable().optional(),
+  condition_note: z.string().nullable().optional(),
+  collection_object_id: z.string().nullable().optional(),
+}).passthrough();
+
+export type BibItemUpdate = z.infer<typeof BibItemUpdateSchema>;
+
+export const BibNameAddSchema = z.object({
+  constituent_id: z.string(),
+  role: z.enum(['author', 'editor', 'translator', 'illustrator', 'narrator', 'transcriber', 'compiler', 'contributor', 'publisher', 'other']).optional(),
+}).passthrough();
+
+export type BibNameAdd = z.infer<typeof BibNameAddSchema>;
+
+export const BibNameOutSchema = z.object({
+  link_id: z.string(),
+  constituent_id: z.string(),
+  name: z.string().nullable().optional(),
+  role: z.string(),
+  display_order: z.number().optional(),
+}).passthrough();
+
+export type BibNameOut = z.infer<typeof BibNameOutSchema>;
+
+export const _RecordFieldsSchema = z.object({
+  record_type: z.enum(['book', 'serial', 'pamphlet', 'braille', 'large_print', 'audio', 'video', 'manuscript', 'other']).nullable().optional(),
+  title: z.string().nullable().optional(),
+  subtitle: z.string().nullable().optional(),
+  statement_of_responsibility: z.string().nullable().optional(),
+  edition: z.string().nullable().optional(),
+  place: z.string().nullable().optional(),
+  publisher: z.string().nullable().optional(),
+  date_display: z.string().nullable().optional(),
+  date_earliest: z.number().nullable().optional(),
+  date_latest: z.number().nullable().optional(),
+  extent: z.string().nullable().optional(),
+  series_statement: z.string().nullable().optional(),
+  language: z.string().nullable().optional(),
+  isbn: z.string().nullable().optional(),
+  issn: z.string().nullable().optional(),
+  lccn: z.string().nullable().optional(),
+  oclc_number: z.string().nullable().optional(),
+  call_number: z.string().nullable().optional(),
+  format_notes: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+}).passthrough();
+
+export type _RecordFields = z.infer<typeof _RecordFieldsSchema>;
+
+export const BibRecordCreateSchema = z.object({
+  record_type: z.enum(['book', 'serial', 'pamphlet', 'braille', 'large_print', 'audio', 'video', 'manuscript', 'other']).optional(),
+  title: z.string(),
+  subtitle: z.string().nullable().optional(),
+  statement_of_responsibility: z.string().nullable().optional(),
+  edition: z.string().nullable().optional(),
+  place: z.string().nullable().optional(),
+  publisher: z.string().nullable().optional(),
+  date_display: z.string().nullable().optional(),
+  date_earliest: z.number().nullable().optional(),
+  date_latest: z.number().nullable().optional(),
+  extent: z.string().nullable().optional(),
+  series_statement: z.string().nullable().optional(),
+  language: z.string().nullable().optional(),
+  isbn: z.string().nullable().optional(),
+  issn: z.string().nullable().optional(),
+  lccn: z.string().nullable().optional(),
+  oclc_number: z.string().nullable().optional(),
+  call_number: z.string().nullable().optional(),
+  format_notes: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+}).passthrough();
+
+export type BibRecordCreate = z.infer<typeof BibRecordCreateSchema>;
+
+export const BibSubjectOutSchema = z.object({
+  link_id: z.string(),
+  subject_authority_id: z.string(),
+  preferred_term: z.string().nullable().optional(),
+  lcsh_id: z.string().nullable().optional(),
+  display_order: z.number().optional(),
+}).passthrough();
+
+export type BibSubjectOut = z.infer<typeof BibSubjectOutSchema>;
+
+export const BibRecordOutSchema = z.object({
+  bib_record_id: z.string(),
+  organization_id: z.string(),
+  record_type: z.string().nullable().optional(),
+  title: z.string().nullable().optional(),
+  subtitle: z.string().nullable().optional(),
+  statement_of_responsibility: z.string().nullable().optional(),
+  edition: z.string().nullable().optional(),
+  place: z.string().nullable().optional(),
+  publisher: z.string().nullable().optional(),
+  date_display: z.string().nullable().optional(),
+  date_earliest: z.number().nullable().optional(),
+  date_latest: z.number().nullable().optional(),
+  extent: z.string().nullable().optional(),
+  series_statement: z.string().nullable().optional(),
+  language: z.string().nullable().optional(),
+  isbn: z.string().nullable().optional(),
+  issn: z.string().nullable().optional(),
+  lccn: z.string().nullable().optional(),
+  oclc_number: z.string().nullable().optional(),
+  call_number: z.string().nullable().optional(),
+  format_notes: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  holding_count: z.number().optional(),
+  item_count: z.number().optional(),
+  holdings: z.array(BibHoldingOutSchema).nullable().optional(),
+  subjects: z.array(BibSubjectOutSchema).nullable().optional(),
+  names: z.array(BibNameOutSchema).nullable().optional(),
+  created_at: z.string().nullable().optional(),
+  updated_at: z.string().nullable().optional(),
+  restricted_fields: z.array(z.string()).optional(),
+}).passthrough();
+
+export type BibRecordOut = z.infer<typeof BibRecordOutSchema>;
+
+export const BibRecordListResponseSchema = z.object({
+  items: z.array(BibRecordOutSchema),
+  total: z.number(),
+  limit: z.number(),
+  offset: z.number(),
+}).passthrough();
+
+export type BibRecordListResponse = z.infer<typeof BibRecordListResponseSchema>;
+
+export const BibRecordUpdateSchema = z.object({
+  record_type: z.enum(['book', 'serial', 'pamphlet', 'braille', 'large_print', 'audio', 'video', 'manuscript', 'other']).nullable().optional(),
+  title: z.string().nullable().optional(),
+  subtitle: z.string().nullable().optional(),
+  statement_of_responsibility: z.string().nullable().optional(),
+  edition: z.string().nullable().optional(),
+  place: z.string().nullable().optional(),
+  publisher: z.string().nullable().optional(),
+  date_display: z.string().nullable().optional(),
+  date_earliest: z.number().nullable().optional(),
+  date_latest: z.number().nullable().optional(),
+  extent: z.string().nullable().optional(),
+  series_statement: z.string().nullable().optional(),
+  language: z.string().nullable().optional(),
+  isbn: z.string().nullable().optional(),
+  issn: z.string().nullable().optional(),
+  lccn: z.string().nullable().optional(),
+  oclc_number: z.string().nullable().optional(),
+  call_number: z.string().nullable().optional(),
+  format_notes: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+}).passthrough();
+
+export type BibRecordUpdate = z.infer<typeof BibRecordUpdateSchema>;
+
+export const BibSubjectAddSchema = z.object({
+  subject_authority_id: z.string(),
+}).passthrough();
+
+export type BibSubjectAdd = z.infer<typeof BibSubjectAddSchema>;
+
 export const BrandingOutSchema = z.object({
   branding_id: z.string().nullable().optional(),
   organization_id: z.string(),

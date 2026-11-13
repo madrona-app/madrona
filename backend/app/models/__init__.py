@@ -28,6 +28,7 @@ from app.models.locations import *  # noqa: F401,F403
 from app.models.objects import *  # noqa: F401,F403
 from app.models.contacts import *  # noqa: F401,F403
 from app.models.research_visits import *  # noqa: F401,F403
+from app.models.library import *  # noqa: F401,F403
 from app.models.procedures import *  # noqa: F401,F403
 from app.models.signed_documents import *  # noqa: F401,F403
 from app.models.media import *  # noqa: F401,F403

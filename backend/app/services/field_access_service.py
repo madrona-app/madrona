@@ -657,7 +657,13 @@ def get_write_restricted_fields(
         return set()
 
     write_restricted = set()
-    role_chain = get_role_inheritance_chain(role_key)
+    try:
+        role_chain = get_role_inheritance_chain(role_key)
+    except ValueError:
+        # A custom (non-system) role has no inheritance chain; only its own
+        # grants apply. Without this, any field policy on the entity made
+        # every write by a custom-role user fail with a 500.
+        role_chain = [role_key]
 
     for policy in policies:
         # If the user can't even view this field, they definitely can't edit it

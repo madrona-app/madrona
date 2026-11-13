@@ -156,6 +156,11 @@ RLS_TABLES = [
     ("collections", "shipment_references", True),
     ("collections", "shipment_status_history", True),
     ("collections", "shipments", True),
+    ("collections", "bib_holdings", True),
+    ("collections", "bib_items", True),
+    ("collections", "bib_record_constituents", True),
+    ("collections", "bib_record_subjects", True),
+    ("collections", "bib_records", True),
     ("collections", "research_visit_objects", True),
     ("collections", "research_visits", True),
     ("collections", "use_request_objects", True),
@@ -589,6 +594,13 @@ RLS_POLICIES = [
      None),
     ("collections", "shipments", "shipments_org_dept_isolation", "ALL", _STD_DEPT, _STD_DEPT),
 
+    # Library catalog: bibliographic records, holdings, items and the
+    # authority links. Not department-scoped; org isolation only.
+    ("collections", "bib_holdings", "bib_holdings_org_isolation", "ALL", _STD, _STD),
+    ("collections", "bib_items", "bib_items_org_isolation", "ALL", _STD, _STD),
+    ("collections", "bib_record_constituents", "bib_record_constituents_org_isolation", "ALL", _STD, _STD),
+    ("collections", "bib_record_subjects", "bib_record_subjects_org_isolation", "ALL", _STD, _STD),
+    ("collections", "bib_records", "bib_records_org_isolation", "ALL", _STD, _STD),
     # Research visit log. The object links inherit department scoping through
     # the object, like object_rights, so a visit never reveals an object the
     # caller's department cannot see.

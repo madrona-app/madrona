@@ -68,6 +68,7 @@ const SYNONYMS: Record<string, string[]> = {
     'artifacts',
     'items',
   ],
+  'library-catalog': ['books', 'bibliographic records', 'holdings', 'barcodes', 'braille', 'large print', 'audio books', 'serials'],
 
   // Transactions
   entries: ['object entry', 'incoming', 'receipt', 'intake'],

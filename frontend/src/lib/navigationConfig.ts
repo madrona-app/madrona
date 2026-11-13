@@ -258,6 +258,13 @@ export const products: Product[] = [
             requiresPermission: 'collections.view',
           },
           {
+            id: 'library-catalog',
+            label: 'Library',
+            path: '/organizations/:orgId/collections/library',
+            icon: Library,
+            requiresPermission: 'collections.view',
+          },
+          {
             id: 'ead-import',
             label: 'Import Finding Aid (EAD)',
             path: '/organizations/:orgId/collections/ead-import',
