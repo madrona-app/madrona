@@ -203,3 +203,61 @@ class TestTabularHtml:
         content, _, _ = export_report([], "html", [{"field": "a", "label": "A"}], report_name="Empty")
         assert b"No data available." in content
         assert b"<table" not in content
+
+
+# ============================================================================
+# PLAIN TEXT
+# ============================================================================
+
+class TestPlainText:
+    def test_record_structure(self, record_sheet_context):
+        out = ra.render_text(ra.build_record_document("object_record_sheet.html", record_sheet_context))
+        text = out.decode("utf-8")
+        lines = text.splitlines()
+        assert lines[0] == "Object Record Sheet"
+        assert lines[1] == "=" * len("Object Record Sheet")
+        assert "1. Identification" in lines
+        i = lines.index("1. Identification")
+        assert lines[i + 1] == "-" * len("1. Identification")
+        assert "Object Number: 1999.1" in lines
+        assert "Image: Celadon bowl with a crackled glaze, viewed from above" in lines
+        # multi-line values start on their own line
+        j = lines.index("Provenance:")
+        assert lines[j + 1:j + 3] == ["Line one", "Line two"]
+        # Sections are numbered in order
+        numbered = [ln for ln in lines if ln[:1].isdigit() and ". " in ln and not ln.startswith("1999")]
+        assert [ln.split(".")[0] for ln in numbered] == [str(n) for n in range(1, len(numbered) + 1)]
+
+    def test_tables_become_records_not_grids(self, record_sheet_context):
+        text = ra.render_text(
+            ra.build_record_document("object_record_sheet.html", record_sheet_context)
+        ).decode("utf-8")
+        assert "Attached files (2 entries)" in text
+        assert "Entry 1 of 2\nFile name: bowl-front.tif\nType: Image\nTitle: Front view" in text
+        assert "Entry 2 of 2\nFile name: condition-2019.pdf\nType: Document\nTitle: (none)" in text
+        assert "|" not in text and "+--" not in text
+
+    def test_subsections_numbered(self):
+        ctx = {"loan_type": "Outgoing Loan", "loan_number": "L-2", "sig_party_1_role": "Lender",
+               "sig_party_1_name": "Museum", "sig_party_2_role": "Borrower", "sig_party_2_name": "Other"}
+        lines = ra.render_text(ra.build_record_document("loan_agreement.html", ctx)).decode().splitlines()
+        sig = [ln for ln in lines if ln.endswith("Signatures")][0]
+        n = sig.split(".")[0]
+        assert f"{n}.1 Lender" in lines and f"{n}.2 Borrower" in lines
+
+    def test_tabular_utf8_records(self):
+        data = [{"name": "Café bowl", "date": "1900"}]
+        cols = [{"field": "name", "label": "Name"}, {"field": "date", "label": "Date"}]
+        content, content_type, ext = export_report(data, "txt", cols, report_name="Objects")
+        assert ext == "txt" and content_type == "text/plain; charset=utf-8"
+        text = content.decode("utf-8")
+        assert "Total rows: 1" in text
+        assert "Entry 1 of 1\nName: Café bowl\nDate: 1900" in text
+
+    def test_renderer_entry_point(self):
+        out = rdr.render_acquisition_report_html(
+            [{"acquisition_number": "A-7", "source_name": "Donor"}], {"organization_name": "M"},
+            export_format="txt",
+        )
+        assert out.decode().startswith("Acquisition Record\n==================\nA-7\n")
+        assert "Source: Donor" in out.decode()

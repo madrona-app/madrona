@@ -42,7 +42,7 @@ def _make_document_renderer(render_fn):
 
 
 # Accessible formats first: the order is the order the export menu offers them.
-DOCUMENT_FORMATS = ["html", "docx", "pdf"]
+DOCUMENT_FORMATS = ["html", "docx", "txt", "pdf"]
 
 
 def _make_html_renderer(render_fn):

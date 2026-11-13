@@ -7,6 +7,7 @@ be read with access technology:
   sections at ``<h2>``, label/value pairs as ``<dl>``, data tables with a
   ``<caption>`` and ``<th scope>``, images carrying the media record's alt text.
   No layout tables and no meaning carried by colour alone.
+- ``render_text``  — structured UTF-8 plain text for screen readers and braille.
 
 Document reports (one record) are built from the same context dicts the PDF
 templates receive (see ``build_record_document``); tabular reports are built
@@ -605,3 +606,76 @@ def render_html(doc: ReportDocument) -> bytes:
         parts.append("</div>")
     parts += ["</main>", "</body>", "</html>", ""]
     return "\n".join(parts).encode("utf-8")
+
+
+# ============================================================================
+# PLAIN TEXT
+# ============================================================================
+#
+# Conventions, chosen to read well in a screen reader and on a braille display:
+# - the title is underlined with "=", numbered sections ("1. Identification")
+#   with "-", subsections are numbered "1.1 ..." with no underline;
+# - one "Label: value" per line; multi-line values start on the next line;
+# - tables become records ("Entry 2 of 5" followed by "Column: value" lines),
+#   never ASCII grids, so nothing depends on column alignment;
+# - no hard wrapping (reflow is left to the reader), blank line between blocks.
+
+def _txt_field(f: Field) -> list[str]:
+    if "\n" in f.value:
+        return [f"{f.label}:", *f.value.splitlines()]
+    return [f"{f.label}: {f.value}"]
+
+
+def _txt_table(t: DataTable) -> list[str]:
+    if not t.rows:
+        return [f"{t.caption}: {t.empty_message}", ""]
+    n = len(t.rows)
+    out = [f"{t.caption} ({n} {'entry' if n == 1 else 'entries'})", ""]
+    for i, row in enumerate(t.rows, 1):
+        out.append(f"Entry {i} of {n}")
+        for label, value in zip(t.columns, row):
+            out.append(f"{label}: {value}" if value else f"{label}: (none)")
+        out.append("")
+    return out
+
+
+def _txt_section(s: Section, number: str, depth: int) -> list[str]:
+    heading = f"{number}. {s.heading}" if depth == 1 else f"{number} {s.heading}"
+    out = [heading]
+    if depth == 1:
+        out.append("-" * len(heading))
+    out.append("")
+    for fig in s.figures:
+        out += [f"Image: {fig.alt}", ""]
+    for p in s.paragraphs:
+        out += [*p.splitlines(), ""]
+    if s.fields:
+        for f in s.fields:
+            out += _txt_field(f)
+        out.append("")
+    for t in s.tables:
+        out += _txt_table(t)
+    subs = [sub for sub in s.subsections if not sub.is_empty()]
+    for i, sub in enumerate(subs, 1):
+        out += _txt_section(sub, f"{number}.{i}", depth + 1)
+    return out
+
+
+def render_text(doc: ReportDocument) -> bytes:
+    """Render structured UTF-8 plain text."""
+    out = [doc.title, "=" * len(doc.title)]
+    if doc.subtitle:
+        out.append(doc.subtitle)
+    if doc.org_name:
+        out.append(f"Organization: {doc.org_name}")
+    for f in doc.meta:
+        out += _txt_field(f)
+    if doc.generated_at:
+        out.append(f"Generated: {doc.generated_at}")
+    out.append("")
+    for i, s in enumerate(doc.sections, 1):
+        out += _txt_section(s, str(i), 1)
+    out += doc.notes
+    while out and out[-1] == "":
+        out.pop()
+    return ("\n".join(out) + "\n").encode("utf-8")

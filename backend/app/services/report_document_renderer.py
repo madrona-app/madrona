@@ -2016,8 +2016,8 @@ def render_object_record_sheet_html(
     }
 
     template_name = "object_record_sheet.html"
-    if export_format == "html":
-        return _render_accessible_html(template_name, context)
+    if export_format in ("html", "txt"):
+        return _render_accessible(template_name, context, export_format)
 
     # Try org-specific template; fall back to default if it errors
     try:
@@ -2041,14 +2041,15 @@ def render_object_record_sheet_html(
     return weasyprint.HTML(string=html).write_pdf()
 
 
-def _render_accessible_html(template_name: str, context: dict[str, Any]) -> bytes:
-    """Standalone accessible HTML built from the structured document model.
+def _render_accessible(template_name: str, context: dict[str, Any], export_format: str) -> bytes:
+    """Accessible HTML or plain text built from the structured document model.
 
     Deliberately independent of the (per-org overridable) print templates: the
     accessible structure is guaranteed whatever an organization uploads.
     """
-    from app.services.report_accessible import build_record_document, render_html
-    return render_html(build_record_document(template_name, context))
+    from app.services.report_accessible import build_record_document, render_html, render_text
+    doc = build_record_document(template_name, context)
+    return render_html(doc) if export_format == "html" else render_text(doc)
 
 
 def _render_html_template(
@@ -2057,9 +2058,9 @@ def _render_html_template(
     org_id: str | None,
     export_format: str = "pdf",
 ) -> bytes:
-    """Shared helper: render a record report to PDF, DOCX or accessible HTML."""
-    if export_format == "html":
-        return _render_accessible_html(template_name, context)
+    """Shared helper: render a record report to PDF, DOCX, accessible HTML or text."""
+    if export_format in ("html", "txt"):
+        return _render_accessible(template_name, context, export_format)
 
     try:
         env = _get_template_env(org_id)

@@ -5,6 +5,7 @@ Handles exporting report results to various formats:
 - Excel: Formatted workbook with styling
 - PDF: Professional document with optional charts
 - HTML: Standalone accessible web page (see report_accessible)
+- TXT: Structured plain text (see report_accessible)
 """
 import csv
 import io
@@ -58,6 +59,7 @@ _ARCHIVE = "#6B7A7E"
 # the task renderer and the S3 upload (report_storage).
 FORMAT_INFO: dict[str, tuple[str, str]] = {
     "html": ("html", "text/html; charset=utf-8"),
+    "txt": ("txt", "text/plain; charset=utf-8"),
     "docx": ("docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
     "csv": ("csv", "text/csv; charset=utf-8"),
     "excel": ("xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
@@ -517,6 +519,11 @@ def export_report(
         doc = build_tabular_document(data, columns, report_name, report_description)
         return render_html(doc), FORMAT_INFO["html"][1], "html"
 
+    if format == "txt":
+        from app.services.report_accessible import build_tabular_document, render_text
+        doc = build_tabular_document(data, columns, report_name, report_description)
+        return render_text(doc), FORMAT_INFO["txt"][1], "txt"
+
     if format == "csv":
         content = export_to_csv(data, columns)
         return content, "text/csv", "csv"
@@ -543,6 +550,12 @@ def get_available_formats() -> list[dict[str, Any]]:
             "format": "html",
             "label": "Accessible web page (HTML)",
             "description": "Structured web page for screen readers and braille displays",
+            "available": True,
+        },
+        {
+            "format": "txt",
+            "label": "Plain text",
+            "description": "Structured text; tables written as label: value records",
             "available": True,
         },
         {

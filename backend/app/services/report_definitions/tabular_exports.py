@@ -10,7 +10,7 @@ from app.services.report_resolvers import resolve_search, resolve_workspace
 from app.services.report_export import export_report
 
 # Accessible formats first: the order is the order the export menu offers them.
-TABULAR_FORMATS = ["html", "csv", "excel", "pdf"]
+TABULAR_FORMATS = ["html", "txt", "csv", "excel", "pdf"]
 
 # Record types and their display labels
 _RECORD_TYPES = {
