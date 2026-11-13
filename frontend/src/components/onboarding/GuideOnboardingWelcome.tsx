@@ -70,7 +70,6 @@ export function GuideOnboardingWelcome({
           ref={modalRef}
           {...getModalAriaProps(titleId, descriptionId)}
           className="relative pointer-events-auto w-full max-w-lg rounded-lg bg-parchment shadow-2xl border border-lichen overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-start justify-between p-5 border-b border-lichen bg-stone/30">

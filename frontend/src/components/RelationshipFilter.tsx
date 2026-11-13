@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { GitBranch, Search, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { searchEntities, getEntityRelationships, getRelationshipTypes } from '../lib/api';
@@ -11,6 +11,7 @@ interface RelationshipFilterProps {
 
 export function RelationshipFilter({ onFilterChange, organizationId }: RelationshipFilterProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const uid = useId();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEntity, setSelectedEntity] = useState<{ key: string; label: string } | null>(null);
   const [selectedRelType, setSelectedRelType] = useState<string>('');
@@ -105,11 +106,14 @@ export function RelationshipFilter({ onFilterChange, organizationId }: Relations
     <div className="border border-lichen rounded-lg bg-parchment">
       {/* Header */}
       <button
+        type="button"
         onClick={() => setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
+        aria-controls={isExpanded ? `${uid}-panel` : undefined}
         className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-stone"
       >
         <div className="flex items-center gap-2">
-          <GitBranch className="h-4 w-4 text-archive" />
+          <GitBranch className="h-4 w-4 text-archive" aria-hidden="true" />
           <span className="font-medium text-ink">Find by Relationship</span>
           {selectedEntity && (
             <span className="text-xs bg-azurite/10 text-azurite px-2 py-0.5 rounded">
@@ -118,35 +122,48 @@ export function RelationshipFilter({ onFilterChange, organizationId }: Relations
           )}
         </div>
         {isExpanded ? (
-          <ChevronUp className="h-4 w-4 text-archive" />
+          <ChevronUp className="h-4 w-4 text-archive" aria-hidden="true" />
         ) : (
-          <ChevronDown className="h-4 w-4 text-archive" />
+          <ChevronDown className="h-4 w-4 text-archive" aria-hidden="true" />
         )}
       </button>
 
       {/* Expanded content */}
       {isExpanded && (
-        <div className="px-4 pb-4 space-y-4 border-t border-lichen">
+        <div id={`${uid}-panel`} className="px-4 pb-4 space-y-4 border-t border-lichen">
           {/* Entity search */}
           <div className="pt-3">
-            <label className="block text-sm font-medium text-ink mb-1">
-              Find entities related to:
-            </label>
             {selectedEntity ? (
-              <div className="flex items-center gap-2 p-2 bg-stone rounded border border-lichen">
+              <span id={`${uid}-related`} className="block text-sm font-medium text-ink mb-1">
+                Find entities related to:
+              </span>
+            ) : (
+              <label htmlFor={`${uid}-search`} className="block text-sm font-medium text-ink mb-1">
+                Find entities related to:
+              </label>
+            )}
+            {selectedEntity ? (
+              <div
+                role="group"
+                aria-labelledby={`${uid}-related`}
+                className="flex items-center gap-2 p-2 bg-stone rounded border border-lichen"
+              >
                 <span className="flex-1 text-sm">{selectedEntity.label}</span>
                 <span className="text-xs text-archive">{selectedEntity.key}</span>
                 <button
+                  type="button"
                   onClick={handleClear}
+                  aria-label={`Clear selected entity ${selectedEntity.label}`}
                   className="p-1 text-archive hover:text-accessible-gray"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-4 w-4" aria-hidden="true" />
                 </button>
               </div>
             ) : (
               <div className="space-y-2">
                 <div className="flex gap-2">
                   <input
+                    id={`${uid}-search`}
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -155,11 +172,13 @@ export function RelationshipFilter({ onFilterChange, organizationId }: Relations
                     className="flex-1 px-3 py-2 border border-lichen rounded text-sm"
                   />
                   <button
+                    type="button"
                     onClick={handleSearch}
                     disabled={searching}
+                    aria-label="Search entities"
                     className="px-3 py-2 bg-stone border border-lichen rounded hover:bg-lichen"
                   >
-                    <Search className="h-4 w-4" />
+                    <Search className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
 
@@ -186,10 +205,11 @@ export function RelationshipFilter({ onFilterChange, organizationId }: Relations
           {selectedEntity && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">
+                <label htmlFor={`${uid}-type`} className="block text-sm font-medium text-ink mb-1">
                   Relationship Type
                 </label>
                 <select
+                  id={`${uid}-type`}
                   value={selectedRelType}
                   onChange={(e) => setSelectedRelType(e.target.value)}
                   className="w-full px-3 py-2 border border-lichen rounded text-sm"
@@ -202,10 +222,11 @@ export function RelationshipFilter({ onFilterChange, organizationId }: Relations
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">
+                <label htmlFor={`${uid}-direction`} className="block text-sm font-medium text-ink mb-1">
                   Direction
                 </label>
                 <select
+                  id={`${uid}-direction`}
                   value={direction}
                   onChange={(e) => setDirection(e.target.value as 'all' | 'outgoing' | 'incoming')}
                   className="w-full px-3 py-2 border border-lichen rounded text-sm"

@@ -318,7 +318,7 @@ export default function DatabaseConnectionWizard({
           />
         )}
         {schema.type === 'boolean' && (
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label htmlFor={`db-config-${key}`} className="flex items-center gap-2 cursor-pointer">
             <Checkbox
               id={`db-config-${key}`}
               checked={value || false}
@@ -435,7 +435,7 @@ export default function DatabaseConnectionWizard({
       <div className="px-6 py-4 border-b border-lichen">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <ConnectorIcon connectorKey={definition.key} category={definition.category ?? undefined} size={32} className="text-archive" />
+            <span aria-hidden="true" className="contents"><ConnectorIcon connectorKey={definition.key} category={definition.category ?? undefined} size={32} className="text-archive" /></span>
             <div>
               <h2 className="text-xl font-semibold text-ink">
                 Connect to {definition.display_name}

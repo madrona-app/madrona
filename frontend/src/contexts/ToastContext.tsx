@@ -51,7 +51,7 @@ const DEFAULT_DURATIONS: Record<Toast['type'], number> = {
 };
 
 // Icon components by type
-const ICONS: Record<Toast['type'], React.FC<{ size?: number }>> = {
+const ICONS: Record<Toast['type'], React.FC<{ size?: number; 'aria-hidden'?: boolean | 'true' | 'false' }>> = {
   info: Info,
   success: CheckCircle,
   warning: AlertTriangle,
@@ -103,6 +103,9 @@ function ToastItem({
 }) {
   const [isVisible, setIsVisible] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
+  // Auto-dismiss pauses while the pointer is over the toast or focus is inside
+  // it, so its action and Dismiss buttons stay reachable (WCAG 2.2.1).
+  const [isPaused, setIsPaused] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const variant = TYPE_CLASSES[toast.type];
@@ -123,7 +126,7 @@ function ToastItem({
   // Auto-dismiss timer
   useEffect(() => {
     const duration = toast.duration ?? DEFAULT_DURATIONS[toast.type];
-    if (duration > 0) {
+    if (duration > 0 && !isPaused) {
       timeoutRef.current = setTimeout(() => {
         handleDismiss();
       }, duration);
@@ -131,18 +134,22 @@ function ToastItem({
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [toast.duration, toast.type, handleDismiss]);
+  }, [toast.duration, toast.type, handleDismiss, isPaused]);
 
   const visible = isVisible && !isExiting;
-  // Errors and warnings use role="alert" (assertive — interrupts the
-  // screen reader). Success and info use role="status" (polite — waits
-  // for a natural pause) so a background success toast doesn't cut off
-  // the user mid-sentence.
-  const ariaRole = toast.type === 'error' || toast.type === 'warning' ? 'alert' : 'status';
 
+  // The toast is not itself a live region: it is inserted into one of the
+  // persistent regions in ToastContainer, which exist in the DOM before any
+  // toast is added (screen readers such as JAWS do not reliably announce a
+  // live region that is created together with its content).
   return (
     <div
-      role={ariaRole}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onFocus={() => setIsPaused(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setIsPaused(false);
+      }}
       className={[
         'pointer-events-auto flex items-start gap-3',
         'min-w-[320px] max-w-[min(92vw,420px)]',
@@ -154,7 +161,7 @@ function ToastItem({
       ].join(' ')}
     >
       <span className={`shrink-0 mt-0.5 ${variant.icon}`}>
-        <Icon size={20} />
+        <Icon size={20} aria-hidden="true" />
       </span>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-semibold text-ink">
@@ -186,7 +193,7 @@ function ToastItem({
       <button
         type="button"
         onClick={handleDismiss}
-        aria-label="Dismiss"
+        aria-label={`Dismiss notification: ${toast.title}`}
         className={[
           'shrink-0 -mr-1 -mt-1 rounded p-1',
           'text-archive hover:text-ink hover:bg-ink/5',
@@ -194,25 +201,39 @@ function ToastItem({
           'transition-colors',
         ].join(' ')}
       >
-        <X size={16} />
+        <X size={16} aria-hidden="true" />
       </button>
     </div>
   );
+}
+
+/** Whether a toast type interrupts (assertive) or waits for a pause (polite). */
+function isUrgent(type: Toast['type']) {
+  return type === 'error' || type === 'warning';
 }
 
 /**
  * Toast container that renders all active toasts
  */
 function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id: string) => void }) {
-  if (toasts.length === 0) return null;
-
+  // Always rendered, even when empty, so both live regions are already in the
+  // DOM when a toast arrives. Errors and warnings go to the assertive region
+  // (role="alert"); success and info go to the polite one (role="status") so a
+  // background success toast doesn't cut the user off mid-sentence.
+  const urgent = toasts.filter((t) => isUrgent(t.type));
+  const routine = toasts.filter((t) => !isUrgent(t.type));
   return (
-    <div
-      className="pointer-events-none fixed right-4 top-4 z-[9999] flex flex-col gap-2"
-    >
-      {toasts.map((toast) => (
-        <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
-      ))}
+    <div className="pointer-events-none fixed right-4 top-4 z-[9999] flex flex-col gap-2">
+      <div role="alert" aria-live="assertive" className="flex flex-col gap-2 empty:hidden">
+        {urgent.map((toast) => (
+          <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
+        ))}
+      </div>
+      <div role="status" aria-live="polite" className="flex flex-col gap-2 empty:hidden">
+        {routine.map((toast) => (
+          <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
+        ))}
+      </div>
     </div>
   );
 }

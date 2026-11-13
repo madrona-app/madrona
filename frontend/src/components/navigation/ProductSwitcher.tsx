@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useId } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronDown, Check } from 'lucide-react';
 import { useActiveProduct, getProductLandingPath } from '../../hooks/useActiveProduct';
@@ -27,6 +27,9 @@ export function ProductSwitcher() {
   const { activeProduct, activeProductId } = useActiveProduct();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const listId = useId();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -47,6 +50,7 @@ export function ProductSwitcher() {
     function handleEscape(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         setIsOpen(false);
+        triggerRef.current?.focus();
       }
     }
 
@@ -55,6 +59,34 @@ export function ProductSwitcher() {
       return () => document.removeEventListener('keydown', handleEscape);
     }
   }, [isOpen]);
+
+  // Listbox keyboard model: focus starts on the selected option; Up/Down/Home/End
+  // move between enabled options; Enter/Space activate (native button); Tab closes.
+  const enabledOptions = () =>
+    Array.from(listRef.current?.querySelectorAll<HTMLElement>('[role="option"]:not([aria-disabled="true"])') ?? []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const opts = enabledOptions();
+    const selected = opts.find((o) => o.getAttribute('aria-selected') === 'true') ?? opts[0];
+    selected?.focus();
+  }, [isOpen]);
+
+  const handleListKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const opts = enabledOptions();
+    if (opts.length === 0) return;
+    const idx = opts.indexOf(document.activeElement as HTMLElement);
+    let next: number | null = null;
+    if (e.key === 'ArrowDown') next = idx < 0 ? 0 : (idx + 1) % opts.length;
+    else if (e.key === 'ArrowUp') next = idx <= 0 ? opts.length - 1 : idx - 1;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = opts.length - 1;
+    else if (e.key === 'Tab') setIsOpen(false);
+    if (next !== null) {
+      e.preventDefault();
+      opts[next].focus();
+    }
+  };
 
   const handleProductClick = (path: string, productId: string) => {
     // Close dropdown immediately
@@ -92,29 +124,41 @@ export function ProductSwitcher() {
   return (
     <div className="product-switcher" ref={dropdownRef}>
       <button
+        ref={triggerRef}
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`product-switcher-trigger ${isOpen ? 'product-switcher-trigger--open' : ''}`}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        aria-label={`Current application: ${displayName}. Click to switch applications.`}
+        aria-controls={isOpen ? listId : undefined}
+        aria-label={`Switch application. Current application: ${displayName}`}
       >
         {activeProduct && <AppTile appKey={activeProduct.id} className="w-6 h-6" iconSize={14} />}
         <span className="product-switcher-product">{displayName}</span>
         <ChevronDown
           size={14}
+          aria-hidden="true"
           className={`product-switcher-chevron ${isOpen ? 'product-switcher-chevron--open' : ''}`}
         />
       </button>
 
       {isOpen && (
-        <div className="product-switcher-dropdown" role="listbox" aria-label="Select application">
+        <div className="product-switcher-dropdown">
           {/* Dropdown header */}
-          <div className="product-switcher-header">
+          <div className="product-switcher-header" aria-hidden="true">
             <span className="product-switcher-header-label">APPLICATIONS</span>
           </div>
 
           {/* Product list */}
-          <div className="product-switcher-list">
+          {/* eslint-disable-next-line jsx-a11y/interactive-supports-focus -- listbox focus is roving on its options (each option is a button) */}
+          <div
+            ref={listRef}
+            id={listId}
+            className="product-switcher-list"
+            role="listbox"
+            aria-label="Select application"
+            onKeyDown={handleListKeyDown}
+          >
             {allDisplayProducts.map(product => {
               const isActive = product.id === activeProductId;
               const hasAccess = !product.appKey || hasAppAccess(product.appKey);
@@ -136,7 +180,9 @@ export function ProductSwitcher() {
                     <div className="product-switcher-option-content">
                       <span className="product-switcher-option-label">{product.label}</span>
                     </div>
-                    <span className="product-switcher-upgrade">Upgrade</span>
+                    <span className="product-switcher-upgrade">
+                      Upgrade<span className="sr-only"> required, not available</span>
+                    </span>
                   </div>
                 );
               }
@@ -144,16 +190,18 @@ export function ProductSwitcher() {
               return (
                 <button
                   key={product.id}
+                  type="button"
                   onClick={() => handleProductClick(path, product.id)}
                   className={`product-switcher-option ${isActive ? 'product-switcher-option--active' : ''}`}
                   role="option"
                   aria-selected={isActive}
+                  tabIndex={-1}
                 >
                   <AppTile appKey={product.id} className="w-6 h-6" iconSize={14} />
                   <div className="product-switcher-option-content">
                     <span className="product-switcher-option-label">{product.label}</span>
                   </div>
-                  {isActive && <Check size={16} className="product-switcher-option-check" />}
+                  {isActive && <Check size={16} className="product-switcher-option-check" aria-hidden="true" />}
                 </button>
               );
             })}

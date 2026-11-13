@@ -5,9 +5,9 @@ import type { PlaceOrigin } from '../../../components/maps/CollectionOriginMap';
 
 vi.mock('react-map-gl/maplibre', () => ({
   Marker: ({ children, onClick }: { children?: React.ReactNode; onClick?: (e: { originalEvent: { stopPropagation: () => void } }) => void }) => (
-    <div data-testid="marker" onClick={() => onClick?.({ originalEvent: { stopPropagation: () => {} } })}>
+    <button type="button" data-testid="marker" onClick={() => onClick?.({ originalEvent: { stopPropagation: () => {} } })}>
       {children}
-    </div>
+    </button>
   ),
   Source: ({ children }: { children?: React.ReactNode }) => <div data-testid="source">{children}</div>,
   Layer: () => <div data-testid="layer" />,

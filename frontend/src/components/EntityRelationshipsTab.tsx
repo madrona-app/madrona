@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { GitBranch, ArrowRight, ArrowLeft, Plus, Trash2, X, Search, List, Network } from 'lucide-react';
@@ -22,6 +22,7 @@ export function EntityRelationshipsTab({ entityKey, organizationId }: EntityRela
   const queryClient = useQueryClient();
   const [viewMode, setViewMode] = useState<'list' | 'graph'>('list');
   const [showAddForm, setShowAddForm] = useState(false);
+  const formId = useId();
   const [newRelType, setNewRelType] = useState('');
   const [newTargetKey, setNewTargetKey] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -178,19 +179,22 @@ export function EntityRelationshipsTab({ entityKey, organizationId }: EntityRela
                 setSearchQuery('');
                 setSearchResults([]);
               }}
+              type="button"
+              aria-label="Close add relationship form"
               className="text-stone hover:text-archive"
             >
-              <X className="h-5 w-5" />
+              <X className="h-5 w-5" aria-hidden="true" />
             </button>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             {/* Relationship type */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${formId}-type`} className="block text-sm font-medium text-ink mb-1">
                 Relationship Type
               </label>
               <select
+                id={`${formId}-type`}
                 value={newRelType}
                 onChange={(e) => setNewRelType(e.target.value)}
                 className="w-full px-3 py-2 border border-lichen rounded-md text-sm"
@@ -204,11 +208,12 @@ export function EntityRelationshipsTab({ entityKey, organizationId }: EntityRela
 
             {/* Target entity search */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${formId}-target`} className="block text-sm font-medium text-ink mb-1">
                 Target Entity
               </label>
               <div className="flex gap-2">
                 <input
+                  id={`${formId}-target`}
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -217,11 +222,13 @@ export function EntityRelationshipsTab({ entityKey, organizationId }: EntityRela
                   className="flex-1 px-3 py-2 border border-lichen rounded-md text-sm"
                 />
                 <button
+                  type="button"
                   onClick={handleSearch}
                   disabled={searching}
+                  aria-label="Search target entities"
                   className="px-3 py-2 bg-stone border border-lichen rounded-md hover:bg-stone/80"
                 >
-                  <Search className="h-4 w-4" />
+                  <Search className="h-4 w-4" aria-hidden="true" />
                 </button>
               </div>
             </div>

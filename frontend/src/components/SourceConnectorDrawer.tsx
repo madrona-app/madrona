@@ -53,6 +53,9 @@ export default function SourceConnectorDrawer({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showFullResyncConfirm, setShowFullResyncConfirm] = useState(false);
+  const fullResyncTriggerRef = useRef<HTMLButtonElement>(null);
+  const fullResyncCancelRef = useRef<HTMLButtonElement>(null);
+  const fullResyncConfirmRef = useRef<HTMLButtonElement>(null);
 
   // Use refs for interval ID and callbacks to avoid stale closures
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -252,7 +255,33 @@ export default function SourceConnectorDrawer({
 
   const handleFullResyncCancel = () => {
     setShowFullResyncConfirm(false);
+    fullResyncTriggerRef.current?.focus();
   };
+  // The confirmation sits outside the drawer's focus trap: move focus into it,
+  // keep Tab on its two buttons, and let Escape cancel only the confirmation.
+  // Capture phase so this runs before the drawer's own document listener.
+  useEffect(() => {
+    if (!showFullResyncConfirm) return;
+    fullResyncCancelRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        setShowFullResyncConfirm(false);
+        fullResyncTriggerRef.current?.focus();
+      } else if (e.key === 'Tab') {
+        const buttons = [fullResyncCancelRef.current, fullResyncConfirmRef.current];
+        const idx = buttons.indexOf(document.activeElement as HTMLButtonElement);
+        e.preventDefault();
+        e.stopPropagation();
+        const next = e.shiftKey ? (idx <= 0 ? 1 : idx - 1) : (idx + 1) % 2;
+        buttons[next]?.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [showFullResyncConfirm]);
+
 
   const displayRun = currentRun || latestRun;
   
@@ -268,6 +297,7 @@ export default function SourceConnectorDrawer({
       <div
         className="drawer-backdrop"
         onClick={onClose}
+        aria-hidden="true"
         style={{
           position: 'fixed',
           top: 0,
@@ -548,6 +578,7 @@ export default function SourceConnectorDrawer({
 
             {/* Secondary: Full Resync */}
             <button
+              ref={fullResyncTriggerRef}
               onClick={handleFullResyncClick}
               disabled={buttonsDisabled || !canForceFullSync}
               style={{
@@ -826,6 +857,7 @@ export default function SourceConnectorDrawer({
 
       {/* Full Resync Confirmation Dialog */}
       {showFullResyncConfirm && (
+        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- backdrop click-to-dismiss; Escape cancels via the capture listener above
         <div
           style={{
             position: 'fixed',
@@ -841,6 +873,7 @@ export default function SourceConnectorDrawer({
           }}
           onClick={handleFullResyncCancel}
         >
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation wrapper so clicks inside do not dismiss; not itself interactive */}
           <div
             style={{
               background: 'white',
@@ -850,17 +883,23 @@ export default function SourceConnectorDrawer({
               width: '90%',
               boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
             }}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="source-drawer-full-resync-title"
+            aria-describedby="source-drawer-full-resync-description"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', fontWeight: 600 }}>
+            <h3 id="source-drawer-full-resync-title" style={{ margin: '0 0 12px 0', fontSize: '18px', fontWeight: 600 }}>
               Confirm Full Resync
             </h3>
-            <p style={{ margin: '0 0 20px 0', fontSize: '14px', color: 'rgb(var(--color-archive))', lineHeight: '1.5' }}>
+            <p id="source-drawer-full-resync-description" style={{ margin: '0 0 20px 0', fontSize: '14px', color: 'rgb(var(--color-archive))', lineHeight: '1.5' }}>
               This will re-sync all data from the source, ignoring the incremental sync timestamp.
               This may take longer and process more records.
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
               <button
+                ref={fullResyncCancelRef}
+                type="button"
                 onClick={handleFullResyncCancel}
                 style={{
                   padding: '8px 16px',
@@ -876,6 +915,8 @@ export default function SourceConnectorDrawer({
                 Cancel
               </button>
               <button
+                ref={fullResyncConfirmRef}
+                type="button"
                 onClick={handleFullResyncConfirm}
                 style={{
                   padding: '8px 16px',

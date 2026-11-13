@@ -57,6 +57,16 @@ export function Tooltip({ content, children, disabled = false, alwaysShow = fals
     }
   }, [isVisible]);
   
+  // Escape dismisses a visible tooltip without moving focus (WCAG 1.4.13).
+  useEffect(() => {
+    if (!isVisible) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsVisible(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isVisible]);
+
   // Show tooltip if alwaysShow is true, or if disabled is false (permission not granted)
   const shouldShowTooltip = alwaysShow || !disabled;
   if (!shouldShowTooltip) {
@@ -64,6 +74,17 @@ export function Tooltip({ content, children, disabled = false, alwaysShow = fals
   }
   
   const tooltipId = `tooltip-${reactId}`;
+
+  // The description belongs on the focusable child itself, not on the wrapper,
+  // so assistive technology reads it when the control is focused.
+  const trigger = React.isValidElement<{ 'aria-describedby'?: string }>(children)
+    ? React.cloneElement(children, {
+        'aria-describedby':
+          [children.props['aria-describedby'], isVisible ? tooltipId : undefined]
+            .filter(Boolean)
+            .join(' ') || undefined,
+      })
+    : children;
 
   return (
     <>
@@ -74,9 +95,8 @@ export function Tooltip({ content, children, disabled = false, alwaysShow = fals
         onFocus={() => setIsVisible(true)}
         onBlur={() => setIsVisible(false)}
         style={{ display: 'inline-block' }}
-        aria-describedby={isVisible ? tooltipId : undefined}
       >
-        {children}
+        {trigger}
       </div>
       
       {isVisible && (

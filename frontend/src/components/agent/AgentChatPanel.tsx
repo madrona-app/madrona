@@ -278,6 +278,7 @@ export function AgentChatPanel({ isOpen, onClose, organizationId }: AgentChatPan
       <div
         className="absolute inset-0 bg-ink/30 transition-opacity"
         onClick={onClose}
+        aria-hidden="true"
       />
 
       {/* Slide-over panel */}
@@ -286,7 +287,6 @@ export function AgentChatPanel({ isOpen, onClose, organizationId }: AgentChatPan
           ref={modalRef}
           className="w-screen max-w-md bg-parchment shadow-xl flex flex-col"
           {...getModalAriaProps(titleId)}
-          onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-lichen">

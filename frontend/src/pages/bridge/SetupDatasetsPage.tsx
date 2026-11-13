@@ -97,7 +97,7 @@ export default function SetupDatasetsPage() {
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <FaDatabase className="w-6 h-6 text-forest" style={{ opacity: 0.6 }} />
+              <FaDatabase className="w-6 h-6 text-forest" style={{ opacity: 0.6 }} aria-hidden="true" />
               <h1 className="text-2xl font-semibold text-ink">Canonical Collections</h1>
             </div>
             <p className="text-sm text-archive">
@@ -242,7 +242,7 @@ export default function SetupDatasetsPage() {
                     <div className="flex items-start gap-4">
                       {/* Icon */}
                       <div className="flex-shrink-0 mt-0.5">
-                        <FaDatabase className="h-6 w-6 text-forest" style={{ opacity: 0.5 }} />
+                        <FaDatabase className="h-6 w-6 text-forest" style={{ opacity: 0.5 }} aria-hidden="true" />
                       </div>
 
                       {/* Content */}
@@ -314,7 +314,7 @@ export default function SetupDatasetsPage() {
           </div>
         ) : (
           <div className="bg-parchment border border-lichen rounded-lg p-8 text-center">
-            <FaDatabase size={48} className="text-stone mx-auto mb-4" />
+            <FaDatabase size={48} className="text-stone mx-auto mb-4" aria-hidden="true" />
             <h3 className="font-medium text-ink mb-2">No datasets yet</h3>
             <p className="text-archive text-sm mb-4 max-w-md mx-auto">
               Datasets are created when you configure a pipeline. Each pipeline writes canonical

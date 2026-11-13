@@ -153,7 +153,6 @@ export default function RecoverMfaPage() {
             required
             disabled={isLoading}
             autoComplete="current-password"
-            autoFocus
           />
 
           {error && <AuthError message={error} />}
@@ -187,7 +186,6 @@ export default function RecoverMfaPage() {
           required
           disabled={isLoading}
           autoComplete="email"
-          autoFocus
         />
 
         {error && <AuthError message={error} />}

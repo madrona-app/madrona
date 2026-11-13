@@ -10,6 +10,7 @@ import { X, MapPin, Check } from 'lucide-react';
 import PointPicker from './PointPicker';
 import type { Coordinates } from './PointPicker';
 import { ModalPortal } from '../ModalPortal';
+import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
 
 export interface LocationPickerModalProps {
   /** Whether the modal is open */
@@ -46,6 +47,12 @@ export default function LocationPickerModal({
     onClose();
   }, [initialValue, onClose]);
 
+  const { modalRef, titleId, descriptionId } = useAccessibleModal({
+    isOpen,
+    onClose: handleCancel,
+    titlePrefix: 'location-picker',
+  });
+
   if (!isOpen) return null;
 
   return (
@@ -55,28 +62,34 @@ export default function LocationPickerModal({
       <div
         className="fixed inset-0 bg-ink/50 transition-opacity"
         onClick={handleCancel}
+        aria-hidden="true"
       />
 
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-3xl bg-parchment rounded-lg shadow-xl">
+        <div
+          ref={modalRef}
+          {...getModalAriaProps(titleId, descriptionId)}
+          className="relative w-full max-w-3xl bg-parchment rounded-lg shadow-xl"
+        >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-lichen">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-semantic-info/10 rounded-lg">
-                <MapPin className="w-5 h-5 text-bark" />
+                <MapPin className="w-5 h-5 text-bark" aria-hidden="true" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-ink">{title}</h2>
-                <p className="text-sm text-archive">{description}</p>
+                <h2 id={titleId} className="text-lg font-semibold text-ink">{title}</h2>
+                <p id={descriptionId} className="text-sm text-archive">{description}</p>
               </div>
             </div>
             <button
+              type="button"
               onClick={handleCancel}
-              aria-label="Close"
+              aria-label="Close location picker"
               className="p-2 text-archive hover:text-accessible-gray rounded-lg hover:bg-lichen"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
 

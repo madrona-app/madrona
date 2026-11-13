@@ -103,11 +103,11 @@ export default function MfaVerifyForm({
     <div className="max-w-md w-full bg-parchment rounded-institutional shadow-archival-md border border-lichen p-8">
       <div className="text-center mb-6">
         <div className="mx-auto w-12 h-12 bg-bark/10 rounded-full flex items-center justify-center mb-4">
-          <ShieldCheck className="w-6 h-6 text-bark" />
+          <ShieldCheck className="w-6 h-6 text-bark" aria-hidden="true" />
         </div>
-        <h2 className="text-2xl font-bold text-ink mb-2">
+        <h1 className="text-2xl font-bold text-ink mb-2">
           Two-factor authentication
-        </h2>
+        </h1>
         <p className="text-archive text-sm">{subtitle}</p>
       </div>
 
@@ -134,8 +134,8 @@ export default function MfaVerifyForm({
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 bg-semantic-error/10 border border-semantic-error/30 text-semantic-error px-4 py-3 rounded-institutional text-sm">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <div role="alert" className="flex items-center gap-2 bg-semantic-error/10 border border-semantic-error/30 text-semantic-error px-4 py-3 rounded-institutional text-sm">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
             <span>{error}</span>
           </div>
         )}
@@ -148,7 +148,7 @@ export default function MfaVerifyForm({
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                 Verifying...
               </>
             ) : (

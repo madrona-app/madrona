@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { ToastProvider, useToast } from '../../contexts/ToastContext';
 
 // Test component to access toast context
@@ -142,7 +142,7 @@ describe('ToastContext', () => {
       expect(screen.getByText('No auto dismiss')).toBeInTheDocument();
 
       // Dismiss button should be present
-      expect(screen.getByLabelText('Dismiss')).toBeInTheDocument();
+      expect(screen.getByLabelText('Dismiss notification: No auto dismiss')).toBeInTheDocument();
     });
   });
 
@@ -265,7 +265,70 @@ describe('ToastContext', () => {
 
       fireEvent.click(screen.getByText('Show Error'));
 
-      expect(screen.getByRole('alert')).toBeInTheDocument();
+      expect(screen.getByRole('alert')).toHaveTextContent('Error!');
+    });
+
+    // Live regions must already be in the DOM before a toast is inserted:
+    // screen readers (notably JAWS) do not reliably announce a region that
+    // appears together with its content.
+    it('renders both live regions empty before any toast is shown', () => {
+      render(
+        <ToastProvider>
+          <ToastConsumer />
+        </ToastProvider>
+      );
+
+      const status = screen.getByRole('status');
+      const alert = screen.getByRole('alert');
+      expect(status).toHaveAttribute('aria-live', 'polite');
+      expect(alert).toHaveAttribute('aria-live', 'assertive');
+      expect(status).toBeEmptyDOMElement();
+      expect(alert).toBeEmptyDOMElement();
+
+      fireEvent.click(screen.getByText('Show Success'));
+      // Same node, now holding the toast.
+      expect(screen.getByRole('status')).toBe(status);
+      expect(status).toHaveTextContent('Success!');
+      expect(alert).toBeEmptyDOMElement();
+    });
+
+    it('pauses auto-dismiss while focus is inside the toast', () => {
+      vi.useFakeTimers();
+      try {
+        render(
+          <ToastProvider>
+            <ToastConsumer />
+          </ToastProvider>
+        );
+        fireEvent.click(screen.getByText('Show Success'));
+        const dismiss = screen.getByLabelText('Dismiss notification: Success!');
+        fireEvent.focus(dismiss);
+        act(() => {
+          vi.advanceTimersByTime(10000);
+        });
+        expect(screen.getByText('Success!')).toBeInTheDocument();
+
+        fireEvent.blur(dismiss);
+        act(() => {
+          vi.advanceTimersByTime(4500);
+        });
+        expect(screen.queryByText('Success!')).not.toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('routes warnings to the assertive region and info to the polite one', () => {
+      render(
+        <ToastProvider>
+          <ToastConsumer />
+        </ToastProvider>
+      );
+
+      fireEvent.click(screen.getByText('Show Warning'));
+      fireEvent.click(screen.getByText('Show Info'));
+      expect(screen.getByRole('alert')).toHaveTextContent('Warning!');
+      expect(screen.getByRole('status')).toHaveTextContent('Info!');
     });
   });
 });

@@ -12,12 +12,28 @@ export default function MadronaContainerNode({ data }: NodeProps<MadronaContaine
     }
   };
 
+  // A React Flow node contains Handle divs, which cannot live inside a native
+  // <button>, so a clickable node is a role="button" div with Enter/Space
+  // support. Props are applied together so a static node has none of them.
+  const buttonProps = data.onClick
+    ? {
+        role: 'button' as const,
+        tabIndex: 0,
+        'aria-label': 'Canonical Store',
+        onClick: data.onClick,
+        onKeyDown: handleKeyDown,
+        onMouseEnter: (e: React.MouseEvent<HTMLDivElement>) => {
+          e.currentTarget.style.borderColor = '#ADA79D'; // Subtle darkening only
+        },
+        onMouseLeave: (e: React.MouseEvent<HTMLDivElement>) => {
+          e.currentTarget.style.borderColor = '#C5BFB5';
+        },
+      }
+    : {};
+
   return (
     <div
-      onClick={data.onClick}
-      onKeyDown={handleKeyDown}
-      role={data.onClick ? 'button' : undefined}
-      tabIndex={data.onClick ? 0 : undefined}
+      {...buttonProps}
       title={data.onClick ? 'Canonical Store' : undefined}
       style={{
         width: '100%',
@@ -30,14 +46,6 @@ export default function MadronaContainerNode({ data }: NodeProps<MadronaContaine
         cursor: data.onClick ? 'pointer' : 'default',
         transition: 'border-color 0.15s ease',
         boxShadow: 'inset 0 0 0 1px rgba(107, 122, 126, 0.08)', // Subtle interior depth
-      }}
-      onMouseEnter={(e) => {
-        if (data.onClick) {
-          e.currentTarget.style.borderColor = '#ADA79D'; // Subtle darkening only
-        }
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = '#C5BFB5';
       }}
     >
       {/* Handles removed - Madrona is a container, not a connection point */}

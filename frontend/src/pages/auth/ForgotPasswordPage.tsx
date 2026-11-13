@@ -100,7 +100,6 @@ export default function ForgotPasswordPage() {
           required
           disabled={isLoading}
           autoComplete="email"
-          autoFocus
         />
 
         {error && <AuthError message={error} />}

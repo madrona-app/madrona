@@ -8,6 +8,7 @@ import { useOrganization } from '../../contexts/useOrganization';
 import { usePermissions } from '../../hooks/usePermissions';
 import { useTimezone } from '../../hooks/useTimezone';
 import { formatDateWithTimezone } from '../../lib/timezone';
+import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
 import { useRunUpdates } from '../../hooks/useRunUpdates';
 import { useWebSocket } from '../../contexts/WebSocketContext';
 import { Trash2, X } from 'lucide-react';
@@ -32,6 +33,19 @@ export default function RunsPage() {
   const [offset, setOffset] = useState(0);
   const [deleteConfirmRunId, setDeleteConfirmRunId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // Escape / backdrop are ignored while the delete is in flight.
+  const closeDeleteConfirm = useCallback(() => {
+    if (!deleting) setDeleteConfirmRunId(null);
+  }, [deleting]);
+  const {
+    modalRef: deleteModalRef,
+    titleId: deleteTitleId,
+    descriptionId: deleteDescriptionId,
+  } = useAccessibleModal({
+    isOpen: deleteConfirmRunId !== null,
+    onClose: closeDeleteConfirm,
+    titlePrefix: 'runs-delete-confirm',
+  });
 
   const canDeleteRuns = hasPermission('runs.delete');
   const { isConnected } = useWebSocket();
@@ -421,34 +435,41 @@ export default function RunsPage() {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmRunId && (
+        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- backdrop click-to-dismiss; Escape closes via useAccessibleModal
         <div
           className="fixed inset-0 bg-ink/50 flex items-center justify-center z-[1000]"
-          onClick={() => !deleting && setDeleteConfirmRunId(null)}
+          onClick={closeDeleteConfirm}
         >
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation wrapper so clicks inside do not dismiss; not itself interactive */}
           <div
+            ref={deleteModalRef}
+            {...getModalAriaProps(deleteTitleId, deleteDescriptionId)}
+            role="alertdialog"
             className="bg-parchment rounded-xl p-6 max-w-[480px] w-[90%] shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start mb-4">
               <div className="shrink-0 w-12 h-12 rounded-full bg-semantic-error/10 flex items-center justify-center mr-4">
-                <Trash2 size={24} className="text-semantic-error" />
+                <Trash2 size={24} className="text-semantic-error" aria-hidden="true" />
               </div>
               <div className="flex-1">
-                <h3 className="m-0 mb-2 text-lg font-semibold text-ink">
+                <h3 id={deleteTitleId} className="m-0 mb-2 text-lg font-semibold text-ink">
                   Delete Run
                 </h3>
-                <p className="m-0 text-sm text-archive leading-relaxed">
+                <p id={deleteDescriptionId} className="m-0 text-sm text-archive leading-relaxed">
                   Are you sure you want to delete this run? This action cannot be undone. All associated data will be permanently removed.
                 </p>
               </div>
               <button
+                type="button"
                 onClick={() => setDeleteConfirmRunId(null)}
                 disabled={deleting}
+                aria-label="Close delete run dialog"
                 className={`p-1 bg-transparent border-none rounded flex items-center justify-center ml-3 text-archive hover:text-ink ${
                   deleting ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
                 }`}
               >
-                <X size={20} />
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
             <div className="flex gap-3 ml-16">

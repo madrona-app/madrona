@@ -8,7 +8,7 @@
  * - Quick Actions button for workspace context
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useId } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -53,6 +53,21 @@ export function ActiveContextIndicator() {
   const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showBulkActionDialog, setShowBulkActionDialog] = useState(false);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const panelId = useId();
+
+  // Escape closes the expanded panel and returns focus to its toggle.
+  useEffect(() => {
+    if (!isExpanded) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsExpanded(false);
+        toggleRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isExpanded]);
 
   const isCollections = activeProductId === 'collections';
   const isMedia = activeProductId === 'media';
@@ -124,7 +139,11 @@ export function ActiveContextIndicator() {
     <div className="relative">
       {/* Main indicator button */}
       <button
+        ref={toggleRef}
+        type="button"
         onClick={() => setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
+        aria-controls={isExpanded ? panelId : undefined}
         className={cn(
           'flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors',
           'bg-bark/10 hover:bg-bark/20 border border-bark/30',
@@ -137,9 +156,9 @@ export function ActiveContextIndicator() {
           isObject ? 'bg-forest/10' : 'bg-bark/10'
         )}>
           {isObject ? (
-            <Package size={14} className="text-forest" />
+            <Package size={14} className="text-forest" aria-hidden="true" />
           ) : (
-            <Layers size={14} className="text-bark" />
+            <Layers size={14} className="text-bark" aria-hidden="true" />
           )}
         </div>
 
@@ -156,6 +175,7 @@ export function ActiveContextIndicator() {
         {/* Expand indicator */}
         <ChevronDown
           size={14}
+          aria-hidden="true"
           className={cn(
             'text-archive transition-transform',
             isExpanded && 'rotate-180'
@@ -170,10 +190,11 @@ export function ActiveContextIndicator() {
           <div
             className="fixed inset-0 z-40"
             onClick={() => setIsExpanded(false)}
+            aria-hidden="true"
           />
 
           {/* Dropdown content */}
-          <div className="absolute top-full left-0 mt-2 w-72 bg-parchment border border-lichen rounded-lg shadow-lg z-50">
+          <div id={panelId} className="absolute top-full left-0 mt-2 w-72 bg-parchment border border-lichen rounded-lg shadow-lg z-50">
             {/* Context details */}
             <div className="p-4 border-b border-lichen">
               <div className="flex items-start gap-3">
@@ -182,9 +203,9 @@ export function ActiveContextIndicator() {
                   isObject ? 'bg-forest/10' : 'bg-bark/10'
                 )}>
                   {isObject ? (
-                    <Package size={20} className="text-forest" />
+                    <Package size={20} className="text-forest" aria-hidden="true" />
                   ) : (
-                    <Layers size={20} className="text-bark" />
+                    <Layers size={20} className="text-bark" aria-hidden="true" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -221,7 +242,7 @@ export function ActiveContextIndicator() {
                   }}
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left rounded-lg bg-bark text-parchment hover:bg-copper-dark hover:text-parchment mb-1"
                 >
-                  <Zap size={14} />
+                  <Zap size={14} aria-hidden="true" />
                   Quick Actions
                 </button>
               )}
@@ -230,7 +251,7 @@ export function ActiveContextIndicator() {
                 onClick={() => setIsExpanded(false)}
                 className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left rounded-lg hover:bg-stone/50"
               >
-                <ExternalLink size={14} className="text-archive" />
+                <ExternalLink size={14} className="text-archive" aria-hidden="true" />
                 View {isObject ? 'Object' : 'Workspace'}
               </Link>
               <button
@@ -238,7 +259,7 @@ export function ActiveContextIndicator() {
                 disabled={clearMutation.isPending}
                 className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left rounded-lg hover:bg-stone/50 text-semantic-error"
               >
-                <X size={14} />
+                <X size={14} aria-hidden="true" />
                 {clearMutation.isPending ? 'Clearing...' : 'Clear Context'}
               </button>
             </div>

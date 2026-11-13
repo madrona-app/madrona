@@ -359,6 +359,7 @@ export default function FileSourceWizard({
               <div
                 role="region"
                 aria-labelledby={`${uid}-caption`}
+                // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- scrollable region must be keyboard-focusable to scroll (WCAG 2.1.1); labelled region
                 tabIndex={0}
                 className={`overflow-x-auto border border-lichen rounded-md ${FOCUS_RING}`}
               >

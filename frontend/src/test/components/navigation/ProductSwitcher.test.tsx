@@ -118,14 +118,14 @@ describe('ProductSwitcher', () => {
     setup();
     renderSwitcher();
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Click to switch applications/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Switch application/ }));
     expect(screen.getByRole('listbox')).toBeInTheDocument();
   });
 
   it('shows all products in the dropdown sorted alphabetically', () => {
     setup();
     renderSwitcher();
-    fireEvent.click(screen.getByRole('button', { name: /Click to switch applications/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Switch application/ }));
     const labels = screen
       .getAllByRole('option')
       .map((el) => el.textContent?.trim());
@@ -136,7 +136,7 @@ describe('ProductSwitcher', () => {
   it('marks the active product with aria-selected', () => {
     setup({ activeProductId: 'guide' });
     renderSwitcher();
-    fireEvent.click(screen.getByRole('button', { name: /Click to switch applications/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Switch application/ }));
     const guide = screen
       .getAllByRole('option')
       .find((el) => el.textContent?.trim() === 'Guide');
@@ -146,7 +146,7 @@ describe('ProductSwitcher', () => {
   it('renders unlicensed products as disabled with an Upgrade label', () => {
     setup({ appAccess: ['collections'] });
     renderSwitcher();
-    fireEvent.click(screen.getByRole('button', { name: /Click to switch applications/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Switch application/ }));
     const bridgeOption = screen
       .getAllByRole('option')
       .find((el) => el.textContent?.includes('Bridge'));
@@ -157,7 +157,7 @@ describe('ProductSwitcher', () => {
   it('navigates to the chosen product landing page on click', () => {
     setup({ activeProductId: 'collections' });
     renderSwitcher();
-    fireEvent.click(screen.getByRole('button', { name: /Click to switch applications/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Switch application/ }));
     const guideOption = screen
       .getAllByRole('option')
       .find((el) => el.textContent?.trim() === 'Guide');
@@ -171,7 +171,7 @@ describe('ProductSwitcher', () => {
   it('does not navigate when the active product is re-selected', () => {
     setup({ activeProductId: 'collections' });
     renderSwitcher();
-    fireEvent.click(screen.getByRole('button', { name: /Click to switch applications/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Switch application/ }));
     const collectionsOption = screen
       .getAllByRole('option')
       .find((el) => el.getAttribute('aria-selected') === 'true');
@@ -182,7 +182,7 @@ describe('ProductSwitcher', () => {
   it('closes when Escape is pressed', () => {
     setup();
     renderSwitcher();
-    fireEvent.click(screen.getByRole('button', { name: /Click to switch applications/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Switch application/ }));
     expect(screen.getByRole('listbox')).toBeInTheDocument();
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
@@ -191,7 +191,7 @@ describe('ProductSwitcher', () => {
   it('closes when clicking outside the dropdown', () => {
     setup();
     renderSwitcher();
-    fireEvent.click(screen.getByRole('button', { name: /Click to switch applications/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Switch application/ }));
     expect(screen.getByRole('listbox')).toBeInTheDocument();
     fireEvent.mouseDown(document.body);
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
@@ -200,7 +200,7 @@ describe('ProductSwitcher', () => {
   it('hides Guide from a non-admin who has another app (Guide is admin config)', () => {
     setup({ canManageGuide: false, appAccess: ['collections', 'bridge', 'guide'] });
     renderSwitcher();
-    fireEvent.click(screen.getByRole('button', { name: /Click to switch applications/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Switch application/ }));
     const labels = screen.getAllByRole('option').map((el) => el.textContent?.trim());
     expect(labels).not.toContain('Guide');
     expect(labels).toContain('Collections');
@@ -209,7 +209,7 @@ describe('ProductSwitcher', () => {
   it('keeps Guide for a non-admin whose only app is Guide (standalone org — never strand)', () => {
     setup({ activeProductId: 'guide', canManageGuide: false, appAccess: ['guide'] });
     renderSwitcher();
-    fireEvent.click(screen.getByRole('button', { name: /Click to switch applications/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Switch application/ }));
     const labels = screen.getAllByRole('option').map((el) => el.textContent?.trim());
     expect(labels).toContain('Guide');
   });
@@ -217,7 +217,7 @@ describe('ProductSwitcher', () => {
   it('shows Guide to admins (org.manage_settings)', () => {
     setup({ canManageGuide: true });
     renderSwitcher();
-    fireEvent.click(screen.getByRole('button', { name: /Click to switch applications/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Switch application/ }));
     const labels = screen.getAllByRole('option').map((el) => el.textContent?.trim());
     expect(labels).toContain('Guide');
   });
