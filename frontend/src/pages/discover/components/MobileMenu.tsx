@@ -141,35 +141,27 @@ export function MobileMenu({ isOpen, onClose, items, orgSlug }: MobileMenuProps)
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Close on Escape key
-  useEffect(() => {
-    if (!isOpen) return;
-
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
   // Focus trap: move focus into panel when opened, restore when closed
   useEffect(() => {
     if (!isOpen) return;
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
 
     // Focus the close button when the menu opens
     const timer = setTimeout(() => {
       closeButtonRef.current?.focus();
     }, 50);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      // Return focus to whatever opened the menu (normally the menu button)
+      previouslyFocused?.focus?.();
+    };
   }, [isOpen]);
 
   // Focus trap: keep focus within the panel
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
+  const trapTab = useCallback(
+    (e: KeyboardEvent) => {
       if (e.key !== 'Tab' || !panelRef.current) return;
 
       const focusable = panelRef.current.querySelectorAll<HTMLElement>(
@@ -192,6 +184,22 @@ export function MobileMenu({ isOpen, onClose, items, orgSlug }: MobileMenuProps)
     []
   );
 
+  // Close on Escape; keep Tab focus within the panel while open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      trapTab(e);
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, trapTab]);
+
   // Prevent body scroll when menu is open
   useEffect(() => {
     if (isOpen) {
@@ -208,9 +216,11 @@ export function MobileMenu({ isOpen, onClose, items, orgSlug }: MobileMenuProps)
     <div
       className={`fixed inset-0 z-50 ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
       aria-hidden={!isOpen}
+      inert={!isOpen}
     >
-      {/* Backdrop */}
+      {/* Backdrop: mouse dismiss only; Escape and the Close button cover keyboard users. */}
       <div
+        aria-hidden="true"
         className={`absolute inset-0 bg-ink/50 transition-opacity duration-300 ${
           isOpen ? 'opacity-100' : 'opacity-0'
         }`}
@@ -221,8 +231,8 @@ export function MobileMenu({ isOpen, onClose, items, orgSlug }: MobileMenuProps)
       <div
         ref={panelRef}
         role="dialog"
+        aria-modal="true"
         aria-label="Mobile navigation"
-        onKeyDown={handleKeyDown}
         className={`absolute inset-y-0 left-0 w-full max-w-[320px] bg-forest flex flex-col transform transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
@@ -235,7 +245,7 @@ export function MobileMenu({ isOpen, onClose, items, orgSlug }: MobileMenuProps)
             aria-label="Close navigation menu"
             className="p-2 text-parchment/70 hover:text-parchment hover:bg-parchment/10 rounded-lg transition-colors"
           >
-            <X size={20} />
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
 
@@ -259,7 +269,7 @@ export function MobileMenu({ isOpen, onClose, items, orgSlug }: MobileMenuProps)
             onClick={onClose}
             className="flex items-center gap-3 px-6 py-3 text-sm text-parchment/70 hover:bg-parchment/10 hover:text-parchment transition-colors"
           >
-            <Search size={16} />
+            <Search size={16} aria-hidden="true" />
             <span>Search the collection</span>
           </Link>
         </nav>

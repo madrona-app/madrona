@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useWorkspacePage } from '../../../hooks/useWorkspacePage';
 import { formatDateTime } from '@/lib/formatters';
@@ -82,6 +82,7 @@ export default function MovementWorkspacePage() {
 }
 
 function MovementWorkspacePageContent({ form }: { form: ReturnType<typeof useMovementForm> }) {
+  const uid = useId();
   const { orgId, movementId } = useParams<{ orgId: string; movementId?: string }>();
   const isCreateMode = !movementId;
   const { requirementGroups } = useProcedureRequirements('movement', orgId);
@@ -385,10 +386,10 @@ function MovementWorkspacePageContent({ form }: { form: ReturnType<typeof useMov
           order={getSectionOrder('handler')}
         >
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+            <div role="group" aria-labelledby={`${uid}-handler`}>
+              <span id={`${uid}-handler`} className="block text-sm font-medium text-ink mb-1.5">
                 Handler
-              </label>
+              </span>
               {isEditing ? (
                 <div className="flex items-center gap-2">
                   {formData.handler_id && handlerContact ? (
@@ -405,8 +406,9 @@ function MovementWorkspacePageContent({ form }: { form: ReturnType<typeof useMov
                           setHasUnsavedChanges(true);
                         }}
                         className="ml-auto p-1 text-archive hover:text-semantic-error"
+                        aria-label="Clear handler"
                       >
-                        <X size={14} />
+                        <X size={14} aria-hidden="true" />
                       </button>
                     </div>
                   ) : (
@@ -424,6 +426,7 @@ function MovementWorkspacePageContent({ form }: { form: ReturnType<typeof useMov
                       type="button"
                       onClick={() => setShowHandlerSelector(true)}
                       className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
+                      aria-label="Change handler"
                     >
                       Change
                     </button>

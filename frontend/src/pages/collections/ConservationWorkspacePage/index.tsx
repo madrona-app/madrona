@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { formatDateTime } from '@/lib/formatters';
 import {
@@ -56,6 +56,7 @@ export default function ConservationWorkspacePage() {
 }
 
 function ConservationWorkspacePageContent() {
+  const uid = useId();
   const { orgId, treatmentId } = useParams<{ orgId: string; treatmentId?: string }>();
 
   const { requirementGroups } = useProcedureRequirements('conservation', orgId);
@@ -347,10 +348,10 @@ function ConservationWorkspacePageContent() {
           {isRestricted('conservator_contact') ? (
             <RestrictedFieldPlaceholder label="Conservator" />
           ) : (
-            <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+            <div role="group" aria-labelledby={`${uid}-conservator`}>
+              <span id={`${uid}-conservator`} className="block text-sm font-medium text-ink mb-1.5">
                 Conservator
-              </label>
+              </span>
               {isEditing ? (
                 <div className="flex items-center gap-2">
                   {formData.conservator_id && conservatorContact ? (
@@ -366,8 +367,9 @@ function ConservationWorkspacePageContent() {
                           updateField('conservator_id', '');
                         }}
                         className="ml-auto p-1 text-archive hover:text-semantic-error"
+                        aria-label="Clear conservator"
                       >
-                        <X size={14} />
+                        <X size={14} aria-hidden="true" />
                       </button>
                     </div>
                   ) : (
@@ -385,6 +387,7 @@ function ConservationWorkspacePageContent() {
                       type="button"
                       onClick={() => setShowConservatorSelector(true)}
                       className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
+                      aria-label="Change conservator"
                     >
                       Change
                     </button>

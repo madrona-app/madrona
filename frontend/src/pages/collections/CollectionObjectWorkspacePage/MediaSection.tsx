@@ -87,21 +87,25 @@ export function MediaSection({
                 <div className="space-y-2">
                   {/* Main Image */}
                   <div className="relative rounded-lg overflow-hidden bg-stone group">
-                    <img
-                      src={displayMedia.preview_url || displayMedia.thumbnail_url || displayMedia.url || undefined}
-                      alt={displayMedia.alt_text || displayMedia.title || displayTitle}
-                      className="w-full max-h-[50vh] object-contain cursor-pointer"
+                    <button
+                      type="button"
                       onClick={() => setShowIIIFViewer(true)}
-                    />
-                    <div className="absolute bottom-4 right-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => setShowIIIFViewer(true)}
-                        className="flex items-center gap-2 px-3 py-2 bg-ink/70 hover:bg-ink/90 text-parchment rounded-lg"
+                      aria-label={`Open in deep zoom viewer: ${displayMedia.alt_text || displayMedia.title || displayTitle || 'image'}`}
+                      className="block w-full p-0 border-0 bg-transparent cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bark/30 rounded-lg"
+                    >
+                      <img
+                        src={displayMedia.preview_url || displayMedia.thumbnail_url || displayMedia.url || undefined}
+                        alt={displayMedia.alt_text || displayMedia.title || displayTitle}
+                        className="w-full max-h-[50vh] object-contain"
+                      />
+                      <span
+                        aria-hidden="true"
+                        className="absolute bottom-4 right-4 flex items-center gap-2 px-3 py-2 bg-ink/70 group-hover:bg-ink/90 text-parchment rounded-lg opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
                       >
                         <ZoomIn size={18} />
                         <span className="text-sm">Deep Zoom</span>
-                      </button>
-                    </div>
+                      </span>
+                    </button>
                     {displayItem?.is_primary && (
                       <div className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 bg-semantic-warning/100 text-parchment rounded text-xs font-medium">
                         <Star size={12} fill="currentColor" />

@@ -9,6 +9,15 @@ import { useProjectionConfig } from '../../hooks/useProjectionConfig';
 import { resolveEntityDisplayFields } from '../../lib/projectionResolver';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
 import { formatDateTime, formatDateShort } from '@/lib/formatters';
+import { handleTabListKeyDown } from './tabKeyboard';
+
+const ENTITY_TABS = [
+  { key: 'canonical', label: 'Canonical JSON' },
+  { key: 'history', label: 'History' },
+  { key: 'relationships', label: 'Relationships' },
+] as const;
+type EntityTabKey = (typeof ENTITY_TABS)[number]['key'];
+const ENTITY_TAB_KEYS: readonly EntityTabKey[] = ENTITY_TABS.map((t) => t.key);
 
 export default function EntityDetailPage() {
   const { orgId, entityKey } = useParams<{ orgId: string; entityKey: string }>();
@@ -336,41 +345,39 @@ export default function EntityDetailPage() {
       {/* Tabs */}
       <div className="bg-parchment rounded-lg shadow">
         <div className="border-b border-lichen">
-          <nav className="-mb-px flex">
-            <button
-              onClick={() => setActiveTab('canonical')}
-              className={`px-6 py-3 border-b-2 font-medium text-sm ${
-                activeTab === 'canonical'
-                  ? 'border-lichen text-ink'
-                  : 'border-transparent text-archive hover:text-ink hover:border-lichen'
-              }`}
-            >
-              Canonical JSON
-            </button>
-            <button
-              onClick={() => setActiveTab('history')}
-              className={`px-6 py-3 border-b-2 font-medium text-sm ${
-                activeTab === 'history'
-                  ? 'border-lichen text-ink'
-                  : 'border-transparent text-archive hover:text-ink hover:border-lichen'
-              }`}
-            >
-              History
-            </button>
-            <button
-              onClick={() => setActiveTab('relationships')}
-              className={`px-6 py-3 border-b-2 font-medium text-sm ${
-                activeTab === 'relationships'
-                  ? 'border-lichen text-ink'
-                  : 'border-transparent text-archive hover:text-ink hover:border-lichen'
-              }`}
-            >
-              Relationships
-            </button>
-          </nav>
+          <div className="-mb-px flex" role="tablist" aria-label="Entity details">
+            {ENTITY_TABS.map((tab) => (
+              <button
+                key={tab.key}
+                id={`entity-tab-${tab.key}`}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.key}
+                aria-controls="entity-tabpanel"
+                tabIndex={activeTab === tab.key ? 0 : -1}
+                onClick={() => setActiveTab(tab.key)}
+                onKeyDown={(e) =>
+                  handleTabListKeyDown(e, ENTITY_TAB_KEYS, activeTab, setActiveTab, (k) => `entity-tab-${k}`)
+                }
+                className={`px-6 py-3 border-b-2 font-medium text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bark/30 ${
+                  activeTab === tab.key
+                    ? 'border-lichen text-ink'
+                    : 'border-transparent text-archive hover:text-ink hover:border-lichen'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="p-6">
+        <div
+          className="p-6"
+          id="entity-tabpanel"
+          role="tabpanel"
+          aria-labelledby={`entity-tab-${activeTab}`}
+          tabIndex={0}
+        >
           {activeTab === 'canonical' && (
             <pre className="bg-stone p-4 rounded-md overflow-x-auto text-sm">
               {JSON.stringify(entity.payload, null, 2)}

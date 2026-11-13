@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useWorkspacePage } from '../../../hooks/useWorkspacePage';
@@ -48,6 +49,7 @@ export default function CrateWorkspacePage() {
 }
 
 function CrateWorkspacePageContent() {
+  const uid = useId();
   const { orgId, crateId } = useParams<{ orgId: string; crateId?: string }>();
   const isCreateMode = !crateId;
 
@@ -421,8 +423,8 @@ function CrateWorkspacePageContent() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {orgId && (
               <>
-                <div>
-                  <label className="block text-sm font-medium text-ink mb-1">Current Location</label>
+                <div role="group" aria-labelledby={`${uid}-current-location`}>
+                  <span id={`${uid}-current-location`} className="block text-sm font-medium text-ink mb-1">Current Location</span>
                   {isEditing ? (
                     <LocationPickerButton
                       organizationId={orgId}
@@ -445,8 +447,8 @@ function CrateWorkspacePageContent() {
                     </div>
                   )}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-ink mb-1">Home Location</label>
+                <div role="group" aria-labelledby={`${uid}-home-location`}>
+                  <span id={`${uid}-home-location`} className="block text-sm font-medium text-ink mb-1">Home Location</span>
                   {isEditing ? (
                     <LocationPickerButton
                       organizationId={orgId}

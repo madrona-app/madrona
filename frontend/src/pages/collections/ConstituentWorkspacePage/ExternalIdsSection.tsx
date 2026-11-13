@@ -1,4 +1,6 @@
+import { useCallback } from 'react';
 import { Globe, Search, ExternalLink, X, Loader2 } from 'lucide-react';
+import { useAccessibleModal } from '../../../hooks/useAccessibleModal';
 import {
   WorkspaceSection,
 } from '../../../components/workspace';
@@ -179,17 +181,21 @@ export function ExternalIdsSection({
 
 
 function UlanSearchDialog({ ulan }: { ulan: ReturnType<typeof useUlanSearch> }) {
+  const setOpen = ulan.setUlanSearchOpen;
+  const close = useCallback(() => setOpen(false), [setOpen]);
+  // Initial focus goes to the first focusable element (the search field); the
+  // Close button sits last in the DOM for that reason.
+  const { modalRef, titleId } = useAccessibleModal({ isOpen: true, onClose: close, titlePrefix: 'ulan-search' });
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh]">
-      <div className="fixed inset-0 bg-ink/40" onClick={() => ulan.setUlanSearchOpen(false)} />
-      <div className="relative bg-parchment rounded-lg shadow-xl w-full max-w-2xl max-h-[75vh] flex flex-col">
+      <div className="fixed inset-0 bg-ink/40" aria-hidden="true" onClick={close} />
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className="relative bg-parchment rounded-lg shadow-xl w-full max-w-2xl max-h-[75vh] flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-lichen">
-          <h3 className="text-base font-medium text-ink">Search Getty ULAN</h3>
-          <button type="button" onClick={() => ulan.setUlanSearchOpen(false)} className="p-1 text-archive hover:text-ink transition-colors"><X size={18} /></button>
+          <h3 id={titleId} className="text-base font-medium text-ink pr-8">Search Getty ULAN</h3>
         </div>
         <div className="px-5 py-3 border-b border-lichen">
           <form onSubmit={(e) => { e.preventDefault(); ulan.handleUlanSearch(); }} className="flex gap-2">
-            <input type="text" value={ulan.ulanQuery} onChange={(e) => ulan.setUlanQuery(e.target.value)} placeholder="Search by name..." className="flex-1 px-3 py-2 text-sm border border-lichen rounded-md focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-bark/30 focus-visible:ring-offset-2" autoFocus />
+            <input type="text" value={ulan.ulanQuery} onChange={(e) => ulan.setUlanQuery(e.target.value)} placeholder="Search by name..." aria-label="Search Getty ULAN by name" className="flex-1 px-3 py-2 text-sm border border-lichen rounded-md focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-bark/30 focus-visible:ring-offset-2" />
             <button type="submit" disabled={ulan.ulanSearching || ulan.ulanQuery.trim().length < 2} className="btn btn-primary text-sm disabled:opacity-50">
               {ulan.ulanSearching ? <Loader2 size={16} className="animate-spin" /> : 'Search'}
             </button>
@@ -216,7 +222,7 @@ function UlanSearchDialog({ ulan }: { ulan: ReturnType<typeof useUlanSearch> }) 
               </div>
             </div>
           ) : ulan.ulanLoadingPreview ? (
-            <div className="flex items-center justify-center py-12"><Loader2 size={24} className="animate-spin text-archive" /><span className="ml-2 text-sm text-archive">Loading ULAN record...</span></div>
+            <div className="flex items-center justify-center py-12"><Loader2 size={24} className="animate-spin text-archive" aria-hidden="true" /><span className="ml-2 text-sm text-archive">Loading ULAN record...</span></div>
           ) : ulan.ulanResults.length > 0 ? (
             <ul className="divide-y divide-lichen">
               {ulan.ulanResults.map((r) => (
@@ -232,13 +238,14 @@ function UlanSearchDialog({ ulan }: { ulan: ReturnType<typeof useUlanSearch> }) 
               ))}
             </ul>
           ) : ulan.ulanSearching ? (
-            <div className="flex items-center justify-center py-12"><Loader2 size={24} className="animate-spin text-archive" /><span className="ml-2 text-sm text-archive">Searching ULAN...</span></div>
+            <div className="flex items-center justify-center py-12"><Loader2 size={24} className="animate-spin text-archive" aria-hidden="true" /><span className="ml-2 text-sm text-archive">Searching ULAN...</span></div>
           ) : ulan.ulanQuery.trim().length >= 2 ? (
             <p className="text-sm text-archive py-8 text-center">No results found.</p>
           ) : (
             <p className="text-sm text-archive py-8 text-center">Enter a name to search the Getty ULAN.</p>
           )}
         </div>
+        <button type="button" onClick={close} aria-label="Close" className="absolute top-4 right-5 p-1 text-archive hover:text-ink transition-colors"><X size={18} aria-hidden="true" /></button>
       </div>
     </div>
   );
@@ -246,19 +253,23 @@ function UlanSearchDialog({ ulan }: { ulan: ReturnType<typeof useUlanSearch> }) 
 
 
 function AuthoritySearchDialog({ authority }: { authority: ReturnType<typeof useAuthoritySearch> }) {
+  const setOpen = authority.setAuthoritySearchOpen;
+  const close = useCallback(() => setOpen(null), [setOpen]);
+  // Initial focus goes to the first focusable element (the search field); the
+  // Close button sits last in the DOM for that reason.
+  const { modalRef, titleId } = useAccessibleModal({ isOpen: true, onClose: close, titlePrefix: 'authority-search' });
   const labelMap = { viaf: 'VIAF', wikidata: 'Wikidata', loc: 'Library of Congress' };
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh]">
-      <div className="fixed inset-0 bg-ink/40" onClick={() => authority.setAuthoritySearchOpen(null)} />
-      <div className="relative bg-parchment rounded-lg shadow-xl w-full max-w-2xl max-h-[75vh] flex flex-col">
+      <div className="fixed inset-0 bg-ink/40" aria-hidden="true" onClick={close} />
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className="relative bg-parchment rounded-lg shadow-xl w-full max-w-2xl max-h-[75vh] flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-lichen">
-          <h3 className="text-base font-medium text-ink">Search {labelMap[authority.authoritySearchOpen!]}</h3>
-          <button type="button" onClick={() => authority.setAuthoritySearchOpen(null)} className="p-1 text-archive hover:text-ink transition-colors"><X size={18} /></button>
+          <h3 id={titleId} className="text-base font-medium text-ink pr-8">Search {labelMap[authority.authoritySearchOpen!]}</h3>
         </div>
         <div className="px-5 py-3 border-b border-lichen">
           <form onSubmit={(e) => { e.preventDefault(); authority.handleAuthoritySearch(); }} className="flex gap-2">
-            <input type="text" value={authority.authorityQuery} onChange={(e) => authority.setAuthorityQuery(e.target.value)} placeholder="Search by name..." className="flex-1 px-3 py-2 text-sm border border-lichen rounded-md focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-bark/30 focus-visible:ring-offset-2" autoFocus />
+            <input type="text" value={authority.authorityQuery} onChange={(e) => authority.setAuthorityQuery(e.target.value)} placeholder="Search by name..." aria-label="Search by name" className="flex-1 px-3 py-2 text-sm border border-lichen rounded-md focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-bark/30 focus-visible:ring-offset-2" />
             <button type="submit" disabled={authority.authoritySearching || authority.authorityQuery.trim().length < 2} className="btn btn-primary text-sm disabled:opacity-50">
               {authority.authoritySearching ? <Loader2 size={16} className="animate-spin" /> : 'Search'}
             </button>
@@ -280,13 +291,14 @@ function AuthoritySearchDialog({ authority }: { authority: ReturnType<typeof use
               ))}
             </ul>
           ) : authority.authoritySearching ? (
-            <div className="flex items-center justify-center py-12"><Loader2 size={24} className="animate-spin text-archive" /><span className="ml-2 text-sm text-archive">Searching...</span></div>
+            <div className="flex items-center justify-center py-12"><Loader2 size={24} className="animate-spin text-archive" aria-hidden="true" /><span className="ml-2 text-sm text-archive">Searching...</span></div>
           ) : authority.authorityQuery.trim().length >= 2 ? (
             <p className="text-sm text-archive py-8 text-center">No results found.</p>
           ) : (
             <p className="text-sm text-archive py-8 text-center">Enter a name to search.</p>
           )}
         </div>
+        <button type="button" onClick={close} aria-label="Close" className="absolute top-4 right-5 p-1 text-archive hover:text-ink transition-colors"><X size={18} aria-hidden="true" /></button>
       </div>
     </div>
   );

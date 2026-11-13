@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useId } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -177,6 +177,7 @@ function SortableRow({
 }
 
 export default function LookupValuesPage() {
+  const uid = useId();
   const { orgId } = useParams<{ orgId: string }>();
   const queryClient = useQueryClient();
 
@@ -526,40 +527,44 @@ export default function LookupValuesPage() {
                     className="bg-parchment rounded-lg border border-lichen shadow-sm overflow-hidden"
                   >
               {/* Category Header */}
-              <div
-                className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-stone/30 transition-colors"
-                onClick={() => toggleCategory(category.category_key)}
-              >
-                <div className="flex items-center gap-3">
-                  {isExpanded ? (
-                    <ChevronDown size={18} className="text-archive" />
-                  ) : (
-                    <ChevronRight size={18} className="text-archive" />
-                  )}
-                  <div>
-                    <h3 className="font-medium text-ink">{category.display_name}</h3>
-                    <p className="text-xs text-archive">
-                      {category.category_key} · {systemValues.length} system
-                      {orgValues.length > 0 && ` · ${orgValues.length} custom`}
-                      {hiddenCount > 0 && ` · ${hiddenCount} hidden`}
-                    </p>
-                  </div>
-                </div>
+              <div className="flex items-center justify-between px-4 py-3 hover:bg-stone/30 transition-colors">
+                <h3 className="flex-1 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => toggleCategory(category.category_key)}
+                    aria-expanded={isExpanded}
+                    aria-controls={isExpanded ? `lookup-category-${category.category_key}` : undefined}
+                    className="w-full flex items-center gap-3 text-left cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+                  >
+                    {isExpanded ? (
+                      <ChevronDown size={18} className="text-archive" aria-hidden="true" />
+                    ) : (
+                      <ChevronRight size={18} className="text-archive" aria-hidden="true" />
+                    )}
+                    <span>
+                      <span className="block font-medium text-ink">{category.display_name}</span>
+                      <span className="block text-xs text-archive font-normal">
+                        {category.category_key} · {systemValues.length} system
+                        {orgValues.length > 0 && ` · ${orgValues.length} custom`}
+                        {hiddenCount > 0 && ` · ${hiddenCount} hidden`}
+                      </span>
+                    </span>
+                  </button>
+                </h3>
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    startAddValue(category.category_key);
-                  }}
+                  type="button"
+                  onClick={() => startAddValue(category.category_key)}
+                  aria-label={`Add value to ${category.display_name}`}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-forest hover:bg-forest/10 rounded transition-colors"
                 >
-                  <Plus size={14} />
+                  <Plus size={14} aria-hidden="true" />
                   Add
                 </button>
               </div>
 
               {/* Expanded Content */}
               {isExpanded && (
-                <div className="border-t border-lichen">
+                <div id={`lookup-category-${category.category_key}`} className="border-t border-lichen">
                   {/* Add/Edit Form */}
                   {editingValue?.categoryKey === category.category_key && (
                     <div className="bg-stone/20 px-4 py-4 border-b border-lichen">
@@ -573,16 +578,18 @@ export default function LookupValuesPage() {
                             resetForm();
                           }}
                           className="p-1 hover:bg-stone rounded"
+                          aria-label="Cancel editing value"
                         >
-                          <X size={16} className="text-archive" />
+                          <X size={16} className="text-archive" aria-hidden="true" />
                         </button>
                       </div>
                       <div className="space-y-3">
                         <div>
-                          <label className="block text-xs font-medium text-archive mb-1">
+                          <label htmlFor={`${uid}-label`} className="block text-xs font-medium text-archive mb-1">
                             Label *
                           </label>
                           <input
+                            id={`${uid}-label`}
                             type="text"
                             value={formData.label}
                             onChange={(e) =>
@@ -593,10 +600,11 @@ export default function LookupValuesPage() {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-archive mb-1">
+                          <label htmlFor={`${uid}-description`} className="block text-xs font-medium text-archive mb-1">
                             Description
                           </label>
                           <input
+                            id={`${uid}-description`}
                             type="text"
                             value={formData.description}
                             onChange={(e) =>

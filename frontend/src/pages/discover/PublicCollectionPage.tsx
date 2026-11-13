@@ -248,19 +248,22 @@ function PasswordChallenge({
         className="max-w-sm w-full space-y-4 border border-lichen rounded-lg p-6 bg-parchment shadow-sm"
       >
         <div className="flex items-center gap-2 text-ink">
-          <Lock size={18} />
+          <Lock size={18} aria-hidden="true" />
           <h1 className="text-lg font-semibold">Password required</h1>
         </div>
         <p className="text-sm text-archive">Enter the password shared with the link to view this collection.</p>
         <input
           type="password"
           autoFocus
+          aria-label="Password"
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? 'public-collection-password-error' : undefined}
           value={attempt}
           onChange={(e) => setAttempt(e.target.value)}
           className="w-full px-3 py-2 border border-lichen rounded text-ink bg-parchment focus:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:border-bark"
           placeholder="Password"
         />
-        {error && <p className="text-sm text-semantic-error">{error}</p>}
+        {error && <p id="public-collection-password-error" role="alert" className="text-sm text-semantic-error">{error}</p>}
         <button
           type="submit"
           className="w-full px-4 py-2 bg-bark text-parchment rounded hover:bg-bark/90"

@@ -28,6 +28,7 @@ import { apiFetch, buildQueryString } from '../../lib/api/_utils';
 import type { PublicEvent } from '../../types/discover';
 import { CollectionSiteShell } from './components/CollectionSiteShell';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
+import { useAccessibleModal } from '../../hooks/useAccessibleModal';
 import { formatTime } from '@/lib/formatters';
 
 // =============================================================================
@@ -216,14 +217,21 @@ function DateFilter({
 
 function ShowPastToggle({
   checked,
-  onChange: _onChange,
+  onChange,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
 }) {
   return (
-    <label className="flex items-center gap-2.5 cursor-pointer group">
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className="flex items-center gap-2.5 cursor-pointer group text-left rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+    >
       <span
+        aria-hidden="true"
         className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors ${
           checked ? 'bg-bark' : 'bg-stone'
         }`}
@@ -237,7 +245,7 @@ function ShowPastToggle({
       <span className="text-sm text-ink group-hover:text-bark transition-colors">
         Show Past Events
       </span>
-    </label>
+    </button>
   );
 }
 
@@ -378,6 +386,12 @@ export default function EventListPage() {
   const { orgSlug } = useParams<{ orgSlug: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const closeMobileFilters = useCallback(() => setMobileFiltersOpen(false), []);
+  const { modalRef: mobileFiltersRef, titleId: mobileFiltersTitleId } = useAccessibleModal({
+    isOpen: mobileFiltersOpen,
+    onClose: closeMobileFilters,
+    titlePrefix: 'event-list-mobile-filters',
+  });
 
   // Parse filter state from URL
   const selectedTypes = useMemo(() => {
@@ -597,14 +611,17 @@ export default function EventListPage() {
 
           {/* Mobile filter toggle */}
           <button
+            type="button"
+            aria-haspopup="dialog"
             onClick={() => setMobileFiltersOpen(true)}
             className="lg:hidden flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-ink border border-lichen rounded-lg hover:bg-stone/50 transition-colors"
           >
-            <SlidersHorizontal size={16} />
+            <SlidersHorizontal size={16} aria-hidden="true" />
             Filters
             {hasActiveFilters && (
               <span className="ml-1 w-5 h-5 flex items-center justify-center text-xs bg-bark text-parchment rounded-full">
                 {selectedTypes.size + (selectedVenue ? 1 : 0) + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0) + (showPast ? 1 : 0)}
+                <span className="sr-only"> active</span>
               </span>
             )}
           </button>
@@ -753,22 +770,31 @@ export default function EventListPage() {
       {/* Mobile filter drawer */}
       {mobileFiltersOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          {/* Backdrop */}
+          {/* Backdrop: mouse dismiss only; Escape and the Close button cover keyboard users. */}
           <div
             className="absolute inset-0 bg-ink/40"
-            onClick={() => setMobileFiltersOpen(false)}
+            aria-hidden="true"
+            onClick={closeMobileFilters}
           />
           {/* Drawer */}
-          <div className="absolute right-0 top-0 bottom-0 w-80 max-w-[85vw] bg-parchment shadow-xl overflow-y-auto">
+          <div
+            ref={mobileFiltersRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={mobileFiltersTitleId}
+            className="absolute right-0 top-0 bottom-0 w-80 max-w-[85vw] bg-parchment shadow-xl overflow-y-auto"
+          >
             <div className="flex items-center justify-between px-4 py-4 border-b border-lichen">
-              <h2 className="text-sm font-semibold text-ink uppercase tracking-wider">
+              <h2 id={mobileFiltersTitleId} className="text-sm font-semibold text-ink uppercase tracking-wider">
                 Filters
               </h2>
               <button
-                onClick={() => setMobileFiltersOpen(false)}
+                type="button"
+                onClick={closeMobileFilters}
+                aria-label="Close filters"
                 className="p-1 text-archive hover:text-ink transition-colors"
               >
-                <X size={20} />
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
             <div className="p-4">{filterContent}</div>

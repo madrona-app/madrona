@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useId } from 'react';
 import Checkbox from '../../../components/Checkbox';
 import { Link } from 'react-router-dom';
 import { Package, ExternalLink, ChevronDown, ChevronRight, Plus, Trash2, ClipboardCheck, LogOut, X } from 'lucide-react';
@@ -118,6 +118,7 @@ function ConditionReportPicker({ orgId, objectId, label, currentReportId, curren
 }
 
 function ObjectDetailPanel({ orgId, loanId, obj, insuranceCurrency: _insuranceCurrency }: ObjectDetailPanelProps) {
+  const uid = useId();
   const queryClient = useQueryClient();
 
   const [formState, setFormState] = useState({
@@ -175,7 +176,7 @@ function ObjectDetailPanel({ orgId, loanId, obj, insuranceCurrency: _insuranceCu
       {/* Object Exit */}
       {obj.exit_id && (
         <div>
-          <label className="block text-xs font-medium text-archive mb-1">Object Exit</label>
+          <span className="block text-xs font-medium text-archive mb-1">Object Exit</span>
           <Link
             to={`/organizations/${orgId}/collections/exits/${obj.exit_id}`}
             className="text-sm text-bark hover:underline flex items-center gap-1"
@@ -189,8 +190,9 @@ function ObjectDetailPanel({ orgId, loanId, obj, insuranceCurrency: _insuranceCu
       {/* Row 1: Valuation */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs font-medium text-archive mb-1">Valuation</label>
+          <label htmlFor={`${uid}-valuation`} className="block text-xs font-medium text-archive mb-1">Valuation</label>
           <input
+            id={`${uid}-valuation`}
             type="number"
             className="w-full rounded border border-lichen bg-parchment px-2 py-1.5 text-sm text-ink
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -201,8 +203,9 @@ function ObjectDetailPanel({ orgId, loanId, obj, insuranceCurrency: _insuranceCu
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-archive mb-1">Valuation Date</label>
+          <label htmlFor={`${uid}-valuation-date`} className="block text-xs font-medium text-archive mb-1">Valuation Date</label>
           <input
+            id={`${uid}-valuation-date`}
             type="date"
             className="w-full rounded border border-lichen bg-parchment px-2 py-1.5 text-sm text-ink
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -214,8 +217,9 @@ function ObjectDetailPanel({ orgId, loanId, obj, insuranceCurrency: _insuranceCu
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-archive mb-1">Estimated Costs</label>
+          <label htmlFor={`${uid}-estimated-costs`} className="block text-xs font-medium text-archive mb-1">Estimated Costs</label>
           <input
+            id={`${uid}-estimated-costs`}
             type="number"
             className="w-full rounded border border-lichen bg-parchment px-2 py-1.5 text-sm text-ink
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -230,8 +234,9 @@ function ObjectDetailPanel({ orgId, loanId, obj, insuranceCurrency: _insuranceCu
       {/* Row 2: IP Rights & Reproduction */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-archive mb-1">IP Rights</label>
+          <label htmlFor={`${uid}-ip-rights`} className="block text-xs font-medium text-archive mb-1">IP Rights</label>
           <textarea
+            id={`${uid}-ip-rights`}
             rows={2}
             className="w-full rounded border border-lichen bg-parchment px-2 py-1.5 text-sm text-ink
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -241,8 +246,9 @@ function ObjectDetailPanel({ orgId, loanId, obj, insuranceCurrency: _insuranceCu
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-archive mb-1">Reproduction Rights</label>
+          <label htmlFor={`${uid}-reproduction-rights`} className="block text-xs font-medium text-archive mb-1">Reproduction Rights</label>
           <textarea
+            id={`${uid}-reproduction-rights`}
             rows={2}
             className="w-full rounded border border-lichen bg-parchment px-2 py-1.5 text-sm text-ink
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -255,8 +261,8 @@ function ObjectDetailPanel({ orgId, loanId, obj, insuranceCurrency: _insuranceCu
 
       {/* Row 3: Photography & Dimensions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <label className="flex items-center gap-2 text-xs font-medium text-archive cursor-pointer">
-          <Checkbox
+        <label htmlFor={`${uid}-savefield-photography-permitted-val-phot`} className="flex items-center gap-2 text-xs font-medium text-archive cursor-pointer">
+          <Checkbox id={`${uid}-savefield-photography-permitted-val-phot`}
             checked={formState.photography_permitted === true}
             onChange={(e) => {
               const val = e.target.checked;
@@ -267,8 +273,9 @@ function ObjectDetailPanel({ orgId, loanId, obj, insuranceCurrency: _insuranceCu
           Photography Permitted
         </label>
         <div>
-          <label className="block text-xs font-medium text-archive mb-1">Dimensions</label>
+          <label htmlFor={`${uid}-dimensions`} className="block text-xs font-medium text-archive mb-1">Dimensions</label>
           <textarea
+            id={`${uid}-dimensions`}
             rows={2}
             className="w-full rounded border border-lichen bg-parchment px-2 py-1.5 text-sm text-ink
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"

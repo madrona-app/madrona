@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { formatDateTime } from '@/lib/formatters';
 import {
@@ -74,6 +74,7 @@ export default function ConditionReportWorkspacePage() {
 }
 
 function ConditionReportWorkspacePageContent() {
+  const uid = useId();
   const { orgId, reportId } = useParams<{ orgId: string; reportId?: string }>();
   const [searchParams] = useSearchParams();
   const { getLookup } = useLookupValues({ context: 'condition_reports' });
@@ -360,10 +361,10 @@ function ConditionReportWorkspacePageContent() {
               placeholder="Why is this condition check being performed?"
               className="md:col-span-2"
             />
-            <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+            <div role="group" aria-labelledby={`${uid}-examiner`}>
+              <span id={`${uid}-examiner`} className="block text-sm font-medium text-ink mb-1.5">
                 Examiner
-              </label>
+              </span>
               {isEditing ? (
                 <div className="flex items-center gap-2">
                   {formData.examiner_id && examinerContact ? (
@@ -377,8 +378,9 @@ function ConditionReportWorkspacePageContent() {
                         type="button"
                         onClick={() => updateField('examiner_id', '')}
                         className="ml-auto p-1 text-archive hover:text-semantic-error"
+                        aria-label="Clear examiner"
                       >
-                        <X size={14} />
+                        <X size={14} aria-hidden="true" />
                       </button>
                     </div>
                   ) : (
@@ -396,6 +398,7 @@ function ConditionReportWorkspacePageContent() {
                       type="button"
                       onClick={() => setShowExaminerSelector(true)}
                       className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
+                      aria-label="Change examiner"
                     >
                       Change
                     </button>

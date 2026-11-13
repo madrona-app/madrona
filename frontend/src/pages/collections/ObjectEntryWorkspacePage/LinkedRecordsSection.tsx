@@ -4,7 +4,7 @@
  * Displays linked acquisition, loan in, or exit based on entry reason.
  */
 
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Archive, Download, LogOut, PenTool, Loader2 } from 'lucide-react';
 import { WorkspaceSection } from '../../../components/workspace';
@@ -204,6 +204,7 @@ function SignOffReturnSlideOver({
   depositorName?: string;
   onSuccess: () => void;
 }) {
+  const uid = useId();
   const queryClient = useQueryClient();
   const today = new Date().toISOString().slice(0, 10);
   const [returnDate, setReturnDate] = useState(today);
@@ -296,10 +297,11 @@ function SignOffReturnSlideOver({
         </p>
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">
+          <label htmlFor={`${uid}-return-date`} className="text-sm font-medium text-ink block mb-1.5">
             Return date <span className="text-semantic-error">*</span>
           </label>
           <input
+            id={`${uid}-return-date`}
             type="date"
             value={returnDate}
             onChange={(e) => setReturnDate(e.target.value)}
@@ -308,8 +310,9 @@ function SignOffReturnSlideOver({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">Returned to</label>
+          <label htmlFor={`${uid}-returned-to`} className="text-sm font-medium text-ink block mb-1.5">Returned to</label>
           <input
+            id={`${uid}-returned-to`}
             type="text"
             value={returnedTo}
             onChange={(e) => setReturnedTo(e.target.value)}
@@ -319,10 +322,11 @@ function SignOffReturnSlideOver({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">
+          <label htmlFor={`${uid}-signature-reference`} className="text-sm font-medium text-ink block mb-1.5">
             Signature reference
           </label>
           <input
+            id={`${uid}-signature-reference`}
             type="text"
             value={signatureReference}
             onChange={(e) => setSignatureReference(e.target.value)}
@@ -332,8 +336,9 @@ function SignOffReturnSlideOver({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">Notes</label>
+          <label htmlFor={`${uid}-notes`} className="text-sm font-medium text-ink block mb-1.5">Notes</label>
           <textarea
+            id={`${uid}-notes`}
             value={outcomeNote}
             onChange={(e) => setOutcomeNote(e.target.value)}
             rows={3}

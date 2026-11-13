@@ -7,6 +7,7 @@ import * as api from '../../../lib/api';
 import * as workspacePageHook from '../../../hooks/useWorkspacePage';
 import * as procedureHook from '../../../hooks/useProcedureRequirements';
 import * as lookupHook from '../../../hooks/useLookupValues';
+import { checkA11y } from '../../a11y';
 
 // -----------------------------------------------------------------------------
 // API mocks
@@ -445,6 +446,32 @@ describe('ConditionReportWorkspacePage', () => {
         expect(screen.getByText(/object is required/i)).toBeInTheDocument();
       });
       expect(mockCreateReport).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('accessibility', () => {
+    it('has no axe violations in edit mode, and the examiner picker is a labelled group', async () => {
+      mockGetReport.mockResolvedValue(baseReport as never);
+      const { container } = renderPage();
+      await waitFor(() => {
+        expect(screen.getByRole('group', { name: 'Examiner' })).toBeInTheDocument();
+      });
+      const results = await checkA11y(container);
+      expect(results.violations).toEqual([]);
+    });
+
+    it('has no axe violations in read mode', async () => {
+      mockUseWorkspacePage.mockReturnValue(makeWp({ isEditing: false }));
+      mockGetReport.mockResolvedValue(baseReport as never);
+      const { container } = renderPage();
+      await waitFor(() => {
+        expect(screen.getByRole('group', { name: 'Examiner' })).toBeInTheDocument();
+      });
+      // dlitem is excluded: the shared EditableField (components/workspace)
+      // renders <dt>/<dd> in read mode without a <dl> ancestor. That fix belongs
+      // in the shared component; everything else on the page is checked.
+      const results = await checkA11y(container, { rules: { dlitem: { enabled: false } } });
+      expect(results.violations).toEqual([]);
     });
   });
 });

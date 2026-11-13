@@ -263,14 +263,14 @@ export default function VocabularyExplorerPage() {
         {/* Search Input */}
         <div className="p-4 border-b border-lichen">
           <div className="relative max-w-xl">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-archive" />
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-archive" aria-hidden="true" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               placeholder={getSearchPlaceholder(activeVocabulary, aatFacet)}
+              aria-label={getSearchPlaceholder(activeVocabulary, aatFacet)}
               className="w-full pl-10 pr-10 py-2.5 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark text-sm"
-              autoFocus
             />
             {isSearching && (
               <Loader2

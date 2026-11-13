@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useWorkspacePage } from '../../../hooks/useWorkspacePage';
@@ -89,6 +90,7 @@ export default function InsuranceWorkspacePage() {
 }
 
 function InsuranceWorkspacePageContent() {
+  const uid = useId();
   const { orgId, policyId } = useParams<{ orgId: string; policyId?: string }>();
   const isCreateMode = !policyId;
   const { requirementGroups } = useProcedureRequirements('insurance_policy', orgId);
@@ -571,8 +573,9 @@ function InsuranceWorkspacePageContent() {
                     <h4 className="font-medium text-ink">Link Item to Policy</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-archive mb-1">Entity Type</label>
+                        <label htmlFor={`${uid}-entity-type`} className="block text-sm font-medium text-archive mb-1">Entity Type</label>
                         <select
+                          id={`${uid}-entity-type`}
                           value={newCoverage.covered_entity_type}
                           onChange={(e) => setNewCoverage(prev => ({ ...prev, covered_entity_type: e.target.value }))}
                           className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -583,8 +586,9 @@ function InsuranceWorkspacePageContent() {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-archive mb-1">Entity ID</label>
+                        <label htmlFor={`${uid}-entity-id`} className="block text-sm font-medium text-archive mb-1">Entity ID</label>
                         <input
+                          id={`${uid}-entity-id`}
                           type="text"
                           value={newCoverage.covered_entity_id}
                           onChange={(e) => setNewCoverage(prev => ({ ...prev, covered_entity_id: e.target.value }))}
@@ -593,8 +597,9 @@ function InsuranceWorkspacePageContent() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-archive mb-1">Declared Value</label>
+                        <label htmlFor={`${uid}-declared-value`} className="block text-sm font-medium text-archive mb-1">Declared Value</label>
                         <input
+                          id={`${uid}-declared-value`}
                           type="number"
                           value={newCoverage.declared_value}
                           onChange={(e) => setNewCoverage(prev => ({ ...prev, declared_value: e.target.value }))}
@@ -603,8 +608,9 @@ function InsuranceWorkspacePageContent() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-archive mb-1">Currency</label>
+                        <label htmlFor={`${uid}-currency`} className="block text-sm font-medium text-archive mb-1">Currency</label>
                         <select
+                          id={`${uid}-currency`}
                           value={newCoverage.value_currency}
                           onChange={(e) => setNewCoverage(prev => ({ ...prev, value_currency: e.target.value }))}
                           className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
