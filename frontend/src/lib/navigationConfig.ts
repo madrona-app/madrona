@@ -439,6 +439,13 @@ export const products: Product[] = [
             requiresPermission: 'use_requests.view',
           },
           {
+            id: 'research-visits',
+            label: 'Research Visits',
+            path: '/organizations/:orgId/collections/research-visits',
+            icon: BookOpen,
+            requiresPermission: 'use_requests.view',
+          },
+          {
             id: 'reproduction-requests',
             label: 'Reproduction Requests',
             path: '/organizations/:orgId/collections/reproduction-requests',

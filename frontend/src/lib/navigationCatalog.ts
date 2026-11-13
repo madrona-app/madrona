@@ -96,6 +96,7 @@ const SYNONYMS: Record<string, string[]> = {
   // Rights & reproduction
   rights: ['ip', 'copyright', 'intellectual property', 'permissions'],
   'use-requests': ['use request', 'permission request'],
+  'research-visits': ['researcher', 'reading room', 'visit log', 'object handling'],
   'reproduction-requests': ['repro', 'reproduction', 'image request'],
 
   // People & programs

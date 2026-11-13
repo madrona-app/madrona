@@ -7,6 +7,7 @@ import { ConditionReportLinker } from '../../../components/collections/Condition
 import { ObjectRightsManager } from '../../../components/collections/ObjectRightsManager';
 import { ObjectAcquisitionSelector } from '../../../components/collections/AcquisitionObjectLinker';
 import { RelatedProcedures } from '../../../components/collections/RelatedProcedures';
+import { ObjectResearchVisits } from '../../../components/collections/research-visits/ObjectResearchVisits';
 import { ObjectPartsManager } from '../../../components/collections/ObjectPartsManager';
 import { NagpraManager } from '../../../components/collections/NagpraManager';
 import type { CollectionObject, Valuation } from '../../../lib/schemas';
@@ -602,6 +603,7 @@ export function ProceduresSection({
         organizationId={orgId}
         objectId={objectId!}
       />
+      <ObjectResearchVisits organizationId={orgId} objectId={objectId!} />
     </WorkspaceSection>
   );
 }

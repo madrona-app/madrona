@@ -46,6 +46,12 @@ vi.mock('../../../components/collections/RelatedProcedures', () => ({
   ),
 }));
 
+vi.mock('../../../components/collections/research-visits/ObjectResearchVisits', () => ({
+  ObjectResearchVisits: ({ objectId }: { objectId: string }) => (
+    <div data-testid="object-research-visits">object:{objectId}</div>
+  ),
+}));
+
 vi.mock('../../../components/collections/ObjectPartsManager', () => ({
   ObjectPartsManager: ({ objectId, readOnly }: { objectId: string; readOnly?: boolean }) => (
     <div data-testid="parts-manager">object:{objectId}-readOnly:{String(readOnly)}</div>
@@ -290,6 +296,11 @@ describe('ProceduresSection', () => {
   it('renders "Related Procedures" title', () => {
     wrap(<ProceduresSection {...baseProps} />);
     expect(screen.getByText('Related Procedures')).toBeInTheDocument();
+  });
+
+  it('renders the research visits listing for the object', () => {
+    wrap(<ProceduresSection {...baseProps} />);
+    expect(screen.getByTestId('object-research-visits')).toHaveTextContent('object:obj-1');
   });
 
   it('renders RelatedProcedures with the right object id', () => {
