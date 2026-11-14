@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { checkA11y, formatViolations, defaultAxeConfig } from '../a11y';
+import { checkA11y, formatViolations } from '../a11y';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import RoleManagementPage from '../../pages/admin/RoleManagementPage';

@@ -11,7 +11,7 @@
     "build": "vite build",
     "typecheck": "tsc -b",
     "lint": "eslint .",
-    "lint:ci": "eslint . --max-warnings 1269",
+    "lint:ci": "eslint . --max-warnings 1264",
     "preview": "vite preview",
     "serve:e2e": "node scripts/serve-e2e.mjs dist",
     "test": "vitest",

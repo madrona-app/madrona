@@ -159,7 +159,7 @@ describe('DiscoverObjectPage', () => {
       physical_description: null,
       provenance: null,
       inscriptions: ['Signed lower left'],
-    } as any);
+    } as never);
     renderPage();
     await screen.findByRole('heading', { name: /a beautiful vase/i });
     expect(screen.getByText('Object Name').nextSibling).toHaveTextContent('vase');
