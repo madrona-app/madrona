@@ -299,18 +299,24 @@ def generate_check_list(
             AuditResult.result_status == "pending",
         ).delete(synchronize_session=False)
 
+    # Generating the list is one recorded change on the campaign (seed,
+    # parameters, totals below), not one event per pending row; staff edits
+    # to each result afterwards are recorded on the campaign row by row.
+    from app.services.entity_audit import suppress_link_audit
+
     now = datetime.now(timezone.utc)
-    for seq, item in enumerate(chosen_sorted, start=1):
-        db.add(AuditResult(
-            campaign_id=campaign.campaign_id,
-            organization_id=campaign.organization_id,
-            object_id=item.object_id,
-            expected_location_id=item.location_id,
-            verified=False,
-            verification_date=now,
-            result_status="pending",
-            check_sequence=seq,
-        ))
+    with suppress_link_audit(db, "AuditResult"):
+        for seq, item in enumerate(chosen_sorted, start=1):
+            db.add(AuditResult(
+                campaign_id=campaign.campaign_id,
+                organization_id=campaign.organization_id,
+                object_id=item.object_id,
+                expected_location_id=item.location_id,
+                verified=False,
+                verification_date=now,
+                result_status="pending",
+                check_sequence=seq,
+            ))
 
     params = {
         "algorithm": SAMPLING_ALGORITHM,

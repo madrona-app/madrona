@@ -2427,23 +2427,28 @@ def refresh_smart_collections() -> dict[str, Any]:
             # Get new result IDs
             new_ids = set(hit.media_id for hit in result.hits)
 
-            # Add new members
-            to_add = new_ids - current_ids
-            for media_id_str in to_add:
-                item = MediaCollectionItem(
-                    collection_id=collection.collection_id,
-                    media_id=UUID(media_id_str),
-                    sort_order=0,
-                )
-                current_session().add(item)
+            # Membership kept in step with the saved query is machine churn,
+            # not a person's edit: left out of the collection's history.
+            from app.services.entity_audit import suppress_link_audit
 
-            # Remove stale members
-            to_remove = current_ids - new_ids
-            if to_remove:
-                current_session().query(MediaCollectionItem).filter(
-                    MediaCollectionItem.collection_id == collection.collection_id,
-                    MediaCollectionItem.media_id.in_([UUID(mid) for mid in to_remove]),
-                ).delete(synchronize_session=False)
+            with suppress_link_audit(current_session(), "MediaCollectionItem"):
+                # Add new members
+                to_add = new_ids - current_ids
+                for media_id_str in to_add:
+                    item = MediaCollectionItem(
+                        collection_id=collection.collection_id,
+                        media_id=UUID(media_id_str),
+                        sort_order=0,
+                    )
+                    current_session().add(item)
+
+                # Remove stale members
+                to_remove = current_ids - new_ids
+                if to_remove:
+                    current_session().query(MediaCollectionItem).filter(
+                        MediaCollectionItem.collection_id == collection.collection_id,
+                        MediaCollectionItem.media_id.in_([UUID(mid) for mid in to_remove]),
+                    ).delete(synchronize_session=False)
 
             # Update collection
             collection.item_count = len(new_ids)

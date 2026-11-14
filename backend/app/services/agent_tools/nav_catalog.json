@@ -90,6 +90,48 @@
       "permission": "org.manage_roles"
     },
     {
+      "id": "admin:security-changes",
+      "product": "admin",
+      "label": "Security Changes",
+      "pathPattern": "/organizations/:orgId/admin/security-changes",
+      "breadcrumb": [
+        "Admin",
+        "Security Changes"
+      ],
+      "keywords": [
+        "admin",
+        "api key changes",
+        "changes",
+        "permission changes",
+        "role changes",
+        "security",
+        "security changes",
+        "security log",
+        "sso changes"
+      ],
+      "permission": "org.view_audit_logs"
+    },
+    {
+      "id": "admin:settings-changes",
+      "product": "admin",
+      "label": "Settings Changes",
+      "pathPattern": "/organizations/:orgId/admin/settings-changes",
+      "breadcrumb": [
+        "Admin",
+        "Settings Changes"
+      ],
+      "keywords": [
+        "admin",
+        "changes",
+        "configuration changes",
+        "settings",
+        "settings changes",
+        "settings history",
+        "settings log"
+      ],
+      "permission": "org.view_audit_logs"
+    },
+    {
       "id": "admin:users",
       "product": "admin",
       "label": "Users",

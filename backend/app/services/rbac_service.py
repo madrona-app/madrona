@@ -529,11 +529,15 @@ def remove_user_app_role(
     if isinstance(organization_id, str):
         organization_id = UUID(organization_id)
 
-    deleted_count = _s(session).query(AppRoleAssignment).filter_by(
+    # ORM deletes (not a bulk DELETE) so the security history records them.
+    rows = _s(session).query(AppRoleAssignment).filter_by(
         user_id=user_id,
         organization_id=organization_id,
         app_key=app_key
-    ).delete()
+    ).all()
+    for row in rows:
+        _s(session).delete(row)
+    deleted_count = len(rows)
 
     if deleted_count > 0:
         logger.info(
@@ -883,6 +887,7 @@ def set_org_role_label(
     else:
         new_label = OrgRoleLabel(
             organization_id=organization_id,
+            role_id=role_check,
             role_key=role_key,
             app_key=effective_app_key,
             label=label,

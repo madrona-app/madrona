@@ -9,6 +9,7 @@
  * - Save triggers PUT to menu endpoint
  */
 
+import { RecordAuditHistory } from '../../../components/workspace/RecordAuditHistory';
 import { useState, useCallback, useEffect, useId } from 'react';
 import Checkbox from '../../../components/Checkbox';
 import { useParams } from 'react-router-dom';
@@ -912,6 +913,18 @@ export function MenuBuilder({ location, orgSlug }: MenuBuilderProps) {
           </button>
         </div>
       </div>
+
+      {menuData?.data?.menu_id && orgId && (
+        <div className="mt-4">
+          <RecordAuditHistory
+            organizationId={orgId}
+            entityType="menu"
+            entityId={menuData.data.menu_id}
+            title={`${location === 'header' ? 'Header' : 'Footer'} menu change history`}
+            headingLevel={4}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -198,6 +198,8 @@ export async function getEntityAuditEvents(
   organizationId: string,
   params?: {
     entity_type?: string;
+    /** security or settings: only that log's record types */
+    category?: 'security' | 'settings';
     change_type?: string;
     changed_by?: string;
     since?: string;

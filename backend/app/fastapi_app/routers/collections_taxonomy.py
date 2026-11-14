@@ -102,31 +102,44 @@ def _fetch_variants_for(instance, entity_type: str, entity_id) -> list[str] | No
 
 
 def _replace_variant_terms(db, organization_id, entity_type: str, entity_id, variants: list | None) -> None:
-    """Replace an authority's variant terms wholesale (update semantics: the
-    submitted list is the new complete set; None/[] clears them). Accepts
-    dicts keyed by "name" or "term" (matching the create payload shapes) or
-    plain strings."""
+    """Set an authority's variant terms (update semantics: the submitted list
+    is the new complete set; None/[] clears them). Accepts dicts keyed by
+    "name" or "term" (matching the create payload shapes) or plain strings.
+
+    Rows are reconciled in place, so the authority's history records the
+    terms actually added, removed or changed, and an unchanged save records
+    nothing.
+    """
     from app.models import VariantTerm
-    db.query(VariantTerm).filter(
-        VariantTerm.organization_id == organization_id,
-        VariantTerm.entity_type == entity_type,
-        VariantTerm.entity_id == entity_id,
-    ).delete()
-    for idx, vt in enumerate(variants or []):
+    from app.services.child_rows import reconcile_rows
+
+    desired = []
+    for vt in variants or []:
         if isinstance(vt, dict):
             term = vt.get("name") or vt.get("term") or ""
-            term_type = vt.get("type")
-            language = vt.get("language")
+            item = {"term": term, "term_type": vt.get("type"), "language": vt.get("language")}
         else:
-            term, term_type, language = str(vt), None, None
-        if not term:
-            continue
-        db.add(VariantTerm(
-            organization_id=organization_id,
-            entity_type=entity_type, entity_id=entity_id,
-            term=term, term_type=term_type, language=language,
-            display_order=idx,
-        ))
+            item = {"term": str(vt), "term_type": None, "language": None}
+        if item["term"]:
+            desired.append(item)
+    existing = (
+        db.query(VariantTerm)
+        .filter(
+            VariantTerm.organization_id == organization_id,
+            VariantTerm.entity_type == entity_type,
+            VariantTerm.entity_id == entity_id,
+        )
+        .order_by(VariantTerm.display_order, VariantTerm.created_at)
+        .all()
+    )
+    reconcile_rows(
+        db, existing, desired, ("term", "term_type", "language"),
+        lambda i, item: VariantTerm(
+            organization_id=organization_id, entity_type=entity_type, entity_id=entity_id,
+            display_order=i, **item,
+        ),
+        key_fields=("term",),
+    )
 
 
 # ============================================================================

@@ -48,6 +48,7 @@ import { useAuth } from '../../hooks/useAuth';
 import BlockEditor from './components/BlockEditor';
 import { MediaPickerModal } from '../../components/content/MediaPickerModal';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
+import { RecordAuditHistory } from '../../components/workspace/RecordAuditHistory';
 import { formatDateTime } from '@/lib/formatters';
 
 // =============================================================================
@@ -976,6 +977,18 @@ export default function PageEditorPage() {
                   </label>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Change history: page fields, blocks and categories (edit mode only) */}
+          {isEditMode && savedPageId && (
+            <div className="bg-parchment border border-lichen rounded-lg p-4">
+              <RecordAuditHistory
+                organizationId={orgId!}
+                entityType="page"
+                entityId={savedPageId}
+                headingLevel={2}
+              />
             </div>
           )}
 

@@ -466,32 +466,41 @@ def update_category_sort_order(
             "message": f"Category '{category_key}' not found",
         })
 
-    # Delete existing overrides
-    db.query(LookupSortOverride).filter(
-        LookupSortOverride.organization_id == org_id,
-        LookupSortOverride.category_id == category.category_id,
-    ).delete()
-
-    # Create new overrides
+    # Edit the overrides in place (one per value) so each lookup value's
+    # history records its position actually changing; an unchanged save
+    # records nothing.
+    current = {
+        o.value_id: o for o in db.query(LookupSortOverride).filter(
+            LookupSortOverride.organization_id == org_id,
+            LookupSortOverride.category_id == category.category_id,
+        )
+    }
+    wanted: dict = {}
     for sort_order, vid in enumerate(body.value_ids):
         try:
             value_uuid = UUID(vid)
         except (ValueError, TypeError):
             continue
-
         value = db.query(LookupValue).filter(
             LookupValue.value_id == value_uuid,
             LookupValue.category_id == category.category_id,
         ).first()
-
-        if value:
-            override = LookupSortOverride(
+        if value and value_uuid not in wanted:
+            wanted[value_uuid] = sort_order
+    for value_uuid, override in current.items():
+        if value_uuid not in wanted:
+            db.delete(override)
+    for value_uuid, sort_order in wanted.items():
+        override = current.get(value_uuid)
+        if override is None:
+            db.add(LookupSortOverride(
                 organization_id=org_id,
                 category_id=category.category_id,
                 value_id=value_uuid,
                 sort_order=sort_order,
-            )
-            db.add(override)
+            ))
+        elif override.sort_order != sort_order:
+            override.sort_order = sort_order
 
     db.commit()
 
@@ -687,6 +696,7 @@ def get_platform_audit_logs(
 def get_entity_audit_events(
     org_id: UUID,
     entity_type: str | None = Query(None),
+    category: str | None = Query(None, description="security or settings: only those record types"),
     change_type: str | None = Query(None),
     changed_by: str | None = Query(None),
     since: str | None = Query(None),
@@ -713,6 +723,17 @@ def get_entity_audit_events(
 
     if entity_type:
         query = query.filter(EntityAuditEvent.entity_type == entity_type)
+    if category:
+        from app.services.entity_audit import SECURITY_ENTITY_TYPES, SETTINGS_ENTITY_TYPES
+
+        types = {"security": SECURITY_ENTITY_TYPES, "settings": SETTINGS_ENTITY_TYPES}.get(category)
+        if types is None:
+            raise HTTPException(status_code=422, detail={
+                "code": "validation_error",
+                "message": "Invalid category. Must be one of: security, settings",
+                "field": "category",
+            })
+        query = query.filter(EntityAuditEvent.entity_type.in_(sorted(types)))
     if change_type:
         query = query.filter(EntityAuditEvent.change_type == change_type)
     if changed_by:
@@ -765,6 +786,8 @@ def get_entity_audit_events(
                 "changed_by_email": e.changed_by_email,
                 "changed_fields": e.changed_fields,
                 "summary": e.summary,
+                "child_entity_type": e.child_entity_type,
+                "child_display_key": e.child_display_key,
             }
             for e in events
         ],

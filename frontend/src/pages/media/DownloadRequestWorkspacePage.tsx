@@ -1,4 +1,5 @@
 import { useId, useState } from 'react';
+import { RecordAuditHistory } from '../../components/workspace/RecordAuditHistory';
 import { useParams, useNavigate } from 'react-router-dom';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -156,10 +157,12 @@ export default function DownloadRequestWorkspacePage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
+            type="button"
             onClick={() => navigate(-1)}
-            className="p-2 hover:bg-stone-100 rounded-md transition-colors"
+            aria-label="Back to download requests"
+            className="p-2 min-h-[44px] min-w-[44px] hover:bg-stone-100 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
           >
-            <ArrowLeft size={20} className="text-stone-600" />
+            <ArrowLeft size={20} className="text-stone-600" aria-hidden="true" />
           </button>
           <div>
             <div className="flex items-center gap-3">
@@ -378,6 +381,16 @@ export default function DownloadRequestWorkspacePage() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Change history: review, approval, fulfilment and item decisions */}
+      <div className="bg-parchment border border-stone-200 rounded-lg p-4 mt-6">
+        <RecordAuditHistory
+          organizationId={orgId}
+          entityType="media_download_request"
+          entityId={requestId}
+          headingLevel={2}
+        />
       </div>
 
       {/* Deny Modal */}

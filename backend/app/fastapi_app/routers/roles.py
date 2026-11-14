@@ -505,10 +505,14 @@ def set_role_permissions(
                 "message": "Cannot remove org.manage_roles from your own active role",
             })
 
-    # Replace permissions: delete existing, insert new
-    db.query(RolePermission).filter(RolePermission.role_id == role_id).delete()
-
-    for perm_id in new_perm_ids:
+    # Bring the set in line row by row, so the role's history records exactly
+    # which permissions were granted and revoked (an unchanged save records
+    # nothing).
+    current = {rp.permission_id: rp for rp in db.query(RolePermission).filter(RolePermission.role_id == role_id)}
+    for perm_id, rp in current.items():
+        if perm_id not in new_perm_ids:
+            db.delete(rp)
+    for perm_id in new_perm_ids - set(current):
         db.add(RolePermission(role_id=role_id, permission_id=perm_id))
 
     db.commit()

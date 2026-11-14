@@ -240,6 +240,8 @@ import {
   BulkUserImportPage,
   DepartmentManagementPage,
   EntityAuditPage,
+  SecurityChangesPage,
+  SettingsChangesPage,
   LogsPage,
   OrganizationsPage,
   OrganizationUsersPage,
@@ -376,6 +378,8 @@ export function AppRoutes() {
           <Route path="/organizations/:orgId/admin/sso" element={<SSOConfigurationPage />} />
 
           <Route path="/organizations/:orgId/admin/entity-audit" element={<EntityAuditPage />} />
+          <Route path="/organizations/:orgId/admin/security-changes" element={<SecurityChangesPage />} />
+          <Route path="/organizations/:orgId/admin/settings-changes" element={<SettingsChangesPage />} />
           <Route path="/organizations/:orgId/admin/api-keys" element={<APIKeysPage />} />
           <Route path="/organizations/:orgId/admin/permissions" element={<PermissionManagementPage />} />
         </Route>

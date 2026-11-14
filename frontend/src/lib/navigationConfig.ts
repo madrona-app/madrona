@@ -896,6 +896,20 @@ export const adminItems: AdminItem[] = [
     requiresPermission: 'org.view_audit_logs',
   },
   {
+    id: 'security-changes',
+    label: 'Security Changes',
+    path: '/organizations/:orgId/admin/security-changes',
+    icon: ShieldCheck,
+    requiresPermission: 'org.view_audit_logs',
+  },
+  {
+    id: 'settings-changes',
+    label: 'Settings Changes',
+    path: '/organizations/:orgId/admin/settings-changes',
+    icon: Settings,
+    requiresPermission: 'org.view_audit_logs',
+  },
+  {
     id: 'api-keys',
     label: 'API Keys',
     path: '/organizations/:orgId/admin/api-keys',

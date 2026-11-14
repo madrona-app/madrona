@@ -78,6 +78,8 @@ class _Writer:
         child_id: Any = None,
         child_display: str | None = None,
     ) -> None:
+        if not ea.org_writable(self.session, organization_id):
+            return
         event_id = uuid.uuid4()
         self.events.append({
             "event_id": event_id,
@@ -141,7 +143,8 @@ def record_entity_updates(
             continue
         org_id = ea._get_organization_id(obj)
         entity_id = ea._get_entity_pk(obj)
-        if not org_id or not entity_id:
+        changes = ea.apply_field_rules(class_name, changes)
+        if not org_id or not entity_id or not changes:
             continue
         names = [c[0] for c in changes]
         writer.add(
@@ -170,9 +173,22 @@ def record_link_events(
     values, as the listener does for a single delete. Returns the number of
     events written.
     """
-    cfg = ea.TRACKED_LINKS.get(class_name)
-    if not cfg or not items:
+    if not ea.TRACKED_LINKS.get(class_name) or not items:
         return 0
+    # Resolve each row's config (a polymorphic row's parent depends on its
+    # type column; suppressed or untracked parents drop out), then write
+    # each group.
+    groups: dict[tuple[str, str], tuple[dict[str, str], list]] = {}
+    for obj, changes in items:
+        cfg = ea.link_config_for(obj)
+        if cfg is None:
+            continue
+        key = (cfg["parent_model"], cfg["parent_type"])
+        groups.setdefault(key, (cfg, []))[1].append((obj, changes))
+    return sum(_record_link_group(session, cfg, change_type, group) for cfg, group in groups.values())
+
+
+def _record_link_group(session: Session, cfg: dict[str, str], change_type: str, items) -> int:
     label = cfg.get("link_label", "linked record")
     parent_model = cfg["parent_model"]
     parent_config = ea.TRACKED_ENTITIES.get(parent_model)
@@ -201,6 +217,8 @@ def record_link_events(
         linked = linked_names.get(getattr(obj, linked_fk, None)) if linked_fk else None
         linked = str(linked)[:200] if linked is not None else None
 
+        if changes is not None:
+            changes = ea.apply_field_rules(obj.__class__.__name__, changes)
         if changes is None:
             changes = [(f, v, None) for f, v in ea._shape_link_fields(obj, cfg)]
             if linked and change_type == "link_removed":

@@ -1495,71 +1495,46 @@ def execute_dam_workspace_action(
                 else:
                     target_texts = [t for t in (action_params.get("values") or []) if (t or "").strip()]
 
-                if mode == "replace":
-                    db.query(MediaTag).filter(
-                        MediaTag.media_id == media.media_id,
-                        MediaTag.definition_id == def_uuid,
-                    ).delete(synchronize_session=False)
+                # Work out this asset's new tag set for the definition, then
+                # apply it in place (set_media_tags) so its history records
+                # only the tags really added or removed.
+                current = db.query(MediaTag).filter(
+                    MediaTag.media_id == media.media_id,
+                    MediaTag.definition_id == def_uuid,
+                ).all()
+                desired: list[dict] = [
+                    {"definition_id": def_uuid, "value_id": t.value_id, "tag_value": t.tag_value} for t in current
+                ]
+                if is_controlled:
+                    nodes = {}
+                    for vid in target_value_ids:
+                        node = db.query(MediaTagValue).filter_by(value_id=vid).first()
+                        if node:
+                            nodes[vid] = node
+                    wanted = [vid for vid in target_value_ids if vid in nodes]
+                    if mode in ("append", "replace") and not definition.allow_multiple and wanted:
+                        wanted = wanted[:1]
+                        desired = []
+                    elif mode == "replace":
+                        desired = []
+                    if mode in ("append", "replace"):
+                        have = {d["value_id"] for d in desired}
+                        desired += [
+                            {"definition_id": def_uuid, "value_id": vid, "tag_value": nodes[vid].value}
+                            for vid in wanted if vid not in have
+                        ]
+                    elif mode == "remove" and target_value_ids:
+                        drop = set(target_value_ids)
+                        desired = [d for d in desired if d["value_id"] not in drop]
+                else:
+                    # text / date: single value only — pick first.
+                    if mode in ("append", "replace") and target_texts:
+                        desired = [{"definition_id": def_uuid, "value_id": None, "tag_value": target_texts[0].strip()}]
+                    elif mode in ("replace", "remove"):
+                        desired = []
+                from app.fastapi_app.routers.media_tags import set_media_tags
 
-                if mode in ("append", "replace"):
-                    if is_controlled:
-                        # Enforce single-value semantics when allow_multiple is False.
-                        if not definition.allow_multiple and target_value_ids:
-                            db.query(MediaTag).filter(
-                                MediaTag.media_id == media.media_id,
-                                MediaTag.definition_id == def_uuid,
-                            ).delete(synchronize_session=False)
-                            target_value_ids = [target_value_ids[0]]
-                        # Existing values to skip (idempotent).
-                        existing_value_ids = {
-                            r[0] for r in db.query(MediaTag.value_id).filter(
-                                MediaTag.media_id == media.media_id,
-                                MediaTag.definition_id == def_uuid,
-                                MediaTag.value_id.isnot(None),
-                            ).all()
-                        }
-                        for vid in target_value_ids:
-                            if vid in existing_value_ids:
-                                continue
-                            node = db.query(MediaTagValue).filter_by(value_id=vid).first()
-                            if not node:
-                                continue
-                            db.add(MediaTag(
-                                organization_id=org_id,
-                                media_id=media.media_id,
-                                definition_id=def_uuid,
-                                value_id=vid,
-                                tag_value=node.value,
-                                created_by=user_id,
-                            ))
-                    else:
-                        # text / date: single value only — pick first.
-                        if target_texts:
-                            db.query(MediaTag).filter(
-                                MediaTag.media_id == media.media_id,
-                                MediaTag.definition_id == def_uuid,
-                            ).delete(synchronize_session=False)
-                            db.add(MediaTag(
-                                organization_id=org_id,
-                                media_id=media.media_id,
-                                definition_id=def_uuid,
-                                tag_value=target_texts[0].strip(),
-                                created_by=user_id,
-                            ))
-
-                elif mode == "remove":
-                    if is_controlled and target_value_ids:
-                        db.query(MediaTag).filter(
-                            MediaTag.media_id == media.media_id,
-                            MediaTag.definition_id == def_uuid,
-                            MediaTag.value_id.in_(target_value_ids),
-                        ).delete(synchronize_session=False)
-                    elif not is_controlled:
-                        # For text/date, remove means clear the single value regardless.
-                        db.query(MediaTag).filter(
-                            MediaTag.media_id == media.media_id,
-                            MediaTag.definition_id == def_uuid,
-                        ).delete(synchronize_session=False)
+                set_media_tags(db, org_id, media.media_id, desired, user_id, definition_ids=[def_uuid])
 
                 results.append({
                     "media_id": str(media.media_id),

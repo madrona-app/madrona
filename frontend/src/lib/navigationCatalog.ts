@@ -133,6 +133,8 @@ const SYNONYMS: Record<string, string[]> = {
   roles: ['role management', 'permissions', 'rbac'],
   departments: ['org units', 'teams'],
   'entity-audit': ['change history', 'audit log', 'history'],
+  'security-changes': ['security log', 'role changes', 'permission changes', 'sso changes', 'api key changes'],
+  'settings-changes': ['settings log', 'configuration changes', 'settings history'],
   'api-keys': ['api tokens', 'api key'],
 };
 

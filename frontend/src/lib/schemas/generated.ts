@@ -4732,6 +4732,8 @@ export const EntityAuditEventOutSchema = z.object({
   changed_by_email: z.string().nullable().optional(),
   changed_fields: z.any().nullable().optional(),
   summary: z.string().nullable().optional(),
+  child_entity_type: z.string().nullable().optional(),
+  child_display_key: z.string().nullable().optional(),
 }).passthrough();
 
 export type EntityAuditEventOut = z.infer<typeof EntityAuditEventOutSchema>;
@@ -4758,6 +4760,8 @@ export const EntityAuditEventDetailOutSchema = z.object({
   changed_by_email: z.string().nullable().optional(),
   changed_fields: z.any().nullable().optional(),
   summary: z.string().nullable().optional(),
+  child_entity_type: z.string().nullable().optional(),
+  child_display_key: z.string().nullable().optional(),
   field_diffs: z.array(EntityAuditFieldDiffOutSchema),
 }).passthrough();
 

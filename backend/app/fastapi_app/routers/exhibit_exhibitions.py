@@ -1394,13 +1394,16 @@ def remove_floor_plan_from_exhibition(
         if not assoc:
             raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Floor plan in exhibition not found"})
 
-        # Also delete placements for this floor plan in this exhibition
-        db.query(Placement).filter(
+        # Also delete placements for this floor plan in this exhibition, row
+        # by row so the exhibition's history records each one removed.
+        for placement in db.query(Placement).filter(
             and_(
                 Placement.exhibition_id == exhibition_id,
                 Placement.floor_plan_id == floor_plan_id,
             )
-        ).delete()
+        ).all():
+            db.delete(placement)
+        db.flush()
 
         db.delete(assoc)
         db.commit()

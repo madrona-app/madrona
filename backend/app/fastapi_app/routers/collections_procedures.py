@@ -1037,10 +1037,12 @@ async def add_object_entry_item_media(
 
     # If setting as primary, unset other primaries for this item
     if is_primary:
-        db.query(ObjectEntryItemMedia).filter(
+        # Row by row (not a bulk UPDATE) so the entry's history records it.
+        for other in db.query(ObjectEntryItemMedia).filter(
             ObjectEntryItemMedia.entry_item_id == item.entry_item_id,
             ObjectEntryItemMedia.is_primary == True
-        ).update({"is_primary": False})
+        ).all():
+            other.is_primary = False
 
     link = ObjectEntryItemMedia(
         entry_item_id=item.entry_item_id,
@@ -1134,10 +1136,12 @@ def set_object_entry_item_primary_media(
         })
 
     # Unset other primaries for this item
-    db.query(ObjectEntryItemMedia).filter(
+    for other in db.query(ObjectEntryItemMedia).filter(
         ObjectEntryItemMedia.entry_item_id == item.entry_item_id,
-        ObjectEntryItemMedia.is_primary == True
-    ).update({'is_primary': False})
+        ObjectEntryItemMedia.is_primary == True,
+        ObjectEntryItemMedia.media_id != link.media_id,
+    ).all():
+        other.is_primary = False
 
     # Set this as primary
     link.is_primary = True
