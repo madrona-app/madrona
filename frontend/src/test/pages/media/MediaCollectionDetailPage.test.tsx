@@ -38,6 +38,8 @@ vi.mock('../../../components/dam', () => ({
 const mockGetMediaCollection = vi.mocked(api.getMediaCollection);
 const mockListCollectionItems = vi.mocked(api.listCollectionItems);
 const mockUsePermissions = vi.mocked(usePermissionsHook.usePermissions);
+type Coll = Awaited<ReturnType<typeof api.getMediaCollection>>;
+type Items = Awaited<ReturnType<typeof api.listCollectionItems>>;
 
 function createQueryClient() {
   return new QueryClient({
@@ -105,7 +107,7 @@ describe('MediaCollectionDetailPage', () => {
 
   it('shows loading skeleton initially', () => {
     mockGetMediaCollection.mockImplementation(() => new Promise(() => {}));
-    mockListCollectionItems.mockResolvedValue({ items: [] } as any);
+    mockListCollectionItems.mockResolvedValue({ items: [] } as unknown as Items);
     renderPage();
     expect(
       screen.queryByRole('heading', { name: /my lightbox/i }),
@@ -113,8 +115,8 @@ describe('MediaCollectionDetailPage', () => {
   });
 
   it('renders the collection name and description', async () => {
-    mockGetMediaCollection.mockResolvedValue(sampleCollection as any);
-    mockListCollectionItems.mockResolvedValue(sampleItems as any);
+    mockGetMediaCollection.mockResolvedValue(sampleCollection as unknown as Coll);
+    mockListCollectionItems.mockResolvedValue(sampleItems as unknown as Items);
     renderPage();
     await waitFor(() => {
       expect(
@@ -125,8 +127,8 @@ describe('MediaCollectionDetailPage', () => {
   });
 
   it('shows item count', async () => {
-    mockGetMediaCollection.mockResolvedValue(sampleCollection as any);
-    mockListCollectionItems.mockResolvedValue(sampleItems as any);
+    mockGetMediaCollection.mockResolvedValue(sampleCollection as unknown as Coll);
+    mockListCollectionItems.mockResolvedValue(sampleItems as unknown as Items);
     renderPage();
     await waitFor(() => {
       expect(screen.getByText(/2 items/i)).toBeInTheDocument();
@@ -135,7 +137,7 @@ describe('MediaCollectionDetailPage', () => {
 
   it('renders error state when load fails', async () => {
     mockGetMediaCollection.mockRejectedValue(new Error('not found'));
-    mockListCollectionItems.mockResolvedValue({ items: [] } as any);
+    mockListCollectionItems.mockResolvedValue({ items: [] } as unknown as Items);
     renderPage();
     await waitFor(() => {
       expect(screen.getByText(/error: not found/i)).toBeInTheDocument();
@@ -144,7 +146,7 @@ describe('MediaCollectionDetailPage', () => {
 
   it('shows lightbox not found when no collection returned', async () => {
     mockGetMediaCollection.mockResolvedValue(null as any);
-    mockListCollectionItems.mockResolvedValue({ items: [] } as any);
+    mockListCollectionItems.mockResolvedValue({ items: [] } as unknown as Items);
     renderPage();
     await waitFor(() => {
       expect(screen.getByText(/lightbox not found/i)).toBeInTheDocument();
@@ -152,8 +154,8 @@ describe('MediaCollectionDetailPage', () => {
   });
 
   it('enters edit mode when Edit clicked', async () => {
-    mockGetMediaCollection.mockResolvedValue(sampleCollection as any);
-    mockListCollectionItems.mockResolvedValue(sampleItems as any);
+    mockGetMediaCollection.mockResolvedValue(sampleCollection as unknown as Coll);
+    mockListCollectionItems.mockResolvedValue(sampleItems as unknown as Items);
     renderPage();
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /edit/i })).toBeInTheDocument();
@@ -173,8 +175,8 @@ describe('MediaCollectionDetailPage', () => {
       hasAnyPermission: vi.fn().mockReturnValue(false),
       hasAllPermissions: vi.fn().mockReturnValue(false),
     });
-    mockGetMediaCollection.mockResolvedValue(sampleCollection as any);
-    mockListCollectionItems.mockResolvedValue(sampleItems as any);
+    mockGetMediaCollection.mockResolvedValue(sampleCollection as unknown as Coll);
+    mockListCollectionItems.mockResolvedValue(sampleItems as unknown as Items);
     renderPage();
     await waitFor(() => {
       const editBtn = screen.getByRole('button', { name: /edit/i });
@@ -183,8 +185,8 @@ describe('MediaCollectionDetailPage', () => {
   });
 
   it('renders share button', async () => {
-    mockGetMediaCollection.mockResolvedValue(sampleCollection as any);
-    mockListCollectionItems.mockResolvedValue(sampleItems as any);
+    mockGetMediaCollection.mockResolvedValue(sampleCollection as unknown as Coll);
+    mockListCollectionItems.mockResolvedValue(sampleItems as unknown as Items);
     renderPage();
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /share/i })).toBeInTheDocument();
@@ -203,8 +205,8 @@ describe('MediaCollectionDetailPage change history', () => {
   });
 
   it('shows manual adds and removals on the lightbox history', async () => {
-    mockGetMediaCollection.mockResolvedValue(sampleCollection as Awaited<ReturnType<typeof api.getMediaCollection>>);
-    mockListCollectionItems.mockResolvedValue(sampleItems as Awaited<ReturnType<typeof api.listCollectionItems>>);
+    mockGetMediaCollection.mockResolvedValue(sampleCollection as unknown as Coll);
+    mockListCollectionItems.mockResolvedValue(sampleItems as unknown as Items);
     vi.mocked(api.getRecordAuditHistory).mockResolvedValue({
       entity_type: 'media_collection', entity_id: 'col-1', total: 1, limit: 20, offset: 0,
       items: [{
