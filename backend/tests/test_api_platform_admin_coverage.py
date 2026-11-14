@@ -910,6 +910,47 @@ class TestSSOEdges:
         )
         assert resp.status_code == 404
 
+    def test_update_sso_stores_oidc_client_secret_encrypted(
+        self, auth_setup, other_org, client, db_session, monkeypatch
+    ):
+        from cryptography.fernet import Fernet
+        from app.models import SSOConfiguration
+        from app.services.storage import factory
+
+        key = Fernet.generate_key().decode()
+        monkeypatch.setattr(factory, "STORAGE_CREDENTIALS_KEY", key)
+        _client, _org, user = auth_setup
+        token = _token_with_mfa(user.user_id, other_org.organization_id)
+        url = f"/api/platform/organizations/{other_org.organization_id}/sso"
+        resp = client.put(url, json={"provider": "oidc", "enabled": False, "client_id": "madrona",
+                                     "client_secret": "s3cret-value"},
+                          headers={"Authorization": f"Bearer {token}"})
+        assert resp.status_code == 200, resp.text
+        assert "s3cret-value" not in resp.text
+        db_session.expire_all()
+        row = db_session.query(SSOConfiguration).filter_by(organization_id=other_org.organization_id).one()
+        assert row.client_secret_encrypted is not None
+        assert Fernet(key.encode()).decrypt(bytes(row.client_secret_encrypted)) == b"s3cret-value"
+        resp = client.put(url, json={"provider": "oidc", "client_secret": ""},
+                          headers={"Authorization": f"Bearer {token}"})
+        assert resp.status_code == 200
+        db_session.expire_all()
+        assert db_session.query(SSOConfiguration).filter_by(
+            organization_id=other_org.organization_id).one().client_secret_encrypted is None
+
+    def test_update_sso_client_secret_without_key_400(
+        self, auth_setup, other_org, client, db_session, monkeypatch
+    ):
+        from app.services.storage import factory
+
+        monkeypatch.setattr(factory, "STORAGE_CREDENTIALS_KEY", "")
+        _client, _org, user = auth_setup
+        token = _token_with_mfa(user.user_id, other_org.organization_id)
+        resp = client.put(f"/api/platform/organizations/{other_org.organization_id}/sso",
+                          json={"provider": "oidc", "client_secret": "x"},
+                          headers={"Authorization": f"Bearer {token}"})
+        assert resp.status_code == 400
+
     def test_update_sso_creates_then_updates(
         self, auth_setup, other_org, client, db_session
     ):
