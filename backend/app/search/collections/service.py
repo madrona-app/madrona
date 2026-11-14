@@ -99,6 +99,36 @@ class CollectionsSearchService:
 
         return response
 
+    def matching_object_ids(
+        self,
+        request: CollectionsSearchRequest,
+        organization_id: UUID,
+        db_session=None,
+        max_ids: int = 10_000,
+    ) -> list[str]:
+        """Object IDs matching a search's query and filters, in result order.
+
+        Used to export exactly what a staff user sees in a filtered list. It
+        runs the same BM25 query as ``search`` (no semantic re-ranking, which
+        changes order but not membership), without facets or highlights, and
+        returns at most ``max_ids`` IDs (OpenSearch's default result window is
+        10,000).
+        """
+        org_str = str(organization_id)
+        query = self.query_builder.build(request, org_str, db_session=db_session)
+        query["from"] = 0
+        query["size"] = max_ids
+        query.pop("aggs", None)
+        query.pop("highlight", None)
+        query["_source"] = ["object_id"]
+        response = self.index_manager.search(query, org_str)
+        ids: list[str] = []
+        for hit in response.get("hits", {}).get("hits", []):
+            oid = (hit.get("_source") or {}).get("object_id")
+            if oid:
+                ids.append(oid)
+        return ids
+
     def _should_use_semantic_search(self) -> bool:
         """Check if semantic search is enabled and available."""
         from app.config import get_settings

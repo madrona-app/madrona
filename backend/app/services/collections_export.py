@@ -10,6 +10,7 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
+from sqlalchemy import inspect as sa_inspect
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -322,6 +323,7 @@ def fetch_export_data(
     sort: str | None = None,
     limit: int = MAX_EXPORT_ROWS,
     user_id: UUID | None = None,
+    ids: list[UUID] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
     """
     Fetch and format data for export.
@@ -334,6 +336,9 @@ def fetch_export_data(
         sort: Optional sort field (prefix with - for descending)
         limit: Maximum rows to return
         user_id: Requesting user UUID (for field-level access filtering)
+        ids: Optional primary keys to restrict the export to (a selection, a
+            work set, or the result of a search). An empty list exports no
+            rows; None means no restriction.
 
     Returns:
         Tuple of (rows as flat dicts, column definitions)
@@ -386,6 +391,12 @@ def fetch_export_data(
     # Build query
     session = current_session()
     query = select(model).where(model.organization_id == org_id)
+
+    if ids is not None:
+        if not ids:
+            return [], col_defs
+        pk_col = sa_inspect(model).primary_key[0]
+        query = query.where(pk_col.in_(ids[:MAX_EXPORT_ROWS]))
 
     # Apply simple equality filters (only on allowed columns)
     if filters:

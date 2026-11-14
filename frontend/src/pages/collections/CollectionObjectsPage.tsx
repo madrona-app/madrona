@@ -51,6 +51,7 @@ import { logger } from '../../lib/logger';
 import { sanitizeHighlight } from '../../lib/sanitize';
 import { formatNumber } from '@/lib/formatters';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
+import { ObjectListExportControls } from '../../components/collections/ObjectExportControls';
 
 const SCROLL_KEY = 'collection-objects-scroll';
 
@@ -669,6 +670,17 @@ export default function CollectionObjectsPage() {
           </div>
         ) : null}
       </div>
+
+      {/* Export (CSV / Excel / JSON-LD) of the current results or active work set */}
+      {searchMode === 'text' && orgId && hasPermission('collections.view') && (effectiveResults?.total ?? 0) > 0 && (
+        <ObjectListExportControls
+          organizationId={orgId}
+          searchQuery={debouncedQuery || undefined}
+          filters={Object.keys(filters).length > 0 ? filters : undefined}
+          resultCount={effectiveResults?.total}
+          activeWorkspace={activeWorkspace}
+        />
+      )}
 
       {/* Results */}
       <h2 className="sr-only">Search results</h2>
