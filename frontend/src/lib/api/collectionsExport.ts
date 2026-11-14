@@ -144,3 +144,26 @@ export async function exportObjectJsonLd(
     filename: `object-${safe}.jsonld`,
   };
 }
+
+/**
+ * Export object rights (holder and agent for rights holder included) as CSV
+ * or Excel. Backend record type `object_rights`; requires rights.view.
+ */
+export async function exportObjectRightsTable(
+  organizationId: string,
+  format: 'csv' | 'excel',
+): Promise<ExportFile> {
+  const result = await apiFetch<Blob | string>(
+    `/organizations/${organizationId}/collections/export`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ record_type: 'object_rights', format }),
+    },
+  );
+  const type =
+    format === 'csv'
+      ? 'text/csv'
+      : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  const blob = result instanceof Blob ? result : new Blob([result], { type });
+  return { blob, filename: datedName('object-rights', format === 'csv' ? 'csv' : 'xlsx') };
+}

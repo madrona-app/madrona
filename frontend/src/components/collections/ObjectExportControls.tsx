@@ -5,6 +5,8 @@
  *   Excel, JSON-LD) and which objects (the current results, or the active
  *   work set), then Export.
  * - ObjectJsonLdExportButton: on an object record — export it as JSON-LD.
+ * - RightsExportControls: on Rights Management — export rights records
+ *   (including rights holder and agent for rights holder) as CSV or Excel.
  *
  * Exports are synchronous on the backend, so the file comes back in the
  * response: the browser download starts automatically and a named link to
@@ -20,6 +22,7 @@ import {
   exportCollectionObjectsJsonLd,
   exportCollectionObjectsTable,
   exportObjectJsonLd,
+  exportObjectRightsTable,
   type ExportFile,
   type ObjectExportFormat,
   type ObjectExportScope,
@@ -323,5 +326,96 @@ export function ObjectJsonLdExportButton({
       )}
       {ready && <ReadyLink ready={ready} />}
     </div>
+  );
+}
+
+export interface RightsExportControlsProps {
+  organizationId: string;
+}
+
+export function RightsExportControls({ organizationId }: RightsExportControlsProps) {
+  const uid = useId();
+  const headingId = `${uid}-heading`;
+  const formatId = `${uid}-format`;
+  const [format, setFormat] = useState<'csv' | 'excel'>('csv');
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const { ready, deliver, clear } = useExportFile();
+
+  const handleExport = async () => {
+    const fmt = format === 'csv' ? 'CSV' : 'Excel';
+    setBusy(true);
+    setError(null);
+    clear();
+    setStatus(`Preparing ${fmt} export of rights records…`);
+    try {
+      const file = await exportObjectRightsTable(organizationId, format);
+      deliver(file, fmt);
+      setStatus(`${fmt} export ready: ${file.filename}. The download has started.`);
+    } catch (err) {
+      setStatus('');
+      setError(`Export failed: ${(err as Error).message || 'the server did not return a file.'}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section
+      aria-labelledby={headingId}
+      className="bg-parchment border border-lichen rounded-lg px-6 py-4 mb-6"
+    >
+      <h2 id={headingId} className="text-sm font-medium text-ink mb-3 flex items-center gap-2">
+        <FileDown size={16} className="text-archive" aria-hidden="true" />
+        Export rights records
+      </h2>
+      <div className="flex flex-wrap items-end gap-3">
+        <div>
+          <label htmlFor={formatId} className="block text-sm text-ink mb-1">
+            Format
+          </label>
+          <select
+            id={formatId}
+            value={format}
+            onChange={(e) => setFormat(e.target.value as 'csv' | 'excel')}
+            disabled={busy}
+            className="min-h-[44px] px-3 py-2 text-sm border border-lichen rounded-lg bg-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+          >
+            <option value="csv">CSV</option>
+            <option value="excel">Excel (.xlsx)</option>
+          </select>
+        </div>
+        <button
+          type="button"
+          onClick={handleExport}
+          disabled={busy}
+          className="btn btn-secondary text-sm min-h-[44px] inline-flex items-center gap-2"
+        >
+          {busy ? (
+            <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+          ) : (
+            <FileDown size={16} aria-hidden="true" />
+          )}
+          {busy ? 'Exporting…' : 'Export rights'}
+        </button>
+      </div>
+      <p className="text-xs text-accessible-gray mt-2">
+        Includes the rights holder and the agent for the rights holder.
+      </p>
+      <div role="status" aria-live="polite" aria-atomic="true" className="text-sm text-ink mt-2">
+        {status}
+      </div>
+      {error && (
+        <p role="alert" className="text-sm text-semantic-error mt-2">
+          {error}
+        </p>
+      )}
+      {ready && (
+        <p className="mt-2">
+          <ReadyLink ready={ready} />
+        </p>
+      )}
+    </section>
   );
 }

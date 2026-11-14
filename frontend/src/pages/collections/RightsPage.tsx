@@ -19,6 +19,7 @@ import { formatDateShort, formatNumber } from '@/lib/formatters';
 import { usePermissions } from '../../hooks/usePermissions';
 import type { ObjectRight } from '../../lib/schemas';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { RightsExportControls } from '../../components/collections/ObjectExportControls';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
 
 const SCROLL_KEY = 'rights-scroll';
@@ -356,6 +357,8 @@ export default function RightsPage() {
         </p>
       </div>
 
+      {orgId && hasPermission('rights.view') && <RightsExportControls organizationId={orgId} />}
+
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="bg-parchment border border-lichen rounded-lg p-4">
@@ -426,6 +429,7 @@ export default function RightsPage() {
             )}
           </div>
           <select
+            aria-label="Filter by right type"
             value={typeFilter}
             onChange={(e) => handleTypeFilterChange(e.target.value)}
             className="px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark w-full sm:w-40"
@@ -436,6 +440,7 @@ export default function RightsPage() {
             ))}
           </select>
           <select
+            aria-label="Filter by status"
             value={statusFilter}
             onChange={(e) => handleStatusFilterChange(e.target.value)}
             className="px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark w-full sm:w-40"
@@ -446,6 +451,7 @@ export default function RightsPage() {
             ))}
           </select>
           <select
+            aria-label="Filter by orphan works"
             value={orphanFilter}
             onChange={(e) => handleOrphanFilterChange(e.target.value)}
             className="px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark w-full sm:w-40"

@@ -175,8 +175,9 @@ describe('RightsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Vase #1')).toBeInTheDocument();
     });
-    const selects = screen.getAllByRole('combobox');
-    fireEvent.change(selects[0], { target: { value: 'copyright' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Filter by right type' }), {
+      target: { value: 'copyright' },
+    });
     await waitFor(() => {
       expect(mockGetAllRights).toHaveBeenCalledWith(
         'org-123',

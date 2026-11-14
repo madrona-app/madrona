@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import {
   ObjectJsonLdExportButton,
   ObjectListExportControls,
+  RightsExportControls,
 } from '../../components/collections/ObjectExportControls';
 import { checkA11y } from '../a11y';
 
@@ -186,5 +187,44 @@ describe('ObjectJsonLdExportButton', () => {
     render(<ObjectJsonLdExportButton organizationId="org-1" objectId="obj-1" objectNumber="2026.1" />);
     fireEvent.click(screen.getByRole('button', { name: 'Export JSON-LD' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('JSON-LD export failed: Object not found');
+  });
+});
+
+describe('RightsExportControls', () => {
+  let clickSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    apiFetchMock.mockReset();
+    (URL as unknown as { createObjectURL: () => string }).createObjectURL = vi.fn(() => 'blob:rights-1');
+    (URL as unknown as { revokeObjectURL: () => void }).revokeObjectURL = vi.fn();
+    clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    clickSpy.mockRestore();
+  });
+
+  it('is labelled and has no axe violations', async () => {
+    const { container } = render(
+      <main>
+        <RightsExportControls organizationId="org-1" />
+      </main>,
+    );
+    expect(screen.getByRole('region', { name: 'Export rights records' })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Format' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Export rights' })).toBeInTheDocument();
+    const results = await checkA11y(container);
+    expect(results.violations).toEqual([]);
+  });
+
+  it('requests the object_rights record type in the chosen format and offers the file', async () => {
+    apiFetchMock.mockResolvedValue(new Blob(['a,b'], { type: 'application/octet-stream' }));
+    render(<RightsExportControls organizationId="org-1" />);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Format' }), { target: { value: 'excel' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Export rights' }));
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/Excel export ready/));
+    expect(apiFetchMock.mock.calls[0][0]).toBe('/organizations/org-1/collections/export');
+    expect(lastBody()).toEqual({ record_type: 'object_rights', format: 'excel' });
+    expect(screen.getByRole('link', { name: /Download object-rights-\d{8}\.xlsx \(Excel/ })).toBeInTheDocument();
   });
 });
