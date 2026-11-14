@@ -7,12 +7,12 @@ with document_type = 'attachment'; label holds the title and this new
 nullable column holds an optional longer description. No backfill.
 
 Revision ID: 8c4b22beb02f
-Revises: b7e3a9c41f62
+Revises: a91e5c3d7b20
 """
 from alembic import op
 
 revision = "8c4b22beb02f"
-down_revision = "b7e3a9c41f62"
+down_revision = "a91e5c3d7b20"
 branch_labels = None
 depends_on = None
 

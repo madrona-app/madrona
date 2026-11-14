@@ -12,12 +12,12 @@ Both tables are already org-scoped and covered by row-level security; no
 new tables.
 
 Revision ID: 3c8e1f6a9d24
-Revises: b7e3a9c41f62
+Revises: 8c4b22beb02f
 """
 from alembic import op
 
 revision = "3c8e1f6a9d24"
-down_revision = "b7e3a9c41f62"
+down_revision = "8c4b22beb02f"
 branch_labels = None
 depends_on = None
 

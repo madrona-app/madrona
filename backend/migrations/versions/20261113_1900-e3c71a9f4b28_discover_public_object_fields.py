@@ -9,12 +9,12 @@ organization saves a choice.
 discover_configs is already covered by row-level security; no policy change.
 
 Revision ID: e3c71a9f4b28
-Revises: b7e3a9c41f62
+Revises: 8b5d2e7f1a36
 """
 from alembic import op
 
 revision = "e3c71a9f4b28"
-down_revision = "b7e3a9c41f62"
+down_revision = "8b5d2e7f1a36"
 branch_labels = None
 depends_on = None
 

@@ -9,12 +9,12 @@ narrow a share, never widen it).
 No RLS change: the column is on an existing org-scoped table.
 
 Revision ID: 4c8e2a7f91d3
-Revises: b7e3a9c41f62
+Revises: 835c0cd2833b
 """
 from alembic import op
 
 revision = "4c8e2a7f91d3"
-down_revision = "b7e3a9c41f62"
+down_revision = "835c0cd2833b"
 branch_labels = None
 depends_on = None
 
