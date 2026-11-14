@@ -103,9 +103,22 @@ def serialize_public_media(
         }
 
     if include_object_metadata:
-        object_links = session.query(CollectionObjectMedia).filter(
-            CollectionObjectMedia.media_id == media.media_id
-        ).all()
+        # Only objects the public may see: same organization, discoverable,
+        # not deleted and not hidden as deaccessioned (the Discover gates).
+        # A published file can be linked to a private record; that record's
+        # metadata must not ride out on the file.
+        from app.services.discover_media import public_object_clauses
+
+        object_links = (
+            session.query(CollectionObjectMedia)
+            .join(CollectionObject, CollectionObject.object_id == CollectionObjectMedia.object_id)
+            .filter(
+                CollectionObjectMedia.media_id == media.media_id,
+                CollectionObject.organization_id == media.organization_id,
+                *public_object_clauses(session, media.organization_id),
+            )
+            .all()
+        )
 
         if object_links:
             objects_metadata = []
@@ -121,7 +134,7 @@ def serialize_public_media(
                         safe = get_safe_metadata_for_embedding(full_metadata)
                         safe["object_id"] = str(link.object_id)
                         safe["is_primary"] = link.is_primary
-                        safe["caption"] = link.caption
+                        safe["caption"] = link.caption_override
                         safe["creators_detail"] = full_metadata.get("creators", [])
                         objects_metadata.append(safe)
                 except Exception as e:
@@ -198,13 +211,14 @@ def serialize_public_object(
         for link in media_links:
             media = session.query(Media).filter(
                 Media.media_id == link.media_id,
+                Media.organization_id == obj.organization_id,
                 Media.is_published == True  # noqa: E712
             ).first()
             if media:
                 published_media.append({
                     "media": serialize_public_media(media),
                     "is_primary": link.is_primary,
-                    "caption": link.caption,
+                    "caption": link.caption_override,
                 })
 
         result["media"] = published_media
