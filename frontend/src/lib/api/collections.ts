@@ -51,10 +51,14 @@ export async function getCollectionObjects(
     sort_by?: string;
     sort_order?: 'asc' | 'desc';
     include_location?: boolean;
+    include_deaccessioned?: boolean;
   }
 ): Promise<PaginatedCollectionObjects> {
-  // Always include location data for list view (needed for completeness indicators)
-  const query = buildQueryString({ include_location: true, ...params });
+  // Always include location data for list view (needed for completeness indicators).
+  // This call backs the object pickers (loan, exit, event, task linkers...),
+  // which must still find deaccessioned objects; the org setting that hides
+  // them applies to general search (the object list), not to pickers.
+  const query = buildQueryString({ include_location: true, include_deaccessioned: true, ...params });
   const data = await apiFetch(`/organizations/${organizationId}/collections/objects${query}`);
   return validate(PaginatedCollectionObjectsSchema, data);
 }
