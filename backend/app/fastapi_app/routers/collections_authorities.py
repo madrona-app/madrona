@@ -472,14 +472,21 @@ def merge_person_authorities(
     source.updated_at = datetime.now(timezone.utc)
 
     # Migrate variant terms from source to target
+    # Moved row by row (removed from the source, added to the target) so
+    # both people's histories record the names that moved.
     from app.models import VariantTerm
-    from sqlalchemy import update as sa_update
-    db.execute(
-        sa_update(VariantTerm)
-        .where(VariantTerm.entity_type == 'constituent')
-        .where(VariantTerm.entity_id == source.constituent_id)
-        .values(entity_id=target.constituent_id)
+    moving = (
+        db.query(VariantTerm)
+        .filter(VariantTerm.entity_type == 'constituent', VariantTerm.entity_id == source.constituent_id)
+        .all()
     )
+    for vt in moving:
+        db.add(VariantTerm(
+            organization_id=vt.organization_id, entity_type='constituent', entity_id=target.constituent_id,
+            term=vt.term, term_type=vt.term_type, language=vt.language, source=vt.source,
+            is_historical=vt.is_historical, display_order=vt.display_order, created_by=vt.created_by,
+        ))
+        db.delete(vt)
     # Add source name as a variant of target
     db.add(VariantTerm(
         organization_id=target.organization_id,

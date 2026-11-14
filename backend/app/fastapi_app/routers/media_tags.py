@@ -92,6 +92,66 @@ def _serialize_tag_value(value: MediaTagValue, depth: int | None = None, usage_c
     return out
 
 
+def set_media_tags(db: Session, org_id: UUID, media_id: UUID, desired: list[dict], user_id, definition_ids=None) -> list[MediaTag]:
+    """Bring a media item's tags in line with ``desired`` by editing in place.
+
+    ``desired`` items are {"definition_id", "value_id", "tag_value"}.
+    Unchanged tags are kept, a text tag whose value changed is updated, and
+    only tags that were really added or removed are inserted or deleted, so
+    the media item's history records real changes and an unchanged save
+    records nothing. ``definition_ids`` limits the edit to those definitions
+    (the workspace bulk action edits one definition at a time).
+    """
+    query = db.query(MediaTag).filter(MediaTag.media_id == media_id)
+    if definition_ids is not None:
+        query = query.filter(MediaTag.definition_id.in_(list(definition_ids)))
+    current = query.all()
+
+    def key(item):
+        get = item.get if isinstance(item, dict) else (lambda f: getattr(item, f))
+        return (get("definition_id"), get("value_id"), None if get("value_id") else get("tag_value"))
+
+    by_key = {}
+    for row in current:
+        by_key.setdefault(key(row), []).append(row)
+    kept, unmatched = [], []
+    for item in desired:
+        rows = by_key.get(key(item))
+        if rows:
+            kept.append(rows.pop(0))
+        else:
+            unmatched.append(item)
+    leftovers = [r for rows in by_key.values() for r in rows]
+
+    result = list(kept)
+    to_add = []
+    for item in unmatched:
+        # A single text value replaced by another: one edit, not a removal
+        # and an addition.
+        reuse = None
+        if not item.get("value_id"):
+            reuse = next((r for r in leftovers if r.definition_id == item["definition_id"] and not r.value_id), None)
+        if reuse is not None:
+            leftovers.remove(reuse)
+            reuse.tag_value = item["tag_value"]
+            result.append(reuse)
+        else:
+            to_add.append(item)
+    for row in leftovers:
+        db.delete(row)
+    # Flush the deletes before the inserts so nothing trips the uniqueness rule.
+    db.flush()
+    for item in to_add:
+        tag = MediaTag(
+            organization_id=org_id, media_id=media_id, definition_id=item["definition_id"],
+            value_id=item.get("value_id"), tag_value=item["tag_value"], created_by=user_id,
+        )
+        db.add(tag)
+        result.append(tag)
+    db.flush()
+    return result
+
+
 def _serialize_media_tag(tag: MediaTag, include_definition: bool = True) -> dict:
     result = {
         "tag_id": str(tag.tag_id),
@@ -608,10 +668,7 @@ def bulk_update_media_tags(
     if not media:
         raise HTTPException(status_code=404, detail="Media not found")
 
-    # Remove all existing tags for this media, then reinsert from scratch.
-    db.query(MediaTag).filter(MediaTag.media_id == media_id).delete(synchronize_session=False)
-
-    new_tags: list[MediaTag] = []
+    new_tags: list[dict] = []
     seen_single: set[UUID] = set()  # enforce single-value for non-multi controlled
     seen_pairs: set[tuple[UUID, UUID]] = set()  # (definition_id, value_id)
 
@@ -653,32 +710,17 @@ def bulk_update_media_tags(
             if (def_uuid, node.value_id) in seen_pairs:
                 continue
             seen_pairs.add((def_uuid, node.value_id))
-            new_tags.append(MediaTag(
-                organization_id=org_id,
-                media_id=media_id,
-                definition_id=def_uuid,
-                value_id=node.value_id,
-                tag_value=node.value,
-                created_by=auth.user_id,
-            ))
+            new_tags.append({"definition_id": def_uuid, "value_id": node.value_id, "tag_value": node.value})
         else:
             if not tag_value_in:
                 continue
             if def_uuid in seen_single:
                 continue
             seen_single.add(def_uuid)
-            new_tags.append(MediaTag(
-                organization_id=org_id,
-                media_id=media_id,
-                definition_id=def_uuid,
-                tag_value=tag_value_in,
-                created_by=auth.user_id,
-            ))
-
-    for t in new_tags:
-        db.add(t)
+            new_tags.append({"definition_id": def_uuid, "value_id": None, "tag_value": tag_value_in})
 
     try:
+        new_tags = set_media_tags(db, org_id, media_id, new_tags, auth.user_id)
         db.commit()
     except IntegrityError:
         db.rollback()

@@ -358,6 +358,11 @@ def _serialize_relation(r: ConstituentRelation) -> dict:
 # CRUD ENDPOINTS
 # =============================================================================
 
+def _clear_primary_media(db, constituent_id):
+    """Unset the primary flag row by row so the person's history records it."""
+    for row in db.query(ConstituentMedia).filter_by(constituent_id=constituent_id, is_primary=True).all():
+        row.is_primary = False
+
 
 @router.get("/api/organizations/{organization_id}/collections/constituents", response_model=ConstituentListResponse, summary="List constituents")
 def list_constituents(
@@ -1889,7 +1894,7 @@ def add_constituent_media(
 
     is_primary = data.get("is_primary", False)
     if is_primary:
-        db.query(ConstituentMedia).filter_by(constituent_id=constituent_id, is_primary=True).update({"is_primary": False})
+        _clear_primary_media(db, constituent_id)
 
     link = ConstituentMedia(
         constituent_id=constituent_id,
@@ -1941,7 +1946,7 @@ def set_constituent_primary_media(
     """Set a media item as the primary for a constituent."""
     link = _org_scoped_constituent_media(db, org_id, constituent_id, media_id)
 
-    db.query(ConstituentMedia).filter_by(constituent_id=constituent_id, is_primary=True).update({"is_primary": False})
+    _clear_primary_media(db, constituent_id)
     link.is_primary = True
     db.commit()
 

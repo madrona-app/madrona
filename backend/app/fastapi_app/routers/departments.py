@@ -288,11 +288,14 @@ def add_department_member(
 
     # If setting as primary, unset any existing primary for this user/org
     if is_primary:
-        db.query(DepartmentMembership).filter(
+        # Row by row (not a bulk UPDATE) so each department's history
+        # records the primary flag moving.
+        for other in db.query(DepartmentMembership).filter(
             DepartmentMembership.user_id == user_uuid,
             DepartmentMembership.organization_id == organization_id,
             DepartmentMembership.is_primary == True,
-        ).update({"is_primary": False})
+        ).all():
+            other.is_primary = False
 
     membership = DepartmentMembership(
         organization_id=organization_id,
@@ -342,12 +345,13 @@ def update_department_member(
 
     if data.get("is_primary"):
         # Unset existing primary for this user/org
-        db.query(DepartmentMembership).filter(
+        for other in db.query(DepartmentMembership).filter(
             DepartmentMembership.user_id == membership.user_id,
             DepartmentMembership.organization_id == organization_id,
             DepartmentMembership.is_primary == True,
             DepartmentMembership.membership_id != membership_id,
-        ).update({"is_primary": False})
+        ).all():
+            other.is_primary = False
         membership.is_primary = True
     elif "is_primary" in data:
         membership.is_primary = data["is_primary"]

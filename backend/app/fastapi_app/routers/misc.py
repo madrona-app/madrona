@@ -466,32 +466,41 @@ def update_category_sort_order(
             "message": f"Category '{category_key}' not found",
         })
 
-    # Delete existing overrides
-    db.query(LookupSortOverride).filter(
-        LookupSortOverride.organization_id == org_id,
-        LookupSortOverride.category_id == category.category_id,
-    ).delete()
-
-    # Create new overrides
+    # Edit the overrides in place (one per value) so each lookup value's
+    # history records its position actually changing; an unchanged save
+    # records nothing.
+    current = {
+        o.value_id: o for o in db.query(LookupSortOverride).filter(
+            LookupSortOverride.organization_id == org_id,
+            LookupSortOverride.category_id == category.category_id,
+        )
+    }
+    wanted: dict = {}
     for sort_order, vid in enumerate(body.value_ids):
         try:
             value_uuid = UUID(vid)
         except (ValueError, TypeError):
             continue
-
         value = db.query(LookupValue).filter(
             LookupValue.value_id == value_uuid,
             LookupValue.category_id == category.category_id,
         ).first()
-
-        if value:
-            override = LookupSortOverride(
+        if value and value_uuid not in wanted:
+            wanted[value_uuid] = sort_order
+    for value_uuid, override in current.items():
+        if value_uuid not in wanted:
+            db.delete(override)
+    for value_uuid, sort_order in wanted.items():
+        override = current.get(value_uuid)
+        if override is None:
+            db.add(LookupSortOverride(
                 organization_id=org_id,
                 category_id=category.category_id,
                 value_id=value_uuid,
                 sort_order=sort_order,
-            )
-            db.add(override)
+            ))
+        elif override.sort_order != sort_order:
+            override.sort_order = sort_order
 
     db.commit()
 
