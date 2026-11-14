@@ -191,7 +191,11 @@ export function useProcedureRequirements(
   procedureType: string,
   organizationId?: string,
 ): UseProcedureRequirementsResult {
-  const queryParam = organizationId ? `?organization_id=${organizationId}` : '';
+  // Org-added fields and the enforcement flag come from the org-scoped route
+  // (members only); without an organization the shared baseline is fetched.
+  const path = organizationId
+    ? `/organizations/${organizationId}/procedure-requirements/${procedureType}`
+    : `/procedure-requirements/${procedureType}`;
   const { data, isLoading, error } = useQuery<
     ApiProcedureRequirements & {
       enforcementEnabled?: boolean;
@@ -199,7 +203,7 @@ export function useProcedureRequirements(
     }
   >({
     queryKey: ['procedure-requirements', procedureType, organizationId],
-    queryFn: () => apiFetch(`/procedure-requirements/${procedureType}${queryParam}`),
+    queryFn: () => apiFetch(path),
     staleTime: organizationId ? 5 * 60 * 1000 : Infinity, // Per-org: 5 min, global: forever
     gcTime: organizationId ? 10 * 60 * 1000 : Infinity,
   });

@@ -1,7 +1,7 @@
 """Org-configurable extra required fields per procedure.
 
 An org admin adds fields on top of a procedure's fixed baseline; the merged
-set is served by /api/procedure-requirements/{type} and enforced on status
+set is served by /api/organizations/{org}/procedure-requirements/{type} and enforced on status
 transitions while enforcement is on.
 """
 
@@ -103,7 +103,7 @@ class TestMergedRequirements:
     def test_merged_get_marks_baseline_and_org(self, auth_setup):
         client, org, _ = auth_setup
         _add(client, org.organization_id, "credit_line")
-        resp = client.get(f"/api/procedure-requirements/acquisition?organization_id={org.organization_id}")
+        resp = client.get(f"/api/organizations/{org.organization_id}/procedure-requirements/acquisition")
         assert resp.status_code == 200
         groups = resp.json["requirementGroups"]
         org_group = [g for g in groups if g["id"] == "org_required"]
@@ -132,11 +132,84 @@ class TestMergedRequirements:
         db_session.add(other)
         db_session.commit()
 
-        resp = client.get(f"/api/procedure-requirements/acquisition?organization_id={other.organization_id}")
-        assert all(g["id"] != "org_required" for g in resp.json["requirementGroups"])
-        assert resp.json["orgRequiredFields"] == []
+        resp = client.get(f"/api/organizations/{other.organization_id}/procedure-requirements/acquisition")
+        assert resp.status_code == 403
         db_session.refresh(other)
         assert not (other.procedure_required_fields or {}).get("acquisition")
+
+
+class TestRequirementsAccess:
+    """Org-added required fields are readable by members of that org only."""
+
+    def _org_url(self, org_id, proc="acquisition"):
+        return f"/api/organizations/{org_id}/procedure-requirements/{proc}"
+
+    def test_anonymous_gets_401_everywhere(self, auth_setup, client):
+        _, org, _ = auth_setup
+        for url in (
+            "/api/procedure-requirements",
+            "/api/procedure-requirements/acquisition",
+            f"/api/procedure-requirements/acquisition?organization_id={org.organization_id}",
+            self._org_url(org.organization_id),
+        ):
+            assert client.get(url).status_code == 401, url
+
+    def test_query_parameter_no_longer_exposes_org_fields(self, auth_setup, db_session):
+        from tests.conftest import AuthenticatedClient
+        from tests.test_api_library import TestPermissions as _Perms
+
+        admin, org, _ = auth_setup
+        _add(admin, org.organization_id, "credit_line")
+        other = Organization(name="Other Museum", slug=f"other-{uuid4().hex[:8]}", status="active")
+        db_session.add(other)
+        db_session.commit()
+        token, _ = _Perms()._member(db_session, other, ["collections.view"])
+        outsider = AuthenticatedClient(admin._client, token)
+
+        resp = outsider.get(f"/api/procedure-requirements/acquisition?organization_id={org.organization_id}")
+        assert resp.status_code == 200
+        assert "orgRequiredFields" not in resp.json
+        assert "enforcementEnabled" not in resp.json
+        assert all(g["id"] != "org_required" for g in resp.json["requirementGroups"])
+
+    def test_non_member_gets_403(self, auth_setup, db_session):
+        from tests.conftest import AuthenticatedClient
+        from tests.test_api_library import TestPermissions as _Perms
+
+        admin, org, _ = auth_setup
+        _add(admin, org.organization_id, "credit_line")
+        other = Organization(name="Other Museum", slug=f"other-{uuid4().hex[:8]}", status="active")
+        db_session.add(other)
+        db_session.commit()
+        token, _ = _Perms()._member(db_session, other, ["collections.view"])
+        outsider = AuthenticatedClient(admin._client, token)
+
+        resp = outsider.get(self._org_url(org.organization_id))
+        assert resp.status_code == 403
+        assert "credit_line" not in str(resp.json)
+
+    def test_member_gets_org_fields(self, auth_setup, db_session):
+        from tests.conftest import AuthenticatedClient
+        from tests.test_api_library import TestPermissions as _Perms
+
+        admin, org, _ = auth_setup
+        _add(admin, org.organization_id, "credit_line")
+        token, _ = _Perms()._member(db_session, org, ["collections.view"])
+        member = AuthenticatedClient(admin._client, token)
+
+        resp = member.get(self._org_url(org.organization_id))
+        assert resp.status_code == 200
+        assert resp.json["orgRequiredFields"] == [{"field": "credit_line", "label": "Credit line"}]
+        assert "enforcementEnabled" in resp.json
+        assert resp.headers["Cache-Control"] == "private, no-cache"
+
+    def test_signed_in_user_gets_baseline(self, auth_setup):
+        client, _, _ = auth_setup
+        resp = client.get("/api/procedure-requirements/acquisition")
+        assert resp.status_code == 200
+        assert {r["source"] for g in resp.json["requirementGroups"] for r in g["requirements"]} == {"baseline"}
+        assert client.get("/api/procedure-requirements").status_code == 200
+        assert client.get("/api/procedure-requirements/no_such_procedure").status_code == 404
 
 
 class TestEnforcement:
