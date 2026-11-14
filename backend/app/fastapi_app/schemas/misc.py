@@ -178,6 +178,8 @@ class EntityAuditEventOut(BaseModel):
     changed_by_email: str | None = None
     changed_fields: Any | None = None
     summary: str | None = None
+    child_entity_type: str | None = None
+    child_display_key: str | None = None
 
 
 class EntityAuditEventListResponse(BaseModel):

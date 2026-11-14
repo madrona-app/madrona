@@ -107,6 +107,19 @@ TRACKED_ENTITIES: dict[str, dict[str, str]] = {
     "DiscoverConfig": {"display_key": "page_title", "entity_type": "discover_config"},
     "PublishSchedule": {"display_key": "action", "entity_type": "publish_schedule"},
     "PortalMember": {"display_key": "email", "entity_type": "portal_member"},
+    # Security configuration (shown on the admin Security changes log).
+    # Secrets are never written: SSO client secrets and IdP certificates are
+    # masked, API key hashes and prefixes are left out entirely.
+    "Role": {"display_key": "display_name", "entity_type": "role"},
+    "AppRoleAssignment": {"display_key": "audit_label", "entity_type": "app_role_assignment"},
+    "SSOConfiguration": {
+        "display_key": "provider", "entity_type": "sso_configuration",
+        "mask_fields": "idp_certificate,client_secret_encrypted",
+    },
+    "APIKey": {
+        "display_key": "name", "entity_type": "api_key",
+        "exclude_fields": "key_hash,key_prefix,last_used_at",
+    },
     # Media entities
     "Media": {"display_key": "filename", "entity_type": "media"},
     "MediaCollection": {"display_key": "name", "entity_type": "media_collection"},
@@ -657,6 +670,39 @@ TRACKED_LINKS: dict[str, dict[str, str]] = {
         "linked_model": "Constituent",
         "linked_display": "display_name",
     },
+    # ---- Security configuration: a role's permissions, field grants, labels ----
+    "RolePermission": {
+        "parent_fk": "role_id",
+        "parent_type": "role",
+        "parent_model": "Role",
+        "link_label": "permission",
+        "linked_fk": "permission_id",
+        "linked_model": "Permission",
+        "linked_display": "permission_key",
+        "child_type": "role_permission",
+        "child_id_field": "permission_id",
+    },
+    "RoleFieldAccess": {
+        "parent_fk": "role_id",
+        "parent_type": "role",
+        "parent_model": "Role",
+        "link_label": "field access",
+        "linked_fk": "policy_id",
+        "linked_model": "FieldAccessPolicy",
+        "linked_display": "field_path",
+        "child_type": "role_field_access",
+        "child_id_field": "policy_id",
+        "exclude_fields": "granted_at",
+    },
+    "OrgRoleLabel": {
+        "parent_fk": "role_id",
+        "parent_type": "role",
+        "parent_model": "Role",
+        "link_label": "role label",
+        "display_field": "label",
+        "child_type": "org_role_label",
+        "child_id_field": "role_id",
+    },
     # ConstituentXref is polymorphic — handled specially via _resolve_constituent_xref_parent
 }
 
@@ -676,6 +722,102 @@ _CONSTITUENT_XREF_PARENT_TYPES: dict[str, tuple[str, str]] = {
     "exhibition": ("Exhibition", "exhibition"),
     "event": ("Event", "event"),
 }
+
+
+# Child rows whose parent is named by a type column (entity_type/entity_id,
+# loan_type/loan_id). Model name -> {type value: (parent model, parent type)}.
+# The TRACKED_LINKS entry sets "parent_type_field"; rows whose type is not
+# listed here are not recorded.
+_AUTHORITY_PARENTS: dict[str, tuple[str, str]] = {
+    "place_authority": ("PlaceAuthority", "place_authority"),
+    "subject_authority": ("SubjectAuthority", "subject_authority"),
+    "style_period_authority": ("StylePeriodAuthority", "style_period_authority"),
+    "constituent": ("Constituent", "constituent"),
+    "person_authority": ("Constituent", "constituent"),
+}
+POLYMORPHIC_LINK_PARENTS: dict[str, dict[str, tuple[str, str]]] = {
+    "VariantTerm": _AUTHORITY_PARENTS,
+    "EntityImage": {
+        "condition_report": ("ConditionReport", "condition_report"),
+        "incident_report": ("IncidentReport", "incident_report"),
+        "conservation_treatment": ("ConservationTreatment", "conservation_treatment"),
+        "object_entry": ("ObjectEntry", "object_entry"),
+        "object_exit": ("ObjectExit", "object_exit"),
+        "loan_in": ("LoanIn", "loan_in"),
+        "loan_out": ("LoanOut", "loan_out"),
+        "movement": ("Movement", "movement"),
+        "acquisition": ("Acquisition", "acquisition"),
+        "deaccession": ("Deaccession", "deaccession"),
+        "audit_campaign": ("AuditCampaign", "audit_campaign"),
+        "collection_object": ("CollectionObject", "collection_object"),
+    },
+    "LoanRenewal": {
+        "loan_in": ("LoanIn", "loan_in"),
+        "loan_out": ("LoanOut", "loan_out"),
+        "in": ("LoanIn", "loan_in"),
+        "out": ("LoanOut", "loan_out"),
+    },
+}
+
+
+def link_config_for(obj: Any) -> dict[str, str] | None:
+    """The TRACKED_LINKS entry for a child row, with a polymorphic parent resolved.
+
+    Returns None when the model is not tracked, when its type column names a
+    parent that is not tracked, or while the model is suppressed on the
+    session (see ``suppress_link_audit``).
+    """
+    name = obj.__class__.__name__
+    cfg = TRACKED_LINKS.get(name)
+    if not cfg:
+        return None
+    try:
+        from sqlalchemy.orm import object_session
+        sess = object_session(obj)
+    except Exception:
+        sess = None
+    if sess is not None and name in sess.info.get("_audit_suppressed_links", ()):
+        return None
+    type_field = cfg.get("parent_type_field")
+    if not type_field:
+        return cfg
+    target = POLYMORPHIC_LINK_PARENTS.get(name, {}).get(getattr(obj, type_field, None))
+    if not target:
+        return None
+    return {**cfg, "parent_model": target[0], "parent_type": target[1]}
+
+
+class suppress_link_audit:
+    """Leave the named child-row models out of the history inside the block.
+
+    For machine churn that is not a person's edit, e.g. the smart-collection
+    sync that rebuilds a collection's membership from its saved query.
+    """
+
+    def __init__(self, session: Session, *class_names: str):
+        self.session = session
+        self.names = set(class_names)
+        self.previous: set[str] = set()
+
+    def __enter__(self):
+        self.previous = set(self.session.info.get("_audit_suppressed_links", ()))
+        self.session.info["_audit_suppressed_links"] = self.previous | self.names
+        return self
+
+    def __exit__(self, *exc):
+        # Flush inside the block so the suppressed rows are seen while the
+        # suppression is still in force.
+        if exc[0] is None:
+            self.session.flush()
+        self.session.info["_audit_suppressed_links"] = self.previous
+        return False
+
+
+# Record types shown on the admin change logs (GET .../entity-audit-events?category=).
+SECURITY_ENTITY_TYPES: frozenset[str] = frozenset({
+    "role", "app_role_assignment", "sso_configuration", "api_key",
+})
+SETTINGS_ENTITY_TYPES: frozenset[str] = frozenset()
 
 
 # Fields to exclude from audit logging (metadata fields managed by the system)
@@ -754,6 +896,10 @@ _ENTITY_FK_COLUMNS: dict[str, dict[str, tuple[str, str]]] = {
         "venue_id": ("Venue", "name"),
         "exhibition_id": ("Exhibition", "title"),
         "owner_user_id": ("User", "display_name|email"),
+    },
+    "AppRoleAssignment": {
+        "user_id": ("User", "email|display_name"),
+        "role_id": ("Role", "display_name"),
     },
     "PlaceAuthority": {"parent_place_id": ("PlaceAuthority", "preferred_name")},
     "SubjectAuthority": {"broader_subject_id": ("SubjectAuthority", "preferred_term")},
@@ -904,6 +1050,46 @@ def _resolve_fk_display(session: Session, field_name: str, fk_value: Any, class_
     return str(fk_value)
 
 
+# Value written in place of a secret (client secrets, certificates, storage
+# credentials, download tokens). The field is still listed as changed, so the
+# history says *that* a secret was replaced without ever storing it.
+MASKED_VALUE = "(hidden)"
+
+
+def _csv(raw: str | None) -> set[str]:
+    return {f.strip() for f in (raw or "").split(",") if f.strip()}
+
+
+def _field_rules(class_name: str | None) -> tuple[set[str], set[str]]:
+    """(excluded, masked) columns for a tracked record or child-row model.
+
+    ``exclude_fields`` are left out of the history altogether (system
+    counters, key hashes, positions); ``mask_fields`` are recorded as changed
+    with their values replaced by MASKED_VALUE.
+    """
+    cfg = TRACKED_ENTITIES.get(class_name or "") or TRACKED_LINKS.get(class_name or "") or {}
+    return _csv(cfg.get("exclude_fields")), _csv(cfg.get("mask_fields"))
+
+
+def _mask(value: Any) -> Any:
+    return None if _normalize_empty(_serialize_value(value)) is None else MASKED_VALUE
+
+
+def apply_field_rules(class_name: str | None, changes: list[tuple[str, Any, Any]]) -> list[tuple[str, Any, Any]]:
+    """Drop excluded fields and mask secret ones in (field, old, new) changes."""
+    excluded, masked = _field_rules(class_name)
+    if not excluded and not masked:
+        return changes
+    out = []
+    for field, old, new in changes:
+        if field in excluded:
+            continue
+        if field in masked:
+            old, new = _mask(old), _mask(new)
+        out.append((field, old, new))
+    return out
+
+
 def _get_field_changes(obj: Any, session: Session | None = None) -> list[tuple[str, Any, Any]]:
     """
     Get list of changed fields with old and new values.
@@ -944,7 +1130,7 @@ def _get_field_changes(obj: Any, session: Session | None = None) -> list[tuple[s
                     new_val = _resolve_fk_display(session, field_name, new_val, class_name)
                 changes.append((field_name, old_val, new_val))
 
-    return changes
+    return apply_field_rules(class_name, changes)
 
 
 def _get_all_fields(obj: Any, session: Session | None = None) -> list[tuple[str, Any]]:
@@ -970,7 +1156,8 @@ def _get_all_fields(obj: Any, session: Session | None = None) -> list[tuple[str,
                 value = _resolve_fk_display(session, field_name, value, class_name) or value
             fields.append((field_name, value))
 
-    return fields
+    excluded, masked = _field_rules(class_name)
+    return [(f, MASKED_VALUE if f in masked else v) for f, v in fields if f not in excluded]
 
 
 def _generate_summary(change_type: str, entity_type: str, changed_fields: list[str] | None) -> str:
@@ -1084,7 +1271,8 @@ def _get_link_fields(obj: Any, excluded: set[str] | None = None) -> list[tuple[s
         value = getattr(obj, field_name, None)
         if value is not None:
             fields.append((field_name, value))
-    return fields
+    rule_excluded, masked = _field_rules(obj.__class__.__name__)
+    return [(f, MASKED_VALUE if f in masked else v) for f, v in fields if f not in rule_excluded]
 
 
 def _resolve_constituent_xref_parent(
@@ -1130,15 +1318,21 @@ def _resolve_link_parent_id(session: Session, obj: Any, link_config: dict[str, s
     p_fk = link_config.get("parent_fk")
     p_id = getattr(obj, p_fk, None) if p_fk else None
     via_model = link_config.get("parent_via_model")
-    if p_id and via_model:
-        via_class = _resolve_model_class(session, via_model)
+    if not via_model:
+        return p_id
+    # "A>B" / "fa>fb": follow several hops (checklist item link -> item ->
+    # checklist -> exhibition).
+    for model_name, fk in zip(via_model.split(">"), link_config["parent_via_fk"].split(">")):
+        if not p_id:
+            return None
+        via_class = _resolve_model_class(session, model_name)
         via_obj = None
         if via_class is not None:
             try:
                 via_obj = session.get(via_class, p_id)
             except Exception:
                 via_obj = None
-        p_id = getattr(via_obj, link_config["parent_via_fk"], None) if via_obj is not None else None
+        p_id = getattr(via_obj, fk, None) if via_obj is not None else None
     return p_id
 
 
@@ -1501,7 +1695,7 @@ def _capture_changes_before_flush(session: Session, flush_context: Any, instance
     pending_link_deletes = []
     for obj in session.deleted:
         class_name = obj.__class__.__name__
-        link_config = TRACKED_LINKS.get(class_name)
+        link_config = link_config_for(obj)
 
         # Handle ConstituentXref specially (polymorphic parent)
         if class_name == "ConstituentXref":
@@ -1582,7 +1776,7 @@ def _capture_changes_before_flush(session: Session, flush_context: Any, instance
             continue
 
         class_name = obj.__class__.__name__
-        link_config = TRACKED_LINKS.get(class_name)
+        link_config = link_config_for(obj)
 
         # Handle ConstituentXref specially (polymorphic parent)
         if class_name == "ConstituentXref":
@@ -1689,7 +1883,7 @@ def _capture_creates_after_flush(session: Session, flush_context: Any) -> None:
                     logger.error(f"Failed to audit link create for ConstituentXref: {e}")
             continue
 
-        link_config = TRACKED_LINKS.get(class_name)
+        link_config = link_config_for(obj)
         if link_config:
             try:
                 fields = _shape_link_fields(obj, link_config)

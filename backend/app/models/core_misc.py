@@ -297,6 +297,20 @@ class AppRoleAssignment(Base):
     organization: Mapped["Organization"] = relationship()
     creator: Mapped["User"] = relationship(foreign_keys=[created_by])
 
+    @property
+    def audit_label(self) -> str:
+        """"jane@example.org (collections)": the history's name for this override."""
+        from sqlalchemy.orm import object_session
+
+        who = None
+        sess = object_session(self)
+        if sess is not None and self.user_id:
+            from app.models.core_users import User
+
+            user = sess.get(User, self.user_id)
+            who = (user.email or user.display_name) if user is not None else None
+        return f"{who or self.user_id} ({self.app_key})"
+
     __table_args__ = (
         UniqueConstraint('organization_id', 'user_id', 'app_key', name='uq_app_role_assignments_org_user_app'),
         Index('ix_app_role_assignments_org_user', 'organization_id', 'user_id'),

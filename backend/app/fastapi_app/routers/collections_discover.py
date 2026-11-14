@@ -208,6 +208,11 @@ ENTITY_TYPE_PERMISSIONS: dict[str, Permission] = {
     "discover_config": Permission.DISCOVER_PUBLISH,
     "publish_schedule": Permission.DISCOVER_PUBLISH,
     "portal_member": Permission.ORG_MANAGE_SETTINGS,
+    # Security configuration: the same permission as the admin audit logs.
+    "role": Permission.ORG_VIEW_AUDIT_LOGS,
+    "app_role_assignment": Permission.ORG_VIEW_AUDIT_LOGS,
+    "sso_configuration": Permission.ORG_VIEW_AUDIT_LOGS,
+    "api_key": Permission.ORG_VIEW_AUDIT_LOGS,
 }
 
 

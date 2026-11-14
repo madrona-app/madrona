@@ -224,6 +224,8 @@ export const AppSubscriptionsPage = React.lazy(() => import('../pages/admin/AppS
 export const BulkUserImportPage = React.lazy(() => import('../pages/admin/BulkUserImportPage'));
 export const DepartmentManagementPage = React.lazy(() => import('../pages/admin/DepartmentManagementPage'));
 export const EntityAuditPage = React.lazy(() => import('../pages/admin/EntityAuditPage'));
+export const SecurityChangesPage = React.lazy(() => import('../pages/admin/ConfigurationChangeLogPage').then((m) => ({ default: m.SecurityChangesPage })));
+export const SettingsChangesPage = React.lazy(() => import('../pages/admin/ConfigurationChangeLogPage').then((m) => ({ default: m.SettingsChangesPage })));
 export const LogsPage = React.lazy(() => import('../pages/admin/LogsPage'));
 export const OrganizationsPage = React.lazy(() => import('../pages/admin/OrganizationsPage'));
 export const OrganizationUsersPage = React.lazy(() => import('../pages/admin/OrganizationUsersPage'));

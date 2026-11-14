@@ -687,6 +687,7 @@ def get_platform_audit_logs(
 def get_entity_audit_events(
     org_id: UUID,
     entity_type: str | None = Query(None),
+    category: str | None = Query(None, description="security or settings: only those record types"),
     change_type: str | None = Query(None),
     changed_by: str | None = Query(None),
     since: str | None = Query(None),
@@ -713,6 +714,17 @@ def get_entity_audit_events(
 
     if entity_type:
         query = query.filter(EntityAuditEvent.entity_type == entity_type)
+    if category:
+        from app.services.entity_audit import SECURITY_ENTITY_TYPES, SETTINGS_ENTITY_TYPES
+
+        types = {"security": SECURITY_ENTITY_TYPES, "settings": SETTINGS_ENTITY_TYPES}.get(category)
+        if types is None:
+            raise HTTPException(status_code=422, detail={
+                "code": "validation_error",
+                "message": "Invalid category. Must be one of: security, settings",
+                "field": "category",
+            })
+        query = query.filter(EntityAuditEvent.entity_type.in_(sorted(types)))
     if change_type:
         query = query.filter(EntityAuditEvent.change_type == change_type)
     if changed_by:
@@ -765,6 +777,8 @@ def get_entity_audit_events(
                 "changed_by_email": e.changed_by_email,
                 "changed_fields": e.changed_fields,
                 "summary": e.summary,
+                "child_entity_type": e.child_entity_type,
+                "child_display_key": e.child_display_key,
             }
             for e in events
         ],
