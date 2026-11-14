@@ -331,11 +331,29 @@ def get_authenticated_manifest(
 # ============================================================================
 
 
+def _lod_object_is_public(db: Session, obj: CollectionObject | None) -> bool:
+    from app.services.deaccession_visibility import public_object_visible
+
+    return bool(
+        obj is not None
+        and obj.is_discoverable
+        and not obj.is_deleted
+        and public_object_visible(obj, db)
+    )
+
+
 def _generate_lod_manifest_response(
     db: Session, obj: CollectionObject, org: Organization, org_slug: str
 ) -> JSONResponse:
-    """Generate and return a LOD manifest response."""
-    media_links = _load_media_links(db, obj.object_id)
+    """Generate and return a LOD manifest response.
+
+    These stable-URI routes are anonymous, so they apply the same publish
+    gates as Discover: the object must be discoverable, not deleted and not
+    hidden as deaccessioned, and only published media are included.
+    """
+    if not _lod_object_is_public(db, obj):
+        raise HTTPException(status_code=404, detail="Object not found")
+    media_links = _load_media_links(db, obj.object_id, published_only=True)
 
     from app.services.iiif_lod import get_iiif_lod_service
 
@@ -446,24 +464,16 @@ def get_canvas(
         raise HTTPException(status_code=404, detail="Organization not found")
 
     obj = _find_object_by_public_id(db, org.organization_id, public_id)
-    if not obj:
+    if not _lod_object_is_public(db, obj):
         raise HTTPException(status_code=404, detail="Object not found")
 
-    media_links = (
-        db.query(CollectionObjectMedia)
-        .filter(CollectionObjectMedia.object_id == obj.object_id)
-        .order_by(
-            CollectionObjectMedia.is_primary.desc(),
-            CollectionObjectMedia.sort_order,
-        )
-        .all()
-    )
+    # Same published-only list as the manifest, so canvas numbers match it.
+    media_links = _load_media_links(db, obj.object_id, published_only=True)
 
     if sequence < 1 or sequence > len(media_links):
         raise HTTPException(status_code=404, detail="Canvas not found")
 
     link = media_links[sequence - 1]
-    link.media = db.query(Media).filter(Media.media_id == link.media_id).first()
 
     if not link.media:
         raise HTTPException(status_code=404, detail="Media not found")

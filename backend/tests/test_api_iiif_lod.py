@@ -424,3 +424,44 @@ class TestMediaLOD:
 
         resp = client.get(f"/org/museum/media/{media.media_id}")
         assert resp.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Tests: publish gates on the anonymous stable-URI routes
+# ---------------------------------------------------------------------------
+
+class TestLodPublishGates:
+    """The LOD manifest and canvas routes are anonymous, so they apply the
+    Discover publish gates: discoverable, not deleted, published media only."""
+
+    def _setup(self, db_session, *, discoverable=True):
+        org = _make_org(db_session, slug=f"gate-{uuid.uuid4().hex[:6]}")
+        obj = _make_object(db_session, org, object_number="G-1")
+        obj.is_discoverable = discoverable
+        hidden = _make_media(db_session, org, title="Internal scan", is_published=False)
+        shown = _make_media(db_session, org, title="Public photo", is_published=True)
+        _link_media(db_session, obj, hidden, is_primary=True, sort_order=0)
+        _link_media(db_session, obj, shown, is_primary=False, sort_order=1)
+        db_session.commit()
+        return org, obj
+
+    def test_non_discoverable_object_has_no_manifest_or_canvas(self, client, db_session):
+        org, _ = self._setup(db_session, discoverable=False)
+        assert client.get(f"/org/{org.slug}/object/G-1/manifest").status_code == 404
+        assert client.get(f"/org/{org.slug}/object/G-1/canvas/1").status_code == 404
+
+    def test_deleted_object_has_no_manifest(self, client, db_session):
+        org, obj = self._setup(db_session)
+        obj.is_deleted = True
+        db_session.commit()
+        assert client.get(f"/org/{org.slug}/object/G-1/manifest").status_code == 404
+
+    def test_unpublished_media_left_out_of_manifest_and_canvases(self, client, db_session):
+        org, _ = self._setup(db_session)
+        with patch("app.services.iiif_lod.IIIFLODService.generate_manifest",
+                   side_effect=lambda **kw: {"type": "Manifest", "titles": [m.media.title for m in kw["media_items"]]}):
+            resp = client.get(f"/org/{org.slug}/object/G-1/manifest")
+        assert resp.status_code == 200, resp.text
+        assert resp.get_json()["titles"] == ["Public photo"]
+        # Only one published file, so canvas 2 does not exist and canvas 1 is it.
+        assert client.get(f"/org/{org.slug}/object/G-1/canvas/2").status_code == 404
