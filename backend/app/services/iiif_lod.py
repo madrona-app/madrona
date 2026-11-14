@@ -843,8 +843,8 @@ class IIIFLODService:
         if media.description:
             metadata.append(self._metadata_entry("Description", media.description))
 
-        if media.original_filename:
-            metadata.append(self._metadata_entry("Filename", media.original_filename))
+        if media.filename:
+            metadata.append(self._metadata_entry("Filename", media.filename))
 
         if media.width and media.height:
             metadata.append(self._metadata_entry(

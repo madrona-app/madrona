@@ -52,7 +52,13 @@ def _create_object(db_session, org_id, **kwargs):
 
 
 def _create_media(db_session, org_id, **kwargs):
-    """Insert a Media record and return it."""
+    """Insert a Media record (with a display rendition) and return it.
+
+    The public manifest shows images from a rendition, never the master, so
+    an image with no rendition is left out of it; pass with_rendition=False
+    to test that.
+    """
+    with_rendition = kwargs.pop("with_rendition", True)
     defaults = dict(
         organization_id=org_id,
         s3_key=kwargs.pop("s3_key", f"orgs/{org_id}/media/images/{uuid.uuid4().hex}.jpg"),
@@ -69,6 +75,18 @@ def _create_media(db_session, org_id, **kwargs):
     media = Media(**defaults)
     db_session.add(media)
     db_session.flush()
+    if with_rendition and media.media_type == "image":
+        from app.models import MediaDerivative
+
+        db_session.add(MediaDerivative(
+            media_id=media.media_id,
+            organization_id=org_id,
+            derivative_type="large",
+            format="jpeg",
+            s3_key=f"orgs/{org_id}/media/derivatives/{media.media_id}/large.jpeg",
+            width=2000, height=1125, file_size=200_000,
+        ))
+        db_session.flush()
     return media
 
 

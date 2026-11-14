@@ -20,24 +20,24 @@ from app.services.uploads import get_org_media_url
 
 
 def get_media_url(media_id, organization_id: UUID, db: Session) -> str | None:
-    """Get a signed URL for a published media item."""
+    """Signed URL for a published image of the organization (logos, heroes).
+
+    A rendition, never the uploaded master unless that file's public download
+    level allows originals (discover_media.public_image_key). The media must
+    belong to ``organization_id``: this is served anonymously.
+    """
     if not media_id:
         return None
     media = db.query(Media).filter(
         Media.media_id == media_id,
+        Media.organization_id == organization_id,
         Media.is_published == True,  # noqa: E712
     ).first()
-    if not media or not media.s3_key:
+    if not media:
         return None
-    try:
-        return get_org_media_url(
-            media.s3_key,
-            organization_id=str(organization_id),
-            db_session=db,
-            expiry_seconds=3600,
-        )
-    except Exception:
-        return None
+    from app.services.discover_media import sign_public_image
+
+    return sign_public_image(media, db, organization_id=organization_id)
 
 
 def build_srcset_for_media(media_id: UUID, organization_id: UUID, db: Session) -> dict | None:
@@ -268,8 +268,12 @@ def get_object_card_thumbnails(
 
     org_str = str(organization_id)
     urls: dict[str, str] = {}
-    for oid, (media_id, base_key) in primary.items():
-        key = best_deriv.get(media_id, base_key)
+    for oid, (media_id, _master_key) in primary.items():
+        # A rendition only. Falling back to the master (as this did) put the
+        # full-resolution original behind a chat card thumbnail.
+        key = best_deriv.get(media_id)
+        if not key:
+            continue
         try:
             urls[oid] = get_org_media_url(
                 key, organization_id=org_str, db_session=db, expiry_seconds=3600,

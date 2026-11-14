@@ -162,20 +162,18 @@ def _build_block_srcset(db: Session, media_id: UUID, organization_id: UUID) -> t
     Returns (resolved_url, srcset_data) tuple.
     """
     org_id_str = str(organization_id)
-    # Get the full-res URL
+    # The page's own organization only (a block can name any media id), and
+    # a rendition rather than the uploaded master: these pages are anonymous.
     from app.models import Media
-    media = db.query(Media).filter(Media.media_id == media_id).first()
-    resolved_url = None
-    if media and media.s3_key:
-        try:
-            resolved_url = get_org_media_url(
-                media.s3_key,
-                organization_id=org_id_str,
-                db_session=db,
-                expiry_seconds=3600,
-            )
-        except Exception:
-            pass
+    from app.services.discover_media import sign_public_image
+
+    media = db.query(Media).filter(
+        Media.media_id == media_id,
+        Media.organization_id == organization_id,
+    ).first()
+    if media is None:
+        return None, None
+    resolved_url = sign_public_image(media, db, organization_id=organization_id)
 
     # Build srcset from derivatives
     derivatives = (
@@ -812,6 +810,7 @@ def get_sitemap(
         .filter(
             CollectionObject.organization_id == org_id,
             CollectionObject.is_discoverable == True,
+            CollectionObject.is_deleted == False,  # noqa: E712
             public_visible_clause(db, org_id),
         )
         .order_by(CollectionObject.updated_at.desc())

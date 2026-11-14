@@ -132,20 +132,71 @@ class _RestrictedObjectView:
     session clean: nothing is marked dirty, so nothing can be flushed.
     """
 
-    def __init__(self, obj, hidden: set[str]):
+    def __init__(self, obj, hidden: set[str], overrides: dict | None = None):
         self._obj = obj
         self._hidden_attrs = {_FIELD_PATH_TO_ATTR.get(p, p) for p in hidden}
+        # Attribute values served instead of the ORM's (e.g. the media links
+        # an export may include), without assigning them to the instance.
+        self._overrides = dict(overrides or {})
 
     def __getattr__(self, name):
         if name in self._hidden_attrs:
             return [] if name.endswith("_links") else None
+        if name in self._overrides:
+            return self._overrides[name]
         return getattr(self._obj, name)
 
     def __setattr__(self, name, value):
-        if name in ("_obj", "_hidden_attrs"):
+        if name in ("_obj", "_hidden_attrs", "_overrides"):
             object.__setattr__(self, name, value)
         else:
             setattr(self._obj, name, value)
+
+
+# Object attributes map_object_to_jsonld reads -> the public field key that
+# governs each (services/public_object_fields). Attributes mapped to None are
+# never public (not in the public field catalog).
+_PUBLIC_JSONLD_ATTRS: dict[str, str | None] = {
+    "object_name": "object_name",
+    "brief_description": "brief_description",
+    "full_description": "full_description",
+    "classification_links": "classification",
+    "creators": "creators",
+    "creation_date_display": "creation_date",
+    "creation_date_earliest": "creation_date",
+    "creation_date_latest": "creation_date",
+    "creation_place": "creation_place",
+    "creation_place_details": "creation_place",
+    "depicted_places": "subjects",
+    "materials": "materials",
+    "techniques": "techniques",
+    "measurement_links": "measurements",
+    "provenance": "provenance",
+    "credit_line": "credit_line",
+    "other_number_links": None,
+    "acquisition_method": None,
+}
+
+
+def _public_jsonld_view(db: Session, obj, media_links: list):
+    """The object as the public may see it, for map_object_to_jsonld.
+
+    Applies the organization's public field set; the preferred title stays
+    (it is locked public) but other titles follow the "titles" field.
+    """
+    from app.services import public_object_fields as pof
+
+    keys = pof.get_public_field_keys(db, obj.organization_id)
+    hidden = {
+        attr for attr, field_key in _PUBLIC_JSONLD_ATTRS.items()
+        if field_key is None or not pof.is_public(field_key, keys)
+    }
+    overrides = {"media_links": media_links}
+    if not pof.is_public("titles", keys):
+        titles = list(obj.title_links or [])
+        preferred = next((t for t in titles if t.is_preferred), titles[0] if titles else None)
+        overrides["title_links"] = [preferred] if preferred else []
+    return _RestrictedObjectView(obj, hidden, overrides)
 
 
 def _strip_restricted(data: dict, hidden: set[str]) -> dict:
@@ -786,30 +837,35 @@ def export_object_jsonld_public(
     # is_discoverable is the flag the Discover routes gate public visibility on,
     # which is the intent here. (Media does have is_published — hence the sibling
     # filters below, which are correct.)
+    from app.services.discover_media import public_object_clauses
+
     obj = db.query(CollectionObject).filter(
         CollectionObject.object_id == obj_uuid,
         CollectionObject.organization_id == org_uuid,
-        CollectionObject.is_discoverable == True,  # noqa: E712
+        *public_object_clauses(db, org_uuid),
     ).first()
     if not obj:
         raise HTTPException(status_code=404, detail="Object not found or not published")
 
-    media_links = db.query(CollectionObjectMedia).filter(
-        CollectionObjectMedia.object_id == obj_uuid,
-    ).order_by(CollectionObjectMedia.is_primary.desc(), CollectionObjectMedia.sort_order).all()
-    published_links = []
-    for link in media_links:
-        media = db.query(Media).filter(
-            Media.media_id == link.media_id,
+    # Published media of this organization only. The list is handed to the
+    # mapper through a view: assigning it to obj.media_links (as this did)
+    # orphans the unpublished links, and that relationship cascades
+    # delete-orphan, so a flush would have deleted them.
+    published_links = (
+        db.query(CollectionObjectMedia)
+        .join(Media, Media.media_id == CollectionObjectMedia.media_id)
+        .filter(
+            CollectionObjectMedia.object_id == obj_uuid,
+            Media.organization_id == org_uuid,
             Media.is_published == True,  # noqa: E712
-        ).first()
-        if media:
-            link.media = media
-            published_links.append(link)
-    obj.media_links = published_links
+        )
+        .order_by(CollectionObjectMedia.is_primary.desc(), CollectionObjectMedia.sort_order)
+        .all()
+    )
 
     org_slug = org.slug or str(org_uuid)[:8]
-    jsonld = map_object_to_jsonld(obj=obj, org_slug=org_slug, include_media=True, include_context=True)
+    view = _public_jsonld_view(db, obj, published_links)
+    jsonld = map_object_to_jsonld(obj=view, org_slug=org_slug, include_media=True, include_context=True)
 
     return JSONResponse(
         content=jsonld,

@@ -504,6 +504,7 @@ def get_featured_objects() -> dict:
             CollectionObject.organization_id == org.organization_id,
             CollectionObject.is_discoverable == True,  # noqa: E712
             public_visible_clause(db, org.organization_id),
+            CollectionObject.is_deleted == False,  # noqa: E712
         ).all()
 
         from app.services import public_object_fields as pof
@@ -790,6 +791,7 @@ def museum_info() -> dict:
             CollectionObject.organization_id == org.organization_id,
             CollectionObject.is_discoverable == True,  # noqa: E712
             public_visible_clause(db, org.organization_id),
+            CollectionObject.is_deleted == False,  # noqa: E712
         ).scalar()
 
         config = db.query(DiscoverConfig).filter(
