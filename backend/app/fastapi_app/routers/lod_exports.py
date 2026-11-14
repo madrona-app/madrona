@@ -652,7 +652,17 @@ def export_object_jsonld(
     return JSONResponse(content=jsonld, headers={"Content-Type": "application/ld+json"})
 
 
-@router.get("/api/organizations/{org_id}/collections/objects/{object_id}.jsonld", summary="Export object jsonld extension")
+# The ``.jsonld`` URL lives on its own router, included before the
+# collections objects router: GET .../objects/{object_id} matches
+# ``<uuid>.jsonld`` first and answers 422 (not a UUID), so on the main router
+# this route was unreachable.
+jsonld_extension_router = APIRouter(tags=["lod-exports"])
+
+
+@jsonld_extension_router.get(
+    "/api/organizations/{org_id}/collections/objects/{object_id}.jsonld",
+    summary="Export object jsonld extension",
+)
 def export_object_jsonld_extension(
     org_id: str,
     object_id: str,
