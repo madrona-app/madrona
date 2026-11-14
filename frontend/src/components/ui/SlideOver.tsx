@@ -11,6 +11,8 @@ interface SlideOverProps {
   children: React.ReactNode;
   width?: 'sm' | 'md' | 'lg' | 'xl';
   footer?: React.ReactNode;
+  /** Stacking class for the overlay. Defaults to z-50. */
+  layerClassName?: string;
 }
 
 const WIDTH_CLASSES = {
@@ -28,6 +30,7 @@ export function SlideOver({
   children,
   width = 'md',
   footer,
+  layerClassName = 'z-50',
 }: SlideOverProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
@@ -81,7 +84,7 @@ export function SlideOver({
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 overflow-hidden">
+    <div className={`fixed inset-0 ${layerClassName} overflow-hidden`}>
       {/* Backdrop */}
       <div
         ref={backdropRef}

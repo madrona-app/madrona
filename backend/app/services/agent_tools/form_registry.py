@@ -1185,6 +1185,8 @@ _OBJECT_RIGHT = FormDefinition(
         # Rights holder
         FieldMeta("rights_holder_contact_id", "Rights holder", "holder", "contact",
                   lookup_category="constituent"),
+        FieldMeta("rights_holder_agent_contact_id", "Agent for rights holder", "holder", "contact",
+                  lookup_category="constituent"),
         # Dates
         FieldMeta("start_date", "Start date", "dates", "date"),
         FieldMeta("end_date", "End date", "dates", "date"),

@@ -53,6 +53,7 @@ def create_object_right(
         right_type=p["right_type"],
         right_subtype=p.get("right_subtype"),
         rights_holder_contact_id=_as_uuid(p.get("rights_holder_contact_id")),
+        rights_holder_agent_contact_id=_as_uuid(p.get("rights_holder_agent_contact_id") or None),
         status=p.get("status", "unknown"),
         start_date=_as_date(p.get("start_date")),
         end_date=_as_date(p.get("end_date")),

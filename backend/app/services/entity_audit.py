@@ -431,6 +431,7 @@ _TRACKED_FK_COLUMNS: dict[str, tuple[str, str]] = {
     "carrier_id": ("Constituent", "name"),
     "appraiser_id": ("Constituent", "name"),
     "rights_holder_contact_id": ("Constituent", "name"),
+    "rights_holder_agent_contact_id": ("Constituent", "name"),
     "valuator_id": ("Constituent", "name"),
     "handler_id": ("Constituent", "name"),
     "instructor_id": ("Constituent", "name"),

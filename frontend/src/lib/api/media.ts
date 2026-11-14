@@ -822,6 +822,9 @@ export interface MediaRightsRecord {
   rights_type: 'copyright' | 'license' | 'restriction' | 'permission';
   rights_status?: string;
   rights_holder?: string;
+  rights_holder_agent?: string | null;
+  rights_holder_agent_contact_id?: string | null;
+  rights_holder_agent_contact_name?: string | null;
   license_type?: string;
   license_url?: string;
   rights_statement?: string;
@@ -847,6 +850,8 @@ export async function createMediaRights(
     rights_type: 'copyright' | 'license' | 'restriction' | 'permission';
     rights_status?: string;
     rights_holder?: string;
+    rights_holder_agent?: string;
+    rights_holder_agent_contact_id?: string | null;
     license_type?: string;
     license_url?: string;
     rights_statement?: string;
@@ -870,6 +875,8 @@ export async function updateMediaRights(
     rights_type: string;
     rights_status: string;
     rights_holder: string;
+    rights_holder_agent: string | null;
+    rights_holder_agent_contact_id: string | null;
     license_type: string;
     license_url: string;
     rights_statement: string;

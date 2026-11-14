@@ -980,6 +980,10 @@ export const ObjectRightSchema = z.object({
   right_subtype: z.string().nullable().optional(),
   // Rights holder - linked to Contact
   rights_holder_contact_id: z.string().nullable().optional(),
+  rights_holder_contact_name: z.string().nullable().optional(),
+  // Agent acting for the rights holder - linked to Contact
+  rights_holder_agent_contact_id: z.string().nullable().optional(),
+  rights_holder_agent_contact_name: z.string().nullable().optional(),
   // Status
   status: z.string(),
   // Dates

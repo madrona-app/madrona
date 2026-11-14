@@ -1073,6 +1073,11 @@ class ObjectRight(Base):
     rights_holder_contact_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("collections.constituents.constituent_id", ondelete="SET NULL"), nullable=True
     )
+    # Agent acting for the rights holder (licensing agency, estate agent, etc.)
+    # - the party to contact for permissions on the holder's behalf.
+    rights_holder_agent_contact_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("collections.constituents.constituent_id", ondelete="SET NULL"), nullable=True
+    )
 
     # Status
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="unknown")
@@ -1142,6 +1147,10 @@ class ObjectRight(Base):
         "Constituent",
         foreign_keys=[rights_holder_contact_id],
     )
+    rights_holder_agent_contact: Mapped["Constituent | None"] = relationship(
+        "Constituent",
+        foreign_keys=[rights_holder_agent_contact_id],
+    )
 
     __table_args__ = (
         Index("ix_rights_org", "organization_id"),
@@ -1149,6 +1158,7 @@ class ObjectRight(Base):
         Index("ix_rights_type", "organization_id", "right_type"),
         Index("ix_rights_status", "organization_id", "status"),
         Index("ix_rights_holder_contact", "rights_holder_contact_id"),
+        Index("ix_rights_holder_agent_contact", "rights_holder_agent_contact_id"),
         CheckConstraint(
             "right_type IN ('copyright', 'reproduction', 'exhibition', 'publication', 'broadcast', 'performance', 'adaptation', 'distribution', 'moral_rights', 'database_rights', 'trademark', 'other')",
             name="check_right_type",

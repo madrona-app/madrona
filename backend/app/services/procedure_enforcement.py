@@ -3,6 +3,9 @@ procedure enforcement — per-org, per-procedure gating on status transitions.
 
 Checks whether an entity meets blocking procedure requirements before allowing
 a status transition. Enforcement is opt-in per org: missing key = not enforced.
+
+The blocking set is the procedure's fixed baseline plus any fields the org has
+added (services/procedure_required_fields.py).
 """
 from __future__ import annotations
 
@@ -14,18 +17,25 @@ from app.models.core_org import Organization
 from app.services.procedure_requirements import PROCEDURE_REQUIREMENTS
 
 
+def _get_org(organization_id: UUID, db: Session) -> Organization | None:
+    return db.query(Organization).filter(
+        Organization.organization_id == organization_id,
+    ).first()
+
+
+def _enabled(org: Organization | None, procedure_type: str) -> bool:
+    if not org or not org.procedure_enforcement:
+        return False
+    return bool(org.procedure_enforcement.get(procedure_type, False))
+
+
 def is_enforcement_enabled(
     organization_id: UUID,
     procedure_type: str,
     db: Session,
 ) -> bool:
     """Check if procedure enforcement is enabled for this org + procedure."""
-    org = db.query(Organization).filter(
-        Organization.organization_id == organization_id,
-    ).first()
-    if not org or not org.procedure_enforcement:
-        return False
-    return bool(org.procedure_enforcement.get(procedure_type, False))
+    return _enabled(_get_org(organization_id, db), procedure_type)
 
 
 def check_blocking_requirements(
@@ -43,15 +53,23 @@ def check_blocking_requirements(
 
     If enforcement is disabled for this org + procedure, always returns [].
     """
-    if not is_enforcement_enabled(organization_id, procedure_type, db):
+    org = _get_org(organization_id, db)
+    if not _enabled(org, procedure_type):
         return []
 
     proc = PROCEDURE_REQUIREMENTS.get(procedure_type)
     if not proc:
         return []
 
+    from app.services.procedure_required_fields import org_requirement_group
+
+    groups = list(proc.requirement_groups)
+    org_group = org_requirement_group(org, procedure_type)
+    if org_group is not None:
+        groups.append(org_group)
+
     missing = []
-    for group in proc.requirement_groups:
+    for group in groups:
         for req in group.requirements:
             if req.severity != "blocking":
                 continue

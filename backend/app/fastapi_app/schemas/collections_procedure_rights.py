@@ -20,6 +20,9 @@ class ObjectRightOut(BaseModel):
     right_type: str | None = None
     right_subtype: str | None = None
     rights_holder_contact_id: str | None = None
+    rights_holder_contact_name: str | None = None
+    rights_holder_agent_contact_id: str | None = None
+    rights_holder_agent_contact_name: str | None = None
     status: str | None = None
     start_date: str | None = None
     end_date: str | None = None

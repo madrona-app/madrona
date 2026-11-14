@@ -26,6 +26,7 @@ from app.models import (
     LoanOut,
     ObjectEntry,
     ObjectExit,
+    ObjectRight,
 )
 from app.models.locations import Location, Movement
 
@@ -219,6 +220,28 @@ EXPORT_COLUMNS: dict[str, list[dict[str, str]]] = {
         {"field": "movement_note", "label": "Notes"},
         {"field": "created_at", "label": "Created"},
     ],
+    "object_rights": [
+        {"field": "object_number", "label": "Object Number"},
+        {"field": "right_type", "label": "Right Type"},
+        {"field": "right_subtype", "label": "Right Subtype"},
+        {"field": "status", "label": "Status"},
+        {"field": "rights_holder_name", "label": "Rights Holder"},
+        {"field": "rights_holder_agent_name", "label": "Agent for Rights Holder"},
+        {"field": "license_type", "label": "License Type"},
+        {"field": "license_reference", "label": "License Reference"},
+        {"field": "license_url", "label": "License URL"},
+        {"field": "start_date", "label": "Start Date"},
+        {"field": "end_date", "label": "End Date"},
+        {"field": "is_perpetual", "label": "Perpetual"},
+        {"field": "territory", "label": "Territory"},
+        {"field": "usage_conditions", "label": "Usage Conditions"},
+        {"field": "restrictions", "label": "Restrictions"},
+        {"field": "is_orphan_work", "label": "Orphan Work"},
+        {"field": "agreement_reference", "label": "Agreement Reference"},
+        {"field": "next_review_date", "label": "Next Review"},
+        {"field": "right_note", "label": "Notes"},
+        {"field": "created_at", "label": "Created"},
+    ],
 }
 
 # Model mapping for each record type
@@ -233,6 +256,7 @@ RECORD_TYPE_MODELS: dict[str, type] = {
     "condition_reports": ConditionReport,
     "locations": Location,
     "movements": Movement,
+    "object_rights": ObjectRight,
 }
 
 # FK fields that need name resolution from Contact table
@@ -248,6 +272,15 @@ _CONTACT_FK_FIELDS = {
     "condition_reports": ("examiner_id", "examiner_name"),
 }
 
+# Record types with more than one contact FK: list of (fk_field, virtual_name).
+# Resolved alongside _CONTACT_FK_FIELDS.
+_EXTRA_CONTACT_FK_FIELDS: dict[str, list[tuple[str, str]]] = {
+    "object_rights": [
+        ("rights_holder_contact_id", "rights_holder_name"),
+        ("rights_holder_agent_contact_id", "rights_holder_agent_name"),
+    ],
+}
+
 # FK fields that need name resolution from User table (not Contact)
 _USER_FK_FIELDS = {
     "movements": ("authorized_by", "authorized_by_name"),
@@ -261,6 +294,7 @@ _LOCATION_FK_FIELDS = {
 # FK field that resolves object number from CollectionObject table
 _OBJECT_FK_FIELDS = {
     "movements": ("object_id", "object_number"),
+    "object_rights": ("object_id", "object_number"),
 }
 
 # Maps export record_type keys to field_access_service entity_type keys
@@ -275,6 +309,7 @@ _RECORD_TYPE_TO_ENTITY: dict[str, str] = {
     "condition_reports": "condition_report",
     "locations": "location",
     "movements": "movement",
+    "object_rights": "object_right",
 }
 
 # Default sort field per record type
@@ -289,6 +324,7 @@ _DEFAULT_SORT = {
     "condition_reports": "report_number",
     "locations": "code",
     "movements": "-movement_date",
+    "object_rights": "-created_at",
 }
 
 
@@ -436,6 +472,8 @@ def fetch_export_data(
     user_fk_field = user_fk[0] if user_fk else None
     location_fks = _LOCATION_FK_FIELDS.get(record_type, [])
     object_fk = _OBJECT_FK_FIELDS.get(record_type)
+    extra_contact_fks = _EXTRA_CONTACT_FK_FIELDS.get(record_type, [])
+    extra_contact_fk_map = {virtual: fk for fk, virtual in extra_contact_fks}
 
     for record in records:
         if hasattr(record, "assigned_to_user_id") and record.assigned_to_user_id:
@@ -446,6 +484,10 @@ def fetch_export_data(
                 user_ids.add(uid)
         if contact_fk_field and hasattr(record, contact_fk_field):
             cid = getattr(record, contact_fk_field)
+            if cid:
+                contact_ids.add(cid)
+        for fk_field, _ in extra_contact_fks:
+            cid = getattr(record, fk_field, None)
             if cid:
                 contact_ids.add(cid)
         for fk_field, _ in location_fks:
@@ -529,6 +571,9 @@ def fetch_export_data(
                 # Also fall back to *_name field on model if contact not found
                 if not row[field] and hasattr(record, field):
                     row[field] = _format_value(getattr(record, field))
+            elif field in extra_contact_fk_map:
+                cid = getattr(record, extra_contact_fk_map[field], None)
+                row[field] = contacts_by_id.get(cid, "") if cid else ""
             elif field in _location_fk_map:
                 lid = getattr(record, _location_fk_map[field], None)
                 row[field] = locations_by_id.get(lid, "") if lid else ""
@@ -568,4 +613,5 @@ def get_supported_record_types() -> list[dict[str, str]]:
         {"key": "condition_reports", "label": "Condition Reports"},
         {"key": "locations", "label": "Locations"},
         {"key": "movements", "label": "Movements"},
+        {"key": "object_rights", "label": "Object Rights"},
     ]

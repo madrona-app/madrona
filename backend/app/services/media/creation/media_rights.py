@@ -35,6 +35,8 @@ def create_media_rights(
         rights_type=p.get("rights_type", "copyright"),
         rights_status=p.get("rights_status"),
         rights_holder=p.get("rights_holder"),
+        rights_holder_agent=p.get("rights_holder_agent"),
+        rights_holder_agent_contact_id=as_uuid(p.get("rights_holder_agent_contact_id") or None),
         license_type=p.get("license_type"),
         license_url=p.get("license_url"),
         rights_statement=p.get("rights_statement"),

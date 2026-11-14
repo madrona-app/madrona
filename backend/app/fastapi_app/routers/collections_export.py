@@ -169,6 +169,12 @@ def export_collections(
             detail=f"record_type must be one of: {', '.join(sorted(supported))}",
         )
 
+    # Rights records carry their own view permission on top of collections view.
+    if body.record_type == "object_rights":
+        from app.fastapi_app.dependencies.auth import check_permission_for_session
+        if not check_permission_for_session(db, auth.user_id, org_id, Permission.RIGHTS_VIEW):
+            raise HTTPException(status_code=403, detail="Exporting rights requires rights.view")
+
     has_scope = any(
         getattr(body, n) is not None for n in ("object_ids", "workspace_id", "search")
     )

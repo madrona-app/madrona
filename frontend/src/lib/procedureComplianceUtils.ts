@@ -25,6 +25,8 @@ export interface Requirement {
   severity: RequirementSeverity;
   helpText?: string;
   helpLink?: string;
+  /** "baseline" = the procedure's fixed set; "org" = added by the organization */
+  source?: 'baseline' | 'org';
 }
 
 export interface RequirementGroup {

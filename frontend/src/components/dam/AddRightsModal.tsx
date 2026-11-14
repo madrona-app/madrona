@@ -5,6 +5,7 @@ import { X, Scale } from 'lucide-react';
 import { createMediaRights, updateMediaRights, type MediaRightsRecord } from '../../lib/api';
 import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
 import { ModalPortal } from '../ModalPortal';
+import { ContactLinkField } from '../collections/ContactLinkField';
 
 interface AddRightsModalProps {
   isOpen: boolean;
@@ -64,6 +65,8 @@ export function AddRightsModal({
     rights_type: 'copyright' as 'copyright' | 'license' | 'restriction' | 'permission',
     rights_status: '',
     rights_holder: '',
+    rights_holder_agent_contact_id: '',
+    rights_holder_agent: '',
     license_type: '',
     license_url: '',
     rights_statement: '',
@@ -82,6 +85,8 @@ export function AddRightsModal({
         rights_type: existingRights.rights_type,
         rights_status: existingRights.rights_status || '',
         rights_holder: existingRights.rights_holder || '',
+        rights_holder_agent_contact_id: existingRights.rights_holder_agent_contact_id || '',
+        rights_holder_agent: existingRights.rights_holder_agent || '',
         license_type: existingRights.license_type || '',
         license_url: existingRights.license_url || '',
         rights_statement: existingRights.rights_statement || '',
@@ -96,6 +101,8 @@ export function AddRightsModal({
         rights_type: 'copyright',
         rights_status: '',
         rights_holder: '',
+        rights_holder_agent_contact_id: '',
+        rights_holder_agent: '',
         license_type: '',
         license_url: '',
         rights_statement: '',
@@ -114,6 +121,8 @@ export function AddRightsModal({
         rights_type: data.rights_type,
         rights_status: data.rights_status || undefined,
         rights_holder: data.rights_holder || undefined,
+        rights_holder_agent_contact_id: data.rights_holder_agent_contact_id || null,
+        rights_holder_agent: data.rights_holder_agent || undefined,
         license_type: data.license_type || undefined,
         license_url: data.license_url || undefined,
         rights_statement: data.rights_statement || undefined,
@@ -134,6 +143,8 @@ export function AddRightsModal({
         rights_type: data.rights_type,
         rights_status: data.rights_status || undefined,
         rights_holder: data.rights_holder || undefined,
+        rights_holder_agent_contact_id: data.rights_holder_agent_contact_id || null,
+        rights_holder_agent: data.rights_holder_agent || null,
         license_type: data.license_type || undefined,
         license_url: data.license_url || undefined,
         rights_statement: data.rights_statement || undefined,
@@ -262,6 +273,29 @@ export function AddRightsModal({
               value={formData.rights_holder}
               onChange={(e) => setFormData({ ...formData, rights_holder: e.target.value })}
               placeholder="Name of copyright holder or licensor"
+              className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+            />
+          </div>
+
+          {/* Agent for rights holder: linked contact, or a name when there is no contact record */}
+          <ContactLinkField
+            organizationId={organizationId}
+            contactId={formData.rights_holder_agent_contact_id}
+            onChange={(id) => setFormData((prev) => ({ ...prev, rights_holder_agent_contact_id: id }))}
+            label="Agent for rights holder"
+            hint="The person or organisation that handles permissions on the rights holder's behalf."
+            pickerLayerClassName="z-[1100]"
+          />
+          <div>
+            <label htmlFor={`${fid}-rights-holder-agent`} className="block text-sm font-medium text-ink mb-1">
+              Agent name (if not a contact record)
+            </label>
+            <input
+              id={`${fid}-rights-holder-agent`}
+              type="text"
+              value={formData.rights_holder_agent}
+              onChange={(e) => setFormData({ ...formData, rights_holder_agent: e.target.value })}
+              maxLength={255}
               className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             />
           </div>

@@ -149,6 +149,12 @@ export function MediaRightsManager({ organizationId, mediaId }: MediaRightsManag
                     </div>
                   )}
 
+                  {(r.rights_holder_agent_contact_name || r.rights_holder_agent) && (
+                    <div className="mt-1 text-sm text-accessible-gray">
+                      Agent for rights holder: {r.rights_holder_agent_contact_name || r.rights_holder_agent}
+                    </div>
+                  )}
+
                   {r.rights_statement && (
                     <p className="mt-1 text-sm text-stone-500">{r.rights_statement}</p>
                   )}
