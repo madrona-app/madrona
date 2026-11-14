@@ -34,6 +34,8 @@ from app.models import (
 )
 from app.permissions import Permission
 from app.services.api_security import escape_ilike
+from app.services.contact_links import contact_display_name as _contact_name
+from app.services.contact_links import validate_org_contact_id as _validate_contact_id
 from app.services.entity_notifications import notify_approval, notify_status_change
 from app.services.validation_utils import parse_uuid_or_raise
 from app.fastapi_app.schemas.collections_procedure_rights import (
@@ -63,6 +65,13 @@ def _serialize_object_right(r: ObjectRight) -> dict:
         "right_type": r.right_type,
         "right_subtype": r.right_subtype,
         "rights_holder_contact_id": str(r.rights_holder_contact_id) if r.rights_holder_contact_id else None,
+        "rights_holder_contact_name": _contact_name(r.rights_holder_contact) if r.rights_holder_contact_id else None,
+        "rights_holder_agent_contact_id": (
+            str(r.rights_holder_agent_contact_id) if r.rights_holder_agent_contact_id else None
+        ),
+        "rights_holder_agent_contact_name": (
+            _contact_name(r.rights_holder_agent_contact) if r.rights_holder_agent_contact_id else None
+        ),
         "status": r.status,
         "start_date": r.start_date.isoformat() if r.start_date else None,
         "end_date": r.end_date.isoformat() if r.end_date else None,
@@ -288,6 +297,9 @@ def create_object_right(
     # 500 from the create path (parity with prior behavior).
     if body.get("rights_holder_contact_id"):
         parse_uuid_or_raise(body["rights_holder_contact_id"])
+    _validate_contact_id(
+        db, org_id, body.get("rights_holder_agent_contact_id"), "rights_holder_agent_contact_id"
+    )
 
     # Create via the shared service — the same code the draft applier runs. The
     # API route carries object_id in the path; fold it into the payload (the
@@ -324,12 +336,17 @@ def update_object_right(
     if not right:
         raise HTTPException(status_code=404, detail="Right not found")
 
-    protected = {"right_id", "organization_id", "object_id", "created_at", "created_by_id", "created_by", "updated_by_id"}
+    protected = {
+        "right_id", "organization_id", "object_id", "created_at", "created_by_id", "created_by", "updated_by_id",
+        "rights_holder_contact", "rights_holder_agent_contact", "object",
+    }
     for key, value in body.items():
         if key in protected:
             continue
         if key == "rights_holder_contact_id" and value is not None:
             value = UUID(value) if isinstance(value, str) else value
+        if key == "rights_holder_agent_contact_id":
+            value = _validate_contact_id(db, org_id, value, key)
         if key == "fee_amount" and value is not None:
             value = Decimal(str(value))
         if hasattr(right, key):

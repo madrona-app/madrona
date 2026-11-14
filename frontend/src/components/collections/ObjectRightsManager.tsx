@@ -20,6 +20,7 @@ import { formatDateShort } from '../../lib/formatters';
 import type { ObjectRight } from '../../lib/schemas';
 import SlideOver from '../ui/SlideOver';
 import { ContactSelectorSlideOver } from './ConstituentSelectorSlideOver';
+import { ContactLinkField } from './ContactLinkField';
 
 interface ObjectRightsManagerProps {
   organizationId: string;
@@ -216,7 +217,7 @@ export function ObjectRightsManager({
                             {STATUS_LABELS[right.status] || right.status}
                           </span>
                           <span className="text-sm font-medium text-ink">
-                            {right.rights_holder_contact?.name || 'No holder assigned'}
+                            {right.rights_holder_contact_name || right.rights_holder_contact?.name || 'No holder assigned'}
                           </span>
                           {right.is_orphan_work && (
                             <span className="text-xs text-copper inline-flex items-center gap-1">
@@ -225,6 +226,11 @@ export function ObjectRightsManager({
                             </span>
                           )}
                         </div>
+                        {right.rights_holder_agent_contact_name && (
+                          <div className="text-xs text-archive mt-1">
+                            Agent for rights holder: {right.rights_holder_agent_contact_name}
+                          </div>
+                        )}
                         <div className="text-xs text-archive mt-1">
                           {right.is_perpetual ? (
                             <span className="inline-flex items-center gap-1">
@@ -320,6 +326,7 @@ function AddRightSlideOver({
   const [rightType, setRightType] = useState('copyright');
   const [status, setStatus] = useState('unknown');
   const [rightsHolderContactId, setRightsHolderContactId] = useState('');
+  const [agentContactId, setAgentContactId] = useState('');
   const [territory, setTerritory] = useState('');
   const [isPerpetual, setIsPerpetual] = useState(false);
   const [endDate, setEndDate] = useState('');
@@ -341,6 +348,7 @@ function AddRightSlideOver({
       right_type: rightType,
       status,
       rights_holder_contact_id: rightsHolderContactId || null,
+      rights_holder_agent_contact_id: agentContactId || null,
       territory: territory || undefined,
       is_perpetual: isPerpetual,
       end_date: endDate || undefined,
@@ -352,6 +360,7 @@ function AddRightSlideOver({
       setRightType('copyright');
       setStatus('unknown');
       setRightsHolderContactId('');
+      setAgentContactId('');
       setTerritory('');
       setIsPerpetual(false);
       setEndDate('');
@@ -476,6 +485,15 @@ function AddRightSlideOver({
             </button>
           )}
         </div>
+
+        {/* Agent for rights holder */}
+        <ContactLinkField
+          organizationId={organizationId}
+          contactId={agentContactId}
+          onChange={setAgentContactId}
+          label="Agent for rights holder"
+          hint="The person or organisation that handles permissions on the rights holder's behalf."
+        />
 
         {/* Territory */}
         <div>

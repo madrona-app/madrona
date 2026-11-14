@@ -16,6 +16,8 @@ interface ConstituentSelectorSlideOverProps {
   constituentTypes?: string[];
   /** IDs to exclude from results (e.g., already selected) */
   excludeIds?: Set<string>;
+  /** Stacking class for the panel (default z-50); raise it when opened from a high-z dialog. */
+  layerClassName?: string;
 }
 
 const CONSTITUENT_TYPE_OPTIONS = [
@@ -46,6 +48,7 @@ export function ConstituentSelectorSlideOver({
   subtitle = 'Search for a person or organization',
   constituentTypes,
   excludeIds,
+  layerClassName,
 }: ConstituentSelectorSlideOverProps) {
   const fid = useId();
   const queryClient = useQueryClient();
@@ -176,6 +179,7 @@ export function ConstituentSelectorSlideOver({
       title={mode === 'search' ? title : 'Create New Person or Organization'}
       subtitle={mode === 'search' ? subtitle : 'Create a new person or organization'}
       width="md"
+      layerClassName={layerClassName}
       footer={
         <div className="flex justify-end gap-2">
           <button onClick={handleClose} className="px-4 py-2 text-sm border border-lichen rounded-lg hover:bg-stone/50">

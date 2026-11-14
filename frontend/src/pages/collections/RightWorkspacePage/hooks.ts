@@ -25,7 +25,10 @@ export function useSectionSummaries(formData: FormData): Record<string, string |
     return {
       object: parts([formData.object_id ? `Object: ${formData.object_id.slice(0, 8)}` : null]),
       details: parts([formData.right_type, formData.right_subtype, formData.status]),
-      holder: parts([formData.rights_holder_contact_id ? `Contact: ${formData.rights_holder_contact_id.slice(0, 8)}` : null]),
+      holder: parts([
+        formData.rights_holder_contact_id ? `Contact: ${formData.rights_holder_contact_id.slice(0, 8)}` : null,
+        formData.rights_holder_agent_contact_id ? 'Agent assigned' : null,
+      ]),
       duration: parts([
         formData.is_perpetual ? 'Perpetual' : null,
         formData.start_date ? `From: ${formData.start_date}` : null,
@@ -54,7 +57,7 @@ export function useHasContent(formData: FormData): Record<string, boolean> {
   return useMemo(() => ({
     object: !!formData.object_id,
     details: !!(formData.right_type || formData.right_subtype || formData.status),
-    holder: !!formData.rights_holder_contact_id,
+    holder: !!(formData.rights_holder_contact_id || formData.rights_holder_agent_contact_id),
     duration: !!(formData.start_date || formData.end_date || formData.is_perpetual || formData.territory),
     license: !!(formData.license_type || formData.license_reference || formData.license_url || formData.usage_conditions),
     fees: !!(formData.fee_required || formData.fee_amount),
@@ -101,6 +104,7 @@ export function useFormState({
         right_type: (right.right_type as string) || 'copyright',
         right_subtype: (right.right_subtype as string) || '',
         rights_holder_contact_id: (right.rights_holder_contact_id as string) || '',
+        rights_holder_agent_contact_id: (right.rights_holder_agent_contact_id as string) || '',
         status: (right.status as string) || 'unknown',
         start_date: (right.start_date as string) || '',
         end_date: (right.end_date as string) || '',
@@ -180,6 +184,7 @@ export function useFormState({
       right_type: fd.right_type,
       right_subtype: fd.right_subtype || undefined,
       rights_holder_contact_id: fd.rights_holder_contact_id || null,
+      rights_holder_agent_contact_id: fd.rights_holder_agent_contact_id || null,
       status: fd.status,
       start_date: fd.start_date || undefined,
       end_date: fd.end_date || undefined,

@@ -34,6 +34,7 @@ class ObjectRightDraftPayload(BaseModel):
 
     right_subtype: str | None = None
     rights_holder_contact_id: UUID | None = None
+    rights_holder_agent_contact_id: UUID | None = None
     status: RightStatus = "unknown"
 
     start_date: date | None = None

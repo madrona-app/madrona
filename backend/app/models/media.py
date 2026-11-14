@@ -809,6 +809,15 @@ class MediaRights(Base):
     rights_holder: Mapped[str | None] = mapped_column(String(255), nullable=True)
     rights_holder_contact: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
+    # Agent for the rights holder: a linked contact record, with a free-text
+    # name fallback (mirrors rights_holder, which is free text).
+    rights_holder_agent_contact_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("collections.constituents.constituent_id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    rights_holder_agent: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
     # License information
     license_type: Mapped[str | None] = mapped_column(String(50), nullable=True)  # CC-BY, CC0, ARR, etc.
     license_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
@@ -857,11 +866,16 @@ class MediaRights(Base):
         back_populates="rights",
         primaryjoin="MediaRights.media_id == Media.media_id",
     )
+    rights_holder_agent_contact: Mapped["Constituent | None"] = relationship(
+        "Constituent",
+        foreign_keys=[rights_holder_agent_contact_id],
+    )
 
     __table_args__ = (
         Index("ix_media_rights_media", "media_id"),
         Index("ix_media_rights_org", "organization_id"),
         Index("ix_media_rights_org_license", "organization_id", "license_type"),
+        Index("ix_media_rights_agent_contact", "rights_holder_agent_contact_id"),
         CheckConstraint(
             "rights_type IN ('copyright', 'license', 'restriction', 'permission', 'grant')",
             name="check_rights_type",

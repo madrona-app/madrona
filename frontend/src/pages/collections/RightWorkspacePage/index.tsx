@@ -20,6 +20,7 @@ import {
   getContact,
 } from '../../../lib/api';
 import { ContactSelectorSlideOver } from '../../../components/collections/ConstituentSelectorSlideOver';
+import { ContactLinkField } from '../../../components/collections/ContactLinkField';
 import {
   WorkspaceHeader,
   WorkspaceErrorBoundary,
@@ -154,6 +155,7 @@ function RightWorkspacePageContent() {
     },
     holder: {
       rights_holder_contact_id: formData.rights_holder_contact_id,
+      rights_holder_agent_contact_id: formData.rights_holder_agent_contact_id,
     },
     duration: {
       start_date: formData.start_date,
@@ -384,6 +386,18 @@ function RightWorkspacePageContent() {
             ) : (
               <p className="text-archive">No rights holder assigned</p>
             )}
+          </div>
+          <div className="mt-4">
+            <ContactLinkField
+              organizationId={orgId!}
+              contactId={formData.rights_holder_agent_contact_id}
+              onChange={(id) => updateField('rights_holder_agent_contact_id', id)}
+              label="Agent for rights holder"
+              isEditing={isEditing}
+              emptyText="No agent assigned"
+              fallbackName={(rightRecord?.rights_holder_agent_contact_name as string | undefined) ?? null}
+              hint="The person or organisation that handles permissions on the rights holder's behalf."
+            />
           </div>
         </WorkspaceSection>
 
