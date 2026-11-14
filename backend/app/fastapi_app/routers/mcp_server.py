@@ -296,7 +296,6 @@ def get_object(object_id: str) -> dict:
         build_srcset_for_media as _build_srcset_for_media,
     )
     from app.models import CollectionObjectMedia, Media, Organization
-    from app.services.uploads import get_org_media_url
 
     with get_session() as db:
         org_record = db.query(Organization).filter(
@@ -324,30 +323,27 @@ def get_object(object_id: str) -> dict:
             .all()
         )
 
-        media_items = []
-        for link in media_links:
-            media = db.query(Media).filter(
-                Media.media_id == link.media_id,
-                Media.is_published == True,  # noqa: E712
-            ).first()
-            if media and media.s3_key:
-                try:
-                    url = get_org_media_url(
-                        media.s3_key,
-                        organization_id=str(org.organization_id),
-                        db_session=db,
-                        expiry_seconds=3600,
-                    )
-                    media_items.append({
-                        "media_id": str(media.media_id),
-                        "url": url,
-                        "media_type": media.media_type,
-                        "alt_text": media.alt_text,
-                        "credit": media.credit,
-                        "is_primary": link.is_primary,
-                    })
-                except Exception:
-                    pass
+        # Same rules as the Discover record page: an image is served as a
+        # rendition (never the uploaded master), audio/video/documents as their
+        # public playback file, and downloads follow each file's public
+        # download level. Minting media.s3_key here handed API clients the
+        # full-resolution original regardless of that setting.
+        from app.services.discover_media import build_public_media_items
+
+        media_items = [
+            {
+                "media_id": item["media_id"],
+                "url": item["url"],
+                "media_type": item["media_type"],
+                "alt_text": item["alt_text"],
+                "credit": item["credit"],
+                "is_primary": item["is_primary"],
+                "downloads": item["downloads"],
+            }
+            for item in build_public_media_items(
+                db, org_record, org_record.slug or str(org_record.organization_id), media_links,
+            )
+        ]
 
         from app.services import public_object_fields as pof
 
