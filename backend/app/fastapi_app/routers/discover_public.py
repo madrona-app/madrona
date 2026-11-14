@@ -117,9 +117,9 @@ def _get_org_by_slug(db: Session, slug: str) -> Organization | None:
     ).first()
 
 
-def _get_media_url(media_id, organization_id: UUID, db: Session) -> str | None:
+def _get_media_url(media_id, organization_id: UUID, db: Session, *, logo: bool = False) -> str | None:
     from app.services.discovery_service import get_media_url
-    return get_media_url(media_id, organization_id, db)
+    return get_media_url(media_id, organization_id, db, logo=logo)
 
 
 def _get_thumbnail_urls_bulk_with_srcset(
@@ -462,7 +462,7 @@ def get_discover_info(
         "show_object_count": config.show_object_count if config else True,
         "default_view_mode": config.default_view_mode if config else "grid",
         "default_sort": config.default_sort if config else "relevance",
-        "header_logo_url": _get_media_url(config.header_logo_media_id, org.organization_id, db) if config else None,
+        "header_logo_url": _get_media_url(config.header_logo_media_id, org.organization_id, db, logo=True) if config else None,
         "primary_color": config.primary_color if config else None,
         "accent_color": config.accent_color if config else None,
         "font_family": config.font_family if config else None,
@@ -482,7 +482,7 @@ def get_discover_info(
         "custom_css": config.custom_css if config else None,
         "footer_columns": config.footer_columns if config else None,
         "land_acknowledgment": config.land_acknowledgment if config else None,
-        "footer_logo_url": _get_media_url(config.footer_logo_media_id, org.organization_id, db) if config and config.footer_logo_media_id else None,
+        "footer_logo_url": _get_media_url(config.footer_logo_media_id, org.organization_id, db, logo=True) if config and config.footer_logo_media_id else None,
         "external_integrations": config.external_integrations if config else None,
         "analytics_config": config.analytics_config if config else None,
         # Guide (AI assistant) — only shown when org has purchased Guide

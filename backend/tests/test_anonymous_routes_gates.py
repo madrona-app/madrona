@@ -463,3 +463,44 @@ def test_no_master_key_reaches_the_signer(module):
         f"{module} signs a media master key directly at line(s) {bad}; "
         "use discover_media.sign_public_image (a rendition)."
     )
+
+
+# ---------------------------------------------------------------------------
+# Logo slots: a small published logo with no rendition is still shown
+# ---------------------------------------------------------------------------
+
+def _small_logo(db, org, published=True):
+    m = _media(db, org, rendition=False, published=published)
+    m.mime_type, m.file_size = "image/svg+xml", 4_000
+    db.flush()
+    return m
+
+
+class TestPortalLogos:
+    def test_svg_logo_without_rendition_is_served(self, db_session, org):
+        from app.services.discovery_service import get_media_url
+
+        logo = _small_logo(db_session, org)
+        url = get_media_url(logo.media_id, org.organization_id, db_session, logo=True)
+        assert url and MASTER in url
+
+    def test_same_file_is_not_served_outside_the_logo_slots(self, db_session, org):
+        from app.services.discovery_service import get_media_url
+
+        logo = _small_logo(db_session, org)
+        assert get_media_url(logo.media_id, org.organization_id, db_session) is None
+
+    def test_large_or_unpublished_logo_is_not_served(self, db_session, org):
+        from app.services.discovery_service import get_media_url
+
+        big = _media(db_session, org, rendition=False)  # 9 MB master
+        hidden = _small_logo(db_session, org, published=False)
+        assert get_media_url(big.media_id, org.organization_id, db_session, logo=True) is None
+        assert get_media_url(hidden.media_id, org.organization_id, db_session, logo=True) is None
+
+    def test_logo_with_rendition_uses_the_rendition(self, db_session, org):
+        from app.services.discovery_service import get_media_url
+
+        logo = _media(db_session, org, rendition=True)
+        url = get_media_url(logo.media_id, org.organization_id, db_session, logo=True)
+        assert url and MASTER not in url

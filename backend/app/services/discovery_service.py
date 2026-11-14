@@ -19,8 +19,11 @@ from app.models import (
 from app.services.uploads import get_org_media_url
 
 
-def get_media_url(media_id, organization_id: UUID, db: Session) -> str | None:
+def get_media_url(media_id, organization_id: UUID, db: Session, *, logo: bool = False) -> str | None:
     """Signed URL for a published image of the organization (logos, heroes).
+
+    With ``logo=True`` (the header/footer logo slots only), a published image
+    with no rendition is served as uploaded (discover_media.sign_public_logo).
 
     A rendition, never the uploaded master unless that file's public download
     level allows originals (discover_media.public_image_key). The media must
@@ -37,6 +40,10 @@ def get_media_url(media_id, organization_id: UUID, db: Session) -> str | None:
         return None
     from app.services.discover_media import sign_public_image
 
+    if logo:
+        from app.services.discover_media import sign_public_logo
+
+        return sign_public_logo(media, db, organization_id=organization_id)
     return sign_public_image(media, db, organization_id=organization_id)
 
 

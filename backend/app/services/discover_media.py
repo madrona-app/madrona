@@ -613,3 +613,29 @@ def sign_public_image(
     except Exception as e:  # noqa: BLE001 - an image must not break the page
         logger.warning("Failed to sign public image for %s: %s", media.media_id, e)
         return None
+
+
+# A logo is a small graphic staff place in the portal's header or footer on
+# purpose. SVG logos never get raster renditions, so requiring one would drop
+# the logo; serving the published file is the publish decision itself.
+LOGO_MAX_BYTES = 2 * 1024 * 1024
+
+
+def sign_public_logo(media: Media | None, db: Session, *, organization_id=None) -> str | None:
+    """Like :func:`sign_public_image`, but for the header/footer logo slots:
+    a published image of at most LOGO_MAX_BYTES with no rendition is served
+    as uploaded."""
+    url = sign_public_image(media, db, organization_id=organization_id)
+    if url or media is None:
+        return url
+    if (
+        media.media_type == "image"
+        and media.is_published
+        and media.s3_key
+        and (media.file_size or 0) <= LOGO_MAX_BYTES
+    ):
+        try:
+            return _sign(media.s3_key, organization_id or media.organization_id, db)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("Failed to sign public logo for %s: %s", media.media_id, e)
+    return None
