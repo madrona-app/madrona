@@ -520,11 +520,13 @@ def update_page(
                 ))
 
             # Collapse redirect chains: update any redirect pointing to old_path
-            db.query(Redirect).filter(
+            # Row by row so each redirect's history records the new target.
+            for chained in db.query(Redirect).filter(
                 Redirect.organization_id == organization_id,
                 Redirect.target_path == old_path,
-                Redirect.is_active == True,
-            ).update({"target_path": new_path})
+                Redirect.is_active == True,  # noqa: E712
+            ).all():
+                chained.target_path = new_path
 
             page.slug = new_slug
 
