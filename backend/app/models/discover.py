@@ -117,6 +117,11 @@ class DiscoverConfig(Base):
         Boolean, nullable=False, default=False, server_default="false"
     )
 
+    # Which standard object fields the public surfaces publish: a JSON list of
+    # field keys from app.services.public_object_fields.FIELD_CATALOG. NULL
+    # means the defaults (the set published before this setting existed).
+    public_object_fields = mapped_column(JSONB, nullable=True)
+
     # Audit
     created_at: Mapped[datetime] = timestamp_now()
     updated_at: Mapped[datetime] = timestamp_updated()

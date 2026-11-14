@@ -612,6 +612,9 @@ def list_collection_objects(
     sort_by: str = Query("created_at"),
     sort_order: str = Query("desc"),
     custom_field: list[str] = Query(default=[], description="key:value filters on user-defined fields (repeatable)"),
+    include_deaccessioned: bool = Query(
+        False, description="Include deaccessioned objects when the organization hides them from search",
+    ),
     auth: AuthContext = Depends(require_permission(Permission.COLLECTIONS_VIEW)),
     db: Session = Depends(get_db),
 ):
@@ -619,9 +622,19 @@ def list_collection_objects(
     List collection objects with filtering and pagination.
 
     Uses OpenSearch for full-text search when available, falls back to database.
+    Deaccessioned objects are left out while the organization hides them from
+    search, unless ``include_deaccessioned`` or ``object_status=deaccessioned``.
     """
     if sort_order not in ("asc", "desc"):
         sort_order = "desc"
+
+    from app.services import deaccession_visibility as dv
+
+    exclude_deaccessioned = dv.exclude_from_staff_search(
+        dv.hides_deaccessioned(db, organization_id),
+        include_deaccessioned,
+        [object_status] if object_status else None,
+    )
 
     custom_filters = _parse_custom_field_filters(db, organization_id, auth, custom_field)
 
@@ -647,6 +660,7 @@ def list_collection_objects(
                     object_status=[object_status] if object_status else None,
                     location_id=[location_id] if location_id else None,
                 )
+                filters = dv.apply_to_filters(filters, exclude_deaccessioned)
 
                 # Map sort fields
                 sort_field_map = {
@@ -700,7 +714,7 @@ def list_collection_objects(
                 primary_images = _get_primary_images_bulk(obj_ids, organization_id, session=db) if obj_ids else {}
 
                 return {
-                    "objects": [
+                    "items": [
                         apply_field_access(
                             _serialize_collection_object(
                                 o,
@@ -750,6 +764,9 @@ def list_collection_objects(
 
     if object_status:
         query = query.filter(CollectionObject.object_status == object_status)
+
+    if exclude_deaccessioned:
+        query = query.filter(CollectionObject.object_status != dv.DEACCESSIONED)
 
     if location_id:
         query = query.filter(CollectionObject.current_location_id == UUID(location_id))

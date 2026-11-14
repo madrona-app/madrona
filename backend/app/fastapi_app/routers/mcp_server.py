@@ -21,6 +21,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from app.services.deaccession_visibility import public_visible_clause
+
 logger = logging.getLogger(__name__)
 
 
@@ -188,19 +190,34 @@ def search_objects(
     if not CollectionsSearchService.is_available():
         return {"hits": [], "total": 0, "facets": [], "next_offset": None}
 
+    from app.search.collections.query_builder import CollectionsQueryBuilder
+    from app.services import public_object_fields as pof
+
+    from app.services.deaccession_visibility import hides_deaccessioned
+
+    with get_session() as db:
+        public_keys = pof.get_public_field_keys(db, org.organization_id)
+        hide_deacc = hides_deaccessioned(db, org.organization_id)
+
+    def _if_public(param: str, value):
+        return value if pof.filter_param_public(param, public_keys) else None
+
     q_str = query.strip() or None
 
     filters = CollectionsSearchFilters(
         is_discoverable=True,
-        classification=[classification] if classification else None,
-        object_type=[object_type] if object_type else None,
-        creator_name=creator,
-        material=material,
-        style_period=[style_period] if style_period else None,
-        creation_place=creation_place,
+        classification=_if_public("classification", [classification] if classification else None),
+        object_type=_if_public("object_type", [object_type] if object_type else None),
+        creator_name=_if_public("creator", creator),
+        material=_if_public("material", material),
+        style_period=_if_public("style_period", [style_period] if style_period else None),
+        creation_place=_if_public("creation_place", creation_place),
         on_display=on_display,
         has_image=has_image,
+        exclude_object_status=["deaccessioned"] if hide_deacc else None,
     )
+    if sort in ("date_asc", "date_desc") and not pof.is_public("creation_date", public_keys):
+        sort = "relevance"
 
     sort_map = {
         "relevance": SearchSort(field="_score", order="desc"),
@@ -213,7 +230,10 @@ def search_objects(
     sort_obj = sort_map.get(sort, sort_map["relevance"])
 
     search_request = CollectionsSearchRequest(
-        query=CollectionsSearchQuery(q=q_str) if q_str else None,
+        query=CollectionsSearchQuery(
+            q=q_str,
+            fields=pof.search_fields(CollectionsQueryBuilder.DEFAULT_SEARCH_FIELDS, public_keys),
+        ) if q_str else None,
         filters=filters,
         sort=sort_obj if sort != "relevance" or not q_str else None,
         limit=limit,
@@ -228,7 +248,7 @@ def search_objects(
 
         hits = []
         for h in response.hits:
-            hits.append({
+            hits.append(pof.redact({
                 "object_id": h.object_id,
                 "object_number": h.object_number,
                 "title": h.title,
@@ -237,7 +257,7 @@ def search_objects(
                 "creation_date_display": h.creation_date.get("display") if h.creation_date else None,
                 "classification": h.classification,
                 "object_type": h.object_type,
-            })
+            }, public_keys))
 
         facets = None
         if response.facets:
@@ -247,6 +267,7 @@ def search_objects(
                     "buckets": [{"key": b.key, "count": b.doc_count} for b in f.buckets],
                 }
                 for f in response.facets
+                if pof.facet_public(f.field, public_keys)
             ]
 
     return {"hits": hits, "total": response.total, "facets": facets, "next_offset": response.next_offset}
@@ -328,7 +349,9 @@ def get_object(object_id: str) -> dict:
                 except Exception:
                     pass
 
-        return {
+        from app.services import public_object_fields as pof
+
+        return pof.redact({
             "object_id": str(obj.object_id),
             "object_number": obj.object_number,
             "title": _get_display_title(obj.title_links),
@@ -357,7 +380,7 @@ def get_object(object_id: str) -> dict:
             "provenance": obj.provenance,
             "credit_line": obj.credit_line,
             "media": media_items,
-        }
+        }, pof.get_public_field_keys(db, org.organization_id))
 
 
 @mcp.tool()
@@ -379,6 +402,7 @@ def get_related_objects(object_id: str) -> dict:
     )
     from app.models import Organization
     from app.search.collections.service import CollectionsSearchService, get_collections_search_service
+    from app.services.deaccession_visibility import hides_deaccessioned
 
     if not CollectionsSearchService.is_available():
         return {"hits": []}
@@ -403,7 +427,10 @@ def get_related_objects(object_id: str) -> dict:
             "_source": ["object_id", "object_number", "title", "creators", "creation_date", "classification"],
             "query": {
                 "bool": {
-                    "must_not": [{"term": {"object_id": str(obj.object_id)}}],
+                    "must_not": [{"term": {"object_id": str(obj.object_id)}}] + (
+                        [{"term": {"object_status": "deaccessioned"}}]
+                        if hides_deaccessioned(db, org.organization_id) else []
+                    ),
                     "filter": [
                         {"term": {"is_discoverable": True}},
                         {"term": {"organization_id": str(org.organization_id)}},
@@ -421,19 +448,22 @@ def get_related_objects(object_id: str) -> dict:
             logger.warning("Related objects search failed: %s", e)
             return {"hits": []}
 
+        from app.services import public_object_fields as pof
+
+        public_keys = pof.get_public_field_keys(db, org.organization_id)
         os_hits = response.get("hits", {}).get("hits", [])
         hits = []
         for h in os_hits:
             src = h["_source"]
             creators_raw = src.get("creators") or []
-            hits.append({
+            hits.append(pof.redact({
                 "object_id": src["object_id"],
                 "object_number": src.get("object_number"),
                 "title": src.get("title"),
                 "creators": [c.get("name") for c in creators_raw if isinstance(c, dict) and c.get("name")],
                 "creation_date_display": (src.get("creation_date") or {}).get("display"),
                 "classification": src.get("classification"),
-            })
+            }, public_keys))
 
     return {"hits": hits}
 
@@ -477,15 +507,19 @@ def get_featured_objects() -> dict:
             CollectionObject.object_id.in_(featured_ids),
             CollectionObject.organization_id == org.organization_id,
             CollectionObject.is_discoverable == True,  # noqa: E712
+            public_visible_clause(db, org.organization_id),
         ).all()
 
+        from app.services import public_object_fields as pof
+
+        public_keys = pof.get_public_field_keys(db, org.organization_id)
         obj_map = {obj.object_id: obj for obj in objects}
         hits = []
         for fid in featured_ids:
             obj = obj_map.get(fid)
             if not obj:
                 continue
-            hits.append({
+            hits.append(pof.redact({
                 "object_id": str(obj.object_id),
                 "object_number": obj.object_number,
                 "title": _get_display_title(obj.title_links),
@@ -494,7 +528,7 @@ def get_featured_objects() -> dict:
                 "creation_date_display": obj.creation_date_display,
                 "classification": _get_primary_classification(obj),
                 "object_type": obj.object_type,
-            })
+            }, public_keys))
 
     return {"hits": hits}
 
@@ -759,6 +793,7 @@ def museum_info() -> dict:
         count = db.query(func.count(CollectionObject.object_id)).filter(
             CollectionObject.organization_id == org.organization_id,
             CollectionObject.is_discoverable == True,  # noqa: E712
+            public_visible_clause(db, org.organization_id),
         ).scalar()
 
         config = db.query(DiscoverConfig).filter(

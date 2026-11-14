@@ -31,6 +31,7 @@ import {
   Globe2,
 } from 'lucide-react';
 import { searchCollections, getActiveContext } from '../../lib/api';
+import { getHideDeaccessioned, hideDeaccessionedQueryKey } from '../../lib/api/searchSettings';
 import { LocationPickerButton } from '../../components/collections/LocationPickerModal';
 import { useGeo } from '../../hooks/useGeo';
 
@@ -81,6 +82,7 @@ export default function CollectionObjectsPage() {
   const [showBulkActionDialog, setShowBulkActionDialog] = useState(false);
   const [showSaveAsWorkSetDialog, setShowSaveAsWorkSetDialog] = useState(false);
   const [searchMode, setSearchMode] = useState<SearchMode>('text');
+  const [includeDeaccessioned, setIncludeDeaccessioned] = useState(false);
   const [mapSearchResults, setMapSearchResults] = useState<{
     objects: Array<{
       object_id: string;
@@ -101,7 +103,17 @@ export default function CollectionObjectsPage() {
     offset,
     include_facets: true,
     highlight: true,
+    ...(includeDeaccessioned ? { include_deaccessioned: true } : {}),
   };
+
+  // Whether the organization hides deaccessioned records from search (on by
+  // default). Assume it does until the setting has loaded.
+  const { data: hideDeaccessioned = true } = useQuery({
+    queryKey: hideDeaccessionedQueryKey(orgId),
+    queryFn: () => getHideDeaccessioned(orgId!),
+    enabled: !!orgId,
+    staleTime: 5 * 60 * 1000,
+  });
 
   // OpenSearch handles all listing — faster than DB and supports facets/relevance
   const {
@@ -405,6 +417,33 @@ export default function CollectionObjectsPage() {
                 <span className="sr-only">List view</span>
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* Deaccessioned records are left out of search by an organization
+            setting; this brings them back for this search. */}
+        <div className="mt-3 flex items-start gap-2">
+          <input
+            id="objects-include-deaccessioned"
+            type="checkbox"
+            checked={includeDeaccessioned || !hideDeaccessioned}
+            disabled={!hideDeaccessioned}
+            onChange={(e) => {
+              setIncludeDeaccessioned(e.target.checked);
+              setOffset(0);
+            }}
+            aria-describedby="objects-include-deaccessioned-desc"
+            className="mt-0.5 h-5 w-5 shrink-0 accent-bark cursor-pointer disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+          />
+          <div>
+            <label htmlFor="objects-include-deaccessioned" className="text-sm text-ink cursor-pointer">
+              Include deaccessioned records
+            </label>
+            <p id="objects-include-deaccessioned-desc" className="text-xs text-archive">
+              {hideDeaccessioned
+                ? 'Deaccessioned records are left out of search results unless this is checked.'
+                : 'Your organization shows deaccessioned records in search, so they are always included.'}
+            </p>
           </div>
         </div>
 

@@ -6,6 +6,7 @@ import { MadronaLoader } from '../../components/ui/MadronaLoader';
 import { reindexCollections, type ReindexResult } from '../../lib/api';
 import { useOrganization } from '../../contexts/useOrganization';
 import useGeo from '../../hooks/useGeo';
+import { DeaccessionedSearchSetting } from './settings/DeaccessionedSearchSetting';
 
 export default function CollectionsGeneralSettingsPage() {
   const uid = useId();
@@ -167,6 +168,8 @@ export default function CollectionsGeneralSettingsPage() {
           </div>
         </div>
       </section>
+
+      {organizationId && <DeaccessionedSearchSetting organizationId={organizationId} />}
 
       {/* Organization Headquarters Location */}
       <section className="bg-parchment rounded-lg border border-lichen shadow-sm mt-6">

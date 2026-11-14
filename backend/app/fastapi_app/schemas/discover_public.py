@@ -179,8 +179,11 @@ class DiscoverObjectDetailOut(BaseModel):
     canonical_url: str | None = None
     title: str | None = None
     titles: list[DiscoverTitleOut] | None = None
+    object_name: str | None = None
     brief_description: str | None = None
     full_description: str | None = None
+    physical_description: str | None = None
+    subjects: list[str] | None = None
     object_type: str | None = None
     classification: str | None = None
     classifications: list[dict[str, Any]] | None = None
@@ -193,6 +196,7 @@ class DiscoverObjectDetailOut(BaseModel):
     techniques: Any | None = None
     measurements: list[DiscoverMeasurementOut] | None = None
     inscriptions: list[str] | None = None
+    edition: str | None = None
     style_period: str | None = None
     provenance: str | None = None
     credit_line: str | None = None

@@ -12,6 +12,12 @@ vi.mock('../../lib/api', () => ({
   getLocations: vi.fn().mockResolvedValue({ items: [] }),
 }));
 
+const searchSettings = { hide: true };
+vi.mock('../../lib/api/searchSettings', () => ({
+  getHideDeaccessioned: vi.fn(() => Promise.resolve(searchSettings.hide)),
+  hideDeaccessionedQueryKey: (id: string) => ['search-settings', 'hide-deaccessioned', id],
+}));
+
 vi.mock('../../hooks/usePermissions', () => ({
   usePermissions: () => ({ hasPermission: () => true }),
 }));
@@ -78,6 +84,7 @@ function renderPage() {
 describe('CollectionObjectsPage accessibility', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    searchSettings.hide = true;
     vi.mocked(api.searchCollections).mockResolvedValue({
       hits,
       total: 2,
@@ -156,5 +163,33 @@ describe('CollectionObjectsPage accessibility', () => {
     fireEvent.click(facet);
     const results = await checkA11y(container);
     expect(results.violations).toEqual([]);
+  });
+
+  it('has a labelled checkbox that includes deaccessioned records in the search', async () => {
+    const { container } = renderPage();
+    await screen.findByRole('link', { name: 'Bronze vase' });
+    const include = screen.getByRole('checkbox', { name: 'Include deaccessioned records' });
+    expect(include).not.toBeChecked();
+    expect(include).toHaveAccessibleDescription(/left out of search results unless this is checked/);
+    expect(vi.mocked(api.searchCollections).mock.calls.at(-1)?.[1]).not.toHaveProperty('include_deaccessioned');
+
+    fireEvent.click(include);
+    expect(include).toBeChecked();
+    await waitFor(() =>
+      expect(vi.mocked(api.searchCollections).mock.calls.at(-1)?.[1]).toMatchObject({ include_deaccessioned: true }),
+    );
+    expect((await checkA11y(container)).violations).toEqual([]);
+  });
+
+  it('explains when the organization already shows deaccessioned records', async () => {
+    searchSettings.hide = false;
+    renderPage();
+    await screen.findByRole('link', { name: 'Bronze vase' });
+    await waitFor(() =>
+      expect(screen.getByRole('checkbox', { name: 'Include deaccessioned records' })).toBeDisabled(),
+    );
+    const include = screen.getByRole('checkbox', { name: 'Include deaccessioned records' });
+    expect(include).toBeChecked();
+    expect(include).toHaveAccessibleDescription(/always included/);
   });
 });

@@ -32,6 +32,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.services.deaccession_visibility import public_visible_clause
 from app.config import get_settings
 from app.database import get_admin_db
 from app.models import (
@@ -192,6 +193,7 @@ def _visible_items_query(db: Session, org: Organization, collection_id):
             MemberCollectionItem.organization_id == org.organization_id,
             CollectionObject.organization_id == org.organization_id,
             CollectionObject.is_discoverable == True,  # noqa: E712
+            public_visible_clause(db, org.organization_id),
             CollectionObject.is_deleted == False,  # noqa: E712
         )
     )
@@ -244,6 +246,7 @@ def _visible_counts(db: Session, org: Organization, collection_ids: list) -> dic
             MemberCollectionItem.organization_id == org.organization_id,
             CollectionObject.organization_id == org.organization_id,
             CollectionObject.is_discoverable == True,  # noqa: E712
+            public_visible_clause(db, org.organization_id),
             CollectionObject.is_deleted == False,  # noqa: E712
         )
         .group_by(MemberCollectionItem.collection_id)
@@ -498,6 +501,7 @@ def add_item(
         CollectionObject.object_id == body.object_id,
         CollectionObject.organization_id == ctx.org.organization_id,
         CollectionObject.is_discoverable == True,  # noqa: E712
+        public_visible_clause(db, ctx.org.organization_id),
         CollectionObject.is_deleted == False,  # noqa: E712
     ).first()
     if not obj:
@@ -582,14 +586,18 @@ def export_my_collection(
         .limit(MAX_ITEMS_PER_COLLECTION)
         .all()
     ]
+    from app.services.public_object_fields import get_public_field_keys
+
+    public_keys = get_public_field_keys(db, ctx.org.organization_id)
     objects = _load_public_objects(db, ctx.org, object_ids)
-    rows = [_public_object_fields(o, org_slug) for o in objects]
+    rows = [_public_object_fields(o, org_slug, public_keys) for o in objects]
     response = _export_response(
         fmt=format,
         rows=rows,
         filename_stem=f"{org_slug}-{coll.name}-{date.today().isoformat()}",
         source={"type": "member_collection", "collection": ctx.org.name, "name": coll.name},
         total_matches=len(rows),
+        public_keys=public_keys,
     )
     response.headers["Cache-Control"] = "private, no-store"
     return response

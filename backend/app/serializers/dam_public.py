@@ -21,7 +21,23 @@ from app.services.object_metadata_aggregator import (
     get_safe_metadata_for_embedding,
 )
 
+from app.services.public_object_fields import get_public_field_keys, redact_aggregated_metadata
+
 logger = logging.getLogger(__name__)
+
+#: serialize_public_object key -> public field key (services/public_object_fields).
+_DAM_FIELD_MAP = {
+    "titles": "titles",
+    "description": "brief_description",
+    "date_created": "creation_date",
+    "date_created_display": "creation_date",
+    "creator": "creators",
+    "medium": "materials",
+    "dimensions": "measurements",
+    "credit_line": "credit_line",
+    "classification": "classification",
+    "classifications": "classification",
+}
 
 
 def serialize_public_media(
@@ -98,6 +114,9 @@ def serialize_public_media(
                     full_metadata = aggregate_object_metadata(
                         link.object_id, media.organization_id
                     )
+                    full_metadata = redact_aggregated_metadata(
+                        full_metadata, get_public_field_keys(session, media.organization_id)
+                    )
                     if full_metadata:
                         safe = get_safe_metadata_for_embedding(full_metadata)
                         safe["object_id"] = str(link.object_id)
@@ -122,6 +141,7 @@ def serialize_public_object(
 ) -> dict:
     """Serialize collection object for public API response."""
     session = current_session()
+    keys = get_public_field_keys(session, obj.organization_id)
 
     display_title = None
     if obj.title_links:
@@ -161,6 +181,10 @@ def serialize_public_object(
         "classifications": classifications_list,
         "created_at": obj.created_at.isoformat() if obj.created_at else None,
     }
+    # This API's own key names, mapped onto the public field set.
+    for api_key, field_key in _DAM_FIELD_MAP.items():
+        if field_key not in keys:
+            result[api_key] = [] if isinstance(result[api_key], list) else None
 
     if include_media:
         media_links = session.query(CollectionObjectMedia).filter(
@@ -187,7 +211,9 @@ def serialize_public_object(
 
     if include_aggregated_metadata:
         try:
-            full_metadata = aggregate_object_metadata(obj.object_id, obj.organization_id)
+            full_metadata = redact_aggregated_metadata(
+                aggregate_object_metadata(obj.object_id, obj.organization_id), keys,
+            )
             if full_metadata:
                 result["metadata"] = full_metadata
         except Exception as e:

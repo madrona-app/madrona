@@ -364,10 +364,13 @@ export function DiscoverObjectPage() {
     ?.map((m: { type?: string; value: number; unit?: string }) => `${m.type || ''}: ${m.value} ${m.unit || ''}`.trim())
     .join('; ');
 
+  // The API sends inscription text as strings; older payloads sent objects.
   const inscriptionsDisplay = obj.inscriptions
-    ?.map((i: { content?: string; text?: string }) => i.content || i.text)
+    ?.map((i: string | { content?: string; text?: string }) => (typeof i === 'string' ? i : i.content || i.text))
     .filter(Boolean)
     .join('; ');
+
+  const subjectsDisplay = obj.subjects?.filter(Boolean).join(', ');
 
   return (
     <CollectionSiteShell info={info} orgSlug={orgSlug!} contextEntityType="collection_object" contextEntityId={objectId}>
@@ -537,14 +540,18 @@ export function DiscoverObjectPage() {
           {/* Right column: structured metadata */}
           <div className="lg:col-span-2">
             <dl className="space-y-0">
+              <MetadataRow label="Object Name">{obj.object_name}</MetadataRow>
               <MetadataRow label="Object Type">{obj.object_type}</MetadataRow>
               <MetadataRow label="Classification">{obj.classification}</MetadataRow>
               <MetadataRow label="Medium">{materialsDisplay}</MetadataRow>
               <MetadataRow label="Technique">{techniquesDisplay}</MetadataRow>
               <MetadataRow label="Dimensions">{measurementsDisplay}</MetadataRow>
+              <MetadataRow label="Physical Description">{obj.physical_description}</MetadataRow>
+              <MetadataRow label="Edition">{obj.edition}</MetadataRow>
               <MetadataRow label="Creation Place">{obj.creation_place}</MetadataRow>
               <MetadataRow label="Style / Period">{obj.style_period}</MetadataRow>
               <MetadataRow label="Inscriptions">{inscriptionsDisplay}</MetadataRow>
+              <MetadataRow label="Subjects">{subjectsDisplay}</MetadataRow>
               <MetadataRow label="Credit Line">{obj.credit_line}</MetadataRow>
               <MetadataRow label="External Links">
                 {obj.external_links && obj.external_links.length > 0 ? (
