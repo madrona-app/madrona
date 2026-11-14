@@ -87,19 +87,53 @@ def _sign(key: str | None, org_id: UUID, db: Session) -> str | None:
     )
 
 
+def public_object_clauses(db: Session | None, organization_id) -> list:
+    """SQL conditions every anonymous object query adds.
+
+    Discoverable, not deleted, and not hidden as deaccessioned (an
+    organization setting, services/deaccession_visibility.py). These are the
+    Discover gates; every public surface that names or describes an object
+    applies all three.
+    """
+    from app.services.deaccession_visibility import public_visible_clause
+
+    return [
+        CollectionObject.is_discoverable == True,  # noqa: E712
+        CollectionObject.is_deleted == False,  # noqa: E712
+        public_visible_clause(db, organization_id),
+    ]
+
+
+def is_public_object(obj, db: Session | None = None, organization_id=None) -> bool:
+    """Python-side form of :func:`public_object_clauses` for a loaded object.
+
+    With ``organization_id`` the object must also belong to that organization.
+    """
+    from app.services.deaccession_visibility import public_object_visible
+
+    if obj is None:
+        return False
+    if organization_id is not None and str(obj.organization_id) != str(organization_id):
+        return False
+    return bool(
+        obj.is_discoverable
+        and not getattr(obj, "is_deleted", False)
+        and public_object_visible(obj, db)
+    )
+
+
 def public_media_query(db: Session, org: Organization):
     """Media an anonymous visitor may reach for ``org``.
 
-    Published, owned by the org, and linked to at least one discoverable,
-    non-deleted object of the org.
+    Published, owned by the org, and linked to at least one public object of
+    the org (see :func:`public_object_clauses`).
     """
     linked = (
         db.query(CollectionObjectMedia.media_id)
         .join(CollectionObject, CollectionObject.object_id == CollectionObjectMedia.object_id)
         .filter(
             CollectionObject.organization_id == org.organization_id,
-            CollectionObject.is_discoverable == True,  # noqa: E712
-            CollectionObject.is_deleted == False,  # noqa: E712
+            *public_object_clauses(db, org.organization_id),
         )
     )
     return db.query(Media).filter(
@@ -517,3 +551,65 @@ def signed_download_url(key: str, filename: str, org: Organization, db: Session)
         expiry_seconds=_DOWNLOAD_URL_EXPIRY,
         filename=filename,
     )
+
+
+# ---------------------------------------------------------------------------
+# Images on anonymous surfaces (logos, heroes, thumbnails, social previews)
+# ---------------------------------------------------------------------------
+
+
+def public_may_take_original(media: Media, db: Session) -> bool:
+    """Whether the public may be handed this file's master.
+
+    Only when the file's own public download level is ``originals`` and its
+    rights allow it — the same rule the Discover download endpoint enforces.
+    """
+    if not media or not media.s3_key:
+        return False
+    try:
+        return "original" in allowed_variants(media, db)
+    except Exception as e:  # noqa: BLE001 - fail closed
+        logger.warning("Could not check public original access for %s: %s", media.media_id, e)
+        return False
+
+
+def public_image_key(media: Media | None, db: Session, *, thumbnail: bool = False) -> str | None:
+    """The storage key an anonymous page may show for ``media``.
+
+    A rendition first (display or thumbnail tier), then the generated
+    thumbnail, and the uploaded master only when the file's public download
+    level allows originals. None means show nothing: a missing image is
+    recoverable, a leaked master is not.
+    """
+    if media is None:
+        return None
+    from app.serializers.media import (
+        _DISPLAY_DERIVATIVE_ORDER,
+        _THUMBNAIL_DERIVATIVE_ORDER,
+        _display_key_for_image,
+    )
+
+    key = _display_key_for_image(
+        media, db, prefer=_THUMBNAIL_DERIVATIVE_ORDER if thumbnail else _DISPLAY_DERIVATIVE_ORDER,
+    )
+    if key:
+        return key
+    if media.thumbnail_s3_key:
+        return media.thumbnail_s3_key
+    if public_may_take_original(media, db):
+        return media.s3_key
+    return None
+
+
+def sign_public_image(
+    media: Media | None, db: Session, *, organization_id=None, thumbnail: bool = False,
+) -> str | None:
+    """A signed URL for :func:`public_image_key`, or None."""
+    key = public_image_key(media, db, thumbnail=thumbnail)
+    if not key:
+        return None
+    try:
+        return _sign(key, organization_id or media.organization_id, db)
+    except Exception as e:  # noqa: BLE001 - an image must not break the page
+        logger.warning("Failed to sign public image for %s: %s", media.media_id, e)
+        return None

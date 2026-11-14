@@ -192,7 +192,10 @@ def create_app() -> FastAPI:
     from app.fastapi_app.routers.reports_misc import router as reports_misc_router
     from app.fastapi_app.routers.data_tools import router as data_tools_router
     from app.fastapi_app.routers.relationships import router as relationships_router
-    from app.fastapi_app.routers.lod_exports import router as lod_exports_router
+    from app.fastapi_app.routers.lod_exports import (
+        jsonld_extension_router as lod_jsonld_extension_router,
+        router as lod_exports_router,
+    )
     from app.fastapi_app.routers.crm import router as crm_router
     from app.fastapi_app.routers.email_webhooks import router as email_webhooks_router
     from app.fastapi_app.routers.user_settings import router as user_settings_router
@@ -288,6 +291,9 @@ def create_app() -> FastAPI:
     app.include_router(collections_vocabulary_router)
     app.include_router(collections_locations_router)
     app.include_router(collections_discover_router)
+    # .../objects/{id}.jsonld must precede the object detail route, which
+    # would otherwise match it and reject the id with 422.
+    app.include_router(lod_jsonld_extension_router)
     app.include_router(collections_objects_router)
     app.include_router(record_workflow_router)
     app.include_router(archival_hierarchy_router)

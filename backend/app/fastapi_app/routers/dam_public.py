@@ -12,7 +12,10 @@ session would 404 every lookup. Access control is at the app layer:
 
   * URL must carry a valid ``org_id`` path parameter.
   * Media rows are filtered to ``is_published == True``.
-  * Object rows are filtered to ``is_discoverable == True``.
+  * Object rows are filtered to ``is_discoverable == True``, not deleted,
+    and not hidden as deaccessioned (``public_object_clauses``, the Discover
+    gates). That includes objects embedded in a media item's
+    ``object_metadata`` and the objects in ``/sync``.
 
 That second object filter is not cosmetic. This is a BYPASSRLS session, so
 nothing else constrains the query, and ``is_discoverable`` is the flag the
@@ -49,6 +52,7 @@ from app.models import (
     Media,
     Organization,
 )
+from app.services.discover_media import public_object_clauses
 
 logger = logging.getLogger(__name__)
 
@@ -179,7 +183,7 @@ def list_objects(
 
     query = db.query(CollectionObject).filter(
         CollectionObject.organization_id == org_id,
-        CollectionObject.is_discoverable == True,  # noqa: E712
+        *public_object_clauses(db, org_id),
     )
 
     if classification:
@@ -235,7 +239,7 @@ def get_object(
     obj = db.query(CollectionObject).filter(
         CollectionObject.object_id == object_id,
         CollectionObject.organization_id == org_id,
-        CollectionObject.is_discoverable == True,  # noqa: E712
+        *public_object_clauses(db, org_id),
     ).first()
 
     if not obj:
@@ -264,7 +268,7 @@ def get_object_media(
     obj = db.query(CollectionObject).filter(
         CollectionObject.object_id == object_id,
         CollectionObject.organization_id == org_id,
-        CollectionObject.is_discoverable == True,  # noqa: E712
+        *public_object_clauses(db, org_id),
     ).first()
 
     if not obj:
@@ -285,13 +289,14 @@ def get_object_media(
     for link in media_links:
         media = db.query(Media).filter(
             Media.media_id == link.media_id,
+            Media.organization_id == org_id,
             Media.is_published == True,  # noqa: E712
         ).first()
         if media:
             result.append({
                 "media": serialize_public_media(media, session=db),
                 "is_primary": link.is_primary,
-                "caption": link.caption,
+                "caption": link.caption_override,
             })
 
     return {"data": result}
@@ -309,14 +314,14 @@ def get_iiif_manifest(
     db: Session = Depends(get_admin_db),
 ):
     """Get IIIF Presentation 3.0 manifest for a collection object."""
-    from app.services.iiif_presentation import get_iiif_presentation_service
+    from app.services.iiif_presentation import IIIFPresentationService
 
     _verify_org_access(ctx, org_id)
 
     obj = db.query(CollectionObject).filter(
         CollectionObject.object_id == object_id,
         CollectionObject.organization_id == org_id,
-        CollectionObject.is_discoverable == True,  # noqa: E712
+        *public_object_clauses(db, org_id),
     ).first()
 
     if not obj:
@@ -336,6 +341,7 @@ def get_iiif_manifest(
     for link in media_links:
         media = db.query(Media).filter(
             Media.media_id == link.media_id,
+            Media.organization_id == org_id,
             Media.is_published == True,  # noqa: E712
         ).first()
         if media:
@@ -353,7 +359,11 @@ def get_iiif_manifest(
     ).first()
     org_name = org.name if org else None
 
-    service = get_iiif_presentation_service()
+    # A fresh service per request in public mode: images come from a
+    # rendition, and the master only when the file's public download level
+    # allows originals. (The shared singleton carries whatever session the
+    # last caller left on it.)
+    service = IIIFPresentationService(db_session=db, public=True)
     manifest = service.generate_manifest(obj, published_links, org_name)
 
     from fastapi.responses import JSONResponse
@@ -400,6 +410,7 @@ def get_sync(
 
     updated_objects = db.query(CollectionObject).filter(
         CollectionObject.organization_id == org_id,
+        *public_object_clauses(db, org_id),
         CollectionObject.updated_at > since_dt,
     ).order_by(CollectionObject.updated_at.asc()).limit(1000).all()
 

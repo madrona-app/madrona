@@ -576,7 +576,7 @@ def map_media_to_jsonld(
     result = {
         "@type": media_type,
         "@id": media_uri,
-        "name": media.title or media.original_filename,
+        "name": media.title or media.filename,
         "encodingFormat": media.mime_type,
         "_isPrimary": is_primary,  # Internal flag, removed later
     }

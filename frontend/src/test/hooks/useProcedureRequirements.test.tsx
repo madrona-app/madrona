@@ -162,7 +162,20 @@ describe('useProcedureRequirements', () => {
   });
 
   describe('with organization ID', () => {
-    it('includes organization_id query param', async () => {
+    it('fetches the shared baseline route without an organization', async () => {
+      mockApiFetch.mockResolvedValue(mockApiResponse);
+
+      renderHook(
+        () => useProcedureRequirements('object_entry'),
+        { wrapper: createWrapper() }
+      );
+
+      await waitFor(() => {
+        expect(mockApiFetch).toHaveBeenCalledWith('/procedure-requirements/object_entry');
+      });
+    });
+
+    it('fetches the org-scoped route', async () => {
       mockApiFetch.mockResolvedValue(mockApiResponse);
 
       renderHook(
@@ -172,7 +185,7 @@ describe('useProcedureRequirements', () => {
 
       await waitFor(() => {
         expect(mockApiFetch).toHaveBeenCalledWith(
-          '/procedure-requirements/object_entry?organization_id=org-1'
+          '/organizations/org-1/procedure-requirements/object_entry'
         );
       });
     });

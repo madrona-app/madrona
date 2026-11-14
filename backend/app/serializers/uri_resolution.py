@@ -19,12 +19,16 @@ from app.services.uri_persistence import build_uri
 
 def load_collection_object(entity_id: UUID, content_type: str, org_slug: str) -> dict | None:
     """Load collection object and format based on content type."""
-    obj = current_session().query(CollectionObject).filter(
+    from app.services.discover_media import is_public_object
+
+    db = current_session()
+    obj = db.query(CollectionObject).filter(
         CollectionObject.object_id == entity_id,
         CollectionObject.is_discoverable == True,  # noqa: E712
     ).first()
 
-    if not obj:
+    # Discover gates: also not deleted and not hidden as deaccessioned.
+    if not is_public_object(obj, db):
         return None
 
     if content_type == "application/ld+json":
@@ -120,7 +124,7 @@ def format_media_json(media: Media) -> dict:
     """Format media as JSON."""
     return {
         "id": str(media.media_id),
-        "filename": media.original_filename,
+        "filename": media.filename,
         "title": media.title,
         "description": media.description,
         "mime_type": media.mime_type,
@@ -213,7 +217,7 @@ def format_media_jsonld(media: Media, org_slug: str) -> dict:
         "@context": "https://schema.org/",
         "@type": "ImageObject",
         "@id": build_uri(org_slug, "media", str(media.media_id)[:8]),
-        "name": media.title or media.original_filename,
+        "name": media.title or media.filename,
         "description": media.description,
         "encodingFormat": media.mime_type,
         "width": media.width,

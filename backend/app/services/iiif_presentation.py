@@ -37,7 +37,18 @@ class IIIFPresentationService:
     - Universal Viewer
     """
 
-    def __init__(self, base_url: str = None, image_service: IIIFImageService = None, db_session=None):
+    def __init__(
+        self,
+        base_url: str = None,
+        image_service: IIIFImageService = None,
+        db_session=None,
+        public: bool = False,
+    ):
+        # public=True is for anonymous / API-key manifests: images are signed
+        # from a rendition, and the uploaded master only when the file's own
+        # public download level allows originals. A file with neither is
+        # left out rather than served from its master.
+        self.public = public
         self.base_url = base_url or IIIF_PRESENTATION_BASE_URL
         if not self.base_url.endswith('/'):
             self.base_url += '/'
@@ -126,7 +137,30 @@ class IIIFPresentationService:
             for d in derivatives:
                 if d.derivative_type == name and d.s3_key and d.width and d.height:
                     return d.s3_key, d.width, d.height
+        if self.public:
+            # No access-size rendition. A smaller one is still better than the
+            # master; the master only if the public may take originals.
+            for name in ('medium', 'small'):
+                for d in derivatives:
+                    if d.derivative_type == name and d.s3_key and d.width and d.height:
+                        return d.s3_key, d.width, d.height
+            if not self._public_may_take_original(media):
+                return None, media.width or 1000, media.height or 1000
         return media.s3_key, media.width or 1000, media.height or 1000
+
+    def _public_may_take_original(self, media: Media) -> bool:
+        if self.db_session is None:
+            return False
+        from app.services.discover_media import public_may_take_original
+
+        return public_may_take_original(media, self.db_session)
+
+    def _has_public_source(self, media: Media) -> bool:
+        """Public mode: whether this image can be shown without its master."""
+        if not self.public or self.image_service.is_available():
+            return True
+        key, _, _ = self._pick_display_source(media)
+        return bool(key)
 
     def generate_manifest(
         self,
@@ -165,14 +199,20 @@ class IIIFPresentationService:
                 media_items[0] if media_items else None
             )
             if primary_media and primary_media.media:
-                manifest["thumbnail"] = [self._create_thumbnail(primary_media.media)]
+                thumb = self._create_thumbnail(primary_media.media)
+                if thumb:
+                    manifest["thumbnail"] = [thumb]
         except Exception as e:
             logger.warning(f"Failed to generate thumbnail for manifest: {e}")
 
         # Create canvases for each media item
         for idx, link in enumerate(media_items):
             try:
-                if link.media and link.media.media_type == 'image':
+                if (
+                    link.media
+                    and link.media.media_type == 'image'
+                    and self._has_public_source(link.media)
+                ):
                     canvas = self._create_canvas(link.media, idx + 1, link.caption_override)
                     manifest["items"].append(canvas)
             except Exception as e:
@@ -258,7 +298,9 @@ class IIIFPresentationService:
         }
 
         # Add thumbnail
-        canvas["thumbnail"] = [self._create_thumbnail(media)]
+        thumb = self._create_thumbnail(media)
+        if thumb:
+            canvas["thumbnail"] = [thumb]
 
         return canvas
 
@@ -327,10 +369,17 @@ class IIIFPresentationService:
             "target": canvas_id,
         }
 
-    def _create_thumbnail(self, media: Media) -> dict[str, Any]:
+    def _create_thumbnail(self, media: Media) -> Optional[dict[str, Any]]:
         """Create a thumbnail object."""
         if self.image_service.is_available():
             thumbnail_url = self.image_service.get_thumbnail_url(media, width=200)
+        elif self.public:
+            # The generated thumbnail, else the display rendition; never the
+            # master unless the public may take originals.
+            key = media.thumbnail_s3_key or self._pick_display_source(media)[0]
+            thumbnail_url = self._get_presigned_url(media, s3_key_override=key) if key else None
+            if not thumbnail_url:
+                return None
         else:
             # Use presigned S3 URL for thumbnail (or main image if no thumbnail exists)
             thumbnail_url = self._get_presigned_url(media, use_thumbnail=True)

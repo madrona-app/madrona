@@ -164,13 +164,11 @@ def get_object_manifest(
     """
     obj = (
         db.query(CollectionObject)
-        .filter(
-            CollectionObject.object_id == object_id,
-            CollectionObject.is_discoverable.is_(True),
-        )
+        .filter(CollectionObject.object_id == object_id)
         .first()
     )
-    if not obj:
+    # Discoverable, not deleted, not hidden as deaccessioned (Discover gates).
+    if not _lod_object_is_public(db, obj):
         raise HTTPException(status_code=404, detail="Object not found")
 
     media_links = _load_media_links(db, object_id, published_only=True)
@@ -188,11 +186,12 @@ def get_object_manifest(
         if org:
             org_name = org.name
 
-    from app.services.iiif_presentation import get_iiif_presentation_service
+    from app.services.iiif_presentation import IIIFPresentationService
 
-    service = get_iiif_presentation_service()
-    service.db_session = db
-    service._url_cache = {}
+    # Public mode on a fresh instance: renditions only, the master only when
+    # the file's public download level allows originals. Mutating the shared
+    # singleton (as this did) also leaked one request's session into the next.
+    service = IIIFPresentationService(db_session=db, public=True)
     manifest = service.generate_manifest(obj, media_links, org_name)
 
     return _iiif_json_response(manifest, IIIF_PRESENTATION_CT, cache_max_age=300)
@@ -215,14 +214,17 @@ def get_collection_manifest(
     objects = []
     if object_ids:
         parsed_ids = [UUID(oid.strip()) for oid in object_ids.split(",")]
-        objects = (
-            db.query(CollectionObject)
+        objects = [
+            obj
+            for obj in db.query(CollectionObject)
             .filter(
                 CollectionObject.object_id.in_(parsed_ids),
                 CollectionObject.is_discoverable.is_(True),
+                CollectionObject.is_deleted.is_(False),
             )
             .all()
-        )
+            if _lod_object_is_public(db, obj)
+        ]
 
     from app.services.iiif_presentation import get_iiif_presentation_service
 
@@ -313,11 +315,9 @@ def get_authenticated_manifest(
     )
     org_name = org.name if org else None
 
-    from app.services.iiif_presentation import get_iiif_presentation_service
+    from app.services.iiif_presentation import IIIFPresentationService
 
-    service = get_iiif_presentation_service()
-    service.db_session = db
-    service._url_cache = {}
+    service = IIIFPresentationService(db_session=db)
     manifest = service.generate_manifest(obj, media_links, org_name)
 
     return JSONResponse(
@@ -515,14 +515,17 @@ def get_lod_collection_manifest(
         objects = []
         for pid in public_ids:
             obj = _find_object_by_public_id(db, org.organization_id, pid)
-            if obj:
+            # Named IDs get the same gates as the listing below.
+            if _lod_object_is_public(db, obj):
                 objects.append(obj)
     else:
         from app.models import ObjectClassification, LookupValue
 
+        from app.services.discover_media import public_object_clauses
+
         query = db.query(CollectionObject).filter(
             CollectionObject.organization_id == org.organization_id,
-            CollectionObject.is_discoverable == True,  # noqa: E712
+            *public_object_clauses(db, org.organization_id),
         )
 
         if classification:
@@ -574,11 +577,13 @@ def get_activity_stream(
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
 
+    from app.services.discover_media import public_object_clauses
+
     query = (
         db.query(CollectionObject)
         .filter(
             CollectionObject.organization_id == org.organization_id,
-            CollectionObject.is_discoverable == True,  # noqa: E712
+            *public_object_clauses(db, org.organization_id),
         )
         .order_by(CollectionObject.updated_at.desc())
     )
@@ -671,10 +676,15 @@ def get_media_lod(
     for link in links:
         obj = (
             db.query(CollectionObject)
-            .filter(CollectionObject.object_id == link.object_id)
+            .filter(
+                CollectionObject.object_id == link.object_id,
+                CollectionObject.organization_id == org.organization_id,
+            )
             .first()
         )
-        if obj:
+        # A published file can be linked to a private record; name only the
+        # public ones.
+        if _lod_object_is_public(db, obj):
             obj_public_id = _slugify(obj.object_number)
             parent_objects.append(
                 {

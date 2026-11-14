@@ -443,6 +443,7 @@ def get_discover_info(
         CollectionObject.organization_id == org.organization_id,
         CollectionObject.is_discoverable == True,  # noqa: E712
         public_visible_clause(db, org.organization_id),
+        CollectionObject.is_deleted == False,  # noqa: E712
     ).scalar()
 
     config = db.query(DiscoverConfig).filter(
@@ -857,6 +858,7 @@ def get_featured_objects(
         CollectionObject.organization_id == org.organization_id,
         CollectionObject.is_discoverable == True,  # noqa: E712
         public_visible_clause(db, org.organization_id),
+        CollectionObject.is_deleted == False,  # noqa: E712
     ).all()
 
     obj_map = {obj.object_id: obj for obj in objects}

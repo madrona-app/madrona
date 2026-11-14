@@ -247,11 +247,15 @@ def aggregate_object_metadata(
         },
 
         # Rights (public-safe only - no detailed notes)
+        # copyright_status / copyright_holder / reproduction_rights are no
+        # longer object columns; reading them raised AttributeError, so every
+        # aggregation failed and the public DAM API never returned
+        # object_metadata at all.
         "rights": {
-            "copyright_status": obj.copyright_status,
-            "copyright_holder": obj.copyright_holder,
+            "copyright_status": getattr(obj, "copyright_status", None),
+            "copyright_holder": getattr(obj, "copyright_holder", None),
             "credit_line": obj.credit_line,
-            "reproduction_rights": obj.reproduction_rights,
+            "reproduction_rights": getattr(obj, "reproduction_rights", None),
             # Note: copyright_note excluded as may contain internal details
         },
 

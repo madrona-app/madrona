@@ -60,6 +60,26 @@ class TestJsonLdFieldAccess:
         assert "Gift of the Federation" in json.dumps(doc)
         assert SECRET in json.dumps(_body(admin.get(url)))
 
+    def test_extension_url_is_reachable_and_hides_restricted_field(self, restricted_setup):
+        """GET .../objects/{id}.jsonld used to be swallowed by the object
+        detail route (422, not a UUID)."""
+        admin, viewer, org, obj = restricted_setup
+        url = f"/api/organizations/{org.organization_id}/collections/objects/{obj.object_id}.jsonld"
+        r = viewer.get(url)
+        assert r.status_code == 200, r.status_code
+        assert r.headers["content-type"].startswith("application/ld+json")
+        doc = _body(r)
+        assert doc["@id"].endswith(obj.object_number)
+        assert SECRET not in json.dumps(doc)
+        assert "Gift of the Federation" in json.dumps(doc)
+        assert SECRET in json.dumps(_body(admin.get(url)))
+
+    def test_object_detail_route_still_answers(self, restricted_setup):
+        admin, _, org, obj = restricted_setup
+        r = admin.get(f"/api/organizations/{org.organization_id}/collections/objects/{obj.object_id}")
+        assert r.status_code == 200
+        assert _body(r)["object_id"] == str(obj.object_id)
+
     def test_bulk_get_and_scoped_post_hide_field(self, restricted_setup):
         admin, viewer, org, obj = restricted_setup
         base = f"/api/organizations/{org.organization_id}/collections/export/jsonld"
