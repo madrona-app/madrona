@@ -25,7 +25,7 @@ import { ResponsiveImage } from '../../components/ui/ResponsiveImage';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
 import { useAccessibleModal } from '../../hooks/useAccessibleModal';
 import { SaveToCollection } from './members/SaveToCollection';
-import { PublicMediaList } from './components/PublicMediaList';
+import { MediaDownloads, PublicMediaList } from './components/PublicMediaList';
 import { isImageMedia } from './components/publicMedia';
 
 // ============================================================================
@@ -442,6 +442,12 @@ export function DiscoverObjectPage() {
               <span className="font-medium">Preferred citation: </span>
               {currentMedia.preferred_citation}
             </p>
+          </div>
+        )}
+
+        {currentMedia && (currentMedia.downloads?.length ?? 0) > 0 && (
+          <div className="max-w-7xl mx-auto px-4 pb-4">
+            <MediaDownloads item={currentMedia} className="" />
           </div>
         )}
 

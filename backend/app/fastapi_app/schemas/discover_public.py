@@ -124,6 +124,21 @@ class DiscoverTextAlternativeOut(BaseModel):
     file_size: int | None = None
 
 
+class DiscoverDownloadOut(BaseModel):
+    """A download the file's public download level allows.
+
+    ``url`` is the Discover download endpoint, which re-checks the level.
+    """
+    variant: str
+    url: str
+    label: str
+    format: str | None = None
+    mime_type: str | None = None
+    file_size: int | None = None
+    width: int | None = None
+    height: int | None = None
+
+
 class DiscoverMediaOut(BaseModel):
     """Media item in object detail.
 
@@ -154,6 +169,7 @@ class DiscoverMediaOut(BaseModel):
     transcript: str | None = None
     transcript_machine_generated: bool = False
     text_alternatives: list[DiscoverTextAlternativeOut] = []
+    downloads: list[DiscoverDownloadOut] = []
 
 
 class DiscoverObjectDetailOut(BaseModel):

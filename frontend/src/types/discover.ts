@@ -158,6 +158,18 @@ export interface DiscoverTextAlternative {
   file_size?: number | null;
 }
 
+/** A download the file's public download level allows (URL re-checks it). */
+export interface DiscoverMediaDownload {
+  variant: 'access' | 'original' | string;
+  url: string;
+  label: string;
+  format?: string | null;
+  mime_type?: string | null;
+  file_size?: number | null;
+  width?: number | null;
+  height?: number | null;
+}
+
 export interface DiscoverMediaItem {
   media_id: string;
   /** What the page displays or plays (never an image master). */
@@ -185,6 +197,7 @@ export interface DiscoverMediaItem {
   transcript?: string | null;
   transcript_machine_generated?: boolean;
   text_alternatives?: DiscoverTextAlternative[];
+  downloads?: DiscoverMediaDownload[];
 }
 
 export interface DiscoverRelatedHit {

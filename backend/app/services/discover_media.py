@@ -18,6 +18,25 @@ Access rules, all enforced here rather than in the browser:
   what publishing an audio file or PDF means. Publishing is the gate.
 * Caption and transcript files are served through this API (same origin as
   the page, so ``<track>`` loads without CORS), never as raw storage URLs.
+
+Downloads are a separate, per-file decision (``Media.public_download_level``):
+
+* ``none`` (and NULL, the default): no download is offered and the download
+  endpoint refuses every variant.
+* ``derivatives``: the access copy only — an image's best JPEG rendition or a
+  video's web proxy. Audio and documents have no access copy, so nothing.
+* ``originals``: the access copy and the original master.
+
+Download links point at ``/api/discover/{org}/media/{id}/download``, which
+re-checks everything server side; a hidden link is not the control. Rights
+are honoured too: expired rights block every public download, and when the
+organization has media-rights enforcement on, the original needs an
+open-access grant.
+
+Limit, stated plainly for operators: the level governs downloads. Playing a
+published audio file, or opening a published PDF, necessarily transfers the
+file, so a visitor can still save what they can play or read. Do not publish
+a file that must not leave the building.
 """
 from __future__ import annotations
 
@@ -254,6 +273,11 @@ def build_public_media_items(
             continue
         if not specific:
             continue
+        try:
+            downloads = _download_entries(media, org_slug, db, _derivatives(media, db))
+        except Exception as e:  # noqa: BLE001 - fail closed: offer nothing
+            logger.warning("Failed to build public downloads for %s: %s", media.media_id, e)
+            downloads = []
         items.append({
             "media_id": str(media.media_id),
             "media_type": media.media_type,
@@ -276,6 +300,7 @@ def build_public_media_items(
             "text_alternatives": [],
             "poster_url": None,
             "playback_mime_type": None,
+            "downloads": downloads,
             **specific,
         })
     return items
@@ -328,3 +353,167 @@ def read_public_alternative(
             text = "WEBVTT\n\n" + text
         return text, "text/vtt; charset=utf-8"
     return text, "text/plain; charset=utf-8"
+
+
+# ---------------------------------------------------------------------------
+# Downloads
+# ---------------------------------------------------------------------------
+
+PUBLIC_DOWNLOAD_LEVELS = ("none", "derivatives", "originals")
+# What Discover does when a file has no level set. 'none' is the safe choice
+# and is what Discover did before the per-file setting existed.
+DEFAULT_PUBLIC_DOWNLOAD_LEVEL = "none"
+DOWNLOAD_VARIANTS = ("access", "original")
+_LEVEL_RANK = {"none": 0, "derivatives": 1, "originals": 2}
+
+# Best-quality image access copy first.
+_IMAGE_ACCESS_ORDER = ("access_master", "large", "medium")
+
+_DOWNLOAD_URL_EXPIRY = 300
+
+
+def effective_public_download_level(media: Media) -> str:
+    level = getattr(media, "public_download_level", None)
+    return level if level in PUBLIC_DOWNLOAD_LEVELS else DEFAULT_PUBLIC_DOWNLOAD_LEVEL
+
+
+def narrow_share_level(share_level: str | None, media: Media) -> str:
+    """A collection share's level, narrowed (never widened) by the file's own."""
+    share = share_level if share_level in _LEVEL_RANK else "none"
+    own = getattr(media, "public_download_level", None)
+    if own not in _LEVEL_RANK:
+        return share
+    return share if _LEVEL_RANK[share] <= _LEVEL_RANK[own] else own
+
+
+def access_copy(media: Media, derivs: list[MediaDerivative]) -> MediaDerivative | None:
+    """The derivative offered as the "access copy" download, if any."""
+    if media.media_type == "image":
+        for kind in _IMAGE_ACCESS_ORDER:
+            for d in derivs:
+                if d.derivative_type == kind and d.format == "jpeg" and d.s3_key:
+                    return d
+        return None
+    if media.media_type == "video":
+        return video_proxy(derivs)
+    return None
+
+
+def _rights_allow(media: Media, db: Session, variant: str) -> bool:
+    from app.services.download_access import compute_download_access
+    from app.services.media_rights_enforcement import is_rights_enforcement_enabled
+
+    access = compute_download_access(media.media_id, media.organization_id, [], db)
+    if access == "blocked":
+        return False
+    if variant == "original" and is_rights_enforcement_enabled(media.organization_id, db):
+        return access == "direct"
+    return True
+
+
+def allowed_variants(media: Media, db: Session, derivs: list[MediaDerivative] | None = None) -> list[str]:
+    """The download variants the public may take for this file, best first."""
+    level = effective_public_download_level(media)
+    if level == "none":
+        return []
+    if derivs is None:
+        derivs = _derivatives(media, db)
+    out: list[str] = []
+    if access_copy(media, derivs) is not None and _rights_allow(media, db, "access"):
+        out.append("access")
+    if level == "originals" and media.s3_key and _rights_allow(media, db, "original"):
+        out.append("original")
+    return out
+
+
+def download_path(org_slug: str, media_id, variant: str) -> str:
+    return f"/api/discover/{org_slug}/media/{media_id}/download?variant={variant}"
+
+
+def _safe_filename(name: str) -> str:
+    cleaned = re.sub(r'[\\"\r\n\x00-\x1f/]+', "_", name or "").strip(" .")
+    return cleaned[:200] or "download"
+
+
+def _download_entries(media: Media, org_slug: str, db: Session, derivs: list[MediaDerivative]) -> list[dict]:
+    entries = []
+    for variant in allowed_variants(media, db, derivs):
+        if variant == "access":
+            d = access_copy(media, derivs)
+            fmt = (d.format or "").lower()
+            entries.append({
+                "variant": "access",
+                "url": download_path(org_slug, media.media_id, "access"),
+                "label": "Access copy",
+                "format": fmt.upper() if fmt else None,
+                "mime_type": f"video/{fmt}" if media.media_type == "video" else f"image/{fmt}",
+                "file_size": d.file_size or None,
+                "width": d.width or None,
+                "height": d.height or None,
+            })
+        else:
+            ext = (media.filename or "").rsplit(".", 1)[-1] if "." in (media.filename or "") else ""
+            entries.append({
+                "variant": "original",
+                "url": download_path(org_slug, media.media_id, "original"),
+                "label": "Original file",
+                "format": ext.upper() or None,
+                "mime_type": media.mime_type,
+                "file_size": media.file_size,
+                "width": media.width,
+                "height": media.height,
+            })
+    return entries
+
+
+class DownloadRefused(Exception):
+    """A public download request that must not be served."""
+
+    def __init__(self, status: int, code: str, message: str):
+        super().__init__(message)
+        self.status = status
+        self.code = code
+        self.message = message
+
+
+def resolve_public_download(
+    db: Session, org: Organization, media_id: UUID, variant: str,
+) -> tuple[str, str]:
+    """(storage key, download filename) for an allowed public download.
+
+    Raises DownloadRefused for anything not allowed. Not-public media is a 404
+    (no hint it exists); public media whose level or rights forbid the
+    variant is a 403.
+    """
+    if variant not in DOWNLOAD_VARIANTS:
+        raise DownloadRefused(422, "invalid_variant", "variant must be 'access' or 'original'")
+    media = get_public_media(db, org, media_id)
+    if not media:
+        raise DownloadRefused(404, "not_found", "File not found")
+    derivs = _derivatives(media, db)
+    if variant not in allowed_variants(media, db, derivs):
+        raise DownloadRefused(
+            403,
+            "download_not_permitted",
+            "The original file is not available for download"
+            if variant == "original"
+            else "An access copy is not available for download",
+        )
+    stem = (media.filename or "download").rsplit(".", 1)[0]
+    if variant == "access":
+        d = access_copy(media, derivs)
+        return d.s3_key, _safe_filename(f"{stem}_access.{d.format}")
+    return media.s3_key, _safe_filename(media.filename or "download")
+
+
+def signed_download_url(key: str, filename: str, org: Organization, db: Session) -> str | None:
+    """A short-lived URL that downloads ``key`` as an attachment."""
+    from app.services.uploads import get_org_media_url_byob
+
+    return get_org_media_url_byob(
+        key,
+        organization_id=str(org.organization_id),
+        db_session=db,
+        expiry_seconds=_DOWNLOAD_URL_EXPIRY,
+        filename=filename,
+    )

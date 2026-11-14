@@ -3840,6 +3840,19 @@ export const DiscoverConfigOutSchema = z.object({
 
 export type DiscoverConfigOut = z.infer<typeof DiscoverConfigOutSchema>;
 
+export const DiscoverDownloadOutSchema = z.object({
+  variant: z.string(),
+  url: z.string(),
+  label: z.string(),
+  format: z.string().nullable().optional(),
+  mime_type: z.string().nullable().optional(),
+  file_size: z.number().nullable().optional(),
+  width: z.number().nullable().optional(),
+  height: z.number().nullable().optional(),
+}).passthrough();
+
+export type DiscoverDownloadOut = z.infer<typeof DiscoverDownloadOutSchema>;
+
 export const DiscoverEventOutSchema = z.object({
   event_id: z.string(),
   title: z.string().nullable().optional(),
@@ -4079,6 +4092,7 @@ export const DiscoverMediaOutSchema = z.object({
   transcript: z.string().nullable().optional(),
   transcript_machine_generated: z.boolean().optional(),
   text_alternatives: z.array(DiscoverTextAlternativeOutSchema).optional(),
+  downloads: z.array(DiscoverDownloadOutSchema).optional(),
 }).passthrough();
 
 export type DiscoverMediaOut = z.infer<typeof DiscoverMediaOutSchema>;
@@ -7363,6 +7377,7 @@ export const MediaOutSchema = z.object({
   published_at: z.string().nullable().optional(),
   published_url: z.string().nullable().optional(),
   published_by: z.string().nullable().optional(),
+  public_download_level: z.string().nullable().optional(),
   metadata_reviewed: z.boolean().optional(),
   metadata_reviewed_at: z.string().nullable().optional(),
   metadata_reviewed_by: z.string().nullable().optional(),

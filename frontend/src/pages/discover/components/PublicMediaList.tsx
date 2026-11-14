@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import { ChevronDown, ChevronRight, FileText } from 'lucide-react';
+import { ChevronDown, ChevronRight, Download, FileText } from 'lucide-react';
 import type { DiscoverMediaItem } from '../../../types/discover';
 import { formatFileSize } from '../../../lib/utils';
 import { documentTypeLabel, formatDuration, resolvePublicApiUrl } from './publicMedia';
@@ -64,6 +64,33 @@ function TextAlternativeLinks({ item, includeCaptionFiles }: { item: DiscoverMed
           </a>
         </li>
       ))}
+    </ul>
+  );
+}
+
+/** Download links the file's public download level allows; nothing when none. */
+export function MediaDownloads({ item, className = 'mt-3' }: { item: DiscoverMediaItem; className?: string }) {
+  const downloads = item.downloads || [];
+  if (downloads.length === 0) return null;
+  const name = item.name || item.alt_text || 'this file';
+  return (
+    <ul aria-label={`Downloads for ${name}`} className={`${className} space-y-1 text-sm`}>
+      {downloads.map((d) => {
+        const facts = [
+          d.format,
+          d.width && d.height ? `${d.width} by ${d.height} pixels` : null,
+          d.file_size ? formatFileSize(d.file_size) : null,
+        ].filter(Boolean);
+        return (
+          <li key={d.variant}>
+            <a href={resolvePublicApiUrl(d.url)} className={`inline-flex items-center gap-1.5 ${LINK_CLASS}`}>
+              <Download size={16} aria-hidden="true" />
+              Download {d.variant === 'original' ? 'original file' : 'access copy'}: {name}
+              {facts.length > 0 ? ` (${facts.join(', ')})` : ''}
+            </a>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -157,6 +184,7 @@ function PublicMediaEntry({ item }: { item: DiscoverMediaItem }) {
           </p>
         )}
 
+        <MediaDownloads item={item} />
         <TranscriptDisclosure item={item} />
         {/* Audio players never render captions, so offer the timed text as a file. */}
         <TextAlternativeLinks item={item} includeCaptionFiles={item.media_type === 'audio' && !item.transcript} />

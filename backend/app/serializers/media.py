@@ -142,6 +142,8 @@ def _serialize_media(
         "published_at": media.published_at.isoformat() if getattr(media, 'published_at', None) else None,
         "published_url": getattr(media, 'published_url', None),
         "published_by": str(media.published_by) if getattr(media, 'published_by', None) else None,
+        # Per-file public download level; None = not set (Discover: none).
+        "public_download_level": getattr(media, 'public_download_level', None),
         # Metadata review status
         "metadata_reviewed": getattr(media, 'metadata_reviewed', False),
         "metadata_reviewed_at": media.metadata_reviewed_at.isoformat() if getattr(media, 'metadata_reviewed_at', None) else None,

@@ -334,3 +334,163 @@ def test_srt_to_vtt_handles_bom_and_crlf():
 
     out = srt_to_vtt("﻿1\r\n00:00:00,000 --> 00:00:02,250\r\nHi\r\n")
     assert out == "WEBVTT\n\n1\n00:00:00.000 --> 00:00:02.250\nHi\n"
+
+
+# ---------------------------------------------------------------------------
+# Per-file public download level
+# ---------------------------------------------------------------------------
+
+
+def _open_rights(db_session, media):
+    """An active open-access grant, as rights-enforcing orgs require for originals."""
+    from app.models.media import MediaRights
+
+    db_session.add(MediaRights(
+        media_id=media.media_id,
+        organization_id=media.organization_id,
+        rights_type="license",
+        rights_status="public_domain",
+        is_active=True,
+    ))
+    db_session.flush()
+
+
+class TestDownloadLinksInPayload:
+    def _image(self, db_session, org, obj, level):
+        m = _image_with_rendition(db_session, org)
+        m.public_download_level = level
+        db_session.flush()
+        _link(db_session, obj, m)
+        return m
+
+    def test_unset_level_offers_no_downloads(self, client, db_session, org, obj):
+        self._image(db_session, org, obj, None)
+        assert _by_type(_get(client, org, obj))["image"]["downloads"] == []
+
+    def test_none_offers_no_downloads(self, client, db_session, org, obj):
+        self._image(db_session, org, obj, "none")
+        assert _by_type(_get(client, org, obj))["image"]["downloads"] == []
+
+    def test_derivatives_offers_the_access_copy_only(self, client, db_session, org, obj):
+        m = self._image(db_session, org, obj, "derivatives")
+        downloads = _by_type(_get(client, org, obj))["image"]["downloads"]
+        assert [d["variant"] for d in downloads] == ["access"]
+        assert downloads[0]["url"] == f"/api/discover/{org.slug}/media/{m.media_id}/download?variant=access"
+        assert downloads[0]["format"] == "JPEG"
+        assert downloads[0]["file_size"] == 200_000
+
+    def test_originals_offers_both(self, client, db_session, org, obj):
+        m = self._image(db_session, org, obj, "originals")
+        downloads = _by_type(_get(client, org, obj))["image"]["downloads"]
+        assert [d["variant"] for d in downloads] == ["access", "original"]
+        original = downloads[1]
+        assert original["url"].endswith(f"/media/{m.media_id}/download?variant=original")
+        assert original["mime_type"] == "image/tiff"
+        # The link is the enforcing endpoint, never a storage URL for the master.
+        assert m.s3_key not in original["url"]
+
+    def test_audio_has_no_access_copy(self, client, db_session, org, obj):
+        a = _media(db_session, org, "audio", "audio/mpeg", public_download_level="derivatives")
+        _link(db_session, obj, a)
+        assert _by_type(_get(client, org, obj))["audio"]["downloads"] == []
+
+    def test_expired_rights_withdraw_downloads(self, client, db_session, org, obj):
+        from datetime import date, timedelta
+        from app.models.media import MediaRights
+
+        m = self._image(db_session, org, obj, "originals")
+        db_session.add(MediaRights(
+            media_id=m.media_id, organization_id=org.organization_id,
+            rights_type="license", rights_status="in_copyright", is_active=True,
+            end_date=date.today() - timedelta(days=1),
+        ))
+        db_session.flush()
+        assert _by_type(_get(client, org, obj))["image"]["downloads"] == []
+
+
+class TestDownloadEndpoint:
+    def _dl(self, client, org, media, variant):
+        with patch(
+            "app.services.uploads.get_org_media_url_byob",
+            side_effect=lambda key, **kw: f"https://media.test/{key}?dl={kw.get('filename')}",
+        ):
+            return client.get(
+                f"/api/discover/{org.slug}/media/{media.media_id}/download",
+                params={"variant": variant},
+                follow_redirects=False,
+            )
+
+    def test_original_is_refused_when_level_is_derivatives(self, client, db_session, org, obj):
+        m = _image_with_rendition(db_session, org)
+        m.public_download_level = "derivatives"
+        _link(db_session, obj, m)
+        resp = self._dl(client, org, m, "original")
+        assert resp.status_code == 403
+        assert resp.json()["error"]["code"] == "download_not_permitted"
+
+    def test_everything_is_refused_when_level_is_unset(self, client, db_session, org, obj):
+        m = _image_with_rendition(db_session, org)
+        _link(db_session, obj, m)
+        assert self._dl(client, org, m, "original").status_code == 403
+        assert self._dl(client, org, m, "access").status_code == 403
+
+    def test_access_copy_redirects_to_the_rendition(self, client, db_session, org, obj):
+        m = _image_with_rendition(db_session, org)
+        m.public_download_level = "derivatives"
+        m.filename = "vase.tif"
+        _link(db_session, obj, m)
+        resp = self._dl(client, org, m, "access")
+        assert resp.status_code == 302
+        assert resp.headers["location"].startswith(f"https://media.test/derivs/{m.media_id}/large.jpeg")
+        assert "dl=vase_access.jpeg" in resp.headers["location"]
+        assert m.s3_key not in resp.headers["location"]
+        assert resp.headers["cache-control"] == "no-store"
+
+    def test_original_redirects_to_the_master_when_allowed(self, client, db_session, org, obj):
+        m = _image_with_rendition(db_session, org)
+        m.public_download_level = "originals"
+        m.filename = "vase.tif"
+        _link(db_session, obj, m)
+        resp = self._dl(client, org, m, "original")
+        assert resp.status_code == 302
+        assert resp.headers["location"].startswith(f"https://media.test/{m.s3_key}")
+        assert "dl=vase.tif" in resp.headers["location"]
+
+    def test_rights_enforcement_requires_open_access_for_originals(self, client, db_session, org, obj):
+        m = _image_with_rendition(db_session, org)
+        m.public_download_level = "originals"
+        _link(db_session, obj, m)
+        org.media_rights_enforcement = True
+        db_session.flush()
+        # No rights records -> "request" -> refused for the public.
+        assert self._dl(client, org, m, "original").status_code == 403
+        # The access copy is not gated on an open-access grant.
+        assert self._dl(client, org, m, "access").status_code == 302
+        _open_rights(db_session, m)
+        assert self._dl(client, org, m, "original").status_code == 302
+
+    def test_unpublished_media_is_404_even_at_originals(self, client, db_session, org, obj):
+        m = _media(db_session, org, "document", "application/pdf", published=False,
+                   public_download_level="originals")
+        _link(db_session, obj, m)
+        assert self._dl(client, org, m, "original").status_code == 404
+
+    def test_media_not_linked_to_a_discoverable_object_is_404(self, client, db_session, org, obj):
+        m = _media(db_session, org, "document", "application/pdf", public_download_level="originals")
+        assert self._dl(client, org, m, "original").status_code == 404
+
+    def test_unknown_variant_is_422(self, client, db_session, org, obj):
+        m = _media(db_session, org, "document", "application/pdf", public_download_level="originals")
+        _link(db_session, obj, m)
+        assert self._dl(client, org, m, "thumbnail").status_code == 422
+
+
+def test_file_level_only_narrows_a_share():
+    from types import SimpleNamespace
+    from app.services.discover_media import narrow_share_level
+
+    assert narrow_share_level("originals", SimpleNamespace(public_download_level=None)) == "originals"
+    assert narrow_share_level("originals", SimpleNamespace(public_download_level="derivatives")) == "derivatives"
+    assert narrow_share_level("derivatives", SimpleNamespace(public_download_level="originals")) == "derivatives"
+    assert narrow_share_level("none", SimpleNamespace(public_download_level="originals")) == "none"
+    assert narrow_share_level("originals", SimpleNamespace(public_download_level="none")) == "none"

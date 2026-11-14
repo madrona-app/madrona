@@ -643,6 +643,57 @@ def get_public_media_alternative(
     )
 
 
+@router.get(
+    "/api/discover/{org_slug}/media/{media_id}/download",
+    summary="Download a public media file",
+    response_class=Response,
+    status_code=302,
+)
+def download_public_media(
+    org_slug: str,
+    media_id: UUID,
+    request: Request,
+    variant: str = Query("access", description="'access' (access copy) or 'original' (master file)"),
+    db: Session = Depends(get_admin_db),
+):
+    """Redirect to a short-lived attachment URL for an allowed download.
+
+    This is the enforcement point for the per-file public download level
+    (Media.public_download_level): a direct request for a variant the file
+    does not allow is refused here with 403, whatever the page showed. Media
+    that is not public at all is a 404.
+    """
+    from fastapi.responses import RedirectResponse
+
+    from app.fastapi_app.middleware.rate_limit import _get_client_ip
+    from app.services.discover_media import (
+        DownloadRefused,
+        resolve_public_download,
+        signed_download_url,
+    )
+
+    if not _media_limiter.allow(_get_client_ip(request), "discover_media_download"):
+        return JSONResponse(
+            status_code=429,
+            content={"error": {"code": "rate_limit_exceeded", "message": "Too many requests, please try again in a minute", "details": {}}},
+            headers={"Retry-After": "60"},
+        )
+    org = _get_org_by_slug(db, org_slug)
+    if not org:
+        return JSONResponse(status_code=404, content={"error": {"code": "not_found", "message": "Collection not found"}})
+    try:
+        key, filename = resolve_public_download(db, org, media_id, variant)
+    except DownloadRefused as refused:
+        return JSONResponse(
+            status_code=refused.status,
+            content={"error": {"code": refused.code, "message": refused.message}},
+        )
+    url = signed_download_url(key, filename, org, db)
+    if not url:
+        return JSONResponse(status_code=503, content={"error": {"code": "unavailable", "message": "The file is temporarily unavailable"}})
+    return RedirectResponse(url, status_code=302, headers={"Cache-Control": "no-store"})
+
+
 @router.get("/api/discover/{org_slug}/objects/{object_id}/related", response_model=RelatedObjectsResponse, summary="Get related objects")
 def get_related_objects(
     org_slug: str,

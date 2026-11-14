@@ -158,9 +158,45 @@ describe('Discover record page: audio, video and documents', () => {
     expect(within(section).getAllByRole('article')).toHaveLength(2);
   });
 
+  it('shows no download links when the file allows none', async () => {
+    renderPage([{ ...image, downloads: [] }, { ...pdf, downloads: [] }]);
+    await screen.findByRole('link', { name: /open exhibition catalogue/i });
+    expect(screen.queryByRole('link', { name: /^download/i })).toBeNull();
+  });
+
+  it('shows only the downloads the file allows, through the enforcing endpoint', async () => {
+    renderPage([
+      {
+        ...image,
+        name: 'vase.tif',
+        downloads: [
+          { variant: 'access', url: '/api/discover/museum/media/m-img/download?variant=access', label: 'Access copy', format: 'JPEG', file_size: 204800, width: 1600, height: 1200 },
+        ],
+      },
+      {
+        ...pdf,
+        downloads: [
+          { variant: 'original', url: '/api/discover/museum/media/m-doc/download?variant=original', label: 'Original file', format: 'PDF', file_size: 2_400_000 },
+        ],
+      },
+    ]);
+    const access = await screen.findByRole('link', { name: 'Download access copy: vase.tif (JPEG, 1600 by 1200 pixels, 200.0 KB)' });
+    expect(access.getAttribute('href')).toMatch(/\/api\/discover\/museum\/media\/m-img\/download\?variant=access$/);
+    expect(screen.queryByRole('link', { name: /download original file: vase\.tif/i })).toBeNull();
+    const original = screen.getByRole('link', { name: 'Download original file: Exhibition catalogue (PDF, 2.3 MB)' });
+    expect(original.getAttribute('href')).toMatch(/variant=original$/);
+    expect(screen.getByRole('list', { name: 'Downloads for Exhibition catalogue' })).toBeInTheDocument();
+  });
+
   it('has no axe violations with audio, video and a document', async () => {
     const user = userEvent.setup();
-    const { container } = renderPage([image, audio, video, pdf]);
+    const dl = (id: string, variant: string) => ({ variant, url: `/api/discover/museum/media/${id}/download?variant=${variant}`, label: variant, format: 'X', file_size: 10 });
+    const { container } = renderPage([
+      { ...image, downloads: [dl('m-img', 'access'), dl('m-img', 'original')] },
+      audio,
+      { ...video, downloads: [dl('m-video', 'access')] },
+      { ...pdf, downloads: [dl('m-doc', 'original')] },
+    ]);
     await screen.findByRole('heading', { level: 3, name: /gallery walkthrough/i });
     await user.click(screen.getByRole('button', { name: /transcript: interview/i }));
     const results = await checkA11y(container);

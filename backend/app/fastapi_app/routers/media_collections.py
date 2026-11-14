@@ -1335,12 +1335,21 @@ def public_collection_download(
     if not media:
         raise HTTPException(status_code=404, detail="Media not found")
 
+    # The file's own public download level, when set, narrows the share's.
+    from app.services.discover_media import narrow_share_level
+
+    file_level = narrow_share_level(level, media)
+    if file_level == "none":
+        raise HTTPException(status_code=403, detail="Downloads are not permitted for this file")
+    if file_level == "derivatives" and variant == "original":
+        raise HTTPException(status_code=403, detail="The original of this file is not available for download")
+
     # Resolve the target S3 key.
     if variant == "original":
         s3_key = media.s3_key
     else:
         deriv = next(
-            (d for d in getattr(media, "derivatives", []) if d.variant == variant),
+            (d for d in getattr(media, "derivatives", []) if d.derivative_type == variant),
             None,
         )
         if not deriv or not deriv.s3_key:
