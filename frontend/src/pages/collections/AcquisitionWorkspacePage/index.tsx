@@ -21,6 +21,7 @@ import {
   X,
   ShieldCheck,
   ClipboardList,
+  Paperclip,
 } from 'lucide-react';
 import {
   WorkspaceHeader,
@@ -36,6 +37,7 @@ import {
 } from '../../../components/workspace';
 import { ContactSelectorSlideOver } from '../../../components/collections/ConstituentSelectorSlideOver';
 import { SignedDocumentSlot } from '../../../components/collections/SignedDocumentSlot';
+import { ProcedureAttachments } from '../../../components/collections/ProcedureAttachments';
 import { useConstituentSelector } from '../../../hooks/useContactSelector';
 import { getContact } from '../../../lib/api';
 import { RecordDetailPageWrapper, SectionOrderProvider } from '../../../components/record-detail';
@@ -236,6 +238,7 @@ function AcquisitionWorkspacePageContent() {
       deed_of_gift_date: formData.deed_of_gift_date,
       authorization_date: formData.authorization_date,
     },
+    attachments: {},
     linkedEntry: linkedEntry ? { entry_id: acquisition?.entry_id } : {},
     accessioning: acquisition?.status === 'completed' || acquisition?.status === 'accessioned'
       ? { accession_number: formData.accession_number, completed: true }
@@ -898,6 +901,31 @@ function AcquisitionWorkspacePageContent() {
             </div>
           )}
         </WorkspaceSection>
+
+        {/* Attachments — general files (invoices, correspondence, braille copies) */}
+        {!isCreateMode && acquisition?.acquisition_id && orgId && (
+          <WorkspaceSection
+            id="attachments"
+            title="Attachments"
+            icon={<Paperclip size={20} />}
+            isExpanded={expandedSections.attachments}
+            onToggle={() => toggleSection('attachments')}
+            isEditing={isEditing}
+            order={getSectionOrder('attachments')}
+          >
+            <ProcedureAttachments
+              organizationId={orgId}
+              procedureType="acquisition"
+              procedureId={acquisition.acquisition_id}
+              canManage={isEditing && checkPerm('collections.edit')}
+              readOnlyHint={
+                checkPerm('collections.edit')
+                  ? 'Switch to edit mode to add or delete attachments.'
+                  : undefined
+              }
+            />
+          </WorkspaceSection>
+        )}
 
         {/* === LINKED GROUP === */}
         {useNewLayout && !isCreateMode && <SectionGroupDivider label="Linked" icon={Package} />}

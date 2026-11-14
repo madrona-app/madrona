@@ -34,6 +34,7 @@ from sqlalchemy import (
     Index,
     Integer,
     String,
+    Text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -65,6 +66,11 @@ DOCUMENT_TYPES_BY_PROCEDURE: dict[str, list[str]] = {
     "movement": ["custody_transfer"],
 }
 
+# General (unsigned) file attachments — invoices, correspondence, braille-ready
+# copies — share this table on every procedure under one document_type. They
+# always carry a file and a title (label); description is optional.
+ATTACHMENT_DOCUMENT_TYPE = "attachment"
+
 
 class SignedDocument(Base):
     """Polymorphic signed-document attachment for any procedure."""
@@ -83,6 +89,8 @@ class SignedDocument(Base):
     procedure_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     document_type: Mapped[str] = mapped_column(String(50), nullable=False)
     label: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Optional longer description (used by general attachments)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Attached signed file (may be null if the document only has a text reference)
     media_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -146,4 +154,9 @@ class SignedDocument(Base):
     )
 
 
-__all__ = ["SignedDocument", "PROCEDURE_TYPES", "DOCUMENT_TYPES_BY_PROCEDURE"]
+__all__ = [
+    "SignedDocument",
+    "PROCEDURE_TYPES",
+    "DOCUMENT_TYPES_BY_PROCEDURE",
+    "ATTACHMENT_DOCUMENT_TYPE",
+]

@@ -5,7 +5,7 @@
  * Acquisition, Loans In/Out, Deaccession, and Movement. See backend
  * `app.models.signed_documents.SignedDocument` for the schema.
  */
-import { apiFetch } from '../_utils';
+import { apiFetch, API_BASE_URL } from '../_utils';
 
 export type SignedDocumentProcedureType =
   | 'object_entry'
@@ -23,10 +23,15 @@ export interface SignedDocument {
   procedure_id: string;
   document_type: string;
   label: string | null;
+  /** Optional longer description (general attachments). */
+  description?: string | null;
   media_id: string | null;
   media_filename: string | null;
   media_mime_type: string | null;
   media_url: string | null;
+  media_file_size?: number | null;
+  /** Same-origin, permission-checked download route (null without a file). */
+  download_url?: string | null;
   reference: string | null;
   // E-sign (Phase 2)
   esign_provider: string | null;
@@ -64,6 +69,7 @@ export async function createSignedDocument(
     procedureId: string;
     documentType: string;
     label?: string;
+    description?: string;
     reference?: string;
     file?: File;
   },
@@ -73,6 +79,7 @@ export async function createSignedDocument(
   form.append('procedure_id', params.procedureId);
   form.append('document_type', params.documentType);
   if (params.label) form.append('label', params.label);
+  if (params.description) form.append('description', params.description);
   if (params.reference) form.append('reference', params.reference);
   if (params.file) form.append('file', params.file);
 
@@ -95,6 +102,21 @@ export async function updateSignedDocument(
       body: JSON.stringify(updates),
     },
   );
+}
+
+/** document_type used for general (unsigned) file attachments on a procedure. */
+export const ATTACHMENT_DOCUMENT_TYPE = 'attachment';
+
+/**
+ * URL of the permission-checked download route for a document's file. A plain
+ * link works because auth is cookie-based; the route redirects to a fresh
+ * short-lived storage URL.
+ */
+export function signedDocumentDownloadUrl(
+  organizationId: string,
+  signedDocumentId: string,
+): string {
+  return `${API_BASE_URL}/organizations/${organizationId}/signed-documents/${signedDocumentId}/download`;
 }
 
 export async function deleteSignedDocument(
