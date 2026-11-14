@@ -208,7 +208,8 @@ def return_loan_out_effects(
 
     # Complete the outbound (dispatch) movements for this loan — the trip out is
     # finished once the objects are back.
-    (
+    # Row by row (a loan has a handful) so each movement's history records it.
+    for outbound in (
         session.query(Movement)
         .filter(
             Movement.organization_id == organization_id,
@@ -216,8 +217,9 @@ def return_loan_out_effects(
             Movement.reference_id == loan.loan_out_id,
             Movement.status == "in_transit",
         )
-        .update({"status": "completed"}, synchronize_session=False)
-    )
+        .all()
+    ):
+        outbound.status = "completed"
 
     on_loan_location = ensure_on_loan_location(session, organization_id, actor)
 

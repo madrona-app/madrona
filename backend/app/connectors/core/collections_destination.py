@@ -386,57 +386,46 @@ def _import_one(
         db.flush()
         stats["updated"] += 1
 
-    # ── Related records (delete + recreate on update) ────────────────
+    # ── Related records (reconciled in place) ────────────────────────
+    # Rows are edited in place rather than deleted and recreated, so a
+    # re-import records only what changed on the object's history (and the
+    # removals are seen by the audit listener, which a bulk DELETE is not).
+    from app.services.child_rows import reconcile_child_rows
 
-    object_id = obj.object_id
-
-    if not is_new:
-        # Clear existing related records for clean reimport
-        db.query(ObjectTitle).filter(ObjectTitle.object_id == object_id).delete()
-        db.query(ObjectOtherNumber).filter(ObjectOtherNumber.object_id == object_id).delete()
-        db.query(ObjectInscription).filter(ObjectInscription.object_id == object_id).delete()
-
-    # Titles
-    for i, t in enumerate(props.get("titles", [])):
+    titles = []
+    for t in props.get("titles", []):
         title_text = _safe_str(t.get("title"))
         if not title_text:
             continue
         title_type = t.get("title_type", "Primary")
-        db.add(ObjectTitle(
-            link_id=uuid4(),
-            organization_id=organization_id,
-            object_id=object_id,
-            title=title_text,
-            title_type=title_type if title_type != "(not entered)" else None,
-            is_preferred=(i == 0),
-            display_order=t.get("display_order", i),
-        ))
+        titles.append({
+            "title": title_text,
+            "title_type": title_type if title_type != "(not entered)" else None,
+            "is_preferred": not titles,
+        })
+    reconcile_child_rows(obj.title_links, titles, ObjectTitle,
+                         ("title", "title_type", "is_preferred"),
+                         organization_id, None, key_fields=("title",))
 
-    # Alternate numbers
-    for i, an in enumerate(props.get("alt_numbers", [])):
+    numbers = []
+    for an in props.get("alt_numbers", []):
         num = _safe_str(an.get("number"))
         if not num:
             continue
-        db.add(ObjectOtherNumber(
-            link_id=uuid4(),
-            organization_id=organization_id,
-            object_id=object_id,
-            number_type=an.get("description", "Previous Number") or "Previous Number",
-            number_value=num,
-            display_order=i,
-        ))
+        numbers.append({
+            "number_type": an.get("description", "Previous Number") or "Previous Number",
+            "number_value": num,
+        })
+    reconcile_child_rows(obj.other_number_links, numbers, ObjectOtherNumber,
+                         ("number_type", "number_value"),
+                         organization_id, None, key_fields=("number_type",))
 
     # Inscriptions (from TMS Signed/Inscribed fields)
     inscribed = _safe_str(props.get("inscribed"))
-    if inscribed:
-        db.add(ObjectInscription(
-            link_id=uuid4(),
-            organization_id=organization_id,
-            object_id=object_id,
-            content=inscribed,
-            inscription_type="inscription",
-            display_order=0,
-        ))
+    inscriptions = [{"content": inscribed, "inscription_type": "inscription"}] if inscribed else []
+    reconcile_child_rows(obj.inscription_links, inscriptions, ObjectInscription,
+                         ("content", "inscription_type"),
+                         organization_id, None, key_fields=("inscription_type",))
 
     db.flush()
 

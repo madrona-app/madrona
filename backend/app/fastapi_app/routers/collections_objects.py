@@ -10,10 +10,10 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, text
-from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, object_session, selectinload
 
+from app.services.child_rows import blank_to_none as _blank_to_none, reconcile_child_rows as _reconcile_child_rows
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_auth, require_permission
 from app.models import (
@@ -247,71 +247,6 @@ router = APIRouter(tags=["collections-objects"])
 # ============================================================================
 # HELPERS
 # ============================================================================
-
-def _blank_to_none(value):
-    if isinstance(value, str):
-        value = value.strip()
-        return value or None
-    return value
-
-
-def _reconcile_child_rows(collection, desired, model, fields, org_uuid, user_uuid, key_fields=()):
-    """Bring a child-row collection in line with ``desired`` by editing it in place.
-
-    Rows are matched rather than cleared and recreated, so the audit trail
-    records what actually changed ("measurement height: 10 cm -> 12 cm")
-    instead of every row being removed and added on each save. Matching runs
-    in passes: rows whose values are unchanged, then rows with the same key
-    (e.g. the same dimension), then the remaining rows in order. Leftover
-    desired items become new rows; leftover existing rows are deleted.
-    """
-    remaining = list(collection)
-    assigned = [None] * len(desired)
-
-    def row_vals(row, names):
-        return tuple(_blank_to_none(getattr(row, f)) for f in names)
-
-    def item_vals(item, names):
-        return tuple(_blank_to_none(item.get(f)) for f in names)
-
-    passes = [fields] + ([key_fields] if key_fields else [])
-    for names in passes:
-        for i, item in enumerate(desired):
-            if assigned[i] is not None:
-                continue
-            want = item_vals(item, names)
-            for row in remaining:
-                if row_vals(row, names) == want:
-                    assigned[i] = row
-                    remaining.remove(row)
-                    break
-    for i in range(len(desired)):
-        if assigned[i] is None and remaining:
-            assigned[i] = remaining.pop(0)
-
-    for row in remaining:
-        collection.remove(row)
-        # Delete explicitly rather than leaving it to delete-orphan: orphans
-        # are only resolved inside the flush, after the audit listener's
-        # before_flush has looked at session.deleted.
-        sess = object_session(row)
-        if sess is not None and sa_inspect(row).persistent:
-            sess.delete(row)
-
-    for i, item in enumerate(desired):
-        row = assigned[i]
-        if row is None:
-            collection.append(model(
-                organization_id=org_uuid, display_order=i, created_by=user_uuid,
-                **{f: item.get(f) for f in fields},
-            ))
-            continue
-        for f in fields:
-            if _blank_to_none(getattr(row, f)) != _blank_to_none(item.get(f)):
-                setattr(row, f, item.get(f))
-        if row.display_order != i:
-            row.display_order = i
-
 
 def _sync_link_tables(obj, data, org_uuid, user_uuid):
     """Sync link table data from frontend payload (JSONB-shaped) into link table records.

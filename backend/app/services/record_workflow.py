@@ -322,6 +322,33 @@ def sync_rule_flags(db: Session, org_id: UUID, obj: CollectionObject, rules: lis
     return results
 
 
+def delete_flags_audited(db: Session, query, chunk_size: int = 1000) -> int:
+    """Delete the ObjectFlag rows ``query`` selects, recording each removal on
+    its object's history.
+
+    Rows are loaded a chunk at a time, their removals written as audit events
+    in one insert per chunk, then deleted with one statement per chunk, so an
+    organization-wide cleanup stays fast while every object's history still
+    shows the flag being removed and by whom. Returns the number deleted.
+    """
+    from sqlalchemy import tuple_
+    from app.services.entity_audit_bulk import record_link_events
+
+    total = 0
+    while True:
+        rows = query.order_by(ObjectFlag.object_id, ObjectFlag.flag_id).limit(chunk_size).all()
+        if not rows:
+            return total
+        record_link_events(db, "ObjectFlag", "link_removed", [(r, None) for r in rows])
+        keys = [(r.object_id, r.flag_id) for r in rows]
+        db.query(ObjectFlag).filter(
+            tuple_(ObjectFlag.object_id, ObjectFlag.flag_id).in_(keys)
+        ).delete(synchronize_session=False)
+        for r in rows:
+            db.expunge(r)
+        total += len(rows)
+
+
 def recompute_org(db: Session, org_id: UUID, batch_size: int = 500) -> int:
     """Re-evaluate every active object in the org. Commits per batch."""
     rules = active_rules(db, org_id)
@@ -330,7 +357,7 @@ def recompute_org(db: Session, org_id: UUID, batch_size: int = 500) -> int:
     q = db.query(ObjectFlag).filter(ObjectFlag.organization_id == org_id, ObjectFlag.source == "rule")
     if active_flag_ids:
         q = q.filter(~ObjectFlag.flag_id.in_(active_flag_ids))
-    q.delete(synchronize_session=False)
+    delete_flags_audited(db, q)
 
     count = 0
     last_id = None

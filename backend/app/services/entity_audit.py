@@ -41,7 +41,7 @@ TRACKED_ENTITIES: dict[str, dict[str, str]] = {
     # Collections entities
     "CollectionObject": {"display_key": "object_number", "entity_type": "collection_object"},
     "Location": {"display_key": "code", "entity_type": "location"},
-    "Movement": {"display_key": "movement_number", "entity_type": "movement"},
+    "Movement": {"display_key": "movement_reference_number", "entity_type": "movement"},
     "Constituent": {"display_key": "display_name", "entity_type": "constituent"},
     "ConditionReport": {"display_key": "report_number", "entity_type": "condition_report"},
     "ObjectEntry": {"display_key": "entry_number", "entity_type": "object_entry"},
@@ -438,6 +438,8 @@ _TRACKED_FK_COLUMNS: dict[str, tuple[str, str]] = {
     "home_location_id": ("Location", "code"),
     "current_location_id": ("Location", "code"),
     "normal_location_id": ("Location", "code"),
+    # Who an object was last inventoried by (set by bulk "mark inventoried").
+    "last_inventoried_by": ("User", "display_name|email"),
 }
 
 
@@ -552,7 +554,12 @@ def _resolve_fk_display(session: Session, field_name: str, fk_value: Any) -> str
         pk_col = inspect(model_class).primary_key[0]
         related = session.get(model_class, fk_value)
         if related:
-            return getattr(related, display_field, None) or str(fk_value)
+            # "a|b": the first of these attributes that has a value.
+            for attr in display_field.split("|"):
+                value = getattr(related, attr, None)
+                if value:
+                    return value
+            return str(fk_value)
     except Exception:
         pass
     return str(fk_value)
@@ -753,6 +760,28 @@ def _resolve_constituent_xref_parent(
         model_name, parent_type = _CONSTITUENT_XREF_PARENT_TYPES[entity_type]
         return model_name, parent_type, entity_id
     return None, None, None
+
+
+def _xref_constituent_change(session: Session, obj: Any) -> tuple[str, Any, Any] | None:
+    """("constituent", old name, new name) when a ConstituentXref was re-pointed
+    to another person (a merge); constituent_id is an FK, so the generic diff
+    skips it."""
+    try:
+        history = inspect(obj).attrs["constituent_id"].history
+    except Exception:
+        return None
+    if not history.has_changes() or not history.deleted or not history.added:
+        return None
+    old_id, new_id = history.deleted[0], history.added[0]
+    if old_id == new_id:
+        return None
+    cls = _resolve_model_class(session, "Constituent")
+
+    def name(cid):
+        row = session.get(cls, cid) if cls is not None and cid else None
+        return (getattr(row, "display_name", None) or getattr(row, "name", None) or str(cid)) if row else str(cid)
+
+    return ("constituent", name(old_id), name(new_id))
 
 
 def _resolve_link_parent_id(session: Session, obj: Any, link_config: dict[str, str]) -> UUID | None:
@@ -1220,6 +1249,9 @@ def _capture_changes_before_flush(session: Session, flush_context: Any, instance
             if p_model and p_type and p_id:
                 try:
                     field_changes = _get_field_changes(obj, session)
+                    repointed = _xref_constituent_change(session, obj)
+                    if repointed:
+                        field_changes.insert(0, repointed)
                     if field_changes:
                         link_cfg = {
                             "parent_fk": "entity_id",
