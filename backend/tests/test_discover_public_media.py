@@ -199,16 +199,15 @@ class TestPublicMediaPayload:
         from app.models import MediaDerivative
 
         video = _media(db_session, org, "video", "video/quicktime")
-        # The model's format CHECK predates video proxies, so build the row
-        # without flushing it through the constraint: patch the lookup instead.
-        proxy = MediaDerivative(
+        # A real row: the format CHECK allows the transcoder's mp4/webm proxies.
+        db_session.add(MediaDerivative(
             media_id=video.media_id, organization_id=org.organization_id,
             derivative_type="web_mp4_720p", format="mp4",
             s3_key=f"derivs/{video.media_id}/web.mp4", width=1280, height=720, file_size=10,
-        )
+        ))
+        db_session.commit()
         _link(db_session, obj, video)
-        with patch("app.services.discover_media._derivatives", return_value=[proxy]):
-            item = _by_type(_get(client, org, obj))["video"]
+        item = _by_type(_get(client, org, obj))["video"]
         assert item["url"].endswith("web.mp4")
         assert item["playback_mime_type"] == "video/mp4"
 

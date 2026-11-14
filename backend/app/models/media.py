@@ -531,7 +531,7 @@ class MediaDerivative(Base):
         Index("ix_media_derivatives_media_type", "media_id", "derivative_type"),
         UniqueConstraint("media_id", "derivative_type", "format", name="uq_media_derivative_type_format"),
         CheckConstraint(
-            "format IN ('jpeg', 'webp', 'png', 'avif')",
+            "format IN ('jpeg', 'webp', 'png', 'avif', 'mp4', 'webm')",
             name="check_derivative_format",
         ),
         {"schema": "media"},
