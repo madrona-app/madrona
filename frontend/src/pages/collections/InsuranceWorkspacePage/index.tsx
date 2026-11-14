@@ -18,6 +18,7 @@ import {
   Truck,
   Theater,
   History,
+  FileWarning,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -41,6 +42,7 @@ import {
   getInsuranceCoverages,
 } from '../../../lib/api';
 import ConfirmDialog from '../../../components/ConfirmDialog';
+import { InsuranceClaimsList } from '../../../components/collections/InsuranceClaimsList';
 
 import { useFormState, useSectionState, useSectionSummaries, useHasContent } from './hooks';
 import {
@@ -648,6 +650,27 @@ function InsuranceWorkspacePageContent() {
                 )}
               </div>
             )}
+          </WorkspaceSection>
+        )}
+
+        {/* Claims against this policy's coverages, each with its change history */}
+        {!isCreateMode && orgId && policyId && (
+          <WorkspaceSection
+            id="claims"
+            title="Claims"
+            icon={<FileWarning size={18} />}
+            isExpanded={expandedSections.claims}
+            onToggle={() => toggleSection('claims')}
+            isEditing={isEditing}
+            order={getSectionOrder('claims')}
+            isEmpty={!hasContent.claims}
+            summary={sectionSummaries.claims}
+          >
+            <InsuranceClaimsList
+              organizationId={orgId}
+              policyId={policyId}
+              canViewHistory={hasPermission('org.view_audit_logs')}
+            />
           </WorkspaceSection>
         )}
 

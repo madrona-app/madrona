@@ -317,7 +317,7 @@ interface RecordAuditHistoryProps {
   title?: string;
   className?: string;
   /** Heading level for the title (default 3, inside a workspace section). */
-  headingLevel?: 2 | 3;
+  headingLevel?: 2 | 3 | 4 | 5;
 }
 
 export function RecordAuditHistory({
@@ -330,7 +330,7 @@ export function RecordAuditHistory({
 }: RecordAuditHistoryProps) {
   const [offset, setOffset] = useState(0);
   const limit = 20;
-  const Heading = headingLevel === 2 ? 'h2' : 'h3';
+  const Heading = (`h${headingLevel}` as 'h2' | 'h3' | 'h4' | 'h5');
   const headingClass = headingLevel === 2 ? 'text-lg font-semibold text-forest' : 'text-sm font-medium text-ink';
 
   const { data, isLoading, isError, error } = useQuery({

@@ -43,6 +43,7 @@ export function useSectionSummaries(
       ]),
       objects: objectCount ? `${objectCount} object${objectCount === 1 ? '' : 's'}` : undefined,
       notes: parts([formData.notes ? truncate(formData.notes) : null]),
+      claims: undefined,
       history: undefined,
     };
   }, [formData, objectCount]);
@@ -62,6 +63,7 @@ export function useHasContent(
     coveragePeriod: !!(formData.coverage_start_date || formData.coverage_end_date),
     objects: (objectCount ?? 0) > 0,
     notes: !!formData.notes,
+    claims: true,
     history: false,
   }), [formData, objectCount]);
 }

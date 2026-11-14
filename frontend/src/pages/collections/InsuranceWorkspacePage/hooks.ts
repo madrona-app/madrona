@@ -36,6 +36,7 @@ export function useSectionSummaries(formData: FormData): Record<string, string |
         formData.expiration_date ? `To: ${formData.expiration_date}` : null,
       ]),
       coveredItems: undefined,
+      claims: undefined,
       notes: parts([formData.notes ? truncate(formData.notes) : null]),
       history: undefined,
     };
@@ -53,6 +54,7 @@ export function useHasContent(formData: FormData): Record<string, boolean> {
     coverage: !!(formData.coverage_limit || formData.per_occurrence_limit || formData.deductible || formData.annual_premium),
     dates: !!(formData.effective_date || formData.expiration_date),
     coveredItems: false,
+    claims: true,
     notes: !!formData.notes,
     history: false,
   }), [formData]);
