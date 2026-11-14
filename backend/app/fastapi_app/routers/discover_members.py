@@ -582,14 +582,18 @@ def export_my_collection(
         .limit(MAX_ITEMS_PER_COLLECTION)
         .all()
     ]
+    from app.services.public_object_fields import get_public_field_keys
+
+    public_keys = get_public_field_keys(db, ctx.org.organization_id)
     objects = _load_public_objects(db, ctx.org, object_ids)
-    rows = [_public_object_fields(o, org_slug) for o in objects]
+    rows = [_public_object_fields(o, org_slug, public_keys) for o in objects]
     response = _export_response(
         fmt=format,
         rows=rows,
         filename_stem=f"{org_slug}-{coll.name}-{date.today().isoformat()}",
         source={"type": "member_collection", "collection": ctx.org.name, "name": coll.name},
         total_matches=len(rows),
+        public_keys=public_keys,
     )
     response.headers["Cache-Control"] = "private, no-store"
     return response

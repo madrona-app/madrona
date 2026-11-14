@@ -173,8 +173,13 @@ export interface DiscoverObjectDetail {
   canonical_url: string;
   title: string | null;
   titles: Array<{ title: string; title_type?: string; is_preferred?: boolean }> | null;
+  /** Fields below are blank when the organization has not made them public. */
+  object_name?: string | null;
   brief_description: string | null;
   full_description: string | null;
+  physical_description?: string | null;
+  subjects?: string[] | null;
+  edition?: string | null;
   object_type: string | null;
   classification: string | null;
   classifications: Array<{ term: string }> | null;
@@ -186,7 +191,7 @@ export interface DiscoverObjectDetail {
   materials: Array<{ name?: string; value?: string }> | null;
   techniques: Array<{ name?: string; value?: string }> | null;
   measurements: Array<{ type: string; value: number; unit: string }> | null;
-  inscriptions: Array<{ content?: string; text?: string }> | null;
+  inscriptions: Array<string | { content?: string; text?: string }> | null;
   style_period: string | null;
   provenance: string | null;
   credit_line: string | null;

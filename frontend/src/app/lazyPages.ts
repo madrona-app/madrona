@@ -59,6 +59,7 @@ export const ConstituentsPage = React.lazy(() => import('../pages/collections/Co
 export const CratesPage = React.lazy(() => import('../pages/collections/CratesPage'));
 export const DeaccessionsPage = React.lazy(() => import('../pages/collections/DeaccessionsPage'));
 export const DiscoverSettingsPage = React.lazy(() => import('../pages/collections/DiscoverSettingsPage'));
+export const PublicFieldsSettingsPage = React.lazy(() => import('../pages/collections/PublicFieldsSettingsPage'));
 export const ProcedureEnforcementSettingsPage = React.lazy(() => import('../pages/collections/ProcedureEnforcementSettingsPage'));
 export const RecordRulesSettingsPage = React.lazy(() => import('../pages/collections/RecordRulesSettingsPage'));
 export const EadImportPage = React.lazy(() => import('../pages/collections/EadImportPage'));

@@ -42,6 +42,18 @@ from app.services.uri_persistence import (
 
 logger = logging.getLogger(__name__)
 
+
+def _object_session(obj):
+    from sqlalchemy.orm import object_session
+
+    return object_session(obj)
+
+
+def _entry_label(entry: Dict[str, Any]) -> str:
+    """The English label of a IIIF metadata entry."""
+    labels = (entry.get("label") or {}).get("en") or []
+    return labels[0] if labels else ""
+
 # Configuration
 IIIF_BASE_URL = os.environ.get('IIIF_BASE_URL', 'https://iiif.madrona.io')
 PUBLIC_UI_BASE_URL = os.environ.get('PUBLIC_UI_BASE_URL', 'https://collections.madrona.io')
@@ -181,6 +193,15 @@ class IIIFLODService:
         """
         org_slug = org_slug or organization.slug or str(organization.organization_id)[:8]
 
+        # Only the organization's public fields (Discover settings > Public
+        # fields). Labels outside the field catalog (current location,
+        # department, depicted people) are never public.
+        from app.services import public_object_fields as pof
+
+        public_keys = pof.get_public_field_keys(
+            _object_session(obj), organization.organization_id,
+        )
+
         # Build stable URI for manifest @id
         # The manifest IS the LOD representation of the object
         manifest_uri = self._get_stable_manifest_uri(obj, org_slug)
@@ -196,7 +217,10 @@ class IIIFLODService:
             "label": self._create_language_map(self._get_display_title(obj)),
 
             # IIIF 3.0 metadata array with complete CDWA mapping
-            "metadata": self._build_cdwa_metadata(obj, org_slug),
+            "metadata": [
+                entry for entry in self._build_cdwa_metadata(obj, org_slug)
+                if pof.iiif_label_public(_entry_label(entry), public_keys)
+            ],
 
             # Canvases containing images
             "items": [],
@@ -207,7 +231,7 @@ class IIIFLODService:
         }
 
         # Summary from description
-        if obj.brief_description:
+        if obj.brief_description and pof.is_public("brief_description", public_keys):
             manifest["summary"] = self._create_language_map(obj.brief_description)
 
         # Rights statement (copyright fields moved to ObjectRight model)
@@ -245,7 +269,7 @@ class IIIFLODService:
                 manifest["items"].append(canvas)
 
         # NavDate for sorting in collections
-        if obj.creation_date_earliest:
+        if obj.creation_date_earliest and pof.is_public("creation_date", public_keys):
             manifest["navDate"] = obj.creation_date_earliest.isoformat()
 
         return manifest

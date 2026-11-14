@@ -335,8 +335,11 @@ def discover_object_page(
     if not obj:
         return _serve_404(html)
 
+    from app.services import public_object_fields as pof
+
+    public_keys = pof.get_public_field_keys(db, org.organization_id)
     obj_title = _get_display_title(obj.title_links) or "Untitled"
-    creators = _extract_creators_list(obj.creators)
+    creators = _extract_creators_list(obj.creators) if pof.is_public("creators", public_keys) else []
     creator_str = ", ".join(creators) if creators else ""
 
     title_parts = [obj_title]
@@ -348,9 +351,9 @@ def discover_object_page(
     desc_parts = []
     if creator_str:
         desc_parts.append(creator_str)
-    if obj.creation_date_display:
+    if obj.creation_date_display and pof.is_public("creation_date", public_keys):
         desc_parts.append(obj.creation_date_display)
-    if obj.brief_description:
+    if obj.brief_description and pof.is_public("brief_description", public_keys):
         desc_parts.append(obj.brief_description)
     description = " — ".join(desc_parts)[:200] if desc_parts else f"View this object from {org.name}"
 

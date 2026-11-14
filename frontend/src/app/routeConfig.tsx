@@ -102,6 +102,7 @@ import {
   ConstituentsPage,
   DeaccessionsPage,
   DiscoverSettingsPage,
+  PublicFieldsSettingsPage,
   ProcedureEnforcementSettingsPage,
   RecordRulesSettingsPage,
   EadImportPage,
@@ -403,6 +404,7 @@ export function AppRoutes() {
           <Route path="scope" element={<CollectionScopeSettingsPage />} />
           <Route path="report-templates" element={<ReportTemplatesSettingsPage />} />
           <Route path="discover" element={<DiscoverSettingsPage />} />
+          <Route path="public-fields" element={<PublicFieldsSettingsPage />} />
           <Route path="procedure" element={<ProcedureEnforcementSettingsPage />} />
           <Route path="record-rules" element={<RecordRulesSettingsPage />} />
           <Route path="custom-fields" element={<CustomFieldsSettingsPage />} />

@@ -79,8 +79,10 @@ ENTITY_LOADERS = {
 # ============================================================================
 
 def format_object_json(obj: CollectionObject) -> dict:
-    """Format collection object as JSON."""
-    return {
+    """Format collection object as JSON (public fields only)."""
+    from app.services import public_object_fields as pof
+
+    return pof.redact({
         "id": str(obj.object_id),
         "object_number": obj.object_number,
         "title": obj.title_links[0].title if obj.title_links else obj.object_name,
@@ -93,7 +95,7 @@ def format_object_json(obj: CollectionObject) -> dict:
         "credit_line": obj.credit_line,
         "created_at": obj.created_at.isoformat() if obj.created_at else None,
         "updated_at": obj.updated_at.isoformat() if obj.updated_at else None,
-    }
+    }, pof.keys_for_object(obj))
 
 
 def format_person_json(person) -> dict:
@@ -133,11 +135,14 @@ def format_media_json(media: Media) -> dict:
 # ============================================================================
 
 def format_object_jsonld(obj: CollectionObject, org_slug: str) -> dict:
-    """Format collection object as JSON-LD."""
+    """Format collection object as JSON-LD (public fields only)."""
+    from app.services import public_object_fields as pof
+
+    keys = pof.keys_for_object(obj)
     title = obj.title_links[0].title if obj.title_links else obj.object_name
 
     creators = []
-    if obj.creators:
+    if obj.creators and "creators" in keys:
         for c in obj.creators:
             creator = {
                 "@type": "Person",
@@ -148,7 +153,7 @@ def format_object_jsonld(obj: CollectionObject, org_slug: str) -> dict:
             creators.append(creator)
 
     materials = []
-    if obj.materials:
+    if obj.materials and "materials" in keys:
         for m in obj.materials:
             material = {
                 "@type": "DefinedTerm",
@@ -168,12 +173,12 @@ def format_object_jsonld(obj: CollectionObject, org_slug: str) -> dict:
         "@id": build_uri(org_slug, "collection_object", obj.object_number),
         "identifier": obj.object_number,
         "name": title,
-        "description": obj.brief_description,
+        "description": obj.brief_description if "brief_description" in keys else None,
         "creator": creators if len(creators) > 1 else (creators[0] if creators else None),
         "material": materials if materials else None,
-        "dateCreated": obj.creation_date_display,
-        "locationCreated": obj.creation_place,
-        "creditText": obj.credit_line,
+        "dateCreated": obj.creation_date_display if "creation_date" in keys else None,
+        "locationCreated": obj.creation_place if "creation_place" in keys else None,
+        "creditText": obj.credit_line if "credit_line" in keys else None,
     }
 
 

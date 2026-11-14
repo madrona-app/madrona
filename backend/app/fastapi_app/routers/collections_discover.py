@@ -1008,7 +1008,10 @@ def get_discover_preview(
         "preview_warnings": preview_warnings,
     }
 
-    return result
+    # Show only what the public record shows (Discover settings > Public fields).
+    from app.services import public_object_fields as pof
+
+    return pof.redact(result, pof.get_public_field_keys(db, organization_id))
 
 
 # ============================================================================

@@ -21,9 +21,14 @@ from app.models import CollectionObject, Exhibition, ExhibitionObject, Organizat
 
 PRIVATE_SENTINEL = "PRIVATE-SENTINEL-7f3a"
 
-# Keys of the public object detail response, minus the media block.
+# Keys of the public object detail response, minus the media block, for an
+# organization on the default public field set (services/public_object_fields).
+#: Detail keys of fields that are publishable but off by default. The detail
+#: response carries them blank (stable shape); exports leave them out.
+DEFAULT_OFF_DETAIL_KEYS = {"physical_description", "edition"}
+
 EXPECTED_FIELDS = {
-    "object_id", "object_number", "canonical_url", "title", "titles",
+    "object_id", "object_number", "canonical_url", "title", "titles", "object_name", "subjects",
     "brief_description", "full_description", "object_type", "classification",
     "classifications", "creators", "creation_date_display",
     "creation_date_earliest", "creation_date_latest", "creation_place",
@@ -137,7 +142,8 @@ class TestSearchExport:
 
         # And the whitelist is exactly the detail endpoint's, minus media.
         detail = client.get(f"/api/discover/exp-json/objects/{obj.object_id}").get_json()
-        assert set(detail) - {"media", "has_image"} == EXPECTED_FIELDS
+        assert set(detail) - {"media", "has_image"} - DEFAULT_OFF_DETAIL_KEYS == EXPECTED_FIELDS
+        assert all(detail[k] is None for k in DEFAULT_OFF_DETAIL_KEYS)
         for key in EXPECTED_FIELDS:
             assert data["objects"][0][key] == detail[key], key
 

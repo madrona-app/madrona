@@ -149,4 +149,24 @@ describe('DiscoverObjectPage', () => {
       expect(link).toHaveAttribute('href', '/c/museum-org');
     });
   });
+
+  it('shows the optional public fields and omits blanked ones', async () => {
+    mockGetDiscoverObject.mockResolvedValue({
+      ...sampleObj,
+      object_name: 'vase',
+      subjects: ['flowers', 'gardens'],
+      edition: '3/50 (edition of 50)',
+      physical_description: null,
+      provenance: null,
+      inscriptions: ['Signed lower left'],
+    } as any);
+    renderPage();
+    await screen.findByRole('heading', { name: /a beautiful vase/i });
+    expect(screen.getByText('Object Name').nextSibling).toHaveTextContent('vase');
+    expect(screen.getByText('Subjects').nextSibling).toHaveTextContent('flowers, gardens');
+    expect(screen.getByText('Edition').nextSibling).toHaveTextContent('3/50 (edition of 50)');
+    expect(screen.getByText('Inscriptions').nextSibling).toHaveTextContent('Signed lower left');
+    expect(screen.queryByText('Physical Description')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Provenance' })).not.toBeInTheDocument();
+  });
 });

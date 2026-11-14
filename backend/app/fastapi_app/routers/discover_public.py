@@ -258,7 +258,7 @@ def _get_hero_image_url(config: DiscoverConfig, organization_id: UUID, db: Sessi
 # =============================================================================
 
 
-def _public_object_fields(obj: CollectionObject, org_slug: str) -> dict:
+def _public_object_fields(obj: CollectionObject, org_slug: str, public_keys: frozenset[str] | None = None) -> dict:
     """The descriptive fields of a discoverable object, as shown publicly.
 
     Single source of truth for what an anonymous visitor may see about an
@@ -266,9 +266,16 @@ def _public_object_fields(obj: CollectionObject, org_slug: str) -> dict:
     endpoints emit exactly this and nothing more, so an export can never
     carry a field the public record page does not already show.
     Callers are responsible for having gated ``obj`` on ``is_discoverable``.
+
+    Fields the organization has not made public (Discover settings > Public
+    fields; see app.services.public_object_fields) are blanked. Pass
+    ``public_keys`` when serializing many objects of one organization.
     """
+    from app.services import public_object_fields as pof
+
+    keys = public_keys if public_keys is not None else pof.keys_for_object(obj)
     canonical_url = f"/c/{org_slug}/objects/{obj.object_number}" if obj.object_number else f"/c/{org_slug}/objects/{obj.object_id}"
-    return {
+    payload = {
         "object_id": str(obj.object_id),
         "object_number": obj.object_number,
         "canonical_url": canonical_url,
@@ -277,8 +284,11 @@ def _public_object_fields(obj: CollectionObject, org_slug: str) -> dict:
             {"title": t.title, "title_type": t.title_type, "language": t.language, "is_preferred": t.is_preferred}
             for t in (obj.title_links or [])
         ],
+        "object_name": obj.object_name,
         "brief_description": obj.brief_description,
         "full_description": obj.full_description,
+        "physical_description": obj.physical_description,
+        "subjects": pof.format_subjects(obj),
         "object_type": obj.object_type,
         "classification": _get_primary_classification(obj),
         "classifications": _serialize_classifications(obj),
@@ -294,6 +304,7 @@ def _public_object_fields(obj: CollectionObject, org_slug: str) -> dict:
             for m in (obj.measurement_links or [])
         ],
         "inscriptions": [i.content for i in (obj.inscription_links or [])],
+        "edition": pof.format_edition(obj),
         "style_period": obj.style_period,
         "provenance": obj.provenance,
         "credit_line": obj.credit_line,
@@ -305,6 +316,7 @@ def _public_object_fields(obj: CollectionObject, org_slug: str) -> dict:
         # Only user-defined fields the administrator marked public.
         "additional_fields": _public_custom_fields(obj),
     }
+    return pof.redact(payload, keys)
 
 
 def _public_custom_fields(obj: CollectionObject) -> list[dict]:
@@ -324,34 +336,48 @@ def _build_discover_search_request(
     limit: int,
     offset: int,
     include_facets: bool,
+    public_keys: frozenset[str] | None = None,
 ):
     """Translate the public search URL into a collections search request.
 
     Shared by the search endpoint and the search-results export so that an
     export of "these results" runs exactly the query the visitor is looking
     at. ``is_discoverable=True`` is forced here, never taken from the URL.
+
+    Only public fields are searchable, filterable and sortable: a filter or
+    full-text match on a field the organization does not publish would let a
+    visitor probe its hidden values.
     """
+    from app.search.collections.query_builder import CollectionsQueryBuilder
     from app.search.collections.schemas import (
         CollectionsSearchRequest,
         CollectionsSearchQuery,
         CollectionsSearchFilters,
         SearchSort,
     )
+    from app.services import public_object_fields as pof
 
+    keys = public_keys if public_keys is not None else pof.DEFAULT_KEYS
     q_str = q.strip() or None
+
+    def _param(name: str):
+        return request.query_params.get(name) or None if pof.filter_param_public(name, keys) else None
+
+    def _params(name: str):
+        return request.query_params.getlist(name) or None if pof.filter_param_public(name, keys) else None
 
     filters = CollectionsSearchFilters(
         is_discoverable=True,
-        object_type=request.query_params.getlist("object_type") or None,
-        classification=request.query_params.getlist("classification") or None,
-        creator_name=request.query_params.get("creator") or None,
-        material=request.query_params.get("material") or None,
-        technique=request.query_params.get("technique") or None,
-        subject=request.query_params.get("subject") or None,
-        style_period=request.query_params.getlist("style_period") or None,
-        creation_place=request.query_params.get("creation_place") or None,
-        date_from=request.query_params.get("date_from") or None,
-        date_to=request.query_params.get("date_to") or None,
+        object_type=_params("object_type"),
+        classification=_params("classification"),
+        creator_name=_param("creator"),
+        material=_param("material"),
+        technique=_param("technique"),
+        subject=_param("subject"),
+        style_period=_params("style_period"),
+        creation_place=_param("creation_place"),
+        date_from=_param("date_from"),
+        date_to=_param("date_to"),
     )
 
     on_display_param = request.query_params.get("on_display")
@@ -370,10 +396,15 @@ def _build_discover_search_request(
         "date_desc": SearchSort(field="creation_date", order="desc"),
         "newest": SearchSort(field="created_at", order="desc"),
     }
+    if sort in ("date_asc", "date_desc") and not pof.is_public("creation_date", keys):
+        sort = "relevance"
     sort_obj = sort_map.get(sort, sort_map["relevance"])
 
     search_request = CollectionsSearchRequest(
-        query=CollectionsSearchQuery(q=q_str) if q_str else None,
+        query=CollectionsSearchQuery(
+            q=q_str,
+            fields=pof.search_fields(CollectionsQueryBuilder.DEFAULT_SEARCH_FIELDS, keys),
+        ) if q_str else None,
         filters=filters,
         sort=sort_obj if sort != "relevance" or not q_str else None,
         limit=limit,
@@ -474,9 +505,13 @@ def search_discover_objects(
     from app.search.collections.index_manager import CollectionsIndexManager
     from app.search.collections.service import CollectionsSearchService, get_collections_search_service
 
+    from app.services import public_object_fields as pof
+
+    public_keys = pof.get_public_field_keys(db, org.organization_id)
     search_request = _build_discover_search_request(
         request, q=q, sort=sort, limit=limit, offset=offset,
         include_facets=include_facets.lower() != "false",
+        public_keys=public_keys,
     )
 
     if not CollectionsSearchService.is_available():
@@ -515,7 +550,7 @@ def search_discover_objects(
     hits = []
     for h in response.hits:
         thumb_data = thumbnails.get(h.object_id, {})
-        hits.append({
+        hits.append(pof.redact({
             "object_id": h.object_id,
             "object_number": h.object_number,
             "title": h.title,
@@ -527,16 +562,19 @@ def search_discover_objects(
             "thumbnail_url": thumb_data.get("url") if thumb_data else None,
             "thumbnail_srcset": thumb_data.get("srcset") if thumb_data else None,
             "has_image": bool(thumb_data),
-        })
+        }, public_keys))
 
     facets = None
     if response.facets:
+        # Only facets of public fields. Location, condition, status and
+        # acquisition-method facets are never public.
         facets = [
             {
                 "field": f.field,
                 "buckets": [{"key": b.key, "count": b.doc_count} for b in f.buckets],
             }
             for f in response.facets
+            if pof.facet_public(f.field, public_keys)
         ]
 
     return {"hits": hits, "total": response.total, "facets": facets, "next_offset": response.next_offset}
@@ -680,6 +718,9 @@ def get_related_objects(
 
     hit_ids = [UUID(h["_source"]["object_id"]) for h in os_hits]
     thumbnails = _get_thumbnail_urls_bulk_with_srcset(hit_ids, org.organization_id, db)
+    from app.services import public_object_fields as pof
+
+    public_keys = pof.get_public_field_keys(db, org.organization_id)
 
     hits = []
     for h in os_hits:
@@ -688,7 +729,7 @@ def get_related_objects(
         creators_raw = src.get("creators") or []
         creator_names_list = [c.get("name") for c in creators_raw if isinstance(c, dict) and c.get("name")]
         thumb_data = thumbnails.get(oid, {})
-        hits.append({
+        hits.append(pof.redact({
             "object_id": oid,
             "object_number": src.get("object_number"),
             "title": src.get("title"),
@@ -697,7 +738,7 @@ def get_related_objects(
             "classification": src.get("classification"),
             "thumbnail_url": thumb_data.get("url") if thumb_data else None,
             "thumbnail_srcset": thumb_data.get("srcset") if thumb_data else None,
-        })
+        }, public_keys))
 
     return {"hits": hits}
 
@@ -744,6 +785,9 @@ def get_featured_objects(
     thumbnails = _get_thumbnail_urls_bulk_with_srcset(
         [obj.object_id for obj in objects], org.organization_id, db,
     )
+    from app.services import public_object_fields as pof
+
+    public_keys = pof.get_public_field_keys(db, org.organization_id)
 
     hits = []
     for fid in featured_ids:
@@ -751,7 +795,7 @@ def get_featured_objects(
         if not obj:
             continue
         thumb_data = thumbnails.get(str(obj.object_id), {})
-        hits.append({
+        hits.append(pof.redact({
             "object_id": str(obj.object_id),
             "object_number": obj.object_number,
             "title": _get_display_title(obj.title_links),
@@ -763,7 +807,7 @@ def get_featured_objects(
             "thumbnail_url": thumb_data.get("url") if thumb_data else None,
             "thumbnail_srcset": thumb_data.get("srcset") if thumb_data else None,
             "has_image": bool(thumb_data),
-        })
+        }, public_keys))
 
     data = {"hits": hits}
     pub_cache_set(cache_key, data)
@@ -1227,12 +1271,15 @@ def get_public_exhibition(
             CollectionObject.object_id.in_(related_object_ids),
         ).all()
         obj_map = {obj.object_id: obj for obj in objects}
+        from app.services import public_object_fields as pof
+
+        public_keys = pof.get_public_field_keys(db, org.organization_id)
 
         for eo in exhibition_objects:
             obj = obj_map.get(eo.object_id) if eo.object_id else None
             if obj:
                 td = thumbnails_data.get(str(obj.object_id), {})
-                related_objects.append({
+                related_objects.append(pof.redact({
                     "object_id": str(obj.object_id),
                     "object_number": obj.object_number,
                     "title": _get_display_title(obj.title_links),
@@ -1240,7 +1287,7 @@ def get_public_exhibition(
                     "creation_date_display": obj.creation_date_display,
                     "thumbnail_url": td.get("url") if td else None,
                     "thumbnail_srcset": td.get("srcset") if td else None,
-                })
+                }, public_keys))
 
     result = {
         "exhibition_id": str(exh.exhibition_id),
@@ -1376,6 +1423,7 @@ EXPORT_CSV_COLUMNS: list[tuple[str, str]] = [
     ("Object number", "object_number"),
     ("Title", "title"),
     ("Other titles", "titles"),
+    ("Object name", "object_name"),
     ("Creators", "creators"),
     ("Date", "creation_date_display"),
     ("Earliest date", "creation_date_earliest"),
@@ -1389,8 +1437,11 @@ EXPORT_CSV_COLUMNS: list[tuple[str, str]] = [
     ("Style or period", "style_period"),
     ("Measurements", "measurements"),
     ("Inscriptions", "inscriptions"),
+    ("Edition and state", "edition"),
     ("Brief description", "brief_description"),
     ("Full description", "full_description"),
+    ("Physical description", "physical_description"),
+    ("Subjects", "subjects"),
     ("Provenance", "provenance"),
     ("Credit line", "credit_line"),
     ("External links", "external_links"),
@@ -1474,7 +1525,16 @@ def _export_response(
     filename_stem: str,
     source: dict,
     total_matches: int,
+    public_keys: frozenset[str] | None = None,
 ) -> Response:
+    """Rows are _public_object_fields() output. Fields the organization does
+    not publish are left out entirely: JSON objects omit the key and the CSV
+    has no column for it."""
+    from app.services import public_object_fields as pof
+
+    keys = public_keys if public_keys is not None else pof.DEFAULT_KEYS
+    rows = [pof.omit(r, keys) for r in rows]
+    columns = [(h, k) for h, k in EXPORT_CSV_COLUMNS if pof.payload_key_public(k, keys)]
     count = len(rows)
     truncated = total_matches > count
     stem = re.sub(r"[^A-Za-z0-9._-]+", "-", filename_stem).strip("-")[:120] or "export"
@@ -1508,9 +1568,9 @@ def _export_response(
     # BOM so Excel opens non-ASCII text (accents, diacritics) as UTF-8.
     buf.write("﻿")
     writer = csv.writer(buf, lineterminator="\r\n")
-    writer.writerow([h for h, _ in EXPORT_CSV_COLUMNS])
+    writer.writerow([h for h, _ in columns])
     for row in rows:
-        writer.writerow([_csv_safe(_csv_cell(row.get(key))) for _, key in EXPORT_CSV_COLUMNS])
+        writer.writerow([_csv_safe(_csv_cell(row.get(key))) for _, key in columns])
     return Response(content=buf.getvalue(), media_type="text/csv; charset=utf-8", headers=headers)
 
 
@@ -1536,6 +1596,9 @@ def export_discover_search(
     from opensearchpy.exceptions import NotFoundError
     from app.search.collections.service import CollectionsSearchService, get_collections_search_service
 
+    from app.services import public_object_fields as pof
+
+    public_keys = pof.get_public_field_keys(db, org.organization_id)
     object_ids: list[UUID] = []
     total = 0
     if CollectionsSearchService.is_available():
@@ -1546,6 +1609,7 @@ def export_discover_search(
                 page_size = min(_EXPORT_SEARCH_PAGE, EXPORT_MAX_OBJECTS - offset)
                 search_request = _build_discover_search_request(
                     request, q=q, sort=sort, limit=page_size, offset=offset, include_facets=False,
+                    public_keys=public_keys,
                 )
                 response = service.search(search_request, org.organization_id, db_session=db)
                 total = response.total
@@ -1560,7 +1624,7 @@ def export_discover_search(
     # Dedupe while keeping rank order (paging over a live index can repeat).
     object_ids = list(dict.fromkeys(object_ids))
     objects = _load_public_objects(db, org, object_ids)
-    rows = [_public_object_fields(o, org_slug) for o in objects]
+    rows = [_public_object_fields(o, org_slug, public_keys) for o in objects]
     # Anything the index returned that SQL no longer considers public is not
     # a match the visitor can see; keep the stated total honest.
     total = max(total - (len(object_ids) - len(objects)), len(rows))
@@ -1575,6 +1639,7 @@ def export_discover_search(
         filename_stem=f"{org_slug}-search-results-{date.today().isoformat()}",
         source={"type": "search", "collection": org.name, "query": query_echo},
         total_matches=total,
+        public_keys=public_keys,
     )
 
 
@@ -1618,7 +1683,10 @@ def export_public_exhibition(
     linked_ids = list(dict.fromkeys(r[0] for r in public_links.all()))
     total = len(linked_ids)
     objects = _load_public_objects(db, org, linked_ids[:EXPORT_MAX_OBJECTS])
-    rows = [_public_object_fields(o, org_slug) for o in objects]
+    from app.services import public_object_fields as pof
+
+    public_keys = pof.get_public_field_keys(db, org.organization_id)
+    rows = [_public_object_fields(o, org_slug, public_keys) for o in objects]
 
     return _export_response(
         fmt=format,
@@ -1626,4 +1694,5 @@ def export_public_exhibition(
         filename_stem=f"{org_slug}-{slug}-objects-{date.today().isoformat()}",
         source={"type": "exhibition", "collection": org.name, "exhibition": exh.title, "slug": slug},
         total_matches=total,
+        public_keys=public_keys,
     )
