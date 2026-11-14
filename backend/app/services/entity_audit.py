@@ -1382,20 +1382,52 @@ def _get_organization_id(obj: Any) -> UUID | None:
     return getattr(obj, "organization_id", None)
 
 
-def org_writable(session: Session, organization_id: Any) -> bool:
-    """False when the session's RLS context names a different organization.
+def _rls_scope(session: Session) -> tuple[bool, str | None]:
+    """(enforced, current org id) for the session's connection, once per flush.
 
-    Under row-level security (the app role is NOBYPASSRLS) an audit row for
-    another organization would be rejected and take the whole write down
-    with it, e.g. a platform admin creating a new organization from their
-    own. Such events are skipped (and logged); owner/admin sessions carry no
-    RLS context and record them.
+    Enforced is False for roles that bypass row-level security (the owner
+    and admin sessions), which may record any organization's events.
     """
-    config = session.info.get("rls_config") or {}
-    current = config.get("app.current_org_id")
-    if not current or organization_id is None:
+    cached = session.info.get("_audit_rls_scope")
+    if cached is not None:
+        return cached
+    scope: tuple[bool, str | None] = (False, None)
+    try:
+        conn = session.connection()
+        if conn.dialect.name == "postgresql":
+            row = conn.exec_driver_sql(
+                "SELECT current_setting('app.current_org_id', true), "
+                "(SELECT rolsuper OR rolbypassrls FROM pg_roles WHERE rolname = current_user)"
+            ).first()
+            if row is not None:
+                scope = (not bool(row[1]), row[0] or None)
+    except Exception:
+        # Fall back to the stashed context (set_rls_context_for_session).
+        config = session.info.get("rls_config") or {}
+        current = config.get("app.current_org_id") or None
+        scope = (current is not None, current)
+    session.info["_audit_rls_scope"] = scope
+    return scope
+
+
+def org_writable(session: Session, organization_id: Any) -> bool:
+    """False when an audit row for this organization cannot be written.
+
+    Two cases, both skipped and logged rather than taking the user's write
+    down with them:
+    - the organization itself is being deleted in this flush (its history
+      goes with it, and the row would violate the foreign key);
+    - under row-level security (the app role is NOBYPASSRLS) the session is
+      scoped to a different organization, e.g. a platform admin creating a
+      new organization from their own. Owner/admin sessions bypass RLS and
+      record such events.
+    """
+    if organization_id is None:
         return True
-    if str(organization_id) == current:
+    if str(organization_id) in session.info.get("_audit_deleting_orgs", ()):
+        return False
+    enforced, current = _rls_scope(session)
+    if not enforced or str(organization_id) == current:
         return True
     logger.info("Skipping audit event for organization %s outside the session's RLS context", organization_id)
     return False
@@ -2134,6 +2166,17 @@ def _capture_changes_before_flush(session: Session, flush_context: Any, instance
     """
     # Track entities we've already audited in this flush to avoid duplicates
     audited: set[tuple[str, UUID]] = set()
+    # Per-flush caches for org_writable.
+    session.info.pop("_audit_rls_scope", None)
+    session.info["_audit_deleting_orgs"] = {
+        str(o.organization_id) for o in session.deleted if o.__class__.__name__ == "Organization"
+    }
+    # Audit rows added by the previous after_flush are inserted by this flush.
+    # If the RLS scope changed in between (a session switching organizations
+    # mid-transaction), drop rows that would now be rejected rather than fail.
+    for pending in [o for o in session.new if isinstance(o, (EntityAuditEvent, EntityAuditFieldDiff))]:
+        if pending in session and not org_writable(session, pending.organization_id):
+            session.expunge(pending)  # an event's diffs go with it
 
     # ---- Tracked entity deletes (capture before flush) ----
     pending_deletes = []
@@ -2305,6 +2348,7 @@ def _capture_creates_after_flush(session: Session, flush_context: Any) -> None:
     Captures creates after flush when PKs are assigned.
     Also processes deletes that were captured before flush.
     """
+    session.info.pop("_audit_rls_scope", None)  # re-read the RLS scope for this pass
     # ---- Process tracked entity creates ----
     pending_creates = session.info.pop("_audit_pending_creates", [])
     for obj in pending_creates:

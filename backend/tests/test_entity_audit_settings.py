@@ -202,15 +202,28 @@ def test_settings_change_log_and_history_api(auth_setup, db_session):
     assert resp.status_code == 200 and resp.get_json()["items"][0]["change_type"] == "created"
 
 
-def test_events_outside_the_rls_org_are_skipped_not_fatal(acting_user, db_session):
+def test_events_outside_the_rls_org_are_skipped_not_fatal(acting_user, db_session, monkeypatch):
     """A write for another organization (a platform admin creating an org
-    from their own) must not fail on the audit row RLS would reject."""
+    from their own, on the RLS-enforced app role) must not fail on the audit
+    row RLS would reject. The suite's superuser bypasses RLS, so the scope is
+    simulated here; tests/postgres/test_platform_admin_api.py exercises the
+    real app role."""
     org, _ = acting_user
-    db_session.info["rls_config"] = {"app.current_org_id": str(uuid.uuid4())}
-    try:
-        other = Organization(name="New museum", slug=f"new-{uuid.uuid4().hex[:6]}", status="active", is_demo=False)
-        db_session.add(other)
-        db_session.commit()
-        assert _events(db_session, other.organization_id, "organization", other.organization_id) == []
-    finally:
-        db_session.info.pop("rls_config", None)
+    monkeypatch.setattr(ea, "_rls_scope", lambda session: (True, str(org.organization_id)))
+    other = Organization(name="New museum", slug=f"new-{uuid.uuid4().hex[:6]}", status="active", is_demo=False)
+    db_session.add(other)
+    db_session.commit()
+    assert _events(db_session, other.organization_id, "organization", other.organization_id) == []
+    # The session's own organization is still recorded.
+    o = db_session.get(Organization, org.organization_id)
+    o.timezone = "Europe/London"
+    db_session.commit()
+    assert len(_events(db_session, org.organization_id, "organization", org.organization_id, "updated")) == 1
+
+
+def test_deleting_an_organization_does_not_trip_on_its_own_history(acting_user, db_session):
+    other = Organization(name="Short-lived", slug=f"sl-{uuid.uuid4().hex[:6]}", status="active", is_demo=False)
+    db_session.add(other)
+    db_session.commit()
+    db_session.delete(other)
+    db_session.commit()  # no foreign-key failure from a "deleted" event for the vanished org

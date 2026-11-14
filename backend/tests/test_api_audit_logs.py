@@ -139,9 +139,12 @@ class TestGetAuditLogs:
 
 class TestGetEntityAuditEvents:
     def test_list_entity_events_empty(self, auth_setup):
-        """When no entity audit events exist, returns empty list."""
+        """When no events exist for a record type, returns an empty list.
+
+        (Creating the test organization itself is now recorded, so the list
+        is filtered to a type the fixture does not touch.)"""
         auth_client, org, _ = auth_setup
-        resp = auth_client.get(_entity_events_url(org))
+        resp = auth_client.get(_entity_events_url(org) + "?entity_type=collection_object")
         assert resp.status_code == 200
         data = resp.get_json()
         assert data["items"] == []
@@ -151,7 +154,7 @@ class TestGetEntityAuditEvents:
         """Returns entity audit events when data exists."""
         auth_client, org, user = auth_setup
         event = _create_entity_audit_event(db_session, org, user)
-        resp = auth_client.get(_entity_events_url(org))
+        resp = auth_client.get(_entity_events_url(org) + "?entity_type=collection_object")
         assert resp.status_code == 200
         data = resp.get_json()
         assert data["total"] == 1
