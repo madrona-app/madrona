@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link, useSearchParams, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -25,6 +25,8 @@ import { ResponsiveImage } from '../../components/ui/ResponsiveImage';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
 import { useAccessibleModal } from '../../hooks/useAccessibleModal';
 import { SaveToCollection } from './members/SaveToCollection';
+import { MediaDownloads, PublicMediaList } from './components/PublicMediaList';
+import { isImageMedia } from './components/publicMedia';
 
 // ============================================================================
 // Lightbox
@@ -182,6 +184,7 @@ function buildObjectJsonLd(
 
   // Resolve primary + additional image URLs from the media array.
   const imageUrls: string[] = (obj.media || [])
+    .filter((m: { media_type?: string | null }) => !m.media_type || m.media_type === 'image')
     .map((m: { url?: string; full_url?: string; thumbnail_url?: string }) =>
       m.url || m.full_url || m.thumbnail_url,
     )
@@ -290,15 +293,18 @@ export function DiscoverObjectPage() {
   const location = useLocation();
   const fromResults = (location.state as DiscoverObjectLinkState | null)?.discoverResults;
 
+  // Images feed the hero, thumbnail strip and lightbox; audio, video and
+  // documents are listed with their players, transcripts and links.
+  const images = useMemo(() => (obj?.media || []).filter(isImageMedia), [obj]);
+  const otherMedia = useMemo(() => (obj?.media || []).filter((m) => !isImageMedia(m)), [obj]);
+
   const handleLightboxPrev = useCallback(() => {
-    if (!obj) return;
-    setLightboxIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : obj.media.length - 1));
-  }, [obj]);
+    setLightboxIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : images.length - 1));
+  }, [images]);
 
   const handleLightboxNext = useCallback(() => {
-    if (!obj) return;
-    setLightboxIndex((prev) => (prev !== null && prev < obj.media.length - 1 ? prev + 1 : 0));
-  }, [obj]);
+    setLightboxIndex((prev) => (prev !== null && prev < images.length - 1 ? prev + 1 : 0));
+  }, [images]);
 
   if (isLoading) {
     return (
@@ -341,7 +347,7 @@ export function DiscoverObjectPage() {
     );
   }
 
-  const currentMedia = obj.media[selectedImageIndex] || obj.media[0];
+  const currentMedia = images[selectedImageIndex] || images[0];
 
   // Format display strings
   const materialsDisplay = obj.materials
@@ -400,7 +406,8 @@ export function DiscoverObjectPage() {
         />
       </div>
 
-      {/* Image hero */}
+      {/* Image hero (omitted when the record has only audio, video or documents) */}
+      {(images.length > 0 || otherMedia.length === 0) && (
       <div className="bg-stone/20">
         <div className="max-w-7xl mx-auto flex items-center justify-center py-8 px-4">
           {currentMedia ? (
@@ -438,11 +445,17 @@ export function DiscoverObjectPage() {
           </div>
         )}
 
+        {currentMedia && (currentMedia.downloads?.length ?? 0) > 0 && (
+          <div className="max-w-7xl mx-auto px-4 pb-4">
+            <MediaDownloads item={currentMedia} className="" />
+          </div>
+        )}
+
         {/* Thumbnail strip */}
-        {obj.media.length > 1 && (
+        {images.length > 1 && (
           <div className="max-w-7xl mx-auto px-4 pb-6">
             <div className="flex gap-2 overflow-x-auto pb-2 justify-center">
-              {obj.media.map((m, i) => (
+              {images.map((m, i) => (
                 <button
                   key={m.media_id}
                   onClick={() => setSelectedImageIndex(i)}
@@ -465,6 +478,7 @@ export function DiscoverObjectPage() {
           </div>
         )}
       </div>
+      )}
 
       {/* Metadata */}
       <div className="max-w-7xl mx-auto px-4 py-10">
@@ -505,6 +519,8 @@ export function DiscoverObjectPage() {
                 <p className="text-sm text-ink leading-relaxed">{obj.full_description}</p>
               </div>
             )}
+
+            <PublicMediaList items={otherMedia} />
 
             {obj.provenance && (
               <div className="mb-6">
@@ -565,7 +581,7 @@ export function DiscoverObjectPage() {
       {/* Lightbox */}
       {lightboxIndex !== null && (
         <Lightbox
-          media={obj.media}
+          media={images}
           currentIndex={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
           onPrev={handleLightboxPrev}

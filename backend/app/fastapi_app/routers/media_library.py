@@ -743,6 +743,22 @@ async def update_media(
         if field in data:
             setattr(media, field, data[field])
 
+    # Per-file public download level (Discover + public shares). Validated
+    # here rather than left to the CHECK constraint so a bad value is a 422,
+    # not a 500. None/"" clears it back to "not set".
+    download_level_changed = False
+    if 'public_download_level' in data:
+        from app.services.discover_media import PUBLIC_DOWNLOAD_LEVELS
+
+        level = data['public_download_level'] or None
+        if level is not None and level not in PUBLIC_DOWNLOAD_LEVELS:
+            raise HTTPException(status_code=422, detail={
+                "code": "validation_error",
+                "message": "public_download_level must be one of: none, derivatives, originals (or null)",
+            })
+        download_level_changed = level != media.public_download_level
+        media.public_download_level = level
+
     iptc_fields = {k: data[k] for k in ('caption', 'copyright_notice') if k in data}
     if iptc_fields:
         iptc = dict(media.iptc_metadata or {})
@@ -795,6 +811,15 @@ async def update_media(
 
     media.updated_by = auth.user_id
     db.commit()
+
+    if download_level_changed:
+        # Cached public record pages carry the download links; drop them so
+        # the page matches the endpoint (which enforces regardless).
+        try:
+            from app.services.public_cache import invalidate_org_cache_by_id
+            invalidate_org_cache_by_id(organization_id, section="object")
+        except Exception as e:  # noqa: BLE001 - cache is best-effort
+            logger.warning("Failed to invalidate discover cache for %s: %s", organization_id, e)
 
     try:
         from app.search.media import MediaSearchService, get_media_search_service

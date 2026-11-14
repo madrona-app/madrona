@@ -72,6 +72,7 @@ import { StartProcedure } from '../../../components/studio/StartProcedure';
 import { useMediaTabNavigation } from './useMediaTabNavigation';
 import { computeRightsStatus, DERIVATIVE_PURPOSE } from './types';
 import { resolveMediaBackLink } from './backLink';
+import { PublicDownloadSetting } from './PublicDownloadSetting';
 import type { MediaDetailOutletContext } from './types';
 
 const MEDIA_TYPE_ICONS = {
@@ -710,6 +711,14 @@ export default function MediaDetailPage() {
                           </dl>
                         )}
                       </div>
+
+                      <PublicDownloadSetting
+                        orgId={orgId!}
+                        mediaId={mediaId!}
+                        mediaType={media.media_type}
+                        value={media.public_download_level}
+                        canEdit={canEdit}
+                      />
 
                       {/* AI descriptions (Cooper Hewitt three-tier pattern) — images only */}
                       {media.media_type === 'image' && (

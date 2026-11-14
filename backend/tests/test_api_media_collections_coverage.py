@@ -25,6 +25,7 @@ network/STS call is made.
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
@@ -1070,6 +1071,77 @@ class TestPublicEndpoints:
             f"/public/collections/{coll.public_share_token}/media/{media.media_id}/download"
         )
         assert resp.status_code == 404
+
+    def _share_with(self, db_session, auth_setup, share_level, file_level):
+        _, org, user = auth_setup
+        coll = _make_public_share(
+            db_session, org.organization_id, user.user_id, download_level=share_level,
+        )
+        media = _make_media(db_session, org.organization_id)
+        media.public_download_level = file_level
+        db_session.add(
+            MediaCollectionItem(collection_id=coll.collection_id, media_id=media.media_id, sort_order=1)
+        )
+        db_session.commit()
+        return coll, media
+
+    def test_file_level_none_blocks_an_originals_share(self, client, auth_setup, db_session):
+        coll, media = self._share_with(db_session, auth_setup, "originals", "none")
+        resp = client.get(
+            f"/public/collections/{coll.public_share_token}/media/{media.media_id}/download",
+            params={"variant": "original"},
+        )
+        assert resp.status_code == 403
+
+    def test_file_level_derivatives_blocks_the_original_on_an_originals_share(self, client, auth_setup, db_session):
+        coll, media = self._share_with(db_session, auth_setup, "originals", "derivatives")
+        resp = client.get(
+            f"/public/collections/{coll.public_share_token}/media/{media.media_id}/download",
+            params={"variant": "original"},
+        )
+        assert resp.status_code == 403
+
+    def test_file_level_cannot_widen_a_derivatives_share(self, client, auth_setup, db_session):
+        coll, media = self._share_with(db_session, auth_setup, "derivatives", "originals")
+        resp = client.get(
+            f"/public/collections/{coll.public_share_token}/media/{media.media_id}/download",
+            params={"variant": "original"},
+        )
+        assert resp.status_code == 403
+
+    def test_derivative_variant_resolves_by_derivative_type(self, client, auth_setup, db_session):
+        # The lookup used to read a non-existent `.variant` attribute and 500.
+        from app.models import MediaDerivative
+
+        coll, media = self._share_with(db_session, auth_setup, "derivatives", "derivatives")
+        db_session.add(MediaDerivative(
+            media_id=media.media_id, organization_id=media.organization_id,
+            derivative_type="large", format="jpeg", s3_key="derivs/large.jpeg",
+            width=10, height=10, file_size=10,
+        ))
+        db_session.commit()
+        with patch(
+            "app.fastapi_app.routers.media_collections.get_org_media_url",
+            side_effect=lambda key, **kw: f"https://media.test/{key}",
+        ):
+            resp = client.get(
+                f"/public/collections/{coll.public_share_token}/media/{media.media_id}/download",
+                params={"variant": "large"},
+            )
+        assert resp.status_code == 200
+        assert resp.get_json()["url"] == "https://media.test/derivs/large.jpeg"
+
+    def test_unset_file_level_keeps_the_share_level(self, client, auth_setup, db_session):
+        coll, media = self._share_with(db_session, auth_setup, "originals", None)
+        with patch(
+            "app.fastapi_app.routers.media_collections.get_org_media_url",
+            return_value="https://media.test/master",
+        ):
+            resp = client.get(
+                f"/public/collections/{coll.public_share_token}/media/{media.media_id}/download",
+                params={"variant": "original"},
+            )
+        assert resp.status_code == 200
 
 
 # ---------------------------------------------------------------------------

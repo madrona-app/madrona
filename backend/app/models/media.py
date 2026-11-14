@@ -205,6 +205,16 @@ class Media(Base):
         ForeignKey("users.user_id", ondelete="SET NULL"),
         nullable=True,
     )
+    # What the public may download of this file (Discover record pages and
+    # public collection shares):
+    #   'none'        — view/play only, no download offered or served
+    #   'derivatives' — the access copy (an image/video rendition) only
+    #   'originals'   — the access copy and the original master
+    # NULL means "not set": Discover treats it as 'none' (the safe default,
+    # and what Discover did before this setting existed); a public collection
+    # share keeps its own share-level setting. When set, it can only narrow a
+    # share's level, never widen it.
+    public_download_level: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     # Metadata review for sensitive content (required before publishing)
     metadata_reviewed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -362,6 +372,10 @@ class Media(Base):
         CheckConstraint(
             "processing_status IN ('pending', 'processing', 'completed', 'failed')",
             name="check_media_processing_status",
+        ),
+        CheckConstraint(
+            "public_download_level IS NULL OR public_download_level IN ('none', 'derivatives', 'originals')",
+            name="check_media_public_download_level",
         ),
         CheckConstraint(
             "copyright_status IS NULL OR copyright_status IN ('public_domain', 'in_copyright', "

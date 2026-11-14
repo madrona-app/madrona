@@ -77,6 +77,10 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["discover-public"])
 
+# Caption/transcript fetches and file downloads. Generous: one record page
+# can carry several tracks, and a visitor may step through many records.
+_media_limiter = RateLimiter(max_requests=120, window_seconds=60)
+
 
 # =============================================================================
 # Helpers
@@ -577,54 +581,117 @@ def get_discover_object(
         .all()
     )
 
-    media_items = []
-    for link in media_links:
-        media = db.query(Media).filter(
-            Media.media_id == link.media_id,
-            Media.is_published == True,  # noqa: E712
-        ).first()
-        if media and media.s3_key:
-            try:
-                # A rendition, never media.s3_key. This endpoint is anonymous,
-                # so minting the master handed every visitor a presigned link
-                # to the full-resolution original of every published image.
-                from app.services.discovery_service import build_display_key_for_media
+    # Images display from a rendition only; audio, video and documents are
+    # included with their public captions/transcripts. See discover_media.
+    from app.services.discover_media import build_public_media_items
 
-                display_key = build_display_key_for_media(media, db)
-                if not display_key:
-                    continue
-                url = get_org_media_url(
-                    display_key,
-                    organization_id=str(org.organization_id),
-                    db_session=db,
-                    expiry_seconds=3600,
-                )
-                srcset = _build_srcset_for_media(media.media_id, org.organization_id, db)
-                media_items.append({
-                    "media_id": str(media.media_id),
-                    "url": url,
-                    "srcset": srcset,
-                    "media_type": media.media_type,
-                    "mime_type": media.mime_type,
-                    "width": media.width,
-                    "height": media.height,
-                    "alt_text": media.alt_text,
-                    "credit": media.credit,
-                    "preferred_citation": media.preferred_citation,
-                    "is_primary": link.is_primary,
-                    "caption": link.caption_override,
-                })
-            except Exception as e:
-                logger.warning("Failed to build media URL for %s: %s", media.media_id, e)
+    media_items = build_public_media_items(db, org, org_slug, media_links)
 
     result = {
         **_public_object_fields(obj, org_slug),
         "media": media_items,
-        "has_image": len(media_items) > 0,
+        "has_image": any(m["media_type"] == "image" for m in media_items),
     }
 
     pub_cache_set(cache_key, result)
     return result
+
+
+@router.get(
+    "/api/discover/{org_slug}/media/{media_id}/alternatives/{alternative_id}",
+    summary="Get a public caption or transcript file",
+    response_class=Response,
+)
+def get_public_media_alternative(
+    org_slug: str,
+    media_id: UUID,
+    alternative_id: UUID,
+    request: Request,
+    db: Session = Depends(get_admin_db),
+):
+    """Serve a caption (WebVTT) or plain-text transcript for public media.
+
+    Same-origin with the record page, so ``<track>`` loads without CORS. Only
+    caption/transcript/OCR files of published media linked to a discoverable
+    object are reachable; anything else is a 404, never a hint it exists.
+    """
+    from app.fastapi_app.middleware.rate_limit import _get_client_ip
+    from app.services.discover_media import read_public_alternative
+
+    if not _media_limiter.allow(_get_client_ip(request), "discover_media_text"):
+        return JSONResponse(
+            status_code=429,
+            content={"error": {"code": "rate_limit_exceeded", "message": "Too many requests, please try again in a minute", "details": {}}},
+            headers={"Retry-After": "60"},
+        )
+    not_found = JSONResponse(status_code=404, content={"error": {"code": "not_found", "message": "File not found"}})
+    org = _get_org_by_slug(db, org_slug)
+    if not org:
+        return not_found
+    try:
+        found = read_public_alternative(db, org, media_id, alternative_id)
+    except Exception as e:  # noqa: BLE001 - storage miss is a 404 to the public
+        logger.warning("Failed to read public alternative %s: %s", alternative_id, e)
+        found = None
+    if not found:
+        return not_found
+    body, content_type = found
+    return Response(
+        content=body,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=300", "X-Content-Type-Options": "nosniff"},
+    )
+
+
+@router.get(
+    "/api/discover/{org_slug}/media/{media_id}/download",
+    summary="Download a public media file",
+    response_class=Response,
+    status_code=302,
+)
+def download_public_media(
+    org_slug: str,
+    media_id: UUID,
+    request: Request,
+    variant: str = Query("access", description="'access' (access copy) or 'original' (master file)"),
+    db: Session = Depends(get_admin_db),
+):
+    """Redirect to a short-lived attachment URL for an allowed download.
+
+    This is the enforcement point for the per-file public download level
+    (Media.public_download_level): a direct request for a variant the file
+    does not allow is refused here with 403, whatever the page showed. Media
+    that is not public at all is a 404.
+    """
+    from fastapi.responses import RedirectResponse
+
+    from app.fastapi_app.middleware.rate_limit import _get_client_ip
+    from app.services.discover_media import (
+        DownloadRefused,
+        resolve_public_download,
+        signed_download_url,
+    )
+
+    if not _media_limiter.allow(_get_client_ip(request), "discover_media_download"):
+        return JSONResponse(
+            status_code=429,
+            content={"error": {"code": "rate_limit_exceeded", "message": "Too many requests, please try again in a minute", "details": {}}},
+            headers={"Retry-After": "60"},
+        )
+    org = _get_org_by_slug(db, org_slug)
+    if not org:
+        return JSONResponse(status_code=404, content={"error": {"code": "not_found", "message": "Collection not found"}})
+    try:
+        key, filename = resolve_public_download(db, org, media_id, variant)
+    except DownloadRefused as refused:
+        return JSONResponse(
+            status_code=refused.status,
+            content={"error": {"code": refused.code, "message": refused.message}},
+        )
+    url = signed_download_url(key, filename, org, db)
+    if not url:
+        return JSONResponse(status_code=503, content={"error": {"code": "unavailable", "message": "The file is temporarily unavailable"}})
+    return RedirectResponse(url, status_code=302, headers={"Cache-Control": "no-store"})
 
 
 @router.get("/api/discover/{org_slug}/objects/{object_id}/related", response_model=RelatedObjectsResponse, summary="Get related objects")

@@ -50,6 +50,7 @@ class MediaOut(BaseModel):
     published_at: str | None = None
     published_url: str | None = None
     published_by: str | None = None
+    public_download_level: str | None = None
     metadata_reviewed: bool = False
     metadata_reviewed_at: str | None = None
     metadata_reviewed_by: str | None = None

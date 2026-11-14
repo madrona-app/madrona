@@ -50,6 +50,8 @@ export const MediaSchema = z.object({
   published_at: z.string().nullable().optional(),
   published_url: z.string().nullable().optional(),
   published_by: z.string().nullable().optional(),
+  // Per-file public download level; null = not set (public site: no downloads)
+  public_download_level: z.enum(['none', 'derivatives', 'originals']).nullable().optional(),
   // Metadata review status
   metadata_reviewed: z.boolean().nullable().optional(),
   metadata_reviewed_at: z.string().nullable().optional(),
