@@ -213,6 +213,20 @@ ENTITY_TYPE_PERMISSIONS: dict[str, Permission] = {
     "app_role_assignment": Permission.ORG_VIEW_AUDIT_LOGS,
     "sso_configuration": Permission.ORG_VIEW_AUDIT_LOGS,
     "api_key": Permission.ORG_VIEW_AUDIT_LOGS,
+    # Organization settings: the permission that edits them.
+    "organization": Permission.ORG_MANAGE_SETTINGS,
+    "organization_branding": Permission.ORG_MANAGE_SETTINGS,
+    "organization_collection_profile": Permission.ORG_MANAGE_SETTINGS,
+    "organization_storage_config": Permission.ORG_MANAGE_SETTINGS,
+    "media_ai_config": Permission.MEDIA_ADMIN,
+    "media_ai_tag_mapping": Permission.MEDIA_ADMIN,
+    "derivative_size_config": Permission.MEDIA_ADMIN,
+    "media_field_inheritance_config": Permission.MEDIA_ADMIN,
+    "vocabulary_mapping": Permission.LOOKUPS_VIEW,
+    "sla_policy": Permission.ORG_MANAGE_SETTINGS,
+    "approval_rule": Permission.ORG_MANAGE_SETTINGS,
+    "document_template": Permission.DOCUMENTS_TEMPLATES_VIEW,
+    "org_scoped_doc": Permission.ORG_MANAGE_SETTINGS,
 }
 
 

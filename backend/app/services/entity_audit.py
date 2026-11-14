@@ -120,6 +120,35 @@ TRACKED_ENTITIES: dict[str, dict[str, str]] = {
         "display_key": "name", "entity_type": "api_key",
         "exclude_fields": "key_hash,key_prefix,last_used_at",
     },
+    # Organization settings (shown on the admin Settings changes log).
+    # Metered usage counters are left out; stored credentials are masked.
+    "Organization": {
+        "display_key": "name", "entity_type": "organization",
+        "exclude_fields": "storage_used_bytes,db_used_bytes,search_used_bytes,storage_metered_at",
+    },
+    "OrganizationBranding": {
+        "display_key": "letterhead_name", "display_label": "Branding", "entity_type": "organization_branding",
+    },
+    "OrganizationCollectionProfile": {
+        "display_label": "Collection profile", "entity_type": "organization_collection_profile",
+    },
+    "OrganizationStorageConfig": {
+        "display_key": "provider", "entity_type": "organization_storage_config",
+        "mask_fields": "config_encrypted,cdn_signing_key_encrypted",
+        "exclude_fields": "migration_task_id",
+    },
+    "MediaAIConfig": {
+        "display_label": "Media AI settings", "entity_type": "media_ai_config",
+        "exclude_fields": "current_month_usage,usage_reset_date",
+    },
+    "MediaAITagMapping": {"display_key": "ai_tag_value", "entity_type": "media_ai_tag_mapping"},
+    "DerivativeSizeConfig": {"display_key": "label", "entity_type": "derivative_size_config"},
+    "MediaFieldInheritanceConfig": {"display_key": "display_label", "entity_type": "media_field_inheritance_config"},
+    "VocabularyMapping": {"display_key": "source_term", "entity_type": "vocabulary_mapping"},
+    "SLAPolicy": {"display_key": "name", "entity_type": "sla_policy"},
+    "ApprovalRule": {"display_key": "description", "display_label": "Approval rule", "entity_type": "approval_rule"},
+    "DocumentTemplate": {"display_key": "name", "entity_type": "document_template"},
+    "OrgScopedDoc": {"display_key": "title", "entity_type": "org_scoped_doc"},
     # Media entities
     "Media": {"display_key": "filename", "entity_type": "media"},
     "MediaCollection": {"display_key": "name", "entity_type": "media_collection"},
@@ -703,6 +732,19 @@ TRACKED_LINKS: dict[str, dict[str, str]] = {
         "child_type": "org_role_label",
         "child_id_field": "role_id",
     },
+    # ---- Organization settings: which applications are enabled ----
+    "OrganizationApplication": {
+        "parent_fk": "organization_id",
+        "parent_type": "organization",
+        "parent_model": "Organization",
+        "link_label": "application",
+        "linked_fk": "application_id",
+        "linked_model": "Application",
+        "linked_display": "display_name",
+        "child_type": "organization_application",
+        "child_id_field": "application_id",
+        "exclude_fields": "enabled_at",
+    },
     # ConstituentXref is polymorphic — handled specially via _resolve_constituent_xref_parent
 }
 
@@ -817,7 +859,12 @@ class suppress_link_audit:
 SECURITY_ENTITY_TYPES: frozenset[str] = frozenset({
     "role", "app_role_assignment", "sso_configuration", "api_key",
 })
-SETTINGS_ENTITY_TYPES: frozenset[str] = frozenset()
+SETTINGS_ENTITY_TYPES: frozenset[str] = frozenset({
+    "organization", "organization_branding", "organization_collection_profile",
+    "organization_storage_config", "media_ai_config", "media_ai_tag_mapping",
+    "derivative_size_config", "media_field_inheritance_config", "vocabulary_mapping",
+    "sla_policy", "approval_rule", "document_template", "org_scoped_doc",
+})
 
 
 # Fields to exclude from audit logging (metadata fields managed by the system)
@@ -901,6 +948,11 @@ _ENTITY_FK_COLUMNS: dict[str, dict[str, tuple[str, str]]] = {
         "user_id": ("User", "email|display_name"),
         "role_id": ("Role", "display_name"),
     },
+    "MediaAITagMapping": {"definition_id": ("MediaTagDefinition", "display_name")},
+    "VocabularyMapping": {
+        "vocabulary_term_id": ("VocabularyTerm", "preferred_term"),
+        "reviewed_by": ("User", "display_name|email"),
+    },
     "PlaceAuthority": {"parent_place_id": ("PlaceAuthority", "preferred_name")},
     "SubjectAuthority": {"broader_subject_id": ("SubjectAuthority", "preferred_term")},
     "StylePeriodAuthority": {"parent_authority_id": ("StylePeriodAuthority", "preferred_term")},
@@ -938,14 +990,34 @@ def _get_organization_id(obj: Any) -> UUID | None:
     return getattr(obj, "organization_id", None)
 
 
+def org_writable(session: Session, organization_id: Any) -> bool:
+    """False when the session's RLS context names a different organization.
+
+    Under row-level security (the app role is NOBYPASSRLS) an audit row for
+    another organization would be rejected and take the whole write down
+    with it, e.g. a platform admin creating a new organization from their
+    own. Such events are skipped (and logged); owner/admin sessions carry no
+    RLS context and record them.
+    """
+    config = session.info.get("rls_config") or {}
+    current = config.get("app.current_org_id")
+    if not current or organization_id is None:
+        return True
+    if str(organization_id) == current:
+        return True
+    logger.info("Skipping audit event for organization %s outside the session's RLS context", organization_id)
+    return False
+
+
 def _get_display_key(obj: Any, config: dict[str, str]) -> str | None:
     """Get the human-readable display key for an entity."""
     display_key_attr = config.get("display_key")
     if display_key_attr:
         value = getattr(obj, display_key_attr, None)
-        if value is not None:
+        if value is not None and value != "":
             return str(value)[:500]  # Truncate to fit column
-    return None
+    # Fixed name for one-per-organization settings rows ("Media AI settings").
+    return config.get("display_label")
 
 
 def _get_request_context() -> dict[str, str | None]:
@@ -1467,7 +1539,7 @@ def _create_link_audit_event(
         return None
 
     org_id = organization_id or _resolve_link_org(session, link_obj, link_config, p_id)
-    if not org_id:
+    if not org_id or not org_writable(session, org_id):
         return None
 
     child_type, child_id, child_display = _child_identity(session, link_obj, link_config)
@@ -1572,6 +1644,8 @@ def _create_audit_event(
     organization_id = _get_organization_id(obj)
     if not organization_id:
         logger.debug(f"Skipping audit for {obj.__class__.__name__}: no organization_id")
+        return None
+    if not org_writable(session, organization_id):
         return None
 
     entity_id = _get_entity_pk(obj)
@@ -1901,6 +1975,8 @@ def _capture_creates_after_flush(session: Session, flush_context: Any) -> None:
     req_context = _get_request_context()
 
     for delete_info in pending_deletes:
+        if not org_writable(session, delete_info["organization_id"]):
+            continue
         try:
             event = EntityAuditEvent(
                 organization_id=delete_info["organization_id"],
@@ -1946,6 +2022,8 @@ def _capture_creates_after_flush(session: Session, flush_context: Any) -> None:
         req_context = _get_request_context()
 
     for link_del in pending_link_deletes:
+        if not org_writable(session, link_del["organization_id"]):
+            continue
         try:
             link_config = link_del["link_config"]
             link_label = link_config.get("link_label", "linked record")

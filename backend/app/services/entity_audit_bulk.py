@@ -78,6 +78,8 @@ class _Writer:
         child_id: Any = None,
         child_display: str | None = None,
     ) -> None:
+        if not ea.org_writable(self.session, organization_id):
+            return
         event_id = uuid.uuid4()
         self.events.append({
             "event_id": event_id,
