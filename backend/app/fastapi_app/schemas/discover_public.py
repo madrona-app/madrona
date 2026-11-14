@@ -107,20 +107,53 @@ class DiscoverMeasurementOut(BaseModel):
     part: str | None = None
 
 
+class DiscoverCaptionTrackOut(BaseModel):
+    """A WebVTT caption track, served same-origin by the Discover API."""
+    url: str
+    label: str
+    srclang: str
+    kind: str = "captions"
+    default: bool | None = None
+
+
+class DiscoverTextAlternativeOut(BaseModel):
+    """A plain-text equivalent (transcript or OCR text) of a media file."""
+    url: str
+    label: str
+    kind: str
+    file_size: int | None = None
+
+
 class DiscoverMediaOut(BaseModel):
-    """Media item in object detail."""
+    """Media item in object detail.
+
+    ``url`` is what the page displays or plays: an image rendition, a video
+    web proxy (or the published file when none exists), or the published
+    audio/document file.
+    """
     media_id: str
     url: str | None = None
     srcset: Any | None = None
     media_type: str | None = None
     mime_type: str | None = None
+    name: str | None = None
+    description: str | None = None
     width: int | None = None
     height: int | None = None
+    duration_seconds: int | None = None
+    page_count: int | None = None
+    file_size: int | None = None
     alt_text: str | None = None
     credit: str | None = None
     preferred_citation: str | None = None
     is_primary: bool | None = None
     caption: str | None = None
+    playback_mime_type: str | None = None
+    poster_url: str | None = None
+    captions: list[DiscoverCaptionTrackOut] = []
+    transcript: str | None = None
+    transcript_machine_generated: bool = False
+    text_alternatives: list[DiscoverTextAlternativeOut] = []
 
 
 class DiscoverObjectDetailOut(BaseModel):

@@ -141,19 +141,50 @@ export interface DiscoverSearchResponse {
   next_offset: number | null;
 }
 
+/** A WebVTT caption track, served same-origin by the Discover API. */
+export interface DiscoverCaptionTrack {
+  url: string;
+  label: string;
+  srclang: string;
+  kind: string;
+  default?: boolean | null;
+}
+
+/** A plain-text equivalent (transcript or OCR text) of a media file. */
+export interface DiscoverTextAlternative {
+  url: string;
+  label: string;
+  kind: 'transcript' | 'ocr' | string;
+  file_size?: number | null;
+}
+
 export interface DiscoverMediaItem {
   media_id: string;
+  /** What the page displays or plays (never an image master). */
   url: string;
   media_type: string | null;
   mime_type: string | null;
+  /** Human name for the file: its title, else its filename. */
+  name?: string | null;
+  description?: string | null;
   width: number | null;
   height: number | null;
+  duration_seconds?: number | null;
+  page_count?: number | null;
+  file_size?: number | null;
   alt_text: string | null;
   attribution: string | null;
+  credit?: string | null;
   preferred_citation?: string | null;
   is_primary: boolean;
   caption: string | null;
   srcset: SrcSetData | null;
+  playback_mime_type?: string | null;
+  poster_url?: string | null;
+  captions?: DiscoverCaptionTrack[];
+  transcript?: string | null;
+  transcript_machine_generated?: boolean;
+  text_alternatives?: DiscoverTextAlternative[];
 }
 
 export interface DiscoverRelatedHit {
