@@ -101,6 +101,60 @@ def _object_to_dict(obj: CollectionObject) -> dict:
     return data
 
 
+# Field-level access for staff exports. Restricted paths are serializer keys
+# (e.g. "provenance", "measurements"); the JSON-LD mappers read ORM
+# attributes, so collection-shaped keys map to their relationship names.
+_FIELD_PATH_TO_ATTR = {
+    "titles": "title_links",
+    "measurements": "measurement_links",
+    "inscriptions": "inscription_links",
+    "other_numbers": "other_number_links",
+    "classifications": "classification_links",
+    "media": "media_links",
+}
+# Identity fields the export cannot be built without.
+_NEVER_HIDDEN = {"object_id", "object_number", "organization_id", "object_type"}
+
+
+def _restricted_object_fields(db: Session, auth: AuthContext, org_uuid: UUID) -> set[str]:
+    from app.services.field_access_service import get_restricted_fields
+    restricted = get_restricted_fields(
+        db, org_uuid, UUID(str(auth.user_id)), "collection_object",
+        role_override=getattr(auth, "role_override", None),
+    )
+    return {p for p in restricted if p not in _NEVER_HIDDEN}
+
+
+class _RestrictedObjectView:
+    """Read-only view of an object that hides restricted fields.
+
+    Wrapping (rather than blanking attributes on the ORM instance) keeps the
+    session clean: nothing is marked dirty, so nothing can be flushed.
+    """
+
+    def __init__(self, obj, hidden: set[str]):
+        self._obj = obj
+        self._hidden_attrs = {_FIELD_PATH_TO_ATTR.get(p, p) for p in hidden}
+
+    def __getattr__(self, name):
+        if name in self._hidden_attrs:
+            return [] if name.endswith("_links") else None
+        return getattr(self._obj, name)
+
+    def __setattr__(self, name, value):
+        if name in ("_obj", "_hidden_attrs"):
+            object.__setattr__(self, name, value)
+        else:
+            setattr(self._obj, name, value)
+
+
+def _strip_restricted(data: dict, hidden: set[str]) -> dict:
+    for path in hidden:
+        data.pop(path, None)
+        data.pop(_FIELD_PATH_TO_ATTR.get(path, path), None)
+    return data
+
+
 def _get_org_and_object(db: Session, org_id: str, object_id: str):
     org_uuid = UUID(org_id)
     obj_uuid = UUID(object_id)
@@ -408,7 +462,7 @@ def export_object_with_profile(
     if not obj:
         raise HTTPException(status_code=404, detail="Object not found")
 
-    obj_data = _object_to_dict(obj)
+    obj_data = _strip_restricted(_object_to_dict(obj), _restricted_object_fields(db, auth, org_uuid))
     base_url = str(request.base_url).rstrip("/")
     exported = apply_export_profile(obj_data, export_profile, base_url)
     exported["@id"] = f"{base_url}/org/{org_id}/object/{obj.object_number or object_id}"
@@ -448,7 +502,7 @@ def export_objects_batch(
     base_url = str(request.base_url).rstrip("/")
     exported_objects = []
     for obj in objects:
-        obj_data = _object_to_dict(obj)
+        obj_data = _strip_restricted(_object_to_dict(obj), _restricted_object_fields(db, auth, org_uuid))
         exported = apply_export_profile(obj_data, export_profile, base_url)
         exported["@id"] = f"{base_url}/org/{org_id}/object/{obj.object_number or str(obj.object_id)}"
         exported["@type"] = "VisualArtwork"
@@ -483,7 +537,7 @@ def export_collection_with_profile(
     base_url = str(request.base_url).rstrip("/")
     exported_objects = []
     for obj in objects:
-        obj_data = _object_to_dict(obj)
+        obj_data = _strip_restricted(_object_to_dict(obj), _restricted_object_fields(db, auth, org_uuid))
         exported = apply_export_profile(obj_data, export_profile, base_url)
         exported["@id"] = f"{base_url}/org/{org_id}/object/{obj.object_number or str(obj.object_id)}"
         exported["@type"] = "VisualArtwork"
@@ -540,13 +594,15 @@ def export_object_jsonld(
         obj.media_links = media_links
 
     org_slug = org.slug or str(org_uuid)[:8]
-    jsonld = map_object_to_jsonld(obj=obj, org_slug=org_slug, include_media=include_media, include_context=include_context)
+    hidden = _restricted_object_fields(db, auth, org_uuid)
+    view = _RestrictedObjectView(obj, hidden) if hidden else obj
+    jsonld = map_object_to_jsonld(obj=view, org_slug=org_slug, include_media=include_media, include_context=include_context)
 
     return JSONResponse(content=jsonld, headers={"Content-Type": "application/ld+json"})
 
 
 @router.get("/api/organizations/{org_id}/collections/objects/{object_id}.jsonld", summary="Export object jsonld extension")
-async def export_object_jsonld_extension(
+def export_object_jsonld_extension(
     org_id: str,
     object_id: str,
     include_media: bool = Query(True),
@@ -555,7 +611,7 @@ async def export_object_jsonld_extension(
     db: Session = Depends(get_db),
 ):
     """Export object as JSON-LD (file extension style URL)."""
-    return await export_object_jsonld(org_id, object_id, include_media, include_context, auth, db)
+    return export_object_jsonld(org_id, object_id, include_media, include_context, auth, db)
 
 
 @router.get("/api/organizations/{org_id}/collections/export/jsonld", summary="Export objects jsonld bulk")
@@ -571,7 +627,7 @@ def export_objects_jsonld_bulk(
     """Export multiple collection objects as a JSON-LD Collection."""
     return _bulk_jsonld_response(
         db, org_id, limit=limit, offset=offset,
-        classification=classification, object_type=object_type,
+        classification=classification, object_type=object_type, auth=auth,
     )
 
 
@@ -597,7 +653,7 @@ def export_objects_jsonld_scoped(
     """
     ids = resolve_object_scope(db, auth, org_id, body)
     return _bulk_jsonld_response(
-        db, str(org_id), limit=body.limit, offset=body.offset, object_ids=ids,
+        db, str(org_id), limit=body.limit, offset=body.offset, object_ids=ids, auth=auth,
     )
 
 
@@ -610,6 +666,7 @@ def _bulk_jsonld_response(
     classification: str | None = None,
     object_type: str | None = None,
     object_ids: list[UUID] | None = None,
+    auth: AuthContext | None = None,
 ) -> JSONResponse:
     set_rls_context_for_session(db, org_id)
     org_uuid = UUID(org_id)
@@ -657,6 +714,9 @@ def _bulk_jsonld_response(
     org_slug = org.slug or str(org_uuid)[:8]
     collection_title = f"{org.name} Collection Export"
 
+    hidden = _restricted_object_fields(db, auth, org_uuid) if auth is not None else set()
+    if hidden:
+        objects = [_RestrictedObjectView(o, hidden) for o in objects]
     jsonld = map_objects_to_jsonld_collection(objects=objects, org_slug=org_slug, collection_title=collection_title)
     if object_ids is None:
         jsonld["view"] = {
