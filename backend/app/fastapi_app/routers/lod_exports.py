@@ -18,6 +18,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response
+from pydantic import Field
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -49,6 +50,10 @@ from app.services.jsonld_export import (
     map_object_to_jsonld,
     map_objects_to_jsonld_collection,
     JSONLD_CONTEXT,
+)
+from app.fastapi_app.routers.collections_export import (
+    ObjectExportScope,
+    resolve_object_scope,
 )
 from app.services.uri_persistence import (
     URIStatus,
@@ -564,6 +569,48 @@ def export_objects_jsonld_bulk(
     db: Session = Depends(get_db),
 ):
     """Export multiple collection objects as a JSON-LD Collection."""
+    return _bulk_jsonld_response(
+        db, org_id, limit=limit, offset=offset,
+        classification=classification, object_type=object_type,
+    )
+
+
+class JsonLdBulkExportBody(ObjectExportScope):
+    """Scope (selection / work set / current search) plus paging."""
+
+    limit: int = Field(1000, ge=1, le=1000)
+    offset: int = Field(0, ge=0)
+
+
+@router.post("/api/organizations/{org_id}/collections/export/jsonld", summary="Export scoped objects jsonld")
+def export_objects_jsonld_scoped(
+    org_id: UUID,
+    body: JsonLdBulkExportBody,
+    auth: AuthContext = Depends(require_permission(Permission.COLLECTIONS_VIEW)),
+    db: Session = Depends(get_db),
+):
+    """Export a selection, a work set, or the current search as JSON-LD.
+
+    The POST form of the bulk export, for scopes too large for a query
+    string (a staff list's current search or selection). Pages of up to
+    1,000 objects, like the GET form.
+    """
+    ids = resolve_object_scope(db, auth, org_id, body)
+    return _bulk_jsonld_response(
+        db, str(org_id), limit=body.limit, offset=body.offset, object_ids=ids,
+    )
+
+
+def _bulk_jsonld_response(
+    db: Session,
+    org_id: str,
+    *,
+    limit: int,
+    offset: int,
+    classification: str | None = None,
+    object_type: str | None = None,
+    object_ids: list[UUID] | None = None,
+) -> JSONResponse:
     set_rls_context_for_session(db, org_id)
     org_uuid = UUID(org_id)
 
@@ -574,6 +621,9 @@ def export_objects_jsonld_bulk(
     query = db.query(CollectionObject).filter(
         CollectionObject.organization_id == org_uuid,
     ).order_by(CollectionObject.object_number)
+
+    if object_ids is not None:
+        query = query.filter(CollectionObject.object_id.in_(object_ids))
 
     if classification:
         query = query.filter(
@@ -586,6 +636,7 @@ def export_objects_jsonld_bulk(
     if object_type:
         query = query.filter(CollectionObject.object_type == object_type)
 
+    scoped_total = query.count() if object_ids is not None else None
     objects = query.offset(offset).limit(limit).all()
 
     for obj in objects:
@@ -607,12 +658,17 @@ def export_objects_jsonld_bulk(
     collection_title = f"{org.name} Collection Export"
 
     jsonld = map_objects_to_jsonld_collection(objects=objects, org_slug=org_slug, collection_title=collection_title)
-    jsonld["view"] = {
-        "@type": "PartialCollectionView",
-        "first": f"/api/organizations/{org_id}/collections/export/jsonld?limit={limit}&offset=0",
-    }
-    if len(objects) == limit:
-        jsonld["view"]["next"] = f"/api/organizations/{org_id}/collections/export/jsonld?limit={limit}&offset={offset + limit}"
+    if object_ids is None:
+        jsonld["view"] = {
+            "@type": "PartialCollectionView",
+            "first": f"/api/organizations/{org_id}/collections/export/jsonld?limit={limit}&offset=0",
+        }
+        if len(objects) == limit:
+            jsonld["view"]["next"] = f"/api/organizations/{org_id}/collections/export/jsonld?limit={limit}&offset={offset + limit}"
+    else:
+        # A scoped export (POST) cannot be paged by GET links; report the
+        # scope size so a client can request further pages with offset.
+        jsonld["totalItems"] = scoped_total
 
     return JSONResponse(content=jsonld, headers={"Content-Type": "application/ld+json"})
 

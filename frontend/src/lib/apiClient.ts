@@ -295,6 +295,7 @@ export async function apiFetch<T = any>(
     contentType.includes('application/pdf') ||
     contentType.includes('application/octet-stream') ||
     contentType.includes('text/csv') ||
+    contentType.includes('spreadsheetml') ||
     contentType.includes('image/') ||
     contentType.includes('application/zip')
   )) {

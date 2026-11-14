@@ -47,6 +47,7 @@ import { AddToWorkspaceDialog } from '../../../components/workspaces';
 import { useAuth } from '../../../hooks/useAuth';
 import { ObjectActionBar } from '../../../components/work/QuickActions';
 import { StartProcedure } from '../../../components/studio/StartProcedure';
+import { ObjectJsonLdExportButton } from '../../../components/collections/ObjectExportControls';
 import { CreateTaskSlideOver } from '../../../components/work/CreateTaskSlideOver';
 import { GenerateReportSlideOver } from '../../../components/reports/GenerateReportSlideOver';
 import { ProcedureRequirementsCard } from '../../../components/collections/ProcedureRequirementsCard';
@@ -657,6 +658,17 @@ function CollectionObjectWorkspacePageContent() {
             contextEntityType="collection_object"
             contextEntityId={objectId}
             label="Start guided procedure"
+          />
+        </div>
+      )}
+
+      {/* Linked-data export of this record */}
+      {!isCreateMode && !isEditing && orgId && objectId && hasPermission('collections.view') && (
+        <div className="mb-4">
+          <ObjectJsonLdExportButton
+            organizationId={orgId}
+            objectId={objectId}
+            objectNumber={obj.object_number}
           />
         </div>
       )}
