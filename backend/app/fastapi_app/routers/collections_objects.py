@@ -10,6 +10,7 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, text
+from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, object_session, selectinload
 
@@ -401,11 +402,23 @@ def _sync_classifications(obj, items, org_uuid, user_uuid) -> list[str]:
         if value.value_id not in wanted:
             wanted.append(value.value_id)
 
-    obj.classification_links.clear()
+    # Reconcile in place: keep links whose term is still wanted, delete the
+    # rest explicitly (so the audit listener records "Removed classification")
+    # and add new ones, so an unchanged save records nothing.
+    existing = {link.value_id: link for link in obj.classification_links}
+    for value_id, link in list(existing.items()):
+        if value_id not in wanted:
+            obj.classification_links.remove(link)
+            if sa_inspect(link).persistent:
+                db.delete(link)
     for order, value_id in enumerate(wanted):
-        obj.classification_links.append(ObjectClassification(
-            organization_id=org_uuid, value_id=value_id, display_order=order, created_by=user_uuid,
-        ))
+        link = existing.get(value_id)
+        if link is None:
+            obj.classification_links.append(ObjectClassification(
+                organization_id=org_uuid, value_id=value_id, display_order=order, created_by=user_uuid,
+            ))
+        elif link.display_order != order:
+            link.display_order = order
     return warnings
 
 

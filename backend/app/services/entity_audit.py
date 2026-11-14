@@ -320,6 +320,16 @@ TRACKED_LINKS: dict[str, dict[str, str]] = {
         "child_id_field": "flag_id",
         "exclude_fields": "set_at",
     },
+    "ObjectClassification": {
+        "parent_fk": "object_id",
+        "parent_type": "collection_object",
+        "parent_model": "CollectionObject",
+        "link_label": "classification",
+        "linked_fk": "value_id",
+        "linked_model": "LookupValue",
+        "linked_display": "label",
+        "child_type": "object_classification",
+    },
     # ---- Library catalogue ----
     "BibHolding": {
         "parent_fk": "bib_record_id",

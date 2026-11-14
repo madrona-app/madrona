@@ -22,12 +22,16 @@ export const CHILD_ENTITY_LABELS: Record<string, string> = {
   object_inscription: 'Inscription',
   collection_object_media: 'Media',
   object_flag: 'Flag',
+  object_classification: 'Classification',
   bib_holding: 'Holding',
   bib_item: 'Item',
   research_visit_object: 'Object',
   insurance_coverage: 'Coverage',
   indemnity_object: 'Indemnified object',
 };
+
+/** Child rows named by a term or title: always quoted ("Classification “Textiles”"). */
+const QUOTED_TYPES = new Set(['object_classification']);
 
 export interface ChildRowEvent {
   change_type: string;
@@ -60,7 +64,7 @@ export function childRowName(event: ChildRowEvent): string | null {
   const shown = display.length > MAX_DISPLAY ? `${display.slice(0, MAX_DISPLAY)}…` : display;
   // Short single-word keys read naturally unquoted ("Measurement height");
   // free text is quoted so its boundaries are clear.
-  return /\s/.test(shown) ? `${label} “${shown}”` : `${label} ${shown}`;
+  return QUOTED_TYPES.has(type) || /\s/.test(shown) ? `${label} “${shown}”` : `${label} ${shown}`;
 }
 
 /** One sentence per changed field; empty when the event is not about a child row. */
