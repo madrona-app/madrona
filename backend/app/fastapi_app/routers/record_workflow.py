@@ -297,7 +297,9 @@ def delete_completeness_rule(
 ):
     rule = _get_rule(db, organization_id, rule_id)
     flag_id = rule.flag_id
-    db.query(ObjectFlag).filter(ObjectFlag.flag_id == flag_id, ObjectFlag.source == "rule").delete(synchronize_session=False)
+    wf.delete_flags_audited(
+        db, db.query(ObjectFlag).filter(ObjectFlag.flag_id == flag_id, ObjectFlag.source == "rule"),
+    )
     db.delete(rule)
     db.flush()
     # The flag is free for manual use again once no rule manages it.

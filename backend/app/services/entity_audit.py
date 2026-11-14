@@ -41,7 +41,7 @@ TRACKED_ENTITIES: dict[str, dict[str, str]] = {
     # Collections entities
     "CollectionObject": {"display_key": "object_number", "entity_type": "collection_object"},
     "Location": {"display_key": "code", "entity_type": "location"},
-    "Movement": {"display_key": "movement_number", "entity_type": "movement"},
+    "Movement": {"display_key": "movement_reference_number", "entity_type": "movement"},
     "Constituent": {"display_key": "display_name", "entity_type": "constituent"},
     "ConditionReport": {"display_key": "report_number", "entity_type": "condition_report"},
     "ObjectEntry": {"display_key": "entry_number", "entity_type": "object_entry"},
@@ -56,9 +56,9 @@ TRACKED_ENTITIES: dict[str, dict[str, str]] = {
     "IncidentReport": {"display_key": "report_number", "entity_type": "incident_report"},
     "CollectionsReview": {"display_key": "review_number", "entity_type": "collections_review"},
     "AuditCampaign": {"display_key": "campaign_number", "entity_type": "audit_campaign"},
-    "ObjectRight": {"display_key": "rights_reference", "entity_type": "object_right"},
+    "ObjectRight": {"display_key": "agreement_reference", "entity_type": "object_right"},
     "UseRequest": {"display_key": "request_number", "entity_type": "use_request"},
-    "Valuation": {"display_key": "valuation_reference", "entity_type": "valuation"},
+    "Valuation": {"display_key": "documentation_reference", "entity_type": "valuation"},
     "ReproductionRequest": {"display_key": "request_number", "entity_type": "reproduction_request"},
     "Citation": {"display_key": "brief_citation", "entity_type": "citation"},
     "ResearchVisit": {"display_key": "researcher_name", "entity_type": "research_visit"},
@@ -68,13 +68,52 @@ TRACKED_ENTITIES: dict[str, dict[str, str]] = {
     "InsurancePolicy": {"display_key": "policy_number", "entity_type": "insurance"},
     "IndemnityArrangement": {"display_key": "reference_number", "entity_type": "indemnity_arrangement"},
     "InsuranceClaim": {"display_key": "claim_number", "entity_type": "insurance_claim"},
+    # Exhibitions and logistics
+    "Exhibition": {"display_key": "title", "entity_type": "exhibition"},
+    "Crate": {"display_key": "crate_number", "entity_type": "crate"},
+    "Shipment": {"display_key": "shipment_number", "entity_type": "shipment"},
+    "Venue": {"display_key": "name", "entity_type": "venue"},
+    "LabelTemplate": {"display_key": "name", "entity_type": "label_template"},
+    "FrameStyle": {"display_key": "name", "entity_type": "frame_style"},
+    "MountConfig": {"display_key": "name", "entity_type": "mount_config"},
+    "InfoRequestTemplate": {"display_key": "name", "entity_type": "info_request_template"},
+    "ChecklistTemplate": {"display_key": "name", "entity_type": "checklist_template"},
+    # Events
+    "Event": {"display_key": "title", "entity_type": "event"},
+    # Authorities and vocabulary
+    "PlaceAuthority": {"display_key": "preferred_name", "entity_type": "place_authority"},
+    "SubjectAuthority": {"display_key": "preferred_term", "entity_type": "subject_authority"},
+    "StylePeriodAuthority": {"display_key": "preferred_term", "entity_type": "style_period_authority"},
+    "LookupValue": {"display_key": "label", "entity_type": "lookup_value"},
+    "VocabularyTerm": {"display_key": "preferred_term", "entity_type": "vocabulary_term"},
+    "OtherNumberType": {"display_key": "name", "entity_type": "other_number_type"},
+    # Object-related records
+    "CriticalResponse": {"display_key": "comment_summary", "entity_type": "critical_response"},
+    "NagpraAction": {"display_key": "action_number", "entity_type": "nagpra_action"},
+    "ComplianceAction": {"display_key": "title", "entity_type": "compliance_action"},
+    "Task": {"display_key": "title", "entity_type": "task"},
+    # Settings that change how records behave
+    "Department": {"display_key": "name", "entity_type": "department"},
+    "RecordFlagDefinition": {"display_key": "label", "entity_type": "record_flag_definition"},
+    "CompletenessRule": {"display_key": "name", "entity_type": "completeness_rule"},
+    "CustomFieldDefinition": {"display_key": "label", "entity_type": "custom_field_definition"},
+    "PreservationPolicy": {"display_key": "name", "entity_type": "preservation_policy"},
+    "MetadataTemplate": {"display_key": "name", "entity_type": "metadata_template"},
+    # Public portal
+    "Page": {"display_key": "title", "entity_type": "page"},
+    "Menu": {"display_key": "name", "entity_type": "menu"},
+    "Redirect": {"display_key": "source_path", "entity_type": "redirect"},
+    "Category": {"display_key": "name", "entity_type": "content_category"},
+    "DiscoverConfig": {"display_key": "page_title", "entity_type": "discover_config"},
+    "PublishSchedule": {"display_key": "action", "entity_type": "publish_schedule"},
+    "PortalMember": {"display_key": "email", "entity_type": "portal_member"},
     # Media entities
     "Media": {"display_key": "filename", "entity_type": "media"},
     "MediaCollection": {"display_key": "name", "entity_type": "media_collection"},
     "MediaRights": {"display_key": "rights_statement", "entity_type": "media_rights"},
     "MediaConsent": {"display_key": "consent_type", "entity_type": "media_consent"},
     "WatermarkTemplate": {"display_key": "name", "entity_type": "watermark_template"},
-    "MediaTagDefinition": {"display_key": "name", "entity_type": "media_tag_definition"},
+    "MediaTagDefinition": {"display_key": "display_name", "entity_type": "media_tag_definition"},
     "MediaFolder": {"display_key": "name", "entity_type": "media_folder"},
 }
 
@@ -209,7 +248,7 @@ TRACKED_LINKS: dict[str, dict[str, str]] = {
         "display_field": "role",
         "linked_fk": "place_authority_id",
         "linked_model": "PlaceAuthority",
-        "linked_display": "display_name",
+        "linked_display": "preferred_name",
     },
     "ObjectRelationship": {
         "parent_fk": "source_object_id",
@@ -320,6 +359,16 @@ TRACKED_LINKS: dict[str, dict[str, str]] = {
         "child_id_field": "flag_id",
         "exclude_fields": "set_at",
     },
+    "ObjectClassification": {
+        "parent_fk": "object_id",
+        "parent_type": "collection_object",
+        "parent_model": "CollectionObject",
+        "link_label": "classification",
+        "linked_fk": "value_id",
+        "linked_model": "LookupValue",
+        "linked_display": "label",
+        "child_type": "object_classification",
+    },
     # ---- Library catalogue ----
     "BibHolding": {
         "parent_fk": "bib_record_id",
@@ -369,6 +418,244 @@ TRACKED_LINKS: dict[str, dict[str, str]] = {
         "linked_model": "CollectionObject",
         "linked_display": "object_number",
         "child_type": "indemnity_object",
+    },
+    # ---- Exhibitions ----
+    "ExhibitionObject": {
+        "parent_fk": "exhibition_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "link_label": "object",
+        "linked_fk": "object_id",
+        "linked_model": "CollectionObject",
+        "linked_display": "object_number",
+        "child_type": "exhibition_object",
+    },
+    "ExhibitionVenue": {
+        "parent_fk": "exhibition_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "link_label": "venue",
+        "display_field": "external_venue_name",
+        "linked_fk": "venue_id",
+        "linked_model": "Venue",
+        "linked_display": "name",
+        "child_type": "exhibition_venue",
+        "exclude_fields": "geom",
+    },
+    # ---- Exhibition children ----
+    "ExhibitionLabel": {
+        "parent_fk": "exhibition_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "link_label": "label",
+        "child_type": "exhibition_label",
+        "display_field": "label_type",
+    },
+    "ExhibitionContentBlock": {
+        "parent_fk": "exhibition_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "link_label": "content block",
+        "child_type": "exhibition_content_block",
+        "display_field": "title",
+    },
+    "ExhibitionLoan": {
+        "parent_fk": "exhibition_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "link_label": "loan",
+        "child_type": "exhibition_loan",
+        "display_field": "loan_number",
+    },
+    "ExhibitionLoanObject": {
+        "parent_fk": "link_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "link_label": "loan object",
+        "child_type": "exhibition_loan_object",
+        "display_field": "object_number",
+        "parent_via_model": "ExhibitionLoan",
+        "parent_via_fk": "exhibition_id",
+    },
+    # ---- Shipments ----
+    "ShipmentItem": {
+        "parent_fk": "shipment_id",
+        "parent_type": "shipment",
+        "parent_model": "Shipment",
+        "link_label": "item",
+        "child_type": "shipment_item",
+        "linked_fk": "object_id",
+        "linked_model": "CollectionObject",
+        "linked_display": "object_number",
+    },
+    "ShipmentLeg": {
+        "parent_fk": "shipment_id",
+        "parent_type": "shipment",
+        "parent_model": "Shipment",
+        "link_label": "leg",
+        "child_type": "shipment_leg",
+        "display_field": "carrier_name",
+    },
+    "ShipmentReference": {
+        "parent_fk": "shipment_id",
+        "parent_type": "shipment",
+        "parent_model": "Shipment",
+        "link_label": "linked procedure",
+        "child_type": "shipment_reference",
+        "display_field": "procedure_type",
+    },
+    # ---- Events ----
+    "EventObjectLink": {
+        "parent_fk": "event_id",
+        "parent_type": "event",
+        "parent_model": "Event",
+        "link_label": "object",
+        "child_type": "event_object",
+        "linked_fk": "object_id",
+        "linked_model": "CollectionObject",
+        "linked_display": "object_number",
+    },
+    # ---- Conservation treatment detail ----
+    "TreatmentCost": {
+        "parent_fk": "treatment_id",
+        "parent_type": "conservation_treatment",
+        "parent_model": "ConservationTreatment",
+        "link_label": "cost",
+        "child_type": "treatment_cost",
+        "display_field": "cost_category",
+    },
+    "TreatmentMaterial": {
+        "parent_fk": "treatment_id",
+        "parent_type": "conservation_treatment",
+        "parent_model": "ConservationTreatment",
+        "link_label": "material",
+        "child_type": "treatment_material",
+        "display_field": "material_name",
+    },
+    "TreatmentTechnique": {
+        "parent_fk": "treatment_id",
+        "parent_type": "conservation_treatment",
+        "parent_model": "ConservationTreatment",
+        "link_label": "technique",
+        "child_type": "treatment_technique",
+        "display_field": "technique_name",
+    },
+    # ---- Deaccession committee votes ----
+    "DeaccessionVote": {
+        "parent_fk": "deaccession_id",
+        "parent_type": "deaccession",
+        "parent_model": "Deaccession",
+        "link_label": "vote",
+        "child_type": "deaccession_vote",
+        "display_field": "voter_name",
+    },
+    # ---- Emergency plan detail ----
+    "EmergencyPlanContact": {
+        "parent_fk": "plan_id",
+        "parent_type": "emergency_plan",
+        "parent_model": "EmergencyPlan",
+        "link_label": "contact",
+        "child_type": "emergency_plan_contact",
+        "display_field": "name",
+    },
+    "EmergencyAssemblyPoint": {
+        "parent_fk": "plan_id",
+        "parent_type": "emergency_plan",
+        "parent_model": "EmergencyPlan",
+        "link_label": "assembly point",
+        "child_type": "emergency_assembly_point",
+        "display_field": "name",
+    },
+    "EmergencyEquipment": {
+        "parent_fk": "plan_id",
+        "parent_type": "emergency_plan",
+        "parent_model": "EmergencyPlan",
+        "link_label": "equipment",
+        "child_type": "emergency_equipment",
+        "display_field": "name",
+    },
+    "EmergencyEvacuationRoute": {
+        "parent_fk": "plan_id",
+        "parent_type": "emergency_plan",
+        "parent_model": "EmergencyPlan",
+        "link_label": "evacuation route",
+        "child_type": "emergency_evacuation_route",
+        "display_field": "route_name",
+    },
+    "EmergencyExternalService": {
+        "parent_fk": "plan_id",
+        "parent_type": "emergency_plan",
+        "parent_model": "EmergencyPlan",
+        "link_label": "external service",
+        "child_type": "emergency_external_service",
+        "display_field": "provider_name",
+    },
+    "EmergencyRiskAssessment": {
+        "parent_fk": "plan_id",
+        "parent_type": "emergency_plan",
+        "parent_model": "EmergencyPlan",
+        "link_label": "risk assessment",
+        "child_type": "emergency_risk_assessment",
+        "display_field": "risk_type",
+    },
+    # ---- NAGPRA ----
+    "NagpraConsultationEvent": {
+        "parent_fk": "action_id",
+        "parent_type": "nagpra_action",
+        "parent_model": "NagpraAction",
+        "link_label": "consultation",
+        "child_type": "nagpra_consultation",
+        "display_field": "subject",
+    },
+    # ---- Library catalogue credits and subjects ----
+    "BibRecordConstituent": {
+        "parent_fk": "bib_record_id",
+        "parent_type": "bib_record",
+        "parent_model": "BibRecord",
+        "link_label": "contributor",
+        "child_type": "bib_record_constituent",
+        "linked_fk": "constituent_id",
+        "linked_model": "Constituent",
+        "linked_display": "display_name",
+    },
+    "BibRecordSubject": {
+        "parent_fk": "bib_record_id",
+        "parent_type": "bib_record",
+        "parent_model": "BibRecord",
+        "link_label": "subject",
+        "child_type": "bib_record_subject",
+        "linked_fk": "subject_authority_id",
+        "linked_model": "SubjectAuthority",
+        "linked_display": "preferred_term",
+    },
+    # ---- Media sub-records ----
+    "MediaAlternative": {
+        "parent_fk": "media_id",
+        "parent_type": "media",
+        "parent_model": "Media",
+        "link_label": "alternative",
+        "child_type": "media_alternative",
+        "display_field": "label",
+    },
+    "MediaAnnotation": {
+        "parent_fk": "media_id",
+        "parent_type": "media",
+        "parent_model": "Media",
+        "link_label": "annotation",
+        "child_type": "media_annotation",
+        "display_field": "motivation",
+    },
+    # ---- People ----
+    "ConstituentRelation": {
+        "parent_fk": "from_constituent_id",
+        "parent_type": "constituent",
+        "parent_model": "Constituent",
+        "link_label": "relationship",
+        "child_type": "constituent_relation",
+        "display_field": "relationship_type",
+        "linked_fk": "to_constituent_id",
+        "linked_model": "Constituent",
+        "linked_display": "display_name",
     },
     # ConstituentXref is polymorphic — handled specially via _resolve_constituent_xref_parent
 }
@@ -438,7 +725,51 @@ _TRACKED_FK_COLUMNS: dict[str, tuple[str, str]] = {
     "home_location_id": ("Location", "code"),
     "current_location_id": ("Location", "code"),
     "normal_location_id": ("Location", "code"),
+    # Who an object was last inventoried by (set by bulk "mark inventoried").
+    "last_inventoried_by": ("User", "display_name|email"),
 }
+
+# Per-model FK columns, for names that mean different things on different
+# models (authorizer_id is a person on most procedures but a staff user on an
+# exhibition; venue_id is a venue on an exhibition but a constituent on a
+# loan out). Checked before _TRACKED_FK_COLUMNS.
+_ENTITY_FK_COLUMNS: dict[str, dict[str, tuple[str, str]]] = {
+    "Exhibition": {
+        "venue_id": ("Venue", "name"),
+        "organizer_id": ("User", "display_name|email"),
+        "authorizer_id": ("User", "display_name|email"),
+        "department_id": ("Department", "name"),
+    },
+    "Crate": {
+        "location_id": ("Location", "code"),
+    },
+    "Shipment": {
+        "ship_from_location_id": ("Location", "code"),
+        "ship_to_location_id": ("Location", "code"),
+        "department_id": ("Department", "name"),
+        "authorized_by": ("User", "display_name|email"),
+    },
+    "Event": {
+        "location_id": ("Location", "code"),
+        "venue_id": ("Venue", "name"),
+        "exhibition_id": ("Exhibition", "title"),
+        "owner_user_id": ("User", "display_name|email"),
+    },
+    "PlaceAuthority": {"parent_place_id": ("PlaceAuthority", "preferred_name")},
+    "SubjectAuthority": {"broader_subject_id": ("SubjectAuthority", "preferred_term")},
+    "StylePeriodAuthority": {"parent_authority_id": ("StylePeriodAuthority", "preferred_term")},
+    "Department": {"parent_id": ("Department", "name"), "head_user_id": ("User", "display_name|email")},
+    "Task": {"assigned_user_id": ("User", "display_name|email")},
+    "NagpraAction": {
+        "affiliated_party_id": ("Constituent", "name"),
+        "transfer_recipient_id": ("Constituent", "name"),
+        "coordinator_id": ("User", "display_name|email"),
+    },
+}
+
+# Column names whose meaning depends on the model: only tracked where a model
+# lists them in _ENTITY_FK_COLUMNS.
+_AMBIGUOUS_FK_NAMES: set[str] = {"authorizer_id", "venue_id", "organizer_id", "location_id", "department_id"}
 
 
 # ============================================================================
@@ -537,11 +868,21 @@ def _normalize_empty(value: Any) -> Any:
     return value
 
 
-def _resolve_fk_display(session: Session, field_name: str, fk_value: Any) -> str | None:
+def _fk_config(class_name: str | None, field_name: str) -> tuple[str, str] | None:
+    """(model, display field) for a tracked FK column, per model first."""
+    per_model = _ENTITY_FK_COLUMNS.get(class_name or "", {})
+    if field_name in per_model:
+        return per_model[field_name]
+    if class_name in _ENTITY_FK_COLUMNS and field_name in _AMBIGUOUS_FK_NAMES:
+        return None
+    return _TRACKED_FK_COLUMNS.get(field_name)
+
+
+def _resolve_fk_display(session: Session, field_name: str, fk_value: Any, class_name: str | None = None) -> str | None:
     """Resolve a tracked FK UUID to a human-readable display name."""
     if fk_value is None:
         return None
-    fk_config = _TRACKED_FK_COLUMNS.get(field_name)
+    fk_config = _fk_config(class_name, field_name)
     if not fk_config:
         return str(fk_value)
     model_name, display_field = fk_config
@@ -552,7 +893,12 @@ def _resolve_fk_display(session: Session, field_name: str, fk_value: Any) -> str
         pk_col = inspect(model_class).primary_key[0]
         related = session.get(model_class, fk_value)
         if related:
-            return getattr(related, display_field, None) or str(fk_value)
+            # "a|b": the first of these attributes that has a value.
+            for attr in display_field.split("|"):
+                value = getattr(related, attr, None)
+                if value:
+                    return value
+            return str(fk_value)
     except Exception:
         pass
     return str(fk_value)
@@ -568,6 +914,7 @@ def _get_field_changes(obj: Any, session: Session | None = None) -> list[tuple[s
     changes = []
     mapper = inspect(obj.__class__)
     state = inspect(obj)
+    class_name = obj.__class__.__name__
 
     for attr in mapper.column_attrs:
         field_name = attr.key
@@ -577,7 +924,7 @@ def _get_field_changes(obj: Any, session: Session | None = None) -> list[tuple[s
         if col.primary_key:
             continue
         # Skip FKs unless they are in the tracked list
-        if col.foreign_keys and field_name not in _TRACKED_FK_COLUMNS:
+        if col.foreign_keys and _fk_config(class_name, field_name) is None:
             continue
 
         history = state.attrs[field_name].history
@@ -592,9 +939,9 @@ def _get_field_changes(obj: Any, session: Session | None = None) -> list[tuple[s
             new_ser = _normalize_empty(_serialize_value(new_val))
             if old_ser != new_ser:
                 # For tracked FK columns, resolve UUIDs to display names
-                if field_name in _TRACKED_FK_COLUMNS and session is not None:
-                    old_val = _resolve_fk_display(session, field_name, old_val)
-                    new_val = _resolve_fk_display(session, field_name, new_val)
+                if col.foreign_keys and session is not None:
+                    old_val = _resolve_fk_display(session, field_name, old_val, class_name)
+                    new_val = _resolve_fk_display(session, field_name, new_val, class_name)
                 changes.append((field_name, old_val, new_val))
 
     return changes
@@ -604,6 +951,7 @@ def _get_all_fields(obj: Any, session: Session | None = None) -> list[tuple[str,
     """Get all field values for a new entity (for creates)."""
     fields = []
     mapper = inspect(obj.__class__)
+    class_name = obj.__class__.__name__
 
     for attr in mapper.column_attrs:
         field_name = attr.key
@@ -612,14 +960,14 @@ def _get_all_fields(obj: Any, session: Session | None = None) -> list[tuple[str,
         col = attr.columns[0]
         if col.primary_key:
             continue
-        if col.foreign_keys and field_name not in _TRACKED_FK_COLUMNS:
+        if col.foreign_keys and _fk_config(class_name, field_name) is None:
             continue
 
         value = getattr(obj, field_name, None)
         if value is not None:
             # For tracked FK columns, resolve UUIDs to display names
-            if field_name in _TRACKED_FK_COLUMNS and session is not None:
-                value = _resolve_fk_display(session, field_name, value) or value
+            if col.foreign_keys and session is not None:
+                value = _resolve_fk_display(session, field_name, value, class_name) or value
             fields.append((field_name, value))
 
     return fields
@@ -753,6 +1101,28 @@ def _resolve_constituent_xref_parent(
         model_name, parent_type = _CONSTITUENT_XREF_PARENT_TYPES[entity_type]
         return model_name, parent_type, entity_id
     return None, None, None
+
+
+def _xref_constituent_change(session: Session, obj: Any) -> tuple[str, Any, Any] | None:
+    """("constituent", old name, new name) when a ConstituentXref was re-pointed
+    to another person (a merge); constituent_id is an FK, so the generic diff
+    skips it."""
+    try:
+        history = inspect(obj).attrs["constituent_id"].history
+    except Exception:
+        return None
+    if not history.has_changes() or not history.deleted or not history.added:
+        return None
+    old_id, new_id = history.deleted[0], history.added[0]
+    if old_id == new_id:
+        return None
+    cls = _resolve_model_class(session, "Constituent")
+
+    def name(cid):
+        row = session.get(cls, cid) if cls is not None and cid else None
+        return (getattr(row, "display_name", None) or getattr(row, "name", None) or str(cid)) if row else str(cid)
+
+    return ("constituent", name(old_id), name(new_id))
 
 
 def _resolve_link_parent_id(session: Session, obj: Any, link_config: dict[str, str]) -> UUID | None:
@@ -1220,6 +1590,9 @@ def _capture_changes_before_flush(session: Session, flush_context: Any, instance
             if p_model and p_type and p_id:
                 try:
                     field_changes = _get_field_changes(obj, session)
+                    repointed = _xref_constituent_change(session, obj)
+                    if repointed:
+                        field_changes.insert(0, repointed)
                     if field_changes:
                         link_cfg = {
                             "parent_fk": "entity_id",

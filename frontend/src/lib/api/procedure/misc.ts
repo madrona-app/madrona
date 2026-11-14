@@ -1315,6 +1315,8 @@ export async function getInsuranceClaims(
     loss_type?: string;
     coverage_id?: string;
     indemnity_id?: string;
+    /** Claims on any of this policy's coverages. */
+    policy_id?: string;
   }
 ): Promise<InsuranceClaimsList> {
   const query = buildQueryString(params || {});

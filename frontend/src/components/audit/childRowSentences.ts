@@ -22,12 +22,42 @@ export const CHILD_ENTITY_LABELS: Record<string, string> = {
   object_inscription: 'Inscription',
   collection_object_media: 'Media',
   object_flag: 'Flag',
+  object_classification: 'Classification',
   bib_holding: 'Holding',
   bib_item: 'Item',
   research_visit_object: 'Object',
   insurance_coverage: 'Coverage',
   indemnity_object: 'Indemnified object',
+  exhibition_object: 'Object',
+  exhibition_venue: 'Venue',
+  exhibition_label: 'Label',
+  exhibition_content_block: 'Content block',
+  exhibition_loan: 'Loan',
+  exhibition_loan_object: 'Loan object',
+  shipment_item: 'Item',
+  shipment_leg: 'Leg',
+  shipment_reference: 'Linked procedure',
+  event_object: 'Object',
+  treatment_cost: 'Cost',
+  treatment_material: 'Material',
+  treatment_technique: 'Technique',
+  deaccession_vote: 'Vote',
+  emergency_plan_contact: 'Contact',
+  emergency_assembly_point: 'Assembly point',
+  emergency_equipment: 'Equipment',
+  emergency_evacuation_route: 'Evacuation route',
+  emergency_external_service: 'External service',
+  emergency_risk_assessment: 'Risk assessment',
+  nagpra_consultation: 'Consultation',
+  bib_record_constituent: 'Contributor',
+  bib_record_subject: 'Subject',
+  media_alternative: 'Alternative',
+  media_annotation: 'Annotation',
+  constituent_relation: 'Relationship',
 };
+
+/** Child rows named by a term or title: always quoted ("Classification “Textiles”"). */
+const QUOTED_TYPES = new Set(['object_classification']);
 
 export interface ChildRowEvent {
   change_type: string;
@@ -60,7 +90,7 @@ export function childRowName(event: ChildRowEvent): string | null {
   const shown = display.length > MAX_DISPLAY ? `${display.slice(0, MAX_DISPLAY)}…` : display;
   // Short single-word keys read naturally unquoted ("Measurement height");
   // free text is quoted so its boundaries are clear.
-  return /\s/.test(shown) ? `${label} “${shown}”` : `${label} ${shown}`;
+  return QUOTED_TYPES.has(type) || /\s/.test(shown) ? `${label} “${shown}”` : `${label} ${shown}`;
 }
 
 /** One sentence per changed field; empty when the event is not about a child row. */

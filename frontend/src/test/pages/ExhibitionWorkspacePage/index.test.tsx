@@ -81,7 +81,9 @@ vi.mock('../../../components/workspace', () => ({
   EditableCheckbox: ({ label }: { label?: string }) => (
     <div data-testid="editable-checkbox" data-label={label} />
   ),
-  RecordAuditHistory: () => <div data-testid="audit-history" />,
+  RecordAuditHistory: ({ entityType, entityId }: { entityType: string; entityId: string }) => (
+    <div data-testid="audit-history" data-entity-type={entityType} data-entity-id={entityId} />
+  ),
   SectionGroupDivider: ({ label }: { label?: string }) => (
     <div data-testid="section-divider">{label}</div>
   ),
@@ -243,6 +245,10 @@ describe('ExhibitionWorkspacePage', () => {
       await waitFor(() => {
         expect(screen.getByTestId('ws-section-history')).toBeInTheDocument();
       });
+      // The panel asks for the exhibition's own history (an accepted type).
+      const panel = screen.getByTestId('audit-history');
+      expect(panel).toHaveAttribute('data-entity-type', 'exhibition');
+      expect(panel).toHaveAttribute('data-entity-id', 'ex-1');
     });
 
     it('hides change history without audit permission', async () => {

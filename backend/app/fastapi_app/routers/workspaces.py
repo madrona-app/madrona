@@ -2012,7 +2012,7 @@ async def execute_bulk_action(
                 result = {"object_id": str(obj.object_id), "accession_number": obj.object_number}
                 obj.object_status = status
                 if status_notes:
-                    obj_metadata = obj.extra_metadata or {}
+                    obj_metadata = dict(obj.extra_metadata or {})  # a copy: in-place edits are not saved
                     obj_metadata["status_change_notes"] = status_notes
                     obj_metadata["status_change_date"] = action_params.get("status_date") or datetime.now(timezone.utc).isoformat()
                     obj.extra_metadata = obj_metadata
@@ -2053,7 +2053,7 @@ async def execute_bulk_action(
                     object_id=obj.object_id,
                 )
                 if action_params.get("loan_notes"):
-                    obj_metadata = obj.extra_metadata or {}
+                    obj_metadata = dict(obj.extra_metadata or {})  # a copy: in-place edits are not saved
                     obj_metadata["loan_notes"] = action_params["loan_notes"]
                     obj.extra_metadata = obj_metadata
                 db.add(loan_obj)
@@ -2066,7 +2066,7 @@ async def execute_bulk_action(
             availability = action_params["loan_availability"]
             for item, obj in items:
                 result = {"object_id": str(obj.object_id), "accession_number": obj.object_number}
-                obj_metadata = obj.extra_metadata or {}
+                obj_metadata = dict(obj.extra_metadata or {})  # a copy: in-place edits are not saved
                 obj_metadata["loan_availability"] = availability
                 if action_params.get("availability_reason"):
                     obj_metadata["loan_availability_reason"] = action_params["availability_reason"]
@@ -2146,7 +2146,7 @@ async def execute_bulk_action(
                 else:
                     obj.handling_requirements = requirements
                 if notes:
-                    obj_metadata = obj.extra_metadata or {}
+                    obj_metadata = dict(obj.extra_metadata or {})  # a copy: in-place edits are not saved
                     obj_metadata["handling_notes"] = notes
                     obj.extra_metadata = obj_metadata
                 obj.updated_by = user_id

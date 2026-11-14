@@ -76,6 +76,32 @@ const FIELD_UPDATED: RecordAuditEvent = {
   ...actor,
 };
 
+const CLASSIFICATION_ADDED: RecordAuditEvent = {
+  event_id: 'c2',
+  change_type: 'link_added',
+  changed_at: '2026-11-14T10:00:00+00:00',
+  changed_fields: ['classification'],
+  summary: 'Added classification: Textiles',
+  child_entity_type: 'object_classification',
+  child_entity_id: 'l1',
+  child_display_key: 'Textiles',
+  field_diffs: [{ field_name: 'classification', old_value: null, new_value: 'Textiles' }],
+  ...actor,
+};
+
+const CLASSIFICATION_REMOVED: RecordAuditEvent = {
+  event_id: 'c1',
+  change_type: 'link_removed',
+  changed_at: '2026-11-14T09:00:00+00:00',
+  changed_fields: ['classification'],
+  summary: 'Removed classification: Tactile graphics',
+  child_entity_type: 'object_classification',
+  child_entity_id: 'l2',
+  child_display_key: 'Tactile graphics',
+  field_diffs: [{ field_name: 'classification', old_value: 'Tactile graphics', new_value: null }],
+  ...actor,
+};
+
 function renderHistory(items: RecordAuditEvent[], headingLevel?: 2 | 3) {
   mocked.getRecordAuditHistory.mockResolvedValue({
     entity_type: 'collection_object',
@@ -162,6 +188,48 @@ describe('RecordAuditHistory', () => {
     expect(document.getElementById(button.getAttribute('aria-controls')!)).not.toBeNull();
     expect(screen.getByText('Braille slate')).toBeInTheDocument();
     expect(screen.getByText('changed to')).toHaveClass('sr-only');
+  });
+
+  it('describes classification changes by term, without repeating them', async () => {
+    const { container } = renderHistory([CLASSIFICATION_ADDED, CLASSIFICATION_REMOVED]);
+    const list = await screen.findByRole('list', { name: 'Change History, newest first' });
+    const entries = within(list).getAllByRole('listitem').filter((li) => li.parentElement === list);
+    expect(within(entries[0]).getByText('Added classification “Textiles”')).toBeInTheDocument();
+    expect(within(entries[0]).getByText('Added')).toBeInTheDocument();
+    expect(within(entries[1]).getByText('Removed classification “Tactile graphics”')).toBeInTheDocument();
+    expect(within(entries[1]).getByText('Removed')).toBeInTheDocument();
+    // The term is the whole change: no sentence list repeating it.
+    expect(within(entries[0]).queryByRole('list')).toBeNull();
+    expect(childRowSentences(CLASSIFICATION_ADDED)).toEqual([]);
+    expect(screen.queryByText(/l1|l2/)).toBeNull();
+    expect((await checkA11y(container)).violations).toEqual([]);
+  });
+
+  it('describes an exhibition\u2019s objects as child rows', async () => {
+    const { container } = renderHistory([
+      {
+        event_id: 'x2', change_type: 'link_updated', changed_at: '2026-11-14T12:00:00+00:00',
+        changed_fields: ['object_status'], summary: 'Updated object: EX.1',
+        child_entity_type: 'exhibition_object', child_entity_id: 'eo1', child_display_key: 'EX.1',
+        field_diffs: [{ field_name: 'object_status', old_value: 'planned', new_value: 'on_display' }],
+        ...actor,
+      },
+      {
+        event_id: 'x1', change_type: 'link_added', changed_at: '2026-11-14T11:00:00+00:00',
+        changed_fields: ['object', 'section'], summary: 'Added object: EX.1',
+        child_entity_type: 'exhibition_object', child_entity_id: 'eo1', child_display_key: 'EX.1',
+        field_diffs: [
+          { field_name: 'object', old_value: null, new_value: 'EX.1' },
+          { field_name: 'section', old_value: null, new_value: 'Gallery 1' },
+        ],
+        ...actor,
+      },
+    ]);
+    expect(await screen.findByText('Changed object EX.1')).toBeInTheDocument();
+    expect(screen.getByText('Object EX.1: Object Status changed from planned to on display.')).toBeInTheDocument();
+    expect(screen.getByText('Added object EX.1')).toBeInTheDocument();
+    expect(screen.getByText('Section: Gallery 1.')).toBeInTheDocument();
+    expect((await checkA11y(container)).violations).toEqual([]);
   });
 
   it('uses the requested heading level', async () => {

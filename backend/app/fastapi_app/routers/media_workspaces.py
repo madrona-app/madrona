@@ -1729,7 +1729,7 @@ def execute_dam_workspace_action(
                 # to set tag values should be extended to declare structured-tag
                 # entries via (definition_id, value_id) pairs.
                 if fields.get("extra_metadata"):
-                    existing_meta = media.extra_metadata or {}
+                    existing_meta = dict(media.extra_metadata or {})  # a copy: in-place edits are not saved
                     existing_meta.update(fields["extra_metadata"])
                     media.extra_metadata = existing_meta
 

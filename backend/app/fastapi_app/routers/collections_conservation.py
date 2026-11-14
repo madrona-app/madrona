@@ -1313,9 +1313,11 @@ def rollback_deaccession(
     if (current_index >= status_order.index("committee_reviewed")
             and target_index < status_order.index("committee_reviewed")):
         from app.models import DeaccessionVote
-        db.query(DeaccessionVote).filter(
+        # Row by row so each cleared vote is recorded on the deaccession's history.
+        for vote in db.query(DeaccessionVote).filter(
             DeaccessionVote.deaccession_id == deacc.deaccession_id
-        ).delete()
+        ).all():
+            db.delete(vote)
 
     try:
         rollback_entity(
