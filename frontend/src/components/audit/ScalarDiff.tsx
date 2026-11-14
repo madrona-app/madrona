@@ -30,7 +30,8 @@ export function ScalarDiff({ oldValue, newValue, fieldName, maxLength = 80 }: Sc
       ) : (
         <span className="text-archive italic">(empty)</span>
       )}
-      <span className="text-archive/60">&rarr;</span>
+      <span className="text-archive/60" aria-hidden="true">&rarr;</span>
+      <span className="sr-only">changed to</span>
       {newDisplay !== null ? (
         <span className="text-ink">{newDisplay}</span>
       ) : (

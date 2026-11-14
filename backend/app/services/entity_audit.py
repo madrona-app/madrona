@@ -16,6 +16,7 @@ Platform admin feature for answering "what happened to this data?"
 
 import logging
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
@@ -60,6 +61,13 @@ TRACKED_ENTITIES: dict[str, dict[str, str]] = {
     "Valuation": {"display_key": "valuation_reference", "entity_type": "valuation"},
     "ReproductionRequest": {"display_key": "request_number", "entity_type": "reproduction_request"},
     "Citation": {"display_key": "brief_citation", "entity_type": "citation"},
+    "ResearchVisit": {"display_key": "researcher_name", "entity_type": "research_visit"},
+    # Library catalogue
+    "BibRecord": {"display_key": "title", "entity_type": "bib_record"},
+    # Insurance and indemnity ("insurance" matches the staff workspace route)
+    "InsurancePolicy": {"display_key": "policy_number", "entity_type": "insurance"},
+    "IndemnityArrangement": {"display_key": "reference_number", "entity_type": "indemnity_arrangement"},
+    "InsuranceClaim": {"display_key": "claim_number", "entity_type": "insurance_claim"},
     # Media entities
     "Media": {"display_key": "filename", "entity_type": "media"},
     "MediaCollection": {"display_key": "name", "entity_type": "media_collection"},
@@ -85,6 +93,16 @@ TRACKED_ENTITIES: dict[str, dict[str, str]] = {
 # linked_fk:        (optional) FK column pointing to the "other" entity
 # linked_model:     (optional) class name of the linked entity
 # linked_display:   (optional) field on linked entity used for display name fallback
+# child_type:       (optional) entity type of the child row itself, stored on the
+#                   event as child_entity_type so the row can be identified later
+# child_id_field:   (optional) column holding the child's identity when the
+#                   primary key is composite (defaults to the first PK column)
+# parent_via_model: (optional) for grandchildren: parent_fk points at this model,
+# parent_via_fk:    whose parent_via_fk column holds the real parent id
+#                   (a BibItem's holding -> the holding's bib record)
+# composite:        (optional) "name=part1,part2": report these columns as one
+#                   readable value ("10 cm" rather than value 10, unit cm)
+# exclude_fields:   (optional) comma-separated columns left out of diffs
 TRACKED_LINKS: dict[str, dict[str, str]] = {
     "LoanInObject": {
         "parent_fk": "loan_in_id",
@@ -244,6 +262,113 @@ TRACKED_LINKS: dict[str, dict[str, str]] = {
         "parent_model": "CollectionObject",
         "link_label": "object part",
         "display_field": "name",
+    },
+    # ---- Object child rows (cataloguing detail) ----
+    "ObjectTitle": {
+        "parent_fk": "object_id",
+        "parent_type": "collection_object",
+        "parent_model": "CollectionObject",
+        "link_label": "title",
+        "display_field": "title",
+        "child_type": "object_title",
+    },
+    "ObjectOtherNumber": {
+        "parent_fk": "object_id",
+        "parent_type": "collection_object",
+        "parent_model": "CollectionObject",
+        "link_label": "other number",
+        "display_field": "number_type",
+        "child_type": "object_other_number",
+    },
+    "ObjectMeasurement": {
+        "parent_fk": "object_id",
+        "parent_type": "collection_object",
+        "parent_model": "CollectionObject",
+        "link_label": "measurement",
+        "display_field": "dimension",
+        "child_type": "object_measurement",
+        "composite": "measurement=value,unit",
+    },
+    "ObjectInscription": {
+        "parent_fk": "object_id",
+        "parent_type": "collection_object",
+        "parent_model": "CollectionObject",
+        "link_label": "inscription",
+        "display_field": "content",
+        "child_type": "object_inscription",
+    },
+    "CollectionObjectMedia": {
+        "parent_fk": "object_id",
+        "parent_type": "collection_object",
+        "parent_model": "CollectionObject",
+        "link_label": "media",
+        "linked_fk": "media_id",
+        "linked_model": "Media",
+        "linked_display": "filename",
+        "child_type": "collection_object_media",
+        "child_id_field": "media_id",
+    },
+    "ObjectFlag": {
+        "parent_fk": "object_id",
+        "parent_type": "collection_object",
+        "parent_model": "CollectionObject",
+        "link_label": "flag",
+        "linked_fk": "flag_id",
+        "linked_model": "RecordFlagDefinition",
+        "linked_display": "label",
+        "child_type": "object_flag",
+        "child_id_field": "flag_id",
+        "exclude_fields": "set_at",
+    },
+    # ---- Library catalogue ----
+    "BibHolding": {
+        "parent_fk": "bib_record_id",
+        "parent_type": "bib_record",
+        "parent_model": "BibRecord",
+        "link_label": "holding",
+        "display_field": "call_number",
+        "child_type": "bib_holding",
+    },
+    "BibItem": {
+        "parent_fk": "holding_id",
+        "parent_type": "bib_record",
+        "parent_model": "BibRecord",
+        "parent_via_model": "BibHolding",
+        "parent_via_fk": "bib_record_id",
+        "link_label": "item",
+        "display_field": "barcode",
+        "child_type": "bib_item",
+    },
+    # ---- Research visits ----
+    "ResearchVisitObject": {
+        "parent_fk": "visit_id",
+        "parent_type": "research_visit",
+        "parent_model": "ResearchVisit",
+        "link_label": "object",
+        "linked_fk": "object_id",
+        "linked_model": "CollectionObject",
+        "linked_display": "object_number",
+        "child_type": "research_visit_object",
+    },
+    # ---- Insurance and indemnity ----
+    "InsuranceCoverage": {
+        "parent_fk": "policy_id",
+        "parent_type": "insurance",
+        "parent_model": "InsurancePolicy",
+        "link_label": "coverage",
+        "display_field": "covered_entity_type",
+        "child_type": "insurance_coverage",
+    },
+    "IndemnityObject": {
+        "parent_fk": "indemnity_id",
+        "parent_type": "indemnity_arrangement",
+        "parent_model": "IndemnityArrangement",
+        "link_label": "indemnified object",
+        "display_field": "object_number",
+        "linked_fk": "object_id",
+        "linked_model": "CollectionObject",
+        "linked_display": "object_number",
+        "child_type": "indemnity_object",
     },
     # ConstituentXref is polymorphic — handled specially via _resolve_constituent_xref_parent
 }
@@ -629,6 +754,127 @@ def _resolve_constituent_xref_parent(
     return None, None, None
 
 
+def _resolve_link_parent_id(session: Session, obj: Any, link_config: dict[str, str]) -> UUID | None:
+    """Resolve the parent id for a tracked child row, following parent_via_* for grandchildren."""
+    p_fk = link_config.get("parent_fk")
+    p_id = getattr(obj, p_fk, None) if p_fk else None
+    via_model = link_config.get("parent_via_model")
+    if p_id and via_model:
+        via_class = _resolve_model_class(session, via_model)
+        via_obj = None
+        if via_class is not None:
+            try:
+                via_obj = session.get(via_class, p_id)
+            except Exception:
+                via_obj = None
+        p_id = getattr(via_obj, link_config["parent_via_fk"], None) if via_obj is not None else None
+    return p_id
+
+
+def _resolve_link_org(
+    session: Session, obj: Any, link_config: dict[str, str], parent_id: UUID | None
+) -> UUID | None:
+    """organization_id of a child row, falling back to its parent's (some link tables have none)."""
+    org_id = _get_organization_id(obj)
+    if org_id or not parent_id:
+        return org_id
+    parent_class = _resolve_model_class(session, link_config.get("parent_model", ""))
+    if parent_class is None:
+        return None
+    try:
+        parent_obj = session.get(parent_class, parent_id)
+    except Exception:
+        return None
+    return _get_organization_id(parent_obj) if parent_obj is not None else None
+
+
+def _format_composite_part(value: Any) -> str | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, Decimal):
+        text = format(value.normalize(), "f")
+        return text
+    return str(value)
+
+
+def _composite_value(values: list[Any]) -> str | None:
+    parts = [p for p in (_format_composite_part(v) for v in values) if p]
+    return " ".join(parts) or None
+
+
+def _parse_composite(link_config: dict[str, str]) -> tuple[str, list[str]] | None:
+    spec = link_config.get("composite")
+    if not spec:
+        return None
+    name, _, parts = spec.partition("=")
+    return name, [p.strip() for p in parts.split(",") if p.strip()]
+
+
+def _link_excluded(link_config: dict[str, str]) -> set[str]:
+    raw = link_config.get("exclude_fields") or ""
+    return {f.strip() for f in raw.split(",") if f.strip()}
+
+
+def _shape_link_fields(obj: Any, link_config: dict[str, str]) -> list[tuple[str, Any]]:
+    """Fields of a child row for link_added/link_removed diffs, with composites folded in."""
+    excluded = _link_excluded(link_config)
+    fields = [(f, v) for f, v in _get_link_fields(obj) if f not in excluded]
+    composite = _parse_composite(link_config)
+    if composite:
+        name, parts = composite
+        value = _composite_value([getattr(obj, p, None) for p in parts])
+        fields = [(f, v) for f, v in fields if f not in parts]
+        if value is not None:
+            fields.insert(0, (name, value))
+    return fields
+
+
+def _shape_link_changes(
+    obj: Any, link_config: dict[str, str], changes: list[tuple[str, Any, Any]]
+) -> list[tuple[str, Any, Any]]:
+    """Field changes of a child row for link_updated diffs.
+
+    Drops ordering-only columns and folds composite parts into one
+    before/after pair, so "value 10 -> 12" (unit cm) reads "10 cm -> 12 cm".
+    """
+    excluded = _link_excluded(link_config) | {"display_order"}
+    changes = [c for c in changes if c[0] not in excluded]
+    composite = _parse_composite(link_config)
+    if not composite:
+        return changes
+    name, parts = composite
+    changed = {f: (old, new) for f, old, new in changes}
+    if not any(p in changed for p in parts):
+        return changes
+    old_vals = [changed[p][0] if p in changed else getattr(obj, p, None) for p in parts]
+    new_vals = [changed[p][1] if p in changed else getattr(obj, p, None) for p in parts]
+    rest = [c for c in changes if c[0] not in parts]
+    old_c, new_c = _composite_value(old_vals), _composite_value(new_vals)
+    if old_c == new_c:
+        return rest
+    return [(name, old_c, new_c)] + rest
+
+
+def _child_identity(
+    session: Session, obj: Any, link_config: dict[str, str]
+) -> tuple[str | None, UUID | None, str | None]:
+    """(child_entity_type, child_entity_id, child_display_key) for a tracked child row."""
+    child_type = link_config.get("child_type")
+    if not child_type:
+        return None, None, None
+    id_field = link_config.get("child_id_field")
+    child_id = getattr(obj, id_field, None) if id_field else _get_entity_pk(obj)
+    display = None
+    display_field = link_config.get("display_field")
+    if display_field:
+        value = getattr(obj, display_field, None)
+        if value is not None and value != "":
+            display = str(value)[:500]
+    if display is None:
+        display = _resolve_linked_entity_name(session, obj, link_config)
+    return child_type, child_id, display
+
+
 def _create_link_audit_event(
     session: Session,
     link_obj: Any,
@@ -647,18 +893,19 @@ def _create_link_audit_event(
     For link_removed: fields as (name, value, None)
     For link_updated: fields as (name, old, new)
     """
-    org_id = organization_id or _get_organization_id(link_obj)
-    if not org_id:
-        return None
-
     # Resolve parent info
     p_type = parent_type or link_config["parent_type"]
     p_model = parent_model_name or link_config["parent_model"]
-    p_fk = link_config.get("parent_fk")
-    p_id = parent_id or (getattr(link_obj, p_fk, None) if p_fk else None)
+    p_id = parent_id or _resolve_link_parent_id(session, link_obj, link_config)
 
     if not p_id:
         return None
+
+    org_id = organization_id or _resolve_link_org(session, link_obj, link_config, p_id)
+    if not org_id:
+        return None
+
+    child_type, child_id, child_display = _child_identity(session, link_obj, link_config)
 
     # Get parent display key
     parent_display_key = None
@@ -723,6 +970,9 @@ def _create_link_audit_event(
         user_agent=req_context["user_agent"],
         changed_fields=changed_field_names,
         summary=summary[:500],
+        child_entity_type=child_type,
+        child_entity_id=child_id,
+        child_display_key=child_display,
     )
     session.add(audit_event)
 
@@ -913,15 +1163,15 @@ def _capture_changes_before_flush(session: Session, flush_context: Any, instance
             continue
 
         if link_config:
-            org_id = _get_organization_id(obj)
-            parent_fk = link_config["parent_fk"]
-            parent_id = getattr(obj, parent_fk, None)
+            parent_id = _resolve_link_parent_id(session, obj, link_config)
+            org_id = _resolve_link_org(session, obj, link_config, parent_id)
             if org_id and parent_id:
-                fields = _get_link_fields(obj)
+                fields = _shape_link_fields(obj, link_config)
                 linked_entity_name = _resolve_linked_entity_name(session, obj, link_config)
                 if linked_entity_name:
                     fields.insert(0, (link_config.get("link_label", "linked record"), linked_entity_name))
                 display_name = linked_entity_name or _get_link_display_name(session, obj, link_config)
+                child_type, child_id, child_display = _child_identity(session, obj, link_config)
                 pending_link_deletes.append({
                     "link_config": link_config,
                     "parent_id": parent_id,
@@ -930,6 +1180,9 @@ def _capture_changes_before_flush(session: Session, flush_context: Any, instance
                     "organization_id": org_id,
                     "fields": fields,
                     "display_name": display_name,
+                    "child_type": child_type,
+                    "child_id": child_id,
+                    "child_display": child_display,
                 })
 
     session.info["_audit_pending_link_deletes"] = pending_link_deletes
@@ -988,7 +1241,7 @@ def _capture_changes_before_flush(session: Session, flush_context: Any, instance
 
         if link_config:
             try:
-                field_changes = _get_field_changes(obj, session)
+                field_changes = _shape_link_changes(obj, link_config, _get_field_changes(obj, session))
                 if field_changes:
                     _create_link_audit_event(
                         session, obj, link_config, "link_updated",
@@ -1065,7 +1318,7 @@ def _capture_creates_after_flush(session: Session, flush_context: Any) -> None:
         link_config = TRACKED_LINKS.get(class_name)
         if link_config:
             try:
-                fields = _get_link_fields(obj)
+                fields = _shape_link_fields(obj, link_config)
                 diffs = [(f, None, v) for f, v in fields]
                 _create_link_audit_event(
                     session, obj, link_config, "link_added",
@@ -1146,7 +1399,7 @@ def _capture_creates_after_flush(session: Session, flush_context: Any) -> None:
                     except Exception:
                         pass
 
-            changed_field_names = [f[0] for f, _ in link_del["fields"]] if link_del["fields"] else None
+            changed_field_names = [f for f, _ in link_del["fields"]] if link_del["fields"] else None
 
             audit_event = EntityAuditEvent(
                 organization_id=link_del["organization_id"],
@@ -1164,6 +1417,9 @@ def _capture_creates_after_flush(session: Session, flush_context: Any) -> None:
                 user_agent=req_context["user_agent"],
                 changed_fields=changed_field_names,
                 summary=summary[:500],
+                child_entity_type=link_del.get("child_type"),
+                child_entity_id=link_del.get("child_id"),
+                child_display_key=link_del.get("child_display"),
             )
             session.add(audit_event)
 

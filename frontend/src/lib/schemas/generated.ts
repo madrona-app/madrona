@@ -655,6 +655,9 @@ export const AuditEventOutSchema = z.object({
   changed_fields: z.array(z.string()).nullable().optional(),
   summary: z.string().nullable().optional(),
   request_method: z.string().nullable().optional(),
+  child_entity_type: z.string().nullable().optional(),
+  child_entity_id: z.string().nullable().optional(),
+  child_display_key: z.string().nullable().optional(),
   field_diffs: z.array(z.any()).nullable().optional(),
 }).passthrough();
 

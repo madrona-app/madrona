@@ -7,6 +7,7 @@ import LibraryRecordPage from '../../pages/collections/LibraryRecordPage';
 import * as libraryApi from '../../lib/api/library';
 import * as collectionsApi from '../../lib/api/collections';
 import * as authoritiesApi from '../../lib/api/authorities';
+import * as reportsApi from '../../lib/api/reports';
 import * as usePermissionsHook from '../../hooks/usePermissions';
 import { checkA11y } from '../a11y';
 import type { BibRecord } from '../../lib/api/library';
@@ -34,12 +35,17 @@ vi.mock('../../lib/api/library', async (importOriginal) => {
   };
 });
 vi.mock('../../lib/api/collections', () => ({ getLocations: vi.fn() }));
+vi.mock('../../lib/api/reports', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib/api/reports')>();
+  return { ...actual, getRecordAuditHistory: vi.fn() };
+});
 vi.mock('../../lib/api/authorities', () => ({ getSubjectAuthorities: vi.fn() }));
 vi.mock('../../lib/api/constituents', () => ({ getConstituents: vi.fn() }));
 
 const lib = vi.mocked(libraryApi);
 const col = vi.mocked(collectionsApi);
 const auth = vi.mocked(authoritiesApi);
+const reports = vi.mocked(reportsApi);
 const perms = vi.mocked(usePermissionsHook.usePermissions);
 
 function grant(keys: string[] | 'all') {
@@ -113,6 +119,7 @@ beforeEach(() => {
   grant('all');
   col.getLocations.mockResolvedValue({ items: [{ location_id: 'loc1', name: 'Stacks', path: 'Stacks' }] } as never);
   auth.getSubjectAuthorities.mockResolvedValue({ items: [], total: 0, limit: 10, offset: 0 } as never);
+  reports.getRecordAuditHistory.mockResolvedValue({ entity_type: 'bib_record', entity_id: 'r1', items: [], total: 0, limit: 20, offset: 0 });
 });
 
 describe('LibraryRecordsPage', () => {
@@ -203,6 +210,34 @@ describe('LibraryRecordPage — create', () => {
 });
 
 describe('LibraryRecordPage — existing record', () => {
+  it('shows the record history, including holding and item changes, as readable text', async () => {
+    lib.getBibRecord.mockResolvedValue(RECORD);
+    reports.getRecordAuditHistory.mockResolvedValue({
+      entity_type: 'bib_record', entity_id: 'r1', total: 2, limit: 20, offset: 0,
+      items: [
+        {
+          event_id: 'e2', change_type: 'link_updated', changed_at: '2026-11-13T15:30:00+00:00',
+          changed_by: 'u1', changed_by_name: 'Ada Librarian', changed_by_email: null, request_method: 'PATCH',
+          changed_fields: ['status'], summary: 'Updated item: T0002',
+          child_entity_type: 'bib_item', child_entity_id: 'i2', child_display_key: 'T0002',
+          field_diffs: [{ field_name: 'status', old_value: 'available', new_value: 'on_loan' }],
+        },
+        {
+          event_id: 'e1', change_type: 'created', changed_at: '2026-11-12T10:00:00+00:00',
+          changed_by: 'u1', changed_by_name: 'Ada Librarian', changed_by_email: null, request_method: 'POST',
+          changed_fields: [], summary: 'Created bib record', field_diffs: [],
+        },
+      ],
+    });
+    const { container } = renderAt('/organizations/org-1/collections/library/r1');
+    expect(await screen.findByRole('heading', { level: 2, name: 'Change history' })).toBeInTheDocument();
+    expect(reports.getRecordAuditHistory).toHaveBeenCalledWith('org-1', 'bib_record', 'r1', expect.anything());
+    const list = await screen.findByRole('list', { name: 'Change history, newest first' });
+    expect(within(list).getByText('Item T0002: Status changed from available to on loan.')).toBeInTheDocument();
+    expect(within(list).getByText('Created bib record')).toBeInTheDocument();
+    expect((await checkA11y(container)).violations).toEqual([]);
+  });
+
   it('shows names, subjects, holdings and items in accessible tables with row-named controls', async () => {
     lib.getBibRecord.mockResolvedValue(RECORD);
     const { container } = renderAt('/organizations/org-1/collections/library/r1');

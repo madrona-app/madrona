@@ -23,3 +23,4 @@ export {
   type ItemLabelFn,
 } from './diffUtils';
 export { formatFieldName } from './formatFieldName';
+export { childRowSentences, childRowHeadline, childRowName, CHILD_ENTITY_LABELS } from './childRowSentences';

@@ -134,6 +134,10 @@ export interface RecordAuditEvent {
   changed_fields: string[];
   summary: string | null;
   request_method: string | null;
+  /** Set on link_* events about a child row (e.g. an object's measurement). */
+  child_entity_type?: string | null;
+  child_entity_id?: string | null;
+  child_display_key?: string | null;
   field_diffs?: RecordAuditFieldDiff[];
 }
 

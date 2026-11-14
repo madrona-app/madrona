@@ -29,6 +29,7 @@ vi.mock('../../lib/api/researchVisits', () => ({
 vi.mock('../../lib/api', () => ({
   getUseRequests: vi.fn(),
   getCollectionObjects: vi.fn(),
+  getRecordAuditHistory: vi.fn(),
 }));
 vi.mock('../../lib/api/constituents', () => ({ getConstituents: vi.fn() }));
 
@@ -91,6 +92,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   grant('all');
   a.getUseRequests.mockResolvedValue({ items: [], total: 0, limit: 100, offset: 0 } as never);
+  a.getRecordAuditHistory.mockResolvedValue({ entity_type: 'research_visit', entity_id: 'v1', items: [], total: 0, limit: 20, offset: 0 });
 });
 
 describe('ResearchVisitsPage', () => {
@@ -170,6 +172,30 @@ describe('ResearchVisitPage — create', () => {
 });
 
 describe('ResearchVisitPage — objects used', () => {
+  it('shows the visit history, including objects added, as readable text', async () => {
+    v.getResearchVisit.mockResolvedValue(VISIT);
+    a.getRecordAuditHistory.mockResolvedValue({
+      entity_type: 'research_visit', entity_id: 'v1', total: 1, limit: 20, offset: 0,
+      items: [{
+        event_id: 'e1', change_type: 'link_added', changed_at: '2026-11-10T09:45:00+00:00',
+        changed_by: 'u1', changed_by_name: 'Sam Staff', changed_by_email: null, request_method: 'POST',
+        changed_fields: ['object', 'handling_note'], summary: 'Added object: RV.1',
+        child_entity_type: 'research_visit_object', child_entity_id: 'vo1', child_display_key: 'RV.1',
+        field_diffs: [
+          { field_name: 'object', old_value: null, new_value: 'RV.1' },
+          { field_name: 'handling_note', old_value: null, new_value: 'Handled with gloves' },
+        ],
+      }],
+    } as never);
+    const { container } = renderAt('/organizations/org-1/collections/research-visits/v1');
+    expect(await screen.findByRole('heading', { level: 2, name: 'Change history' })).toBeInTheDocument();
+    const list = await screen.findByRole('list', { name: 'Change history, newest first' });
+    expect(within(list).getByText('Added object RV.1')).toBeInTheDocument();
+    expect(within(list).getByText('Handling Note: Handled with gloves.')).toBeInTheDocument();
+    expect(within(list).getByText('Sam Staff')).toBeInTheDocument();
+    expect((await checkA11y(container)).violations).toEqual([]);
+  });
+
   it('shows a captioned objects table with named row actions and adds an object by search', async () => {
     v.getResearchVisit.mockResolvedValue(VISIT);
     v.addResearchVisitObject.mockResolvedValue(VISIT.objects![0]);

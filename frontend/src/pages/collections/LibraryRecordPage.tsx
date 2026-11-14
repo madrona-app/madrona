@@ -19,6 +19,7 @@ import { MadronaLoader } from '../../components/ui/MadronaLoader';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { LibraryHoldings } from '../../components/collections/library/LibraryHoldings';
 import { LibraryAuthorityLinks } from '../../components/collections/library/LibraryAuthorityLinks';
+import { RecordAuditHistory } from '../../components/workspace/RecordAuditHistory';
 
 const fieldClass =
   'w-full px-3 py-2 border border-lichen rounded-lg bg-parchment text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark aria-[invalid=true]:border-semantic-error';
@@ -396,6 +397,14 @@ export default function LibraryRecordPage() {
             recordId={record.bib_record_id}
             holdings={record.holdings ?? []}
             canEdit={canEdit}
+          />
+          <RecordAuditHistory
+            organizationId={orgId}
+            entityType="bib_record"
+            entityId={record.bib_record_id}
+            title="Change history"
+            headingLevel={2}
+            className="mt-8"
           />
         </>
       )}

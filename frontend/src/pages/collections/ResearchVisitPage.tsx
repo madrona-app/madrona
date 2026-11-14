@@ -19,6 +19,7 @@ import { MadronaLoader } from '../../components/ui/MadronaLoader';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { RecordSearch } from '../../components/collections/research-visits/RecordSearch';
 import { ResearchVisitObjects } from '../../components/collections/research-visits/ResearchVisitObjects';
+import { RecordAuditHistory } from '../../components/workspace/RecordAuditHistory';
 
 const fieldClass =
   'w-full px-3 py-2 border border-lichen rounded-lg bg-parchment text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark aria-[invalid=true]:border-semantic-error';
@@ -443,7 +444,17 @@ export default function ResearchVisitPage() {
       </form>
 
       {!isCreate && visit && (
-        <ResearchVisitObjects orgId={orgId} visitId={visit.visit_id} objects={visit.objects ?? []} canEdit={canEdit} />
+        <>
+          <ResearchVisitObjects orgId={orgId} visitId={visit.visit_id} objects={visit.objects ?? []} canEdit={canEdit} />
+          <RecordAuditHistory
+            organizationId={orgId}
+            entityType="research_visit"
+            entityId={visit.visit_id}
+            title="Change history"
+            headingLevel={2}
+            className="mt-8"
+          />
+        </>
       )}
 
       <ConfirmDialog

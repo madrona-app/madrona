@@ -17,6 +17,10 @@ class AuditEventOut(BaseModel):
     changed_fields: list[str] | None = None
     summary: str | None = None
     request_method: str | None = None
+    # Set on link_* events about a child row (e.g. an object's measurement)
+    child_entity_type: str | None = None
+    child_entity_id: str | None = None
+    child_display_key: str | None = None
     field_diffs: list[Any] | None = None
 
 
