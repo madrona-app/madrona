@@ -28,6 +28,8 @@ export const CHILD_ENTITY_LABELS: Record<string, string> = {
   research_visit_object: 'Object',
   insurance_coverage: 'Coverage',
   indemnity_object: 'Indemnified object',
+  exhibition_object: 'Object',
+  exhibition_venue: 'Venue',
 };
 
 /** Child rows named by a term or title: always quoted ("Classification “Textiles”"). */

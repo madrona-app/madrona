@@ -169,6 +169,8 @@ ENTITY_TYPE_PERMISSIONS: dict[str, Permission] = {
     "insurance": Permission.INSURANCE_VIEW,
     "indemnity_arrangement": Permission.INSURANCE_VIEW,
     "insurance_claim": Permission.INSURANCE_VIEW,
+    "exhibition": Permission.EXHIBIT_VIEW,
+    "crate": Permission.COLLECTIONS_VIEW,
 }
 
 

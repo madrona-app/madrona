@@ -68,6 +68,9 @@ TRACKED_ENTITIES: dict[str, dict[str, str]] = {
     "InsurancePolicy": {"display_key": "policy_number", "entity_type": "insurance"},
     "IndemnityArrangement": {"display_key": "reference_number", "entity_type": "indemnity_arrangement"},
     "InsuranceClaim": {"display_key": "claim_number", "entity_type": "insurance_claim"},
+    # Exhibitions and logistics
+    "Exhibition": {"display_key": "title", "entity_type": "exhibition"},
+    "Crate": {"display_key": "crate_number", "entity_type": "crate"},
     # Media entities
     "Media": {"display_key": "filename", "entity_type": "media"},
     "MediaCollection": {"display_key": "name", "entity_type": "media_collection"},
@@ -380,6 +383,29 @@ TRACKED_LINKS: dict[str, dict[str, str]] = {
         "linked_display": "object_number",
         "child_type": "indemnity_object",
     },
+    # ---- Exhibitions ----
+    "ExhibitionObject": {
+        "parent_fk": "exhibition_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "link_label": "object",
+        "linked_fk": "object_id",
+        "linked_model": "CollectionObject",
+        "linked_display": "object_number",
+        "child_type": "exhibition_object",
+    },
+    "ExhibitionVenue": {
+        "parent_fk": "exhibition_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "link_label": "venue",
+        "display_field": "external_venue_name",
+        "linked_fk": "venue_id",
+        "linked_model": "Venue",
+        "linked_display": "name",
+        "child_type": "exhibition_venue",
+        "exclude_fields": "geom",
+    },
     # ConstituentXref is polymorphic — handled specially via _resolve_constituent_xref_parent
 }
 
@@ -451,6 +477,26 @@ _TRACKED_FK_COLUMNS: dict[str, tuple[str, str]] = {
     # Who an object was last inventoried by (set by bulk "mark inventoried").
     "last_inventoried_by": ("User", "display_name|email"),
 }
+
+# Per-model FK columns, for names that mean different things on different
+# models (authorizer_id is a person on most procedures but a staff user on an
+# exhibition; venue_id is a venue on an exhibition but a constituent on a
+# loan out). Checked before _TRACKED_FK_COLUMNS.
+_ENTITY_FK_COLUMNS: dict[str, dict[str, tuple[str, str]]] = {
+    "Exhibition": {
+        "venue_id": ("Venue", "name"),
+        "organizer_id": ("User", "display_name|email"),
+        "authorizer_id": ("User", "display_name|email"),
+        "department_id": ("Department", "name"),
+    },
+    "Crate": {
+        "location_id": ("Location", "code"),
+    },
+}
+
+# Column names whose meaning depends on the model: only tracked where a model
+# lists them in _ENTITY_FK_COLUMNS.
+_AMBIGUOUS_FK_NAMES: set[str] = {"authorizer_id", "venue_id", "organizer_id", "location_id", "department_id"}
 
 
 # ============================================================================
@@ -549,11 +595,21 @@ def _normalize_empty(value: Any) -> Any:
     return value
 
 
-def _resolve_fk_display(session: Session, field_name: str, fk_value: Any) -> str | None:
+def _fk_config(class_name: str | None, field_name: str) -> tuple[str, str] | None:
+    """(model, display field) for a tracked FK column, per model first."""
+    per_model = _ENTITY_FK_COLUMNS.get(class_name or "", {})
+    if field_name in per_model:
+        return per_model[field_name]
+    if class_name in _ENTITY_FK_COLUMNS and field_name in _AMBIGUOUS_FK_NAMES:
+        return None
+    return _TRACKED_FK_COLUMNS.get(field_name)
+
+
+def _resolve_fk_display(session: Session, field_name: str, fk_value: Any, class_name: str | None = None) -> str | None:
     """Resolve a tracked FK UUID to a human-readable display name."""
     if fk_value is None:
         return None
-    fk_config = _TRACKED_FK_COLUMNS.get(field_name)
+    fk_config = _fk_config(class_name, field_name)
     if not fk_config:
         return str(fk_value)
     model_name, display_field = fk_config
@@ -585,6 +641,7 @@ def _get_field_changes(obj: Any, session: Session | None = None) -> list[tuple[s
     changes = []
     mapper = inspect(obj.__class__)
     state = inspect(obj)
+    class_name = obj.__class__.__name__
 
     for attr in mapper.column_attrs:
         field_name = attr.key
@@ -594,7 +651,7 @@ def _get_field_changes(obj: Any, session: Session | None = None) -> list[tuple[s
         if col.primary_key:
             continue
         # Skip FKs unless they are in the tracked list
-        if col.foreign_keys and field_name not in _TRACKED_FK_COLUMNS:
+        if col.foreign_keys and _fk_config(class_name, field_name) is None:
             continue
 
         history = state.attrs[field_name].history
@@ -609,9 +666,9 @@ def _get_field_changes(obj: Any, session: Session | None = None) -> list[tuple[s
             new_ser = _normalize_empty(_serialize_value(new_val))
             if old_ser != new_ser:
                 # For tracked FK columns, resolve UUIDs to display names
-                if field_name in _TRACKED_FK_COLUMNS and session is not None:
-                    old_val = _resolve_fk_display(session, field_name, old_val)
-                    new_val = _resolve_fk_display(session, field_name, new_val)
+                if col.foreign_keys and session is not None:
+                    old_val = _resolve_fk_display(session, field_name, old_val, class_name)
+                    new_val = _resolve_fk_display(session, field_name, new_val, class_name)
                 changes.append((field_name, old_val, new_val))
 
     return changes
@@ -621,6 +678,7 @@ def _get_all_fields(obj: Any, session: Session | None = None) -> list[tuple[str,
     """Get all field values for a new entity (for creates)."""
     fields = []
     mapper = inspect(obj.__class__)
+    class_name = obj.__class__.__name__
 
     for attr in mapper.column_attrs:
         field_name = attr.key
@@ -629,14 +687,14 @@ def _get_all_fields(obj: Any, session: Session | None = None) -> list[tuple[str,
         col = attr.columns[0]
         if col.primary_key:
             continue
-        if col.foreign_keys and field_name not in _TRACKED_FK_COLUMNS:
+        if col.foreign_keys and _fk_config(class_name, field_name) is None:
             continue
 
         value = getattr(obj, field_name, None)
         if value is not None:
             # For tracked FK columns, resolve UUIDs to display names
-            if field_name in _TRACKED_FK_COLUMNS and session is not None:
-                value = _resolve_fk_display(session, field_name, value) or value
+            if col.foreign_keys and session is not None:
+                value = _resolve_fk_display(session, field_name, value, class_name) or value
             fields.append((field_name, value))
 
     return fields
