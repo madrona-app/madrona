@@ -164,6 +164,11 @@ ENTITY_TYPE_PERMISSIONS: dict[str, Permission] = {
     "person_authority": Permission.DATA_VIEW,
     "citation": Permission.DATA_VIEW,
     "media": Permission.DATA_VIEW,
+    "bib_record": Permission.COLLECTIONS_VIEW,
+    "research_visit": Permission.USE_REQUESTS_VIEW,
+    "insurance": Permission.INSURANCE_VIEW,
+    "indemnity_arrangement": Permission.INSURANCE_VIEW,
+    "insurance_claim": Permission.INSURANCE_VIEW,
 }
 
 
@@ -231,6 +236,9 @@ def get_entity_audit_history(
             "changed_fields": e.changed_fields or [],
             "summary": e.summary,
             "request_method": e.request_method,
+            "child_entity_type": e.child_entity_type,
+            "child_entity_id": str(e.child_entity_id) if e.child_entity_id else None,
+            "child_display_key": e.child_display_key,
         }
 
         if include_diffs:

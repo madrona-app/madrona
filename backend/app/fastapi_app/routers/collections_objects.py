@@ -10,8 +10,9 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, text
+from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.orm import Session, joinedload, object_session, selectinload
 
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_auth, require_permission
@@ -247,13 +248,76 @@ router = APIRouter(tags=["collections-objects"])
 # HELPERS
 # ============================================================================
 
+def _blank_to_none(value):
+    if isinstance(value, str):
+        value = value.strip()
+        return value or None
+    return value
+
+
+def _reconcile_child_rows(collection, desired, model, fields, org_uuid, user_uuid, key_fields=()):
+    """Bring a child-row collection in line with ``desired`` by editing it in place.
+
+    Rows are matched rather than cleared and recreated, so the audit trail
+    records what actually changed ("measurement height: 10 cm -> 12 cm")
+    instead of every row being removed and added on each save. Matching runs
+    in passes: rows whose values are unchanged, then rows with the same key
+    (e.g. the same dimension), then the remaining rows in order. Leftover
+    desired items become new rows; leftover existing rows are deleted.
+    """
+    remaining = list(collection)
+    assigned = [None] * len(desired)
+
+    def row_vals(row, names):
+        return tuple(_blank_to_none(getattr(row, f)) for f in names)
+
+    def item_vals(item, names):
+        return tuple(_blank_to_none(item.get(f)) for f in names)
+
+    passes = [fields] + ([key_fields] if key_fields else [])
+    for names in passes:
+        for i, item in enumerate(desired):
+            if assigned[i] is not None:
+                continue
+            want = item_vals(item, names)
+            for row in remaining:
+                if row_vals(row, names) == want:
+                    assigned[i] = row
+                    remaining.remove(row)
+                    break
+    for i in range(len(desired)):
+        if assigned[i] is None and remaining:
+            assigned[i] = remaining.pop(0)
+
+    for row in remaining:
+        collection.remove(row)
+        # Delete explicitly rather than leaving it to delete-orphan: orphans
+        # are only resolved inside the flush, after the audit listener's
+        # before_flush has looked at session.deleted.
+        sess = object_session(row)
+        if sess is not None and sa_inspect(row).persistent:
+            sess.delete(row)
+
+    for i, item in enumerate(desired):
+        row = assigned[i]
+        if row is None:
+            collection.append(model(
+                organization_id=org_uuid, display_order=i, created_by=user_uuid,
+                **{f: item.get(f) for f in fields},
+            ))
+            continue
+        for f in fields:
+            if _blank_to_none(getattr(row, f)) != _blank_to_none(item.get(f)):
+                setattr(row, f, item.get(f))
+        if row.display_order != i:
+            row.display_order = i
+
+
 def _sync_link_tables(obj, data, org_uuid, user_uuid):
     """Sync link table data from frontend payload (JSONB-shaped) into link table records.
 
-    Safety note: The clear-and-recreate pattern here is safe because the entire
-    update (including this sync) runs inside a single DB transaction that is
-    committed in the calling function. If any step fails, the transaction rolls
-    back and no data is lost.  Do NOT add intermediate commits or flushes here.
+    Rows are reconciled in place (see _reconcile_child_rows) inside the
+    caller's transaction; do NOT add intermediate commits here.
 
     Returns:
         list[str]: Warning messages for items that were silently dropped.
@@ -263,25 +327,24 @@ def _sync_link_tables(obj, data, org_uuid, user_uuid):
     warnings: list[str] = []
 
     if "titles" in data:
-        # Clear existing and recreate
-        obj.title_links.clear()
+        wanted = []
         for i, t in enumerate(data["titles"] or []):
             title_text = t.get("title", "").strip() if isinstance(t, dict) else ""
             if not title_text:
                 warnings.append(f"Title at position {i + 1} was skipped (empty title)")
                 continue
-            obj.title_links.append(ObjectTitle(
-                organization_id=org_uuid,
-                title=title_text,
-                title_type=t.get("title_type"),
-                language=t.get("language"),
-                is_preferred=bool(t.get("is_preferred", False)),
-                display_order=i,
-                created_by=user_uuid,
-            ))
+            wanted.append({
+                "title": title_text,
+                "title_type": t.get("title_type"),
+                "language": t.get("language"),
+                "is_preferred": bool(t.get("is_preferred", False)),
+            })
+        _reconcile_child_rows(obj.title_links, wanted, ObjectTitle,
+                              ("title", "title_type", "language", "is_preferred"),
+                              org_uuid, user_uuid, key_fields=("title",))
 
     if "other_numbers" in data:
-        obj.other_number_links.clear()
+        wanted = []
         for i, n in enumerate(data["other_numbers"] or []):
             num_type = n.get("type", "").strip() if isinstance(n, dict) else ""
             num_value = n.get("value", "").strip() if isinstance(n, dict) else ""
@@ -293,16 +356,13 @@ def _sync_link_tables(obj, data, org_uuid, user_uuid):
                     missing.append("value")
                 warnings.append(f"Other number at position {i + 1} was skipped (missing {', '.join(missing)})")
                 continue
-            obj.other_number_links.append(ObjectOtherNumber(
-                organization_id=org_uuid,
-                number_type=num_type,
-                number_value=num_value,
-                display_order=i,
-                created_by=user_uuid,
-            ))
+            wanted.append({"number_type": num_type, "number_value": num_value})
+        _reconcile_child_rows(obj.other_number_links, wanted, ObjectOtherNumber,
+                              ("number_type", "number_value"),
+                              org_uuid, user_uuid, key_fields=("number_type",))
 
     if "measurements" in data:
-        obj.measurement_links.clear()
+        wanted = []
         for i, m in enumerate(data["measurements"] or []):
             if not isinstance(m, dict) or not m.get("dimension") or m.get("value") is None or not m.get("unit"):
                 missing = []
@@ -316,33 +376,33 @@ def _sync_link_tables(obj, data, org_uuid, user_uuid):
                 if missing:
                     warnings.append(f"Measurement at position {i + 1} was skipped (missing {', '.join(missing)})")
                 continue
-            obj.measurement_links.append(ObjectMeasurement(
-                organization_id=org_uuid,
-                dimension=m["dimension"],
-                value=Decimal(str(m["value"])),
-                unit=m["unit"],
-                part=m.get("part"),
-                display_order=i,
-                created_by=user_uuid,
-            ))
+            wanted.append({
+                "dimension": m["dimension"],
+                "value": Decimal(str(m["value"])),
+                "unit": m["unit"],
+                "part": m.get("part"),
+            })
+        _reconcile_child_rows(obj.measurement_links, wanted, ObjectMeasurement,
+                              ("dimension", "value", "unit", "part"),
+                              org_uuid, user_uuid, key_fields=("dimension", "part"))
 
     if "inscriptions" in data:
-        obj.inscription_links.clear()
+        wanted = []
         for i, ins in enumerate(data["inscriptions"] or []):
             content = ins.strip() if isinstance(ins, str) else (ins.get("content", "").strip() if isinstance(ins, dict) else "")
             if not content:
                 warnings.append(f"Inscription at position {i + 1} was skipped (empty content)")
                 continue
-            obj.inscription_links.append(ObjectInscription(
-                organization_id=org_uuid,
-                content=content,
-                inscription_type=ins.get("inscription_type") if isinstance(ins, dict) else None,
-                location_on_object=ins.get("location_on_object") if isinstance(ins, dict) else None,
-                method=ins.get("method") if isinstance(ins, dict) else None,
-                language=ins.get("language") if isinstance(ins, dict) else None,
-                display_order=i,
-                created_by=user_uuid,
-            ))
+            wanted.append({
+                "content": content,
+                "inscription_type": ins.get("inscription_type") if isinstance(ins, dict) else None,
+                "location_on_object": ins.get("location_on_object") if isinstance(ins, dict) else None,
+                "method": ins.get("method") if isinstance(ins, dict) else None,
+                "language": ins.get("language") if isinstance(ins, dict) else None,
+            })
+        _reconcile_child_rows(obj.inscription_links, wanted, ObjectInscription,
+                              ("content", "inscription_type", "location_on_object", "method", "language"),
+                              org_uuid, user_uuid, key_fields=("location_on_object", "inscription_type"))
 
     if "classifications" in data:
         warnings += _sync_classifications(obj, data["classifications"] or [], org_uuid, user_uuid)

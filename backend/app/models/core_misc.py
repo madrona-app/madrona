@@ -1792,6 +1792,21 @@ class EntityAuditEvent(Base):
         comment="Human-readable summary of the change",
     )
 
+    # Child row (link_* events only): the event is recorded on the parent
+    # (entity_type/entity_id), and these identify which child row changed,
+    # e.g. a measurement or title row of a collection object.
+    child_entity_type: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        comment="Type of the child row that changed (object_measurement, bib_item, ...)",
+    )
+    child_entity_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    child_display_key: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+        comment="Human-readable label of the child row (dimension, title text, ...)",
+    )
+
     # Relationships
     organization: Mapped["Organization"] = relationship()
     user: Mapped["User | None"] = relationship(foreign_keys=[changed_by])
@@ -1805,6 +1820,7 @@ class EntityAuditEvent(Base):
         Index("idx_entity_audit_events_entity", "entity_type", "entity_id"),
         Index("idx_entity_audit_events_changed_by", "changed_by"),
         Index("idx_entity_audit_events_changed_at", "changed_at"),
+        Index("idx_entity_audit_events_child", "child_entity_type", "child_entity_id"),
         CheckConstraint(
             "change_type IN ('created', 'updated', 'deleted', 'link_added', 'link_removed', 'link_updated')",
             name="check_entity_audit_change_type",

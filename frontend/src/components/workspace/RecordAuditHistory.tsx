@@ -1,11 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { History, ChevronDown, ChevronUp, User, Calendar } from 'lucide-react';
 import { formatDateShort, formatTime } from '../../lib/formatters';
 import { getRecordAuditHistory } from '../../lib/api';
 import type { RecordAuditEvent, RecordAuditFieldDiff } from '../../lib/api';
 import type { JsonValue } from '../../types/api';
-import { FieldDiffList, buildFieldSummaryLine } from '../audit';
+import { FieldDiffList, buildFieldSummaryLine, childRowHeadline, childRowSentences } from '../audit';
 
 // ============================================================================
 // Event Grouping — collapse consecutive autosave events into sessions
@@ -25,6 +25,8 @@ interface GroupedEvent {
   changed_by_name: string | null;
   changed_by_email: string | null;
   summary: string | null;
+  child_entity_type: string | null;
+  child_display_key: string | null;
   /** Merged diffs across all events in the group */
   field_diffs: RecordAuditFieldDiff[];
   /** How many raw events were collapsed */
@@ -89,6 +91,8 @@ function groupEvents(events: RecordAuditEvent[]): GroupedEvent[] {
       summary: mergedDiffs.length > 0
         ? `Updated ${mergedDiffs.length} field${mergedDiffs.length !== 1 ? 's' : ''}`
         : first.summary,
+      child_entity_type: null,
+      child_display_key: null,
       field_diffs: mergedDiffs,
       event_count: currentBatch.length,
     });
@@ -108,6 +112,8 @@ function groupEvents(events: RecordAuditEvent[]): GroupedEvent[] {
         changed_by_name: event.changed_by_name,
         changed_by_email: event.changed_by_email,
         summary: event.summary,
+        child_entity_type: event.child_entity_type ?? null,
+        child_display_key: event.child_display_key ?? null,
         field_diffs: event.field_diffs || [],
         event_count: 1,
       });
@@ -149,48 +155,67 @@ const CHANGE_TYPE_CONFIG: Record<string, { label: string; bgColor: string; textC
   link_updated: { label: 'Link Updated', bgColor: 'bg-semantic-info', textColor: 'text-parchment' },
 };
 
+// Child-row events (a measurement, title, holding ...) read as plain actions.
+const CHILD_CHANGE_LABELS: Record<string, string> = {
+  link_added: 'Added',
+  link_removed: 'Removed',
+  link_updated: 'Changed',
+};
+
 function EventCard({ event }: { event: GroupedEvent }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const detailsId = useId();
   const config = CHANGE_TYPE_CONFIG[event.change_type] || CHANGE_TYPE_CONFIG.updated;
 
+  const childSentences = childRowSentences(event);
+  const childHeadline = childRowHeadline(event);
+  const isChildEvent = childHeadline !== null;
+  const badgeLabel = (isChildEvent && CHILD_CHANGE_LABELS[event.change_type]) || config.label;
+  const summary = childHeadline ?? event.summary;
+
   const hasDiffs = event.field_diffs.length > 0;
-  const canExpand = hasDiffs;
+  // Child-row changes are shown as sentences directly; other events keep the
+  // expandable field-by-field view.
+  const canExpand = hasDiffs && !isChildEvent;
 
   const fmtDate = (dateString: string) => formatDateShort(dateString);
   const fmtTime = (dateString: string) => formatTime(dateString);
 
   const timeDisplay = event.changed_at_end
-    ? `${fmtTime(event.changed_at)}\u2013${fmtTime(event.changed_at_end)}`
+    ? `${fmtTime(event.changed_at)}–${fmtTime(event.changed_at_end)}`
     : fmtTime(event.changed_at);
+  const actor = event.changed_by_name || event.changed_by_email || 'System';
 
   return (
-    <div className="bg-parchment border border-lichen rounded-lg">
+    <li className="bg-parchment border border-lichen rounded-lg">
       {/* Header */}
       <div className="p-3">
         <div className="flex items-start justify-between gap-3">
           {/* Left: Badge and summary */}
           <div className="flex items-start gap-2 min-w-0">
             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${config.bgColor} ${config.textColor} shrink-0`}>
-              {config.label}
+              {badgeLabel}
+              <span className="sr-only">:</span>
             </span>
             <div className="min-w-0">
-              {event.summary && (
-                <p className="text-sm text-ink truncate">{event.summary}</p>
+              {summary && (
+                <p className="text-sm text-ink break-words">{summary}</p>
               )}
               <div className="flex items-center gap-2 mt-1 text-xs text-archive">
                 <span className="flex items-center gap-1">
-                  <User size={12} />
-                  {event.changed_by_name || event.changed_by_email || 'System'}
+                  <User size={12} aria-hidden="true" />
+                  <span className="sr-only">By </span>
+                  {actor}
                 </span>
                 {event.event_count > 1 && (
-                  <span className="text-archive/60">
+                  <span className="text-archive">
                     {event.event_count} edits
                   </span>
                 )}
               </div>
               {/* One-line field summary when collapsed */}
               {canExpand && !isExpanded && (
-                <p className="mt-0.5 text-xs text-archive/70 truncate">
+                <p className="mt-0.5 text-xs text-archive truncate">
                   {buildFieldSummaryLine(event.field_diffs)}
                 </p>
               )}
@@ -200,33 +225,47 @@ function EventCard({ event }: { event: GroupedEvent }) {
           {/* Right: Date and expand button */}
           <div className="flex items-center gap-2 shrink-0">
             <div className="text-right text-xs text-archive">
-              <div className="flex items-center gap-1">
-                <Calendar size={12} />
-                {fmtDate(event.changed_at)}
-              </div>
-              <div>{timeDisplay}</div>
+              <span className="sr-only">On </span>
+              <time dateTime={event.changed_at}>
+                <span className="flex items-center gap-1 justify-end">
+                  <Calendar size={12} aria-hidden="true" />
+                  {fmtDate(event.changed_at)}
+                </span>
+                <span className="block">{timeDisplay}</span>
+              </time>
             </div>
             {canExpand && (
               <button
+                type="button"
                 onClick={() => setIsExpanded(!isExpanded)}
                 aria-expanded={isExpanded}
-                aria-label={isExpanded ? 'Hide changed fields' : 'Show changed fields'}
-                className="p-1 text-archive hover:text-ink rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-1"
+                aria-controls={detailsId}
+                aria-label={`${isExpanded ? 'Hide' : 'Show'} changed fields: ${summary ?? config.label}, ${fmtDate(event.changed_at)} ${timeDisplay}`}
+                className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-archive hover:text-ink rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
               >
-                {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                {isExpanded ? <ChevronUp size={16} aria-hidden="true" /> : <ChevronDown size={16} aria-hidden="true" />}
               </button>
             )}
           </div>
         </div>
       </div>
 
+      {/* Child-row changes, one sentence per field */}
+      {isChildEvent && childSentences.length > 0 && (
+        <ul className="border-t border-lichen px-3 py-2 bg-stone/30 space-y-1 text-sm text-ink">
+          {childSentences.map((sentence, i) => (
+            <li key={i}>{sentence}</li>
+          ))}
+        </ul>
+      )}
+
       {/* Expanded diffs */}
-      {isExpanded && hasDiffs && (
-        <div className="border-t border-lichen px-3 py-2 bg-stone/30">
+      {canExpand && isExpanded && (
+        <div id={detailsId} className="border-t border-lichen px-3 py-2 bg-stone/30">
           <FieldDiffList diffs={event.field_diffs} showRawButton />
         </div>
       )}
-    </div>
+    </li>
   );
 }
 
@@ -258,7 +297,7 @@ function LoadingState() {
 function EmptyState() {
   return (
     <div className="text-center py-8">
-      <History className="mx-auto h-10 w-10 text-archive/50" />
+      <History className="mx-auto h-10 w-10 text-archive/50" aria-hidden="true" />
       <h3 className="mt-2 text-sm font-medium text-ink">No history</h3>
       <p className="mt-1 text-sm text-archive">
         No changes have been recorded for this record yet.
@@ -277,6 +316,8 @@ interface RecordAuditHistoryProps {
   entityId: string;
   title?: string;
   className?: string;
+  /** Heading level for the title (default 3, inside a workspace section). */
+  headingLevel?: 2 | 3;
 }
 
 export function RecordAuditHistory({
@@ -285,9 +326,12 @@ export function RecordAuditHistory({
   entityId,
   title = 'Change History',
   className = '',
+  headingLevel = 3,
 }: RecordAuditHistoryProps) {
   const [offset, setOffset] = useState(0);
   const limit = 20;
+  const Heading = headingLevel === 2 ? 'h2' : 'h3';
+  const headingClass = headingLevel === 2 ? 'text-lg font-semibold text-forest' : 'text-sm font-medium text-ink';
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['recordAuditHistory', organizationId, entityType, entityId, offset],
@@ -309,7 +353,7 @@ export function RecordAuditHistory({
   if (isLoading) {
     return (
       <div className={className}>
-        <h3 className="text-sm font-medium text-ink mb-3">{title}</h3>
+        <Heading className={`${headingClass} mb-3`}>{title}</Heading>
         <LoadingState />
       </div>
     );
@@ -318,8 +362,8 @@ export function RecordAuditHistory({
   if (isError) {
     return (
       <div className={className}>
-        <h3 className="text-sm font-medium text-ink mb-3">{title}</h3>
-        <div className="text-center py-6 text-semantic-error">
+        <Heading className={`${headingClass} mb-3`}>{title}</Heading>
+        <div role="alert" className="text-center py-6 text-semantic-error">
           Failed to load history: {(error as Error)?.message || 'Unknown error'}
         </div>
       </div>
@@ -329,7 +373,7 @@ export function RecordAuditHistory({
   if (rawEvents.length === 0 && offset === 0) {
     return (
       <div className={className}>
-        <h3 className="text-sm font-medium text-ink mb-3">{title}</h3>
+        <Heading className={`${headingClass} mb-3`}>{title}</Heading>
         <EmptyState />
       </div>
     );
@@ -338,17 +382,17 @@ export function RecordAuditHistory({
   return (
     <div className={className}>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-ink">{title}</h3>
+        <Heading className={headingClass}>{title}</Heading>
         <span className="text-xs text-archive">
           {total} event{total !== 1 ? 's' : ''}
         </span>
       </div>
 
-      <div className="space-y-2">
+      <ol className="space-y-2" aria-label={`${title}, newest first`}>
         {grouped.map((event) => (
           <EventCard key={event.key} event={event} />
         ))}
-      </div>
+      </ol>
 
       {/* Pagination */}
       {(hasMore || hasPrev) && (
@@ -356,7 +400,8 @@ export function RecordAuditHistory({
           <button
             onClick={() => setOffset(Math.max(0, offset - limit))}
             disabled={!hasPrev}
-            className="px-3 py-1.5 text-sm border border-lichen rounded hover:bg-stone disabled:opacity-50 disabled:cursor-not-allowed"
+            type="button"
+            className="px-3 py-1.5 min-h-[44px] text-sm border border-lichen rounded hover:bg-stone disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
           >
             Previous
           </button>
@@ -366,7 +411,8 @@ export function RecordAuditHistory({
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={!hasMore}
-            className="px-3 py-1.5 text-sm border border-lichen rounded hover:bg-stone disabled:opacity-50 disabled:cursor-not-allowed"
+            type="button"
+            className="px-3 py-1.5 min-h-[44px] text-sm border border-lichen rounded hover:bg-stone disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
           >
             Next
           </button>
