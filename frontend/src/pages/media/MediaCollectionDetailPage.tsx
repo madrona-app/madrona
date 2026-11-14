@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
+import { RecordAuditHistory } from '../../components/workspace/RecordAuditHistory';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -321,10 +322,12 @@ export default function MediaCollectionDetailPage() {
               </button>
               {canDelete && (
                 <button
+                  type="button"
                   onClick={handleDelete}
-                  className="btn btn-danger flex items-center gap-2"
+                  aria-label={`Delete lightbox ${collection.name}`}
+                  className="btn btn-danger flex items-center gap-2 min-h-[44px] min-w-[44px]"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={16} aria-hidden="true" />
                 </button>
               )}
             </>
@@ -540,6 +543,16 @@ export default function MediaCollectionDetailPage() {
         />,
         document.body,
       )}
+
+      {/* Change history: details, manual adds and removals, feedback requests */}
+      <section className="mt-8 border border-lichen rounded-lg p-4" aria-label="Lightbox change history">
+        <RecordAuditHistory
+          organizationId={orgId!}
+          entityType="media_collection"
+          entityId={collectionId!}
+          headingLevel={2}
+        />
+      </section>
 
       {/* Remove Item Confirm Dialog */}
       <ConfirmDialog

@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import MediaCollectionDetailPage from '../../../pages/media/MediaCollectionDetailPage';
 import * as api from '../../../lib/api';
 import * as usePermissionsHook from '../../../hooks/usePermissions';
+import { checkA11y } from '../../a11y';
 
 vi.mock('../../../lib/api', () => ({
   getMediaCollection: vi.fn(),
@@ -13,6 +14,7 @@ vi.mock('../../../lib/api', () => ({
   listCollectionItems: vi.fn(),
   removeCollectionItem: vi.fn(),
   reorderCollectionItems: vi.fn(),
+  getRecordAuditHistory: vi.fn(),
 }));
 
 vi.mock('../../../hooks/usePermissions', () => ({
@@ -187,5 +189,36 @@ describe('MediaCollectionDetailPage', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /share/i })).toBeInTheDocument();
     });
+  });
+});
+
+describe('MediaCollectionDetailPage change history', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUsePermissions.mockReturnValue({
+      hasPermission: vi.fn().mockReturnValue(true),
+      hasAnyPermission: vi.fn().mockReturnValue(true),
+      hasAllPermissions: vi.fn().mockReturnValue(true),
+    });
+  });
+
+  it('shows manual adds and removals on the lightbox history', async () => {
+    mockGetMediaCollection.mockResolvedValue(sampleCollection as Awaited<ReturnType<typeof api.getMediaCollection>>);
+    mockListCollectionItems.mockResolvedValue(sampleItems as Awaited<ReturnType<typeof api.listCollectionItems>>);
+    vi.mocked(api.getRecordAuditHistory).mockResolvedValue({
+      entity_type: 'media_collection', entity_id: 'col-1', total: 1, limit: 20, offset: 0,
+      items: [{
+        event_id: 'e1', change_type: 'link_added', changed_at: '2026-11-14T10:00:00+00:00',
+        changed_by: 'u1', changed_by_name: 'Pat Registrar', changed_by_email: 'pat@example.org',
+        changed_fields: ['media'], summary: 'Added media: photo.jpg', request_method: 'POST',
+        child_entity_type: 'media_collection_item', child_entity_id: 'm-1', child_display_key: 'photo.jpg',
+        field_diffs: [{ field_name: 'media', old_value: null, new_value: 'photo.jpg' }],
+      }],
+    } as Awaited<ReturnType<typeof api.getRecordAuditHistory>>);
+    const { container } = renderPage();
+    const region = await screen.findByRole('region', { name: 'Lightbox change history' });
+    expect(await within(region).findByText(/Added media photo\.jpg/)).toBeInTheDocument();
+    expect(api.getRecordAuditHistory).toHaveBeenCalledWith('org-123', 'media_collection', 'col-1', expect.anything());
+    expect((await checkA11y(container)).violations).toEqual([]);
   });
 });

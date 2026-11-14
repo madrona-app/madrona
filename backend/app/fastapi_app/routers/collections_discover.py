@@ -227,6 +227,7 @@ ENTITY_TYPE_PERMISSIONS: dict[str, Permission] = {
     "approval_rule": Permission.ORG_MANAGE_SETTINGS,
     "document_template": Permission.DOCUMENTS_TEMPLATES_VIEW,
     "org_scoped_doc": Permission.ORG_MANAGE_SETTINGS,
+    "media_download_request": Permission.DOWNLOAD_REQUESTS_VIEW,
 }
 
 
