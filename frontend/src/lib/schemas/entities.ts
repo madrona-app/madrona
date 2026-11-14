@@ -672,6 +672,8 @@ export const CollectionsSearchRequestSchema = z.object({
   include_facets: z.boolean().nullable().optional(),
   facet_size: z.number().nullable().optional(),
   highlight: z.boolean().nullable().optional(),
+  /** Include deaccessioned records when the organization hides them from search. */
+  include_deaccessioned: z.boolean().nullable().optional(),
 });
 
 export type CollectionsSearchRequest = z.infer<typeof CollectionsSearchRequestSchema>;

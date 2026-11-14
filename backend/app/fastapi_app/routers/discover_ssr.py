@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 
+from app.services.deaccession_visibility import public_visible_clause
 from app.config import get_settings
 from app.database import get_db
 from app.models import (
@@ -193,6 +194,7 @@ def _resolve_object(db: Session, org: Organization, identifier: str) -> Collecti
             CollectionObject.object_id == obj_uuid,
             CollectionObject.organization_id == org.organization_id,
             CollectionObject.is_discoverable == True,
+            public_visible_clause(db, org.organization_id),
         ).first()
         if obj:
             return obj
@@ -203,6 +205,7 @@ def _resolve_object(db: Session, org: Organization, identifier: str) -> Collecti
         CollectionObject.organization_id == org.organization_id,
         CollectionObject.object_number == identifier,
         CollectionObject.is_discoverable == True,
+        public_visible_clause(db, org.organization_id),
     ).first()
 
 

@@ -32,6 +32,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.services.deaccession_visibility import public_visible_clause
 from app.config import get_settings
 from app.database import get_admin_db
 from app.models import (
@@ -192,6 +193,7 @@ def _visible_items_query(db: Session, org: Organization, collection_id):
             MemberCollectionItem.organization_id == org.organization_id,
             CollectionObject.organization_id == org.organization_id,
             CollectionObject.is_discoverable == True,  # noqa: E712
+            public_visible_clause(db, org.organization_id),
             CollectionObject.is_deleted == False,  # noqa: E712
         )
     )
@@ -244,6 +246,7 @@ def _visible_counts(db: Session, org: Organization, collection_ids: list) -> dic
             MemberCollectionItem.organization_id == org.organization_id,
             CollectionObject.organization_id == org.organization_id,
             CollectionObject.is_discoverable == True,  # noqa: E712
+            public_visible_clause(db, org.organization_id),
             CollectionObject.is_deleted == False,  # noqa: E712
         )
         .group_by(MemberCollectionItem.collection_id)
@@ -498,6 +501,7 @@ def add_item(
         CollectionObject.object_id == body.object_id,
         CollectionObject.organization_id == ctx.org.organization_id,
         CollectionObject.is_discoverable == True,  # noqa: E712
+        public_visible_clause(db, ctx.org.organization_id),
         CollectionObject.is_deleted == False,  # noqa: E712
     ).first()
     if not obj:

@@ -104,6 +104,14 @@ class Organization(Base):
         Boolean, nullable=False, default=True, server_default="true"
     )
 
+    # Keep deaccessioned objects out of general search: staff search and
+    # object lists leave them out unless asked (include_deaccessioned or a
+    # status filter), and the public portal never shows them. On by default.
+    # See app/services/deaccession_visibility.py.
+    hide_deaccessioned_in_search: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+
     media_rights_enforcement: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,

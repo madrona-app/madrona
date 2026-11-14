@@ -55,6 +55,7 @@ from app.models import (
     Organization,
     Venue,
 )
+from app.services.deaccession_visibility import hides_deaccessioned, public_visible_clause
 from app.services.rate_limiter import RateLimiter
 from app.services.uploads import get_org_media_url
 from app.services.public_cache import pub_cache_get, pub_cache_set, pub_cache_key_with_params
@@ -337,6 +338,7 @@ def _build_discover_search_request(
     offset: int,
     include_facets: bool,
     public_keys: frozenset[str] | None = None,
+    hide_deaccessioned: bool = True,
 ):
     """Translate the public search URL into a collections search request.
 
@@ -378,6 +380,9 @@ def _build_discover_search_request(
         creation_place=_param("creation_place"),
         date_from=_param("date_from"),
         date_to=_param("date_to"),
+        # Deaccessioned records are never shown while the organization hides
+        # them from search (Organization.hide_deaccessioned_in_search).
+        exclude_object_status=["deaccessioned"] if hide_deaccessioned else None,
     )
 
     on_display_param = request.query_params.get("on_display")
@@ -433,6 +438,7 @@ def get_discover_info(
     count = db.query(func.count(CollectionObject.object_id)).filter(
         CollectionObject.organization_id == org.organization_id,
         CollectionObject.is_discoverable == True,  # noqa: E712
+        public_visible_clause(db, org.organization_id),
     ).scalar()
 
     config = db.query(DiscoverConfig).filter(
@@ -512,6 +518,7 @@ def search_discover_objects(
         request, q=q, sort=sort, limit=limit, offset=offset,
         include_facets=include_facets.lower() != "false",
         public_keys=public_keys,
+        hide_deaccessioned=hides_deaccessioned(db, org.organization_id),
     )
 
     if not CollectionsSearchService.is_available():
@@ -689,12 +696,15 @@ def get_related_objects(
     if not should_clauses:
         return {"hits": []}
 
+    must_not = [{"term": {"object_id": str(obj.object_id)}}]
+    if hides_deaccessioned(db, org.organization_id):
+        must_not.append({"term": {"object_status": "deaccessioned"}})
     query = {
         "size": 8,
         "_source": ["object_id", "object_number", "title", "creators", "creation_date", "classification"],
         "query": {
             "bool": {
-                "must_not": [{"term": {"object_id": str(obj.object_id)}}],
+                "must_not": must_not,
                 "filter": [
                     {"term": {"is_discoverable": True}},
                     {"term": {"organization_id": str(org.organization_id)}},
@@ -779,6 +789,7 @@ def get_featured_objects(
         CollectionObject.object_id.in_(featured_ids),
         CollectionObject.organization_id == org.organization_id,
         CollectionObject.is_discoverable == True,  # noqa: E712
+        public_visible_clause(db, org.organization_id),
     ).all()
 
     obj_map = {obj.object_id: obj for obj in objects}
@@ -1242,6 +1253,7 @@ def get_public_exhibition(
             ExhibitionObject.exhibition_id == exh.exhibition_id,
             CollectionObject.organization_id == org.organization_id,
             CollectionObject.is_discoverable == True,  # noqa: E712
+            public_visible_clause(db, org.organization_id),
             CollectionObject.is_deleted == False,  # noqa: E712
         )
         .order_by(ExhibitionObject.display_order.asc())
@@ -1257,6 +1269,7 @@ def get_public_exhibition(
             ExhibitionObject.exhibition_id == exh.exhibition_id,
             CollectionObject.organization_id == org.organization_id,
             CollectionObject.is_discoverable == True,  # noqa: E712
+            public_visible_clause(db, org.organization_id),
             CollectionObject.is_deleted == False,  # noqa: E712
         )
         .scalar()
@@ -1480,6 +1493,7 @@ def _load_public_objects(db: Session, org: Organization, object_ids: list[UUID])
             CollectionObject.object_id.in_(object_ids),
             CollectionObject.organization_id == org.organization_id,
             CollectionObject.is_discoverable == True,  # noqa: E712
+            public_visible_clause(db, org.organization_id),
             CollectionObject.is_deleted == False,  # noqa: E712
         )
         .all()
@@ -1599,6 +1613,7 @@ def export_discover_search(
     from app.services import public_object_fields as pof
 
     public_keys = pof.get_public_field_keys(db, org.organization_id)
+    hide_deacc = hides_deaccessioned(db, org.organization_id)
     object_ids: list[UUID] = []
     total = 0
     if CollectionsSearchService.is_available():
@@ -1610,6 +1625,7 @@ def export_discover_search(
                 search_request = _build_discover_search_request(
                     request, q=q, sort=sort, limit=page_size, offset=offset, include_facets=False,
                     public_keys=public_keys,
+                    hide_deaccessioned=hide_deacc,
                 )
                 response = service.search(search_request, org.organization_id, db_session=db)
                 total = response.total
@@ -1676,6 +1692,7 @@ def export_public_exhibition(
             ExhibitionObject.exhibition_id == exh.exhibition_id,
             CollectionObject.organization_id == org.organization_id,
             CollectionObject.is_discoverable == True,  # noqa: E712
+            public_visible_clause(db, org.organization_id),
             CollectionObject.is_deleted == False,  # noqa: E712
         )
         .order_by(ExhibitionObject.display_order.asc())

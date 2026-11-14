@@ -129,13 +129,20 @@ def serialize_classifications(obj) -> list[dict]:
 
 
 def resolve_discover_object(db: Session, org: Organization, identifier: str) -> CollectionObject | None:
-    """Look up a discoverable object by UUID or object_number."""
+    """Look up a discoverable object by UUID or object_number.
+
+    Deaccessioned objects are not found while the organization hides them
+    from search (services/deaccession_visibility.py).
+    """
+    from app.services.deaccession_visibility import public_visible_clause as _public_visible
+
     try:
         obj_uuid = UUID(identifier)
         obj = db.query(CollectionObject).filter(
             CollectionObject.object_id == obj_uuid,
             CollectionObject.organization_id == org.organization_id,
             CollectionObject.is_discoverable == True,  # noqa: E712
+            _public_visible(db, org.organization_id),
         CollectionObject.is_deleted == False,  # noqa: E712
         ).first()
         if obj:
@@ -147,6 +154,7 @@ def resolve_discover_object(db: Session, org: Organization, identifier: str) -> 
         CollectionObject.organization_id == org.organization_id,
         CollectionObject.object_number == identifier,
         CollectionObject.is_discoverable == True,  # noqa: E712
+        _public_visible(db, org.organization_id),
         CollectionObject.is_deleted == False,  # noqa: E712
     ).first()
 

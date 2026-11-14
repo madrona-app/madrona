@@ -21,6 +21,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from app.services.deaccession_visibility import public_visible_clause
+
 logger = logging.getLogger(__name__)
 
 
@@ -191,8 +193,11 @@ def search_objects(
     from app.search.collections.query_builder import CollectionsQueryBuilder
     from app.services import public_object_fields as pof
 
+    from app.services.deaccession_visibility import hides_deaccessioned
+
     with get_session() as db:
         public_keys = pof.get_public_field_keys(db, org.organization_id)
+        hide_deacc = hides_deaccessioned(db, org.organization_id)
 
     def _if_public(param: str, value):
         return value if pof.filter_param_public(param, public_keys) else None
@@ -209,6 +214,7 @@ def search_objects(
         creation_place=_if_public("creation_place", creation_place),
         on_display=on_display,
         has_image=has_image,
+        exclude_object_status=["deaccessioned"] if hide_deacc else None,
     )
     if sort in ("date_asc", "date_desc") and not pof.is_public("creation_date", public_keys):
         sort = "relevance"
@@ -396,6 +402,7 @@ def get_related_objects(object_id: str) -> dict:
     )
     from app.models import Organization
     from app.search.collections.service import CollectionsSearchService, get_collections_search_service
+    from app.services.deaccession_visibility import hides_deaccessioned
 
     if not CollectionsSearchService.is_available():
         return {"hits": []}
@@ -420,7 +427,10 @@ def get_related_objects(object_id: str) -> dict:
             "_source": ["object_id", "object_number", "title", "creators", "creation_date", "classification"],
             "query": {
                 "bool": {
-                    "must_not": [{"term": {"object_id": str(obj.object_id)}}],
+                    "must_not": [{"term": {"object_id": str(obj.object_id)}}] + (
+                        [{"term": {"object_status": "deaccessioned"}}]
+                        if hides_deaccessioned(db, org.organization_id) else []
+                    ),
                     "filter": [
                         {"term": {"is_discoverable": True}},
                         {"term": {"organization_id": str(org.organization_id)}},
@@ -497,6 +507,7 @@ def get_featured_objects() -> dict:
             CollectionObject.object_id.in_(featured_ids),
             CollectionObject.organization_id == org.organization_id,
             CollectionObject.is_discoverable == True,  # noqa: E712
+            public_visible_clause(db, org.organization_id),
         ).all()
 
         from app.services import public_object_fields as pof
@@ -782,6 +793,7 @@ def museum_info() -> dict:
         count = db.query(func.count(CollectionObject.object_id)).filter(
             CollectionObject.organization_id == org.organization_id,
             CollectionObject.is_discoverable == True,  # noqa: E712
+            public_visible_clause(db, org.organization_id),
         ).scalar()
 
         config = db.query(DiscoverConfig).filter(

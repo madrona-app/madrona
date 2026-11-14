@@ -31,6 +31,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse, Response
 from sqlalchemy.orm import Session
 
+from app.services.deaccession_visibility import public_visible_clause
 from app.config import get_settings
 from app.database import get_admin_db
 from app.models import (
@@ -811,6 +812,7 @@ def get_sitemap(
         .filter(
             CollectionObject.organization_id == org_id,
             CollectionObject.is_discoverable == True,
+            public_visible_clause(db, org_id),
         )
         .order_by(CollectionObject.updated_at.desc())
         .limit(5000)  # Cap to avoid massive sitemaps

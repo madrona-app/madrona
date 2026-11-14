@@ -74,6 +74,16 @@ def search_collection_objects(
     # Parse request
     search_request = CollectionsSearchRequest(**data)
 
+    # Deaccessioned records stay out of general search unless asked for.
+    from app.services import deaccession_visibility as dv
+
+    if dv.exclude_from_staff_search(
+        dv.hides_deaccessioned(db, organization_id),
+        search_request.include_deaccessioned,
+        search_request.filters.object_status if search_request.filters else None,
+    ):
+        search_request.filters = dv.apply_to_filters(search_request.filters, True)
+
     # Get service and ensure index exists
     service = get_collections_search_service()
     try:
