@@ -75,6 +75,17 @@ class Organization(Base):
         comment="Per-procedure enforcement toggles. Key = procedure_type, value = boolean."
     )
 
+    # Extra required fields an org admin adds on top of a procedure's fixed
+    # baseline. Shape: {"loan_out": ["venue_name", ...], ...}
+    # Enforced with the baseline (see services/procedure_required_fields.py).
+    procedure_required_fields: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONType,
+        nullable=True,
+        default=dict,
+        server_default="{}",
+        comment="Org-added required fields per procedure. Key = procedure_type, value = list of field names."
+    )
+
     # Strict vocabulary validation — per object field.
     # Shape: {"materials": true, "subjects": false, ...}
     # Missing key = lenient (default), so migrated free-text data is never blocked.

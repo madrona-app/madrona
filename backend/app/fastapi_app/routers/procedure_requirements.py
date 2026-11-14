@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.services.procedure_requirements import (
     PROCEDURE_REQUIREMENTS,
+    group_to_dict,
     procedure_to_dict,
 )
 
@@ -44,7 +45,10 @@ def get_procedure_requirements(
 ):
     """Return requirements for a single procedure.
 
-    When organization_id is provided, includes enforcement_enabled flag.
+    Every requirement carries ``source``: "baseline" for the fixed set, "org"
+    for fields the organization added. When organization_id is provided, the
+    org-added fields are merged in as an extra group (``org_required``) and the
+    response includes ``enforcementEnabled`` and ``orgRequiredFields``.
     """
     proc = PROCEDURE_REQUIREMENTS.get(procedure_type)
     if proc is None:
@@ -58,10 +62,24 @@ def get_procedure_requirements(
         )
 
     result = procedure_to_dict(proc)
+    for group in result["requirementGroups"]:
+        for req in group["requirements"]:
+            req["source"] = "baseline"
 
     if organization_id is not None:
+        from app.models.core_org import Organization
         from app.services.procedure_enforcement import is_enforcement_enabled
+        from app.services.procedure_required_fields import org_added_fields, org_requirement_group
+
         result["enforcementEnabled"] = is_enforcement_enabled(organization_id, procedure_type, db)
+        org = db.query(Organization).filter(Organization.organization_id == organization_id).first()
+        org_group = org_requirement_group(org, procedure_type) if org else None
+        if org_group is not None:
+            group_dict = group_to_dict(org_group)
+            for req in group_dict["requirements"]:
+                req["source"] = "org"
+            result["requirementGroups"].append(group_dict)
+        result["orgRequiredFields"] = org_added_fields(org, procedure_type) if org else []
         response.headers["Cache-Control"] = NO_CACHE
     else:
         response.headers["Cache-Control"] = CACHE_CONTROL

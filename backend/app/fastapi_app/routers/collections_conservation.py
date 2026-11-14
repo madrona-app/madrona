@@ -282,7 +282,7 @@ def update_conservation_treatment(
         workflow = WORKFLOW_DEFINITIONS.get('conservation_treatment')
         if workflow and new_status not in workflow.valid_statuses:
             raise HTTPException(status_code=409, detail={"code": "invalid_status", "message": f"'{new_status}' is not a valid status"})
-        _enforce_procedure(organization_id, "conservation_treatment", treatment, new_status, db)
+        _enforce_procedure(organization_id, "conservation", treatment, new_status, db)
         treatment.status = new_status
 
     treatment.updated_by = auth.user_id
