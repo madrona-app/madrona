@@ -510,6 +510,7 @@ def get_discover_config(
 
     if not config:
         return {
+            "config_id": None,
             "hero_media_id": None,
             "page_title": None,
             "page_subtitle": None,
@@ -543,6 +544,7 @@ def get_discover_config(
         }
 
     return {
+        "config_id": str(config.config_id),
         "hero_media_id": str(config.hero_media_id) if config.hero_media_id else None,
         "page_title": config.page_title,
         "page_subtitle": config.page_subtitle,
@@ -808,6 +810,7 @@ def update_discover_config(
     invalidate_org_cache_by_id(org_id_str)
 
     return {
+        "config_id": str(config.config_id),
         "hero_media_id": str(config.hero_media_id) if config.hero_media_id else None,
         "page_title": config.page_title,
         "page_subtitle": config.page_subtitle,

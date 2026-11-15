@@ -245,6 +245,8 @@ export interface DiscoverObjectDetail {
 }
 
 export interface DiscoverConfig {
+  /** Id of the saved settings row (absent until the settings are first saved). */
+  config_id?: string | null;
   hero_media_id: string | null;
   page_title: string | null;
   page_subtitle: string | null;

@@ -51,6 +51,9 @@ class BulkDiscoverableResponse(BaseModel):
 
 
 class DiscoverConfigOut(BaseModel):
+    # The settings row's id (None until the organization first saves). Staff
+    # UI uses it to open the settings' change history.
+    config_id: str | None = None
     hero_media_id: str | None = None
     page_title: str | None = None
     page_subtitle: str | None = None

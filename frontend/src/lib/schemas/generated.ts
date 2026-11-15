@@ -3808,6 +3808,7 @@ export const DiscoverCaptionTrackOutSchema = z.object({
 export type DiscoverCaptionTrackOut = z.infer<typeof DiscoverCaptionTrackOutSchema>;
 
 export const DiscoverConfigOutSchema = z.object({
+  config_id: z.string().nullable().optional(),
   hero_media_id: z.string().nullable().optional(),
   page_title: z.string().nullable().optional(),
   page_subtitle: z.string().nullable().optional(),
