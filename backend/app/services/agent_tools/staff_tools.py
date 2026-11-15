@@ -464,13 +464,14 @@ def _infer_field_type(col) -> str:
     return "text"
 
 
-def _get_introspected_fields(entity_type: str) -> list[dict] | None:
+def _get_introspected_fields(entity_type: str, db=None, org_id=None) -> list[dict] | None:
     """Get all user-facing fields for an entity type via hybrid introspection.
 
     Cross-references SQLAlchemy model columns with FORM_REGISTRY metadata.
     Returns None if the entity type is unknown.
     """
     from app.services.agent_tools.form_registry import FORM_REGISTRY, get_entity_model_map
+    from app.services.lookup_fields import field_enum_options
 
     entity_model_map = get_entity_model_map()
     if entity_type not in entity_model_map:
@@ -503,7 +504,8 @@ def _get_introspected_fields(entity_type: str) -> list[dict] | None:
                 "section": fm.section,
                 "field_type": fm.field_type,
                 "required": fm.required,
-                "enum_values": fm.enum_values,
+                # Lookup-backed fields list the org's own values.
+                "enum_values": field_enum_options(fm, db, org_id),
                 "registered": True,
             })
         else:
@@ -571,7 +573,7 @@ def lookup_madrona_field(args: dict, ctx: AgentContext) -> dict:
     # --- Overview mode: entity_type given, no query ---
     if not query:
         form_def = FORM_REGISTRY[entity_type_filter]
-        fields = _get_introspected_fields(entity_type_filter) or []
+        fields = _get_introspected_fields(entity_type_filter, ctx.db_session, ctx.organization_id) or []
 
         if required_only:
             fields = [f for f in fields if f.get("required")]
@@ -705,7 +707,7 @@ def lookup_madrona_field(args: dict, ctx: AgentContext) -> dict:
 
     for et in entity_types:
         form_def = FORM_REGISTRY[et]
-        fields = _get_introspected_fields(et) or []
+        fields = _get_introspected_fields(et, ctx.db_session, ctx.organization_id) or []
 
         for f in fields:
             if required_only and not f.get("required"):

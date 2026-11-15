@@ -12,8 +12,15 @@ def test_unknown_entity_returns_none():
     assert draft_form_schema("not_a_real_entity") is None
 
 
-def test_registry_backed_entity_has_labels_enums_sections():
-    schema = draft_form_schema("acquisition")
+def test_registry_backed_entity_has_labels_enums_sections(db_session):
+    # acquisition_method is lookup-backed: its options are the org's lookup
+    # values, so the schema needs a session and an organization.
+    from app.models import Organization
+
+    org = Organization(name="Form schema org", slug="form-schema-org")
+    db_session.add(org)
+    db_session.commit()
+    schema = draft_form_schema("acquisition", db_session, org.organization_id)
     assert schema["entity_label"] == "Acquisition"
     f = _by_name(schema)
     # Enum field with options + a human label + a real section (from the registry).

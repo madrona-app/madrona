@@ -67,6 +67,17 @@ class DraftSensitivityError(ValueError):
     (v1 §7.3). Carries a persona-facing reason for the planner to surface."""
 
 
+def _check_draft_lookups(session, organization_id, entity_type: str, validated) -> None:
+    """DraftValidationError if a lookup-backed value is not the org's."""
+    from app.services.lookup_fields import draft_lookup_error
+
+    message = draft_lookup_error(
+        session, organization_id, entity_type, validated.model_dump(mode="json")
+    )
+    if message:
+        raise DraftValidationError(f"invalid {entity_type} payload: {message}")
+
+
 def _now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -136,6 +147,10 @@ def create_draft(
 
     session = ctx.db_session
     conversation_id = getattr(ctx, "conversation_id", None)
+
+    # Lookup-backed fields take the organization's own values (seeded or
+    # added), so they are checked here rather than by a fixed schema enum.
+    _check_draft_lookups(session, ctx.organization_id, entity_type, validated)
 
     # Record-level sensitivity gate (§7.3): refuse before doing any further
     # work if the target record requires authorization this draft can't assert.
@@ -276,6 +291,7 @@ def update_draft(session, draft_id, payload: dict) -> AgentDraft | None:
         raise DraftValidationError(
             f"invalid {draft.entity_type} payload: {e}"
         ) from e
+    _check_draft_lookups(session, draft.organization_id, draft.entity_type, validated)
     draft.payload = validated.model_dump(mode="json")
     session.flush()
     return draft

@@ -184,6 +184,85 @@ def is_active_lookup_value(db, org_id: UUID, category: str, value: str) -> bool:
     )
 
 
+def lookup_label(db, org_id: UUID, category: str, value: str) -> str:
+    """The label an organization sees for ``value`` (its own row wins)."""
+    from app.models import LookupCategory, LookupValue
+
+    rows = (
+        db.query(LookupValue.organization_id, LookupValue.label)
+        .join(LookupCategory, LookupValue.category_id == LookupCategory.category_id)
+        .filter(
+            LookupCategory.category_key == category,
+            LookupValue.value_key == value,
+            or_(LookupValue.organization_id == org_id, LookupValue.organization_id.is_(None)),
+        )
+        .all()
+    )
+    for org, label in sorted(rows, key=lambda r: r[0] is None):
+        if label:
+            return label
+    return value
+
+
+def active_values(db, org_id: UUID, category: str) -> list[str]:
+    """Active value keys of ``category`` for the organization (global + own)."""
+    from app.models import LookupCategory, LookupValue
+
+    rows = (
+        db.query(LookupValue.value_key)
+        .join(LookupCategory, LookupValue.category_id == LookupCategory.category_id)
+        .filter(
+            LookupCategory.category_key == category,
+            LookupValue.is_active.is_(True),
+            or_(LookupValue.organization_id == org_id, LookupValue.organization_id.is_(None)),
+        )
+        .order_by(LookupValue.sort_order, LookupValue.value_key)
+        .all()
+    )
+    return list(dict.fromkeys(r[0] for r in rows))
+
+
+def field_enum_options(field_meta, db=None, org_id: UUID | None = None) -> list[str] | None:
+    """Options for a form-registry field: its fixed list, or (for a
+    lookup-backed field) the org's active values. Without a session the
+    lookup-backed field has no fixed list to offer and returns None."""
+    if getattr(field_meta, "enum_values", None):
+        return list(field_meta.enum_values)
+    category = getattr(field_meta, "lookup_values", None)
+    if category and db is not None and org_id is not None:
+        return active_values(db, org_id, category)
+    return None
+
+
+def find_invalid_lookup_value(
+    db,
+    org_id: UUID,
+    model_or_table,
+    data: Mapping,
+    *,
+    current=None,
+    aliases: Mapping[str, str] | None = None,
+) -> tuple[str, str, object] | None:
+    """The first ``(key, category, value)`` in ``data`` that is not an active
+    OPEN lookup value for the org, or None. See :func:`check_lookup_values`."""
+    table = _table_name(model_or_table)
+    aliases = aliases or {}
+    for column, category in _open_fields(table).items():
+        for key in dict.fromkeys((aliases.get(column, column), column)):
+            if key not in data:
+                continue
+            value = data[key]
+            if value is None or value == "":
+                continue
+            if current is not None and getattr(current, column, None) == value:
+                continue
+            limit = _column_length(table, column)
+            too_long = isinstance(value, str) and limit is not None and len(value) > limit
+            if too_long or not isinstance(value, str) or not is_active_lookup_value(db, org_id, category, value):
+                return key, category, value
+    return None
+
+
 def check_lookup_values(
     db,
     org_id: UUID,
@@ -202,28 +281,55 @@ def check_lookup_values(
     is not re-checked, so a record saved before a value was retired (or under
     the old CHECK vocabulary) can still be edited without changing it.
     """
-    table = _table_name(model_or_table)
-    aliases = aliases or {}
-    for column, category in _open_fields(table).items():
-        for key in dict.fromkeys((aliases.get(column, column), column)):
-            if key not in data:
-                continue
-            value = data[key]
-            if value is None or value == "":
-                continue
-            if current is not None and getattr(current, column, None) == value:
-                continue
-            limit = _column_length(table, column)
-            too_long = isinstance(value, str) and limit is not None and len(value) > limit
-            if too_long or not isinstance(value, str) or not is_active_lookup_value(db, org_id, category, value):
-                raise HTTPException(
-                    status_code=400,
-                    detail={
-                        "code": "invalid_lookup_value",
-                        "message": f"Unknown {key}: {value}",
-                        "field": key,
-                    },
-                )
+    bad = find_invalid_lookup_value(db, org_id, model_or_table, data, current=current, aliases=aliases)
+    if bad:
+        key, _category, value = bad
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "invalid_lookup_value",
+                "message": f"Unknown {key}: {value}",
+                "field": key,
+            },
+        )
+
+
+# Agent draft entity type -> (table its applier writes, {column: payload key}).
+# Draft payload schemas type these fields as LookupKey (any string); the
+# organization's lookup values are checked here when a draft is proposed or
+# edited, so an agent can propose an org-added value and is refused an unknown
+# one. tests/test_lookup_backed_columns.py holds this map to the schemas.
+DRAFT_LOOKUP_TABLES: dict[str, tuple[str, dict[str, str]]] = {
+    "acquisition": ("collections.acquisitions", {}),
+    "condition_report": ("collections.condition_reports", {}),
+    "conservation_treatment": ("collections.conservation_treatments", {}),
+    "deaccession": ("collections.deaccessions", {}),
+    "loan_in": ("collections.loans_in", {}),
+    "loan_out": ("collections.loans_out", {}),
+    "object_entry": ("collections.object_entries", {"entry_reason": "reason"}),
+    "object_exit": ("collections.object_exits", {}),
+    "object_right": ("collections.object_rights", {}),
+    "reproduction_request": ("collections.reproduction_requests", {}),
+    "use_request": ("collections.use_requests", {}),
+    "valuation": ("collections.valuations", {}),
+}
+
+
+def draft_lookup_error(db, org_id: UUID, entity_type: str, payload: Mapping) -> str | None:
+    """Why a draft payload's lookup-backed values are refused, or None. The
+    message lists the allowed values so the agent can correct itself."""
+    target = DRAFT_LOOKUP_TABLES.get(entity_type)
+    if target is None:
+        return None
+    table, aliases = target
+    bad = find_invalid_lookup_value(db, org_id, table, payload, aliases=aliases)
+    if bad is None:
+        return None
+    key, category, value = bad
+    return (
+        f"{key} {value!r} is not one of this organization's {category} values; "
+        f"choose one of: {', '.join(active_values(db, org_id, category))}"
+    )
 
 
 def check_new_value_key(category_key: str, value_key: str) -> None:

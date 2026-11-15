@@ -43,6 +43,7 @@ import {
 import { LocationPickerButton } from '../collections/LocationPickerModal';
 import { ModalPortal } from '../ModalPortal';
 import { useStableCallback } from '../workspace/useStableCallback';
+import { useLookupValues } from '../../hooks/useLookupValues';
 
 interface BulkActionDialogProps {
   isOpen: boolean;
@@ -88,6 +89,15 @@ export default function BulkActionDialog({
 }: BulkActionDialogProps) {
   const { activeOrganization } = useOrganization();
   const orgId = activeOrganization?.organization_id;
+  // Lookup-backed choices come from the organization's lookup values, as on the
+  // single-record forms, so org-added values are offered and saved.
+  const { getLookup } = useLookupValues({ enabled: isOpen });
+  const lookupOptions = (options: ReturnType<typeof getLookup>) =>
+    options.map((o) => (
+      <option key={o.value} value={o.value}>
+        {o.label}
+      </option>
+    ));
 
   const stableOnClose = useStableCallback(onClose);
   const { modalRef, titleId, descriptionId } = useAccessibleModal({
@@ -387,15 +397,7 @@ export default function BulkActionDialog({
                       className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
                     >
                       <option value="">Select type...</option>
-                      <option value="periodic">Periodic Check</option>
-                      <option value="intake">Intake</option>
-                      <option value="loan_out">Loan Out</option>
-                      <option value="loan_in">Loan In</option>
-                      <option value="loan_return">Loan Return</option>
-                      <option value="conservation">Conservation</option>
-                      <option value="pre_treatment">Pre-Treatment</option>
-                      <option value="post_treatment">Post-Treatment</option>
-                      <option value="incident">Incident</option>
+                      {lookupOptions(getLookup('report_type'))}
                     </select>
                   </div>
                   <div>
@@ -411,11 +413,7 @@ export default function BulkActionDialog({
                       className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
                     >
                       <option value="">To be determined...</option>
-                      <option value="excellent">Excellent</option>
-                      <option value="good">Good</option>
-                      <option value="fair">Fair</option>
-                      <option value="poor">Poor</option>
-                      <option value="unacceptable">Unacceptable</option>
+                      {lookupOptions(getLookup('condition'))}
                     </select>
                   </div>
                   <div>
@@ -452,15 +450,7 @@ export default function BulkActionDialog({
                       className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
                     >
                       <option value="">Select type...</option>
-                      <option value="damage">Damage</option>
-                      <option value="loss">Loss</option>
-                      <option value="theft">Theft</option>
-                      <option value="vandalism">Vandalism</option>
-                      <option value="environmental">Environmental</option>
-                      <option value="fire">Fire</option>
-                      <option value="water">Water</option>
-                      <option value="pest">Pest</option>
-                      <option value="other">Other</option>
+                      {lookupOptions(getLookup('incident_type'))}
                     </select>
                   </div>
                   <div>
@@ -754,35 +744,24 @@ export default function BulkActionDialog({
                       className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
                     >
                       <option value="">Select urgency...</option>
-                      <option value="low">Low - Routine attention</option>
-                      <option value="medium">Medium - Schedule soon</option>
-                      <option value="high">High - Priority attention</option>
-                      <option value="critical">Critical - Immediate action needed</option>
+                      {lookupOptions(getLookup('priority'))}
                     </select>
                   </div>
                   <div>
-                    <label htmlFor="bulk-action-concern-type" className="block text-sm font-medium text-ink mb-1">
-                      Concern Type <span className="text-semantic-error" aria-hidden="true">*</span>
+                    <label htmlFor="bulk-action-treatment-type" className="block text-sm font-medium text-ink mb-1">
+                      Treatment Type <span className="text-semantic-error" aria-hidden="true">*</span>
                     </label>
                     <select
-                      id="bulk-action-concern-type"
+                      id="bulk-action-treatment-type"
                       aria-required="true"
-                      value={(actionParams.concern_type as string) || ''}
+                      value={(actionParams.treatment_type as string) || ''}
                       onChange={(e) =>
-                        setActionParams({ ...actionParams, concern_type: e.target.value })
+                        setActionParams({ ...actionParams, treatment_type: e.target.value })
                       }
                       className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
                     >
-                      <option value="">Select concern type...</option>
-                      <option value="structural">Structural Damage</option>
-                      <option value="surface">Surface Damage</option>
-                      <option value="environmental">Environmental Damage</option>
-                      <option value="pest">Pest Damage</option>
-                      <option value="deterioration">Active Deterioration</option>
-                      <option value="cleaning">Cleaning Required</option>
-                      <option value="stabilization">Stabilization Needed</option>
-                      <option value="assessment">Assessment Required</option>
-                      <option value="other">Other</option>
+                      <option value="">Select treatment type...</option>
+                      {lookupOptions(getLookup('treatment_type'))}
                     </select>
                   </div>
                   <div>

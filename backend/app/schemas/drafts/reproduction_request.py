@@ -2,21 +2,22 @@
 
 The proposable subset of the live ReproductionRequest create shape
 (`app/models/objects.py::ReproductionRequest`). `reproduction_type` is a
-`Literal` mirroring the live CHECK. `request_number` is optional here — when
+lookup key checked against the organization's lookup values. `request_number` is optional here — when
 omitted the create function generates one (REP sequence) rather than asking the
 model to invent an institutional number. `extra='forbid'` rejects anything else.
 """
 
 from decimal import Decimal
-from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-ReproductionType = Literal[
-    "photograph", "scan", "cast", "3d_print", "digital_copy", "film",
-    "video", "other",
-]
+from app.schemas.drafts.base import LookupKey
+
+# Lookup-backed (organizations add values): checked against the org's
+# active lookup values when the draft is proposed or edited
+# (app/services/lookup_fields.check_draft_lookup_values), not a fixed list.
+ReproductionType = LookupKey
 
 
 class ReproductionRequestDraftPayload(BaseModel):

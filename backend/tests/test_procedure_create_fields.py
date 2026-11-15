@@ -65,6 +65,13 @@ def _value(proc, model, name, column, refs, n):
     enums = _enum_columns(model)
     if name in enums:
         return sorted(enums[name])[0]
+    # Lookup-backed columns take a lookup value (the API checks them).
+    from app.services.lookup_fields import LOOKUP_COLUMNS, OPEN
+    from seeds.seed_lookup_data import LOOKUP_VALUES
+
+    for entry in LOOKUP_COLUMNS:
+        if entry.mode == OPEN and entry.table == model.__table__.fullname and entry.column == name:
+            return next(v[2] for v in LOOKUP_VALUES if v[0] == entry.category and v[7])
     if column.foreign_keys:
         target = next(iter(column.foreign_keys)).target_fullname
         return refs[target]

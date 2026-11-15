@@ -139,7 +139,7 @@ def draft_form_schema_endpoint(
     a draft's payload as a real form instead of raw JSON. Derived from the
     entity's draft payload schema + the form registry; no record needed."""
     from app.services.drafts.form_projection import draft_form_schema
-    schema = draft_form_schema(entity_type)
+    schema = draft_form_schema(entity_type, db, organization_id)
     if schema is None:
         raise HTTPException(
             status_code=404,

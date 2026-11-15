@@ -1,8 +1,8 @@
 """Typed payload for an `object_right` draft (Rights).
 
 The proposable subset of the live ObjectRight create shape
-(`app/models/objects.py::ObjectRight`). `right_type`/`status` are `Literal`s
-mirroring the live CHECK constraints. `extra='forbid'` rejects anything else.
+(`app/models/objects.py::ObjectRight`). `right_type` is a lookup key checked
+against the organization's lookup values; `status` mirrors the live CHECK. `extra='forbid'` rejects anything else.
 Unlike the API route (where object_id is a path param), the draft carries
 object_id in the payload.
 """
@@ -14,11 +14,12 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-RightType = Literal[
-    "copyright", "reproduction", "exhibition", "publication", "broadcast",
-    "performance", "adaptation", "distribution", "moral_rights",
-    "database_rights", "trademark", "other",
-]
+from app.schemas.drafts.base import LookupKey
+
+# Lookup-backed (organizations add values): checked against the org's
+# active lookup values when the draft is proposed or edited
+# (app/services/lookup_fields.check_draft_lookup_values), not a fixed list.
+RightType = LookupKey
 RightStatus = Literal[
     "unknown", "public_domain", "owned", "licensed", "granted", "requested",
     "denied", "expired", "orphan", "disputed",
