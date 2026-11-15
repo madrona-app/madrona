@@ -44,6 +44,7 @@ import {
 } from '../../lib/api';
 import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { getFriendlyErrorMessage } from '../../lib/apiClient';
 
 interface EditingValue {
   categoryKey: string;
@@ -110,8 +111,9 @@ function SortableRow({
           className="p-1 cursor-grab hover:bg-stone rounded transition-colors touch-none"
           {...attributes}
           {...listeners}
+          aria-label={`Reorder ${value.label}`}
         >
-          <GripVertical size={14} className="text-archive" />
+          <GripVertical size={14} className="text-archive" aria-hidden="true" />
         </button>
       </td>
       <td className="px-4 py-2.5">
@@ -381,7 +383,14 @@ export default function LookupValuesPage() {
       label: '',
       description: '',
     });
+    createMutation.reset();
+    updateMutation.reset();
   };
+
+  // A refused save (a fixed list, a key too long for its field, a duplicate)
+  // is shown next to the form and announced, instead of failing silently.
+  const saveError = editingValue?.value ? updateMutation.error : createMutation.error;
+  const saveErrorId = `${uid}-save-error`;
 
   const toggleCategory = (categoryKey: string) => {
     setExpandedCategories((prev) => {
@@ -490,7 +499,7 @@ export default function LookupValuesPage() {
 
       {/* Help Text */}
       <div className="bg-stone/30 border border-lichen rounded-lg p-4 mb-6">
-        <h3 className="font-medium text-ink mb-2">About Lookup Values</h3>
+        <h2 className="font-medium text-ink mb-2">About Lookup Values</h2>
         <ul className="text-sm text-accessible-gray space-y-1">
           <li>- System default values are available to all organizations and cannot be deleted</li>
           <li>- You can hide system defaults if they don't apply to your organization</li>
@@ -607,6 +616,8 @@ export default function LookupValuesPage() {
                               setFormData((p) => ({ ...p, label: e.target.value }))
                             }
                             placeholder="My Custom Value"
+                            aria-invalid={saveError ? true : undefined}
+                            aria-describedby={saveError ? saveErrorId : undefined}
                             className="w-full px-3 py-2 text-sm border border-lichen rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                           />
                         </div>
@@ -626,6 +637,11 @@ export default function LookupValuesPage() {
                           />
                         </div>
                       </div>
+                      {saveError && (
+                        <p id={saveErrorId} role="alert" className="mt-3 text-sm text-semantic-error">
+                          {getFriendlyErrorMessage(saveError)}
+                        </p>
+                      )}
                       <div className="flex justify-end gap-2 mt-4">
                         <button
                           onClick={() => {
@@ -661,7 +677,7 @@ export default function LookupValuesPage() {
                     <table className="w-full text-sm">
                       <thead className="bg-stone/30 text-xs text-archive uppercase">
                         <tr>
-                          <th className="px-2 py-2 w-8"></th>
+                          <th className="px-2 py-2 w-8"><span className="sr-only">Reorder</span></th>
                           <th className="px-4 py-2 text-left font-medium">Label</th>
                           <th className="px-4 py-2 text-left font-medium">Type</th>
                           <th className="px-4 py-2 text-right font-medium">Actions</th>
