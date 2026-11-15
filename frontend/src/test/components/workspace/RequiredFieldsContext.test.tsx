@@ -27,12 +27,12 @@ vi.mock('../../../hooks/useProcedureRequirements', () => ({
 
 const mockUseProcedure = vi.mocked(procedureHook.useProcedureRequirements);
 
-function setOrgFields(fields: Array<{ field: string; label: string }>) {
+function setOrgFields(fields: Array<{ field: string; label: string }>, enforcementEnabled = true) {
   mockUseProcedure.mockReturnValue({
     requirementGroups: [],
     statusOrder: ['proposed', 'approved'],
     procedureLabel: 'Acquisition',
-    enforcementEnabled: true,
+    enforcementEnabled,
     orgRequiredFields: fields,
     isLoading: false,
     error: null,
@@ -152,6 +152,18 @@ describe('RequiredFieldsProvider', () => {
     expect(provisos).not.toBeRequired();
     expect(container.querySelector(`label[for="${provisos.id}"]`)!.textContent).not.toContain('*');
 
+    expect(await checkA11y(container)).toHaveNoViolations();
+  });
+
+  it('does not mark org-added fields required while enforcement is off', async () => {
+    setOrgFields([{ field: 'credit_line', label: 'Credit line' }], false);
+    const { container } = renderForm();
+    const credit = screen.getByRole('textbox', { name: 'Credit Line' });
+    expect(credit).not.toBeRequired();
+    expect(credit).not.toHaveAttribute('aria-required');
+    expect(container.querySelector(`label[for="${credit.id}"]`)!.textContent).not.toContain('*');
+    // Fixed requirements are unaffected by the toggle.
+    expect(screen.getByRole('combobox', { name: /Acquisition Method/ })).toBeRequired();
     expect(await checkA11y(container)).toHaveNoViolations();
   });
 

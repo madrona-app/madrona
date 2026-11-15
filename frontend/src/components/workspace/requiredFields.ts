@@ -99,18 +99,23 @@ export function errorIdFor(procedureType: string, name: string): string {
 /**
  * Required-field lookup for a procedure: the field's own fixed requirement
  * merged with the fields the organization added.
+ *
+ * Org-added fields count only while enforcement is switched on for the
+ * procedure, which is the server's rule (procedure_enforcement checks them
+ * only when the org's toggle for that procedure is on); with it off a status
+ * change never blocks on them, so the form does not call them required.
  */
 export function useRequiredFields(procedureType: string, orgId?: string) {
-  const { orgRequiredFields } = useProcedureRequirements(procedureType, orgId);
+  const { orgRequiredFields, enforcementEnabled } = useProcedureRequirements(procedureType, orgId);
   const orgFields = useMemo(
-    () => new Set((orgRequiredFields ?? []).map((f) => f.field)),
-    [orgRequiredFields],
+    () => new Set(enforcementEnabled ? (orgRequiredFields ?? []).map((f) => f.field) : []),
+    [orgRequiredFields, enforcementEnabled],
   );
   const isRequired = useCallback(
     (name?: string, baseRequired = false) => baseRequired || (!!name && orgFields.has(name)),
     [orgFields],
   );
-  return { isRequired, orgRequiredFields, orgFields };
+  return { isRequired, orgRequiredFields, orgFields, enforcementEnabled: !!enforcementEnabled };
 }
 
 /**

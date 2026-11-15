@@ -91,12 +91,12 @@ const CASES: Case[] = [
   { procedureType: 'deaccession', Page: DeaccessionWorkspacePage, field: 'reason_detail', label: 'Reason Detail', role: 'textbox' },
 ];
 
-function setup(c: Case) {
+function setup(c: Case, enforcementEnabled = true) {
   mockUseProcedure.mockImplementation((type: string) => ({
     requirementGroups: [],
     statusOrder: [],
     procedureLabel: '',
-    enforcementEnabled: true,
+    enforcementEnabled,
     orgRequiredFields: type === c.procedureType ? [{ field: c.field, label: c.label }] : [],
     isLoading: false,
     error: null,
@@ -162,6 +162,13 @@ describe.each(CASES)('$procedureType form', (c) => {
 
     // The field and its label carry no axe violations.
     expect(await checkA11y(field.closest('div')!)).toHaveNoViolations();
+  });
+
+  it('does not mark the org-added field required while enforcement is off', async () => {
+    setup(c, false);
+    const field = await waitFor(() => findField(c));
+    expect(field).not.toBeRequired();
+    expect(field).not.toHaveAttribute('aria-required');
   });
 
   it('marks the field invalid and focuses the error summary when the server refuses', async () => {
