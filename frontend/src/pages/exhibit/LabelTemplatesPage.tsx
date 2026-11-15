@@ -17,6 +17,7 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 import { LabelTemplateEditor } from '../../components/exhibit/LabelTemplateEditor';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
 import { RowActionMenu } from '../../components/exhibit/RowActionMenu';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 
 const LABEL_TYPE_LABELS: Record<string, string> = {
   tombstone: 'Tombstone',
@@ -222,6 +223,13 @@ export default function LabelTemplatesPage() {
                   </div>
                 </div>
 
+                <div className="flex items-center gap-1">
+                <RecordHistoryButton
+                  organizationId={orgId || ''}
+                  entityType="label_template"
+                  entityId={template.template_id}
+                  recordName={template.name}
+                />
                 {canEdit && (
                   <RowActionMenu
                     label={`Actions for ${template.name}`}
@@ -238,6 +246,7 @@ export default function LabelTemplatesPage() {
                     ]}
                   />
                 )}
+                </div>
               </div>
 
               {/* Template preview */}

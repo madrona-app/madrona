@@ -12,6 +12,7 @@ import type { FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Copy, Mail, UserPlus, Users } from 'lucide-react';
 import ConfirmDialog from '../../../components/ConfirmDialog';
+import { RecordHistoryButton } from '../../../components/audit/RecordHistoryButton';
 import {
   approvePortalMember,
   generatePortalMemberSignInLink,
@@ -350,6 +351,12 @@ export function PortalMembersSection({ organizationId }: { organizationId: strin
                               </button>
                             </>
                           )}
+                          <RecordHistoryButton
+                            organizationId={organizationId}
+                            entityType="portal_member"
+                            entityId={m.member_id}
+                            recordName={m.email}
+                          />
                         </div>
                       </td>
                     </tr>

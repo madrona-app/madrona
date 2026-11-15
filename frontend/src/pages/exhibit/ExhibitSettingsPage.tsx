@@ -28,6 +28,7 @@ import { usePermissions } from '../../hooks/usePermissions';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import SlideOver from '../../components/ui/SlideOver';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 import { RowActionMenu } from '../../components/exhibit/RowActionMenu';
 
 const PROFILE_TYPES = [
@@ -237,7 +238,16 @@ export default function ExhibitSettingsPage() {
                       </p>
                     </div>
 
-                    {canEdit && !frame.is_system && (
+                    {/* System defaults have no organization, so no history is recorded for them. */}
+                    {!frame.is_system && (
+                    <div className="flex items-center gap-1">
+                    <RecordHistoryButton
+                      organizationId={orgId || ''}
+                      entityType="frame_style"
+                      entityId={frame.frame_style_id}
+                      recordName={frame.name}
+                    />
+                    {canEdit && (
                       <RowActionMenu
                         label={`Actions for ${frame.name}`}
                         widthClassName="w-32"
@@ -258,6 +268,8 @@ export default function ExhibitSettingsPage() {
                           },
                         ]}
                       />
+                    )}
+                    </div>
                     )}
                   </div>
 
@@ -347,7 +359,16 @@ export default function ExhibitSettingsPage() {
                       </p>
                     </div>
 
-                    {canEdit && !mount.is_system && (
+                    {/* System defaults have no organization, so no history is recorded for them. */}
+                    {!mount.is_system && (
+                    <div className="flex items-center gap-1">
+                    <RecordHistoryButton
+                      organizationId={orgId || ''}
+                      entityType="mount_config"
+                      entityId={mount.mount_config_id}
+                      recordName={mount.name}
+                    />
+                    {canEdit && (
                       <RowActionMenu
                         label={`Actions for ${mount.name}`}
                         widthClassName="w-32"
@@ -368,6 +389,8 @@ export default function ExhibitSettingsPage() {
                           },
                         ]}
                       />
+                    )}
+                    </div>
                     )}
                   </div>
 

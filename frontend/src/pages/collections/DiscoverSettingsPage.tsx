@@ -24,6 +24,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { formatDateTime } from '@/lib/formatters';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
 import { PortalMembersSection } from './discover/PortalMembersSection';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 
 const SORT_OPTIONS = [
   { value: 'relevance', label: 'Relevance' },
@@ -302,6 +303,14 @@ export default function DiscoverSettingsPage() {
       <div className="flex items-center gap-3 mb-6">
         <Globe className="w-5 h-5 text-bark" />
         <h2 className="text-lg font-medium text-ink">Discover Settings</h2>
+        {/* The settings row exists once saved; before that there is no history. */}
+        <RecordHistoryButton
+          organizationId={orgId || ''}
+          entityType="discover_config"
+          entityId={config?.config_id ?? ''}
+          recordName="Discover settings"
+          className="ml-auto"
+        />
       </div>
       <p className="text-sm text-archive mb-8">
         Configure the public collection browser at{' '}
@@ -646,6 +655,12 @@ export default function DiscoverSettingsPage() {
                       </span>
                     )}
                     <div className="flex-1" />
+                    <RecordHistoryButton
+                      organizationId={orgId || ''}
+                      entityType="publish_schedule"
+                      entityId={s.schedule_id}
+                      recordName={`${s.action} ${formatDateTime(s.scheduled_for)}`}
+                    />
                     {s.status === 'pending' && (
                       <button
                         onClick={() => {
