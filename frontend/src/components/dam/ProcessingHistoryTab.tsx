@@ -29,6 +29,7 @@ const JOB_TYPE_LABELS: Record<string, string> = {
   metadata_extract: 'Metadata Extraction',
   regenerate: 'Derivative Regeneration',
   watermark: 'Watermark Application',
+  access_copy: 'Public Access Copy',
 };
 
 const STATUS_CONFIG: Record<string, { icon: typeof CheckCircle2; color: string; bg: string; label: string }> = {

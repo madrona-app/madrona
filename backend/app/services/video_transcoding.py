@@ -39,6 +39,8 @@ class VideoDerivative:
     height: int | None
     bitrate_kbps: int
     audio_bitrate_kbps: int = 128
+    # Audio-only output (an audio file's web proxy): no video stream.
+    audio_only: bool = False
 
 
 # Standard derivative presets
@@ -75,7 +77,27 @@ DERIVATIVE_PRESETS = {
         height=720,
         bitrate_kbps=2000,
     ),
+    # The web proxy Discover plays for an audio file (AAC in MP4, ".m4a").
+    # Name and format match services/public_access_copy.py.
+    "web_audio_aac": VideoDerivative(
+        name="web_audio_aac",
+        container="mp4",
+        codec="AAC",
+        width=None,
+        height=None,
+        bitrate_kbps=0,
+        audio_bitrate_kbps=128,
+        audio_only=True,
+    ),
 }
+
+
+def is_audio_only_request(derivatives: list[str] | None) -> bool:
+    """True when every requested preset is an audio-only output."""
+    return bool(derivatives) and all(
+        DERIVATIVE_PRESETS.get(n) is not None and DERIVATIVE_PRESETS[n].audio_only
+        for n in derivatives
+    )
 
 
 def specs_to_video_derivatives(specs: list) -> list[VideoDerivative]:
@@ -168,6 +190,9 @@ class VideoTranscodingService:
 
         # Build output groups
         output_groups = []
+        audio_only = is_audio_only_request(derivatives)
+        if audio_only:
+            extract_poster = False
 
         # Video outputs — resolve names to presets (supports runtime-registered presets)
         for derivative_name in derivatives:
@@ -188,19 +213,19 @@ class VideoTranscodingService:
             output_groups.append(poster_group)
 
         # Build job settings
-        job_settings = {
-            "Inputs": [
-                {
-                    "FileInput": source_s3_uri,
-                    "AudioSelectors": {
-                        "Audio Selector 1": {
-                            "DefaultSelection": "DEFAULT"
-                        }
-                    },
-                    "VideoSelector": {},
-                    "TimecodeSource": "ZEROBASED"
+        job_input: dict[str, Any] = {
+            "FileInput": source_s3_uri,
+            "AudioSelectors": {
+                "Audio Selector 1": {
+                    "DefaultSelection": "DEFAULT"
                 }
-            ],
+            },
+            "TimecodeSource": "ZEROBASED"
+        }
+        if not audio_only:
+            job_input["VideoSelector"] = {}
+        job_settings = {
+            "Inputs": [job_input],
             "OutputGroups": output_groups
         }
 
@@ -232,6 +257,8 @@ class VideoTranscodingService:
         output_prefix: str
     ) -> dict:
         """Build MediaConvert output group for a derivative."""
+        if preset.audio_only:
+            return self._build_audio_output_group(preset, output_prefix)
         if preset.container == "mp4":
             return self._build_mp4_output_group(preset, output_prefix)
         elif preset.container == "webm":
@@ -295,6 +322,45 @@ class VideoTranscodingService:
                             "AudioSourceName": "Audio Selector 1"
                         }
                     ],
+                    "NameModifier": f"_{preset.name}"
+                }
+            ]
+        }
+
+    def _build_audio_output_group(
+        self,
+        preset: VideoDerivative,
+        output_prefix: str
+    ) -> dict:
+        """Build an audio-only AAC-in-MP4 output group."""
+        return {
+            "Name": preset.name,
+            "OutputGroupSettings": {
+                "Type": "FILE_GROUP_SETTINGS",
+                "FileGroupSettings": {
+                    "Destination": f"{output_prefix}{preset.name}/"
+                }
+            },
+            "Outputs": [
+                {
+                    "ContainerSettings": {
+                        "Container": "MP4",
+                        "Mp4Settings": {"MoovPlacement": "PROGRESSIVE_DOWNLOAD"},
+                    },
+                    "AudioDescriptions": [
+                        {
+                            "CodecSettings": {
+                                "Codec": "AAC",
+                                "AacSettings": {
+                                    "Bitrate": preset.audio_bitrate_kbps * 1000,
+                                    "CodingMode": "CODING_MODE_2_0",
+                                    "SampleRate": 48000,
+                                }
+                            },
+                            "AudioSourceName": "Audio Selector 1"
+                        }
+                    ],
+                    "Extension": "m4a",
                     "NameModifier": f"_{preset.name}"
                 }
             ]

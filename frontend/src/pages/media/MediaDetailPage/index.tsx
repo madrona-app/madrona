@@ -835,7 +835,9 @@ export default function MediaDetailPage() {
                         return (
                           <div key={d.derivative_id} className="flex items-center gap-3 p-3 bg-stone/20 rounded-lg border border-transparent hover:border-lichen transition-colors">
                             <div className="w-14 h-14 bg-parchment rounded-lg overflow-hidden flex-shrink-0 border border-lichen">
-                              {d.format && ['mp4', 'webm', 'mov'].includes(d.format.toLowerCase()) ? (
+                              {d.format?.toLowerCase() === 'pdf' ? (
+                                <div className="w-full h-full flex items-center justify-center bg-ink/5"><FileText size={20} className="text-archive" aria-hidden="true" /></div>
+                              ) : d.format && ['mp4', 'webm', 'mov'].includes(d.format.toLowerCase()) ? (
                                 media.thumbnail_url ? <img src={media.thumbnail_url} alt={d.derivative_type} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-ink/5"><Film size={20} className="text-archive" /></div>
                               ) : d.s3_key && d.url ? (
                                 <img src={d.url} alt={d.derivative_type} className="w-full h-full object-cover" />

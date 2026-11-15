@@ -81,6 +81,8 @@ export const DERIVATIVE_PURPOSE: Record<string, { label: string; description: st
   large: { label: 'Large', description: 'High-resolution display' },
   watermarked: { label: 'Watermarked', description: 'External sharing with attribution' },
   original: { label: 'Original', description: 'Full resolution archive' },
+  web_audio_aac: { label: 'Web audio', description: 'Public playback copy (AAC)' },
+  access_pdf: { label: 'Page-image PDF', description: 'Public access copy at screen resolution' },
 };
 
 /** Outlet context passed from layout to sub-route pages */

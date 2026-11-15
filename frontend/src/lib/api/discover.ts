@@ -4,6 +4,7 @@
 import { apiFetch, buildQueryString, validate } from './_utils';
 import { API_BASE_URL } from '../apiClient';
 import { z } from 'zod';
+import { DiscoverDocumentTextOutSchema, type DiscoverDocumentTextOut } from '../schemas/generated';
 import {
   DiscoverCollectionInfoSchema,
   DiscoverSearchResponseSchema,
@@ -54,6 +55,16 @@ export async function getDiscoverObject(
 ): Promise<DiscoverObjectDetail> {
   const data = await apiFetch(`/discover/${orgSlug}/objects/${encodeURIComponent(objectId)}`, { skipAuth: true });
   return validate(DiscoverObjectDetailSchema, data) as unknown as DiscoverObjectDetail;
+}
+
+/**
+ * The text of a public document (page by page for PDFs), from the `text_url`
+ * a Discover media item carries. Backs the record page's text view.
+ */
+export async function getDiscoverDocumentText(textUrl: string): Promise<DiscoverDocumentTextOut> {
+  const path = textUrl.replace(/^\/api(?=\/)/, '');
+  const data = await apiFetch(path, { skipAuth: true });
+  return validate(DiscoverDocumentTextOutSchema, data);
 }
 
 export async function getFeaturedObjects(

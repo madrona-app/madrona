@@ -531,7 +531,7 @@ class MediaDerivative(Base):
         Index("ix_media_derivatives_media_type", "media_id", "derivative_type"),
         UniqueConstraint("media_id", "derivative_type", "format", name="uq_media_derivative_type_format"),
         CheckConstraint(
-            "format IN ('jpeg', 'webp', 'png', 'avif', 'mp4', 'webm')",
+            "format IN ('jpeg', 'webp', 'png', 'avif', 'mp4', 'webm', 'pdf')",
             name="check_derivative_format",
         ),
         {"schema": "media"},
@@ -594,7 +594,7 @@ class MediaProcessingJob(Base):
         Index("ix_media_jobs_status_created", "status", "created_at"),
         Index("ix_media_jobs_celery", "celery_task_id"),
         CheckConstraint(
-            "job_type IN ('derivatives', 'transcode', 'metadata_extract', 'watermark', 'regenerate', 'model_3d_process', 'metadata_embed')",
+            "job_type IN ('derivatives', 'transcode', 'metadata_extract', 'watermark', 'regenerate', 'model_3d_process', 'metadata_embed', 'access_copy')",
             name="check_job_type",
         ),
         CheckConstraint(
