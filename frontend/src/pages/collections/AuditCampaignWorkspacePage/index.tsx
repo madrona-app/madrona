@@ -492,6 +492,7 @@ function AuditCampaignWorkspacePageContent() {
                 onChange={(v) => updateField('remedial_actions', v)}
                 multiline
                 rows={4}
+                helpText="One action per line. Each line is tracked as its own action."
                 placeholder="Actions to address discrepancies..."
               />
               {orgId && (

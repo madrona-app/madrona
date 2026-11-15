@@ -122,17 +122,12 @@ class DocumentationPlan(Base):
         Index("ix_doc_plans_org_number", "organization_id", "plan_number", unique=True),
         Index("ix_doc_plans_org_status", "organization_id", "status"),
         Index("ix_doc_plans_org_type", "organization_id", "plan_type"),
-        CheckConstraint(
-            "plan_type IN ('collection_wide', 'project', 'thematic', 'emergency', 'accreditation')",
-            name="check_doc_plan_type",
-        ),
+        # plan_type and review_frequency are lookup-backed
+        # (documentation_plan_type, review_frequency) and checked against the
+        # organization's lookup values by the API, not by a fixed CHECK list.
         CheckConstraint(
             "status IN ('draft', 'approved', 'in_progress', 'completed', 'superseded', 'cancelled')",
             name="check_doc_plan_status",
-        ),
-        CheckConstraint(
-            "review_frequency IS NULL OR review_frequency IN ('monthly', 'quarterly', 'biannual', 'annual')",
-            name="check_doc_plan_review_freq",
         ),
         {"schema": "collections"},
     )

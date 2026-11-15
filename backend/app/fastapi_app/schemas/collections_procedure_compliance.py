@@ -86,6 +86,8 @@ class AuditCampaignOut(BaseModel):
     discrepancies_found: int | None = None
     accuracy_rate: float | None = None
     findings_summary: str | None = None
+    verification_procedures: str | None = None
+    recommendations: str | None = None
     remedial_actions: Any = None
     status: str | None = None
     lead_auditor: str | None = None

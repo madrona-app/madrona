@@ -17,6 +17,16 @@ import { validateCreateForm } from '../../../lib/formValidation';
 import type { SaveStatus, FormData } from './types';
 import { SECTION_GROUPS, GROUP_ORDER, INITIAL_EXPANDED_SECTIONS, defaultFormData } from './types';
 
+/** The API returns remedial actions as records; the form edits one per line. */
+export function remedialActionsText(raw: unknown): string {
+  if (typeof raw === 'string') return raw;
+  if (!Array.isArray(raw)) return '';
+  return raw
+    .map((a) => (typeof a === 'string' ? a : (a as { title?: string } | null)?.title ?? ''))
+    .filter((t) => t.trim())
+    .join('\n');
+}
+
 // =============================================================================
 // useFormState
 // =============================================================================
@@ -55,13 +65,13 @@ export function useFormState({ orgId, campaignId, isCreateMode, campaign }: UseF
         sample_percentage: campaign.sample_percentage != null ? String(campaign.sample_percentage) : '',
         sampling_criteria: (campaign.sampling_criteria as string) || '',
         methodology: (campaign.methodology as string) || '',
-        verification_procedures: '',
+        verification_procedures: (campaign.verification_procedures as string) || '',
         planned_start_date: (campaign.start_date as string) || '',
         planned_end_date: (campaign.end_date as string) || '',
         objects_total: campaign.items_total != null ? String(campaign.items_total) : '0',
         findings_summary: (campaign.findings_summary as string) || '',
-        recommendations: '',
-        remedial_actions: (campaign.remedial_actions as string) || '',
+        recommendations: (campaign.recommendations as string) || '',
+        remedial_actions: remedialActionsText(campaign.remedial_actions),
       };
       setFormData(data);
       originalDataRef.current = JSON.stringify(data);
@@ -143,8 +153,11 @@ export function useFormState({ orgId, campaignId, isCreateMode, campaign }: UseF
       start_date: fd.planned_start_date || null,
       end_date: fd.planned_end_date || null,
       items_total: parseInt(fd.objects_total) || 0,
+      verification_procedures: fd.verification_procedures || null,
       findings_summary: fd.findings_summary || null,
-      remedial_actions: fd.remedial_actions || null,
+      recommendations: fd.recommendations || null,
+      // One action per line; the API keeps each as a compliance action row.
+      remedial_actions: fd.remedial_actions,
     };
   }, []);
 

@@ -625,6 +625,8 @@ export const AuditCampaignOutSchema = z.object({
   discrepancies_found: z.number().nullable().optional(),
   accuracy_rate: z.number().nullable().optional(),
   findings_summary: z.string().nullable().optional(),
+  verification_procedures: z.string().nullable().optional(),
+  recommendations: z.string().nullable().optional(),
   remedial_actions: z.any().optional(),
   status: z.string().nullable().optional(),
   lead_auditor: z.string().nullable().optional(),

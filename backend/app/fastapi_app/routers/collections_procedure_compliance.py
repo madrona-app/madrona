@@ -164,6 +164,23 @@ def _get_remedial_actions(ac: AuditCampaign) -> list[dict]:
     ]
 
 
+def _save_remedial_actions(db: Session, audit: AuditCampaign, body: dict, user_id) -> None:
+    """remedial_actions from the form (one per line) or as records -> rows."""
+    if "remedial_actions" not in body:
+        return
+    from app.services.compliance_actions import action_items, save_actions
+
+    save_actions(
+        db,
+        organization_id=audit.organization_id,
+        entity_type="audit_campaign",
+        entity_id=audit.campaign_id,
+        action_type="remedial",
+        desired=action_items(body.get("remedial_actions")),
+        user_id=user_id,
+    )
+
+
 def _serialize_audit_campaign(ac: AuditCampaign) -> dict:
     return {
         "audit_id": str(ac.campaign_id),
@@ -190,6 +207,10 @@ def _serialize_audit_campaign(ac: AuditCampaign) -> dict:
         "discrepancies_found": ac.discrepancies_found,
         "accuracy_rate": float(ac.accuracy_rate) if ac.accuracy_rate else None,
         "findings_summary": ac.findings_summary,
+        # The form edits both; they were never returned, so every save
+        # through the form blanked what the user had typed.
+        "verification_procedures": ac.verification_procedures,
+        "recommendations": ac.recommendations,
         "remedial_actions": _get_remedial_actions(ac),
         "status": ac.status,
         "lead_auditor": str(ac.audit_lead_id) if ac.audit_lead_id else None,
@@ -575,16 +596,22 @@ def create_audit_campaign(
         status=body.get("status", "draft"),
         audit_lead_id=lead_auditor,
         campaign_note=body.get("notes"),
+        sampling_criteria=body.get("sampling_criteria"),
+        verification_procedures=body.get("verification_procedures"),
+        findings_summary=body.get("findings_summary"),
+        recommendations=body.get("recommendations"),
         created_by_id=user_uuid,
         updated_by_id=user_uuid,
     )
 
     db.add(audit)
     try:
-        db.commit()
+        db.flush()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=409, detail="An audit with this number may already exist")
+        raise HTTPException(status_code=409, detail="An audit with this number already exists")
+    _save_remedial_actions(db, audit, body, user_uuid)
+    db.commit()
 
     db.refresh(audit)
     return _serialize_audit_campaign(audit)
@@ -655,8 +682,11 @@ def update_audit_campaign(
         model_key = _AUDIT_API_TO_MODEL.get(key, key)
         if model_key == "audit_lead_id" and value is not None:
             value = UUID(value) if isinstance(value, str) else value
+        if model_key == "remedial_actions":
+            continue
         if hasattr(audit, model_key):
             setattr(audit, model_key, value)
+    _save_remedial_actions(db, audit, body, auth.user_id)
 
     audit.updated_by_id = auth.user_id
     audit.updated_at = datetime.now(timezone.utc)
