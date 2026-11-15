@@ -473,6 +473,20 @@ def apply_draft(session, draft_id) -> AgentDraft | None:
         session.flush()
         return draft
 
+    # Lookup values are checked when a draft is proposed or edited; check them
+    # again here, since the organization may have deactivated a value while
+    # the draft waited for approval. The draft stays approved and can be
+    # edited and retried, as for any other apply failure.
+    from app.services.lookup_fields import draft_lookup_error
+
+    lookup_message = draft_lookup_error(
+        session, draft.organization_id, draft.entity_type, draft.payload or {}
+    )
+    if lookup_message:
+        draft.apply_error = f"apply_failed: {lookup_message}"
+        session.flush()
+        return draft
+
     try:
         with session.begin_nested():
             result = applier(session, draft)

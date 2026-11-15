@@ -317,3 +317,44 @@ class TestDrafts:
         result = lookup_madrona_field({"entity_type": "conservation"}, ctx)
         fields = {f["name"]: f for s in result["sections"] for f in s["fields"]}
         assert "wet_cleaning" in fields["treatment_type"]["enum_values"]
+
+
+class TestDraftApprovalRechecksLookups:
+    """A value deactivated while the draft waited is refused at approval."""
+
+    def test_deactivated_value_is_not_applied(self, agent, db_session):
+        from app.models import LookupValue
+        from app.services.drafts.draft_service import approve_draft, create_draft
+
+        ctx, org, obj = agent
+        _add_org_value(db_session, org.organization_id, "report_type", "tactile_check")
+        draft = create_draft(ctx, entity_type="condition_report",
+                             payload={"object_id": str(obj.object_id), "report_type": "tactile_check",
+                                      "report_date": "2026-11-15"})
+        value = db_session.query(LookupValue).filter(
+            LookupValue.organization_id == org.organization_id, LookupValue.value_key == "tactile_check",
+        ).one()
+        value.is_active = False
+        db_session.commit()
+
+        before = db_session.query(ConditionReport).filter(ConditionReport.organization_id == org.organization_id).count()
+        result = approve_draft(db_session, draft.draft_id, ctx.user_id)
+        assert result.applied_at is None
+        assert "report_type 'tactile_check'" in (result.apply_error or "")
+        assert result.status == "approved"  # can be edited and retried
+        after = db_session.query(ConditionReport).filter(ConditionReport.organization_id == org.organization_id).count()
+        assert after == before
+
+    def test_active_value_is_applied(self, agent, db_session):
+        from app.services.drafts.draft_service import approve_draft, create_draft
+
+        ctx, org, obj = agent
+        _add_org_value(db_session, org.organization_id, "report_type", "tactile_check")
+        draft = create_draft(ctx, entity_type="condition_report",
+                             payload={"object_id": str(obj.object_id), "report_type": "tactile_check",
+                                      "report_date": "2026-11-15"})
+        result = approve_draft(db_session, draft.draft_id, ctx.user_id)
+        assert result.apply_error is None, result.apply_error
+        assert result.applied_at is not None
+        report = db_session.get(ConditionReport, result.applied_entity_id)
+        assert report.report_type == "tactile_check"
