@@ -258,6 +258,8 @@ interface EditableSelectProps {
   restricted?: boolean;
   /** The record column this select edits (see EditableField `name`). */
   name?: string;
+  /** Help text, announced with the select via aria-describedby */
+  helpText?: string;
 }
 
 /**
@@ -279,6 +281,7 @@ export function EditableSelect({
   emptyText = '—',
   restricted = false,
   name,
+  helpText,
 }: EditableSelectProps) {
   const fieldId = useId();
   const errorId = label ? `editable-select-${label.toLowerCase().replace(/\s+/g, '-')}-error` : undefined;
@@ -290,7 +293,8 @@ export function EditableSelect({
     onEdited,
   } = useRequiredField(name, required);
   const invalid = saveStatus === 'error' || !!fieldError;
-  const describedBy = joinIds(saveStatus === 'error' && errorId, fieldError?.id);
+  const helpId = helpText ? `${fieldId}-help` : undefined;
+  const describedBy = joinIds(saveStatus === 'error' && errorId, fieldError?.id, helpId);
   const displayValue = options.find((o) => o.value === value)?.label || value;
 
   // Restricted field rendering
@@ -378,6 +382,7 @@ export function EditableSelect({
         ))}
       </select>
       {fieldError && <RequiredFieldMessage error={fieldError} />}
+      {helpText && <p id={helpId} className="text-xs text-archive">{helpText}</p>}
     </div>
   );
 }
@@ -438,6 +443,7 @@ export function EditableCheckbox({
           id={fieldId}
           type="checkbox"
           checked={value}
+          aria-describedby={description ? `${fieldId}-description` : undefined}
           onChange={(e) => {
             onChange(e.target.checked);
             onSave?.();
@@ -446,7 +452,7 @@ export function EditableCheckbox({
         />
         <span className="text-sm font-medium text-ink">{label}</span>
       </label>
-      {description && <p className="text-xs text-archive ml-7">{description}</p>}
+      {description && <p id={`${fieldId}-description`} className="text-xs text-archive ml-7">{description}</p>}
     </div>
   );
 }
