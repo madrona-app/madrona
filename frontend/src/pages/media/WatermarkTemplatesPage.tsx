@@ -7,6 +7,7 @@ import { WatermarkTemplateModal } from '../../components/dam';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import type { WatermarkTemplate } from '../../lib/schemas';
 import { useActionMenu } from '../../components/dam/useActionMenu';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 
 /**
  * Watermark Templates management page for Media / DAM.
@@ -134,7 +135,14 @@ export default function WatermarkTemplatesPage() {
                     </p>
                   </div>
                 </div>
-                <div className="relative">
+                <div className="relative flex items-center gap-1">
+                  <RecordHistoryButton
+                    organizationId={orgId!}
+                    entityType="watermark_template"
+                    entityId={template.template_id}
+                    recordName={template.name}
+                    showLabel={false}
+                  />
                   <button
                     ref={openMenuId === template.template_id ? actionMenu.triggerRef : undefined}
                     type="button"

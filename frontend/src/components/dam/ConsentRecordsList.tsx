@@ -22,6 +22,7 @@ import { RevokeConsentModal } from './RevokeConsentModal';
 import ConfirmDialog from '../ConfirmDialog';
 import { logger } from '../../lib/logger';
 import { formatDateShort } from '@/lib/formatters';
+import { RecordHistoryButton } from '../audit/RecordHistoryButton';
 
 interface ConsentRecordsListProps {
   organizationId: string;
@@ -209,6 +210,13 @@ export function ConsentRecordsList({ organizationId, mediaId }: ConsentRecordsLi
                 </div>
 
                 <div className="flex items-center gap-1">
+                  <RecordHistoryButton
+                    organizationId={organizationId}
+                    entityType="media_consent"
+                    entityId={consent.consent_id}
+                    recordName={consent.subject_name}
+                    showLabel={false}
+                  />
                   {consent.consent_document_key && (
                     <button
                       onClick={() => handleDownloadDocument(consent)}

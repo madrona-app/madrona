@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { listMediaFolders } from '../../lib/api';
 import type { MediaFolder } from '../../lib/schemas';
+import { RecordHistoryButton } from '../audit/RecordHistoryButton';
 
 // Helper to get all ancestor folder IDs for a given folder
 function getAncestorIds(folderId: string, folders: MediaFolder[]): string[] {
@@ -38,6 +39,7 @@ interface FolderTreeProps {
 }
 
 interface FolderNodeProps {
+  organizationId: string;
   folder: MediaFolder;
   folders: MediaFolder[];
   selectedFolderId: string | null;
@@ -51,6 +53,7 @@ interface FolderNodeProps {
 }
 
 function FolderNode({
+  organizationId,
   folder,
   folders,
   selectedFolderId,
@@ -170,6 +173,18 @@ function FolderNode({
         )}
         </button>
 
+        {/* History of the selected folder (one control, not one per row) */}
+        {isSelected && (
+          <RecordHistoryButton
+            organizationId={organizationId}
+            entityType="media_folder"
+            entityId={folder.folder_id}
+            recordName={folder.name}
+            showLabel={false}
+            className="relative z-10"
+          />
+        )}
+
         {/* Context menu trigger */}
         <button
           type="button"
@@ -192,6 +207,7 @@ function FolderNode({
             .map((child) => (
               <FolderNode
                 key={child.folder_id}
+                organizationId={organizationId}
                 folder={child}
                 folders={folders}
                 selectedFolderId={selectedFolderId}
@@ -429,6 +445,7 @@ export function FolderTree({
           .map((folder) => (
             <FolderNode
               key={folder.folder_id}
+              organizationId={organizationId}
               folder={folder}
               folders={folders}
               selectedFolderId={selectedFolderId}
