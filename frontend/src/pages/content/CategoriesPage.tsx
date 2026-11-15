@@ -25,6 +25,7 @@ import {
 } from '../../lib/api/content';
 import type { ContentCategory } from '../../types/content';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
 
 // =============================================================================
@@ -284,6 +285,12 @@ export default function CategoriesPage() {
               </span>
 
               <div className="shrink-0 flex items-center gap-1">
+                <RecordHistoryButton
+                  organizationId={orgId || ''}
+                  entityType="content_category"
+                  entityId={cat.category_id}
+                  recordName={cat.name}
+                />
                 <button
                   onClick={() => openEdit(cat)}
                   className="p-1.5 text-archive hover:text-ink rounded transition-colors"

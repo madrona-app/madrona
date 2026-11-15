@@ -43,6 +43,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { MenuBuilder } from './components/MenuBuilder';
 import { MediaPickerModal } from '../../components/content/MediaPickerModal';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 
 // =============================================================================
 // Types for footer columns and integrations
@@ -290,6 +291,13 @@ function RedirectManager({ orgId }: { orgId: string }) {
                     </button>
                   </td>
                   <td className="px-3 py-2 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                    <RecordHistoryButton
+                      organizationId={orgId}
+                      entityType="redirect"
+                      entityId={r.redirect_id}
+                      recordName={r.source_path}
+                    />
                     <button
                       onClick={() => deleteMut.mutate(r.redirect_id)}
                       className="p-1 text-archive hover:text-semantic-error transition-colors"
@@ -297,6 +305,7 @@ function RedirectManager({ orgId }: { orgId: string }) {
                     >
                       <Trash2 size={14} />
                     </button>
+                    </div>
                   </td>
                 </tr>
               ))}

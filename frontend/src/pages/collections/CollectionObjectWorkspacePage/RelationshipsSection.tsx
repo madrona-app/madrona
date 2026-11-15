@@ -11,6 +11,7 @@ import type { FieldType } from '../../../components/collections/AuthorityAutocom
 import type { StrictVocabularyField } from '../../../hooks/useVocabularyValidation';
 import { ObjectRelationshipsManager } from '../../../components/collections/ObjectRelationshipsManager';
 import { ObjectCitationsManager } from '../../../components/collections/ObjectCitationsManager';
+import { CriticalResponsesList } from '../../../components/collections/CriticalResponsesList';
 import { ObjectEventLinker } from '../../../components/collections/ObjectEventLinker';
 import { ExternalLinksField } from '../../../components/collections/ExternalLinksField';
 import type { CollectionObject } from '../../../lib/schemas';
@@ -455,6 +456,7 @@ export function CitationsSection({
         embedded
         onCountChange={setCount}
       />
+      <CriticalResponsesList organizationId={orgId} objectId={objectId} />
       <div className="mt-6 pt-4 border-t border-lichen">
         <ExternalLinksField
           links={externalLinks}

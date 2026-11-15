@@ -1188,6 +1188,8 @@ export const IncidentReportSchema = z.object({
   status: z.string().nullable().optional(), // draft, submitted, under_investigation, resolved, closed
   // Affected objects (joined)
   affected_objects: z.array(IncidentReportObjectSchema).nullable().optional(),
+  // Preventive actions (compliance_actions rows: action_id, title, status ...)
+  preventive_actions: z.array(z.record(z.string(), z.unknown())).nullable().optional(),
   // Audit
   created_at: z.string().nullable().optional(),
   created_by: z.string().nullable().optional(),

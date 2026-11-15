@@ -30,6 +30,7 @@ import {
 import type { VocabularyTerm, VocabularyTraversalTerm } from '../../lib/schemas';
 import { useToast } from '../../contexts/ToastContext';
 import { ModalPortal } from '../../components/ModalPortal';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 import { cn } from '../../lib/utils';
 import { formatRelativeTime as fmtRelativeTime, formatDateTime } from '@/lib/formatters';
 
@@ -307,6 +308,7 @@ export default function VocabularyExplorerPage() {
               {results.map((term) => (
                 <TermRow
                   key={term.external_id || term.term_id || term.preferred_term}
+                  organizationId={orgId!}
                   term={term}
                   vocabulary={activeVocabulary}
                   externalUrl={getExternalUrl(term)}
@@ -352,6 +354,7 @@ function getSearchPlaceholder(vocabulary: VocabularyType, facet: AatFacet): stri
 }
 
 interface TermRowProps {
+  organizationId: string;
   term: VocabularyTerm;
   vocabulary: VocabularyType;
   externalUrl: string;
@@ -365,6 +368,7 @@ function formatRelativeTime(isoString: string): string {
 }
 
 function TermRow({
+  organizationId,
   term,
   vocabulary,
   externalUrl,
@@ -469,6 +473,17 @@ function TermRow({
               <Network size={12} />
               Hierarchy
             </button>
+          )}
+
+          {/* Terms held in this organization's vocabulary have a change
+              history; shared Getty terms have none and show an empty one. */}
+          {term.term_id && (
+            <RecordHistoryButton
+              organizationId={organizationId}
+              entityType="vocabulary_term"
+              entityId={term.term_id}
+              recordName={term.preferred_term}
+            />
           )}
 
           <a

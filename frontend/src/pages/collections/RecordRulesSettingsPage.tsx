@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Flag, ListChecks, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 import { getFriendlyErrorMessage } from '../../lib/apiClient';
 import {
   createCompletenessRule,
@@ -129,7 +130,14 @@ function FlagsSection({ orgId, announce }: { orgId: string; announce: (m: string
                     className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                   />
                 </td>
-                <td className="px-3 py-2 text-right">
+                <td className="px-3 py-2 text-right whitespace-nowrap">
+                  <RecordHistoryButton
+                    organizationId={orgId}
+                    entityType="record_flag_definition"
+                    entityId={f.flag_id}
+                    recordName={f.label}
+                    showLabel={false}
+                  />
                   {!f.is_rule_managed && (
                     <button
                       type="button"
@@ -286,6 +294,12 @@ function RulesSection({ orgId, announce }: { orgId: string; announce: (m: string
               >
                 Delete
               </button>
+              <RecordHistoryButton
+                organizationId={orgId}
+                entityType="completeness_rule"
+                entityId={r.rule_id}
+                recordName={r.name}
+              />
             </div>
           </li>
         ))}

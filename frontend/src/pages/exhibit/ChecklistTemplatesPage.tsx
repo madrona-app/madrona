@@ -21,6 +21,7 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 import { logger } from '../../lib/logger';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
 import { RowActionMenu } from '../../components/exhibit/RowActionMenu';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 
 interface ChecklistTemplateVersion {
   version_id: string;
@@ -343,7 +344,7 @@ export default function ChecklistTemplatesPage() {
                 <th className="px-4 py-3 text-left w-40">Type</th>
                 <th className="px-4 py-3 text-left w-32">Status</th>
                 <th className="px-4 py-3 text-left w-24">Versions</th>
-                <th className="px-4 py-3 w-12"></th>
+                <th className="px-4 py-3 w-12"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
@@ -398,6 +399,13 @@ export default function ChecklistTemplatesPage() {
                       {template.versions.length}
                     </td>
                     <td className="px-4 py-4">
+                      <div className="flex items-center justify-end gap-1">
+                      <RecordHistoryButton
+                        organizationId={orgId || ''}
+                        entityType="checklist_template"
+                        entityId={template.template_id}
+                        recordName={template.name}
+                      />
                       <RowActionMenu
                         label={`Actions for ${template.name}`}
                         widthClassName="w-48 py-1"
@@ -421,6 +429,7 @@ export default function ChecklistTemplatesPage() {
                           },
                         ]}
                       />
+                      </div>
                     </td>
                   </tr>
                 );

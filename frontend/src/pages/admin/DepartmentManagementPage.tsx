@@ -34,6 +34,8 @@ import type { Department } from '../../lib/schemas';
 import type { DepartmentMember } from '../../lib/api/departments';
 import { logger } from '../../lib/logger';
 import { useStableCallback } from '../../components/workspace/useStableCallback';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
+import { useCanViewRecordHistory } from '../../components/audit/useCanViewRecordHistory';
 
 // ============================================================================
 // Types
@@ -607,6 +609,8 @@ export default function DepartmentManagementPage() {
   const canEdit = isPlatformAdmin || user?.permissions?.includes('departments.edit');
   const canDelete = isPlatformAdmin || user?.permissions?.includes('departments.delete');
   const canManageMembers = isPlatformAdmin || user?.permissions?.includes('departments.manage_members');
+  const canViewHistory = useCanViewRecordHistory('department');
+  const showActions = canEdit || canDelete || canManageMembers || canViewHistory;
 
   const loadDepartments = useCallback(async () => {
     if (!orgId) return;
@@ -790,7 +794,7 @@ export default function DepartmentManagementPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-archive uppercase tracking-wider">
                 Status
               </th>
-              {(canEdit || canDelete || canManageMembers) && (
+              {showActions && (
                 <th className="px-6 py-3 text-right text-xs font-medium text-archive uppercase tracking-wider">
                   Actions
                 </th>
@@ -801,7 +805,7 @@ export default function DepartmentManagementPage() {
             {departments.length === 0 ? (
               <tr>
                 <td
-                  colSpan={(canEdit || canDelete || canManageMembers) ? 6 : 5}
+                  colSpan={showActions ? 6 : 5}
                   className="px-6 py-8 text-center text-archive"
                 >
                   <Building2 className="mx-auto mb-2 text-archive" size={48} />
@@ -849,9 +853,16 @@ export default function DepartmentManagementPage() {
                       </span>
                     )}
                   </td>
-                  {(canEdit || canDelete || canManageMembers) && (
+                  {showActions && (
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="flex justify-end space-x-2">
+                      <div className="flex justify-end items-center space-x-2">
+                        <RecordHistoryButton
+                          organizationId={orgId!}
+                          entityType="department"
+                          entityId={dept.department_id}
+                          recordName={dept.name}
+                          showLabel={false}
+                        />
                         {canManageMembers && (
                           <button
                             onClick={() => {

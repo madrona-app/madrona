@@ -37,6 +37,7 @@ import {
 import { MadronaLoader } from '../../../components/ui/MadronaLoader';
 import { AuditCheckList } from './AuditCheckList';
 import { AuditBulkUpdate } from './AuditBulkUpdate';
+import { ComplianceActionsHistoryList } from '../../../components/collections/ComplianceActionsHistoryList';
 
 /**
  * Outer wrapper that provides section order context.
@@ -493,6 +494,13 @@ function AuditCampaignWorkspacePageContent() {
                 rows={4}
                 placeholder="Actions to address discrepancies..."
               />
+              {orgId && (
+                <ComplianceActionsHistoryList
+                  organizationId={orgId}
+                  actions={campaign?.remedial_actions}
+                  title="Remedial action history"
+                />
+              )}
             </div>
           </WorkspaceSection>
         )}

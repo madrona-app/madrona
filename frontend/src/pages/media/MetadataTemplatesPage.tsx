@@ -17,6 +17,7 @@ import { MetadataTemplateModal } from '../../components/dam';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import type { MetadataTemplate } from '../../lib/schemas';
 import { useActionMenu } from '../../components/dam/useActionMenu';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 
 /**
  * Metadata Templates management page for Media / DAM.
@@ -210,7 +211,14 @@ export default function MetadataTemplatesPage() {
                     </p>
                   </div>
                 </div>
-                <div className="relative flex-shrink-0">
+                <div className="relative flex-shrink-0 flex items-center gap-1">
+                  <RecordHistoryButton
+                    organizationId={orgId!}
+                    entityType="metadata_template"
+                    entityId={template.template_id}
+                    recordName={template.name}
+                    showLabel={false}
+                  />
                   <button
                     ref={openMenuId === template.template_id ? actionMenu.triggerRef : undefined}
                     type="button"

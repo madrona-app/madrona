@@ -36,6 +36,7 @@ import { useMenuNavigation } from '../../components/workspace/useMenuNavigation'
 import { AuthContext } from '../../contexts/AuthContext';
 import { CreateTaskSlideOver } from '../../components/work/CreateTaskSlideOver';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ErrorState } from '../../components/ui/ErrorState';
@@ -378,6 +379,17 @@ function TasksTab({ orgId, activeProductId }: { orgId?: string; activeProductId:
                     )}
                   </div>
                 </div>
+
+                {orgId && (
+                  <RecordHistoryButton
+                    organizationId={orgId}
+                    entityType="task"
+                    entityId={task.task_id}
+                    recordName={task.title}
+                    showLabel={false}
+                    className="flex-shrink-0"
+                  />
+                )}
 
                 {/* Actions menu */}
                 <div className="relative flex-shrink-0">

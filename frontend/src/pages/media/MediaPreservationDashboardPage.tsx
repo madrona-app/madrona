@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn } from '../../lib/utils';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 import { useOrganization } from '../../contexts/useOrganization';
 import { useToast } from '../../contexts/ToastContext';
 import {
@@ -434,6 +435,7 @@ function PoliciesSection({ organizationId }: { organizationId: string }) {
                 {data.policies.map((policy) => (
                   <PolicyCard
                     key={policy.policy_id}
+                    organizationId={organizationId}
                     policy={policy}
                     onEdit={() => handleOpenEdit(policy)}
                     onDeactivate={() => setDeactivateTarget(policy)}
@@ -468,10 +470,12 @@ function PoliciesSection({ organizationId }: { organizationId: string }) {
 }
 
 function PolicyCard({
+  organizationId,
   policy,
   onEdit,
   onDeactivate,
 }: {
+  organizationId: string;
   policy: PreservationPolicy;
   onEdit: () => void;
   onDeactivate: () => void;
@@ -491,6 +495,13 @@ function PolicyCard({
           <span className="text-xs text-archive">Inactive</span>
         )}
         <div className="ml-auto flex items-center gap-1">
+          <RecordHistoryButton
+            organizationId={organizationId}
+            entityType="preservation_policy"
+            entityId={policy.policy_id}
+            recordName={policy.name}
+            showLabel={false}
+          />
           <button
             type="button"
             onClick={onEdit}

@@ -23,6 +23,7 @@ import ConfirmDialog from '../ConfirmDialog';
 import { logger } from '../../lib/logger';
 import { MadronaLoader } from '../ui/MadronaLoader';
 import { ModalPortal } from '../ModalPortal';
+import { RecordHistoryButton } from '../audit/RecordHistoryButton';
 import { StatusDropdown } from './ExhibitionChecklistTab/StatusDropdown';
 import { RowActionMenu } from './RowActionMenu';
 
@@ -491,20 +492,29 @@ function GenerateFromTemplateModal({ isOpen, onClose, onGenerate, organizationId
             ) : templates.length > 0 ? (
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {templates.map((template) => (
-                  <button
-                    key={template.template_id}
-                    onClick={() => handleGenerate(template.template_id)}
-                    disabled={generating}
-                    className="w-full text-left p-4 border border-lichen rounded-lg hover:bg-stone/30 transition-colors disabled:opacity-50"
-                  >
-                    <div className="font-medium text-ink">{template.name}</div>
-                    {template.description && (
-                      <div className="text-sm text-archive mt-1">{template.description}</div>
-                    )}
-                    <div className="text-xs text-archive mt-2">
-                      {template.item_count} items
-                    </div>
-                  </button>
+                  <div key={template.template_id} className="flex items-stretch gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleGenerate(template.template_id)}
+                      disabled={generating}
+                      className="flex-1 min-w-0 text-left p-4 border border-lichen rounded-lg hover:bg-stone/30 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+                    >
+                      <div className="font-medium text-ink">{template.name}</div>
+                      {template.description && (
+                        <div className="text-sm text-archive mt-1">{template.description}</div>
+                      )}
+                      <div className="text-xs text-archive mt-2">
+                        {template.item_count} items
+                      </div>
+                    </button>
+                    <RecordHistoryButton
+                      organizationId={organizationId}
+                      entityType="info_request_template"
+                      entityId={template.template_id}
+                      recordName={template.name}
+                      className="self-center"
+                    />
+                  </div>
                 ))}
               </div>
             ) : (

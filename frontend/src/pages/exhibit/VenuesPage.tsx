@@ -19,6 +19,7 @@ import { usePermissions } from '../../hooks/usePermissions';
 import { useAccessibleModal } from '../../hooks/useAccessibleModal';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 
 interface FloorPlan {
   floor_plan_id: string;
@@ -578,6 +579,14 @@ export default function VenuesPage() {
                   </div>
                   <div className="text-sm text-archive">
                     {venue.floor_plan_count} room{venue.floor_plan_count !== 1 ? 's' : ''}
+                  </div>
+                  <div className="relative z-10">
+                    <RecordHistoryButton
+                      organizationId={orgId || ''}
+                      entityType="venue"
+                      entityId={venue.venue_id}
+                      recordName={venue.name}
+                    />
                   </div>
                   {canEdit && (
                     <div className="relative z-10 flex items-center gap-1">

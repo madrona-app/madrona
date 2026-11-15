@@ -31,6 +31,7 @@ import type { MediaTagDefinition, MediaTagFieldType } from '../../lib/schemas';
 import ConfirmDialog from '../ConfirmDialog';
 import { ModalPortal } from '../ModalPortal';
 import { TagValuesManager } from './TagValuesManager';
+import { RecordHistoryButton } from '../audit/RecordHistoryButton';
 
 const FIELD_TYPE_LABELS: Record<MediaTagFieldType, string> = {
   text: 'Text',
@@ -161,6 +162,13 @@ function SortableTagRow({
           )}
         </div>
         <div className="flex items-center gap-1">
+          <RecordHistoryButton
+            organizationId={organizationId}
+            entityType="media_tag_definition"
+            entityId={definition.definition_id}
+            recordName={definition.display_name}
+            showLabel={false}
+          />
           {!definition.is_active ? (
             <>
               <button

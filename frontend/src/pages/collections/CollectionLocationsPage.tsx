@@ -23,6 +23,7 @@ import { formatNumber } from '@/lib/formatters';
 import type { Location } from '../../lib/schemas';
 import { usePermissions } from '../../hooks/usePermissions';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 
 const LOCATION_TYPE_ICONS: Record<string, React.ReactNode> = {
   building: <Building2 size={16} />,
@@ -277,6 +278,7 @@ export default function CollectionLocationsPage() {
             />
           ) : selectedLocation ? (
             <LocationDetail
+              organizationId={orgId!}
               location={selectedLocation}
               onUpdate={(data) => updateMutation.mutate({ id: selectedLocation.location_id, data })}
               onDelete={handleDelete}
@@ -421,6 +423,7 @@ function LocationTreeNode({
 
 // Location Detail Component
 function LocationDetail({
+  organizationId,
   location,
   onUpdate,
   onDelete,
@@ -429,6 +432,7 @@ function LocationDetail({
   isUpdating,
   isDeleting,
 }: {
+  organizationId: string;
   location: Location;
   onUpdate: (data: Partial<Location>) => void;
   onDelete: () => void;
@@ -462,6 +466,13 @@ function LocationDetail({
           </span>
           <h3 className="font-serif font-medium text-forest">{location.name}</h3>
         </div>
+        <div className="flex items-center gap-2">
+        <RecordHistoryButton
+          organizationId={organizationId}
+          entityType="location"
+          entityId={location.location_id}
+          recordName={location.name}
+        />
         {canEdit && (
           <div className="flex gap-2">
             <button
@@ -481,6 +492,7 @@ function LocationDetail({
             </button>
           </div>
         )}
+        </div>
       </div>
 
       <dl className="space-y-3 text-sm">
