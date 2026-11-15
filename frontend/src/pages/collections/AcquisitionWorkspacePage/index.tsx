@@ -44,7 +44,6 @@ import { useConstituentSelector } from '../../../hooks/useContactSelector';
 import { getContact } from '../../../lib/api';
 import { RecordDetailPageWrapper, SectionOrderProvider } from '../../../components/record-detail';
 import { ProcedureRequirementsCard } from '../../../components/collections/ProcedureRequirementsCard';
-import { EditableUserSelect } from '../../../components/workspace/EditableUserSelect';
 import { StatusAdvancementDialog } from '../../../components/collections/StatusAdvancementDialog';
 import { AdvanceWithExceptionDialog } from '../../../components/collections/AdvanceWithExceptionDialog';
 import { ChangeStatusDropdown } from '../../../components/collections/ChangeStatusDropdown';
@@ -892,22 +891,13 @@ function AcquisitionWorkspacePageContent() {
               onChange={(v) => updateField('deed_of_gift_reference', v)}
               placeholder="Document reference number"
             />
+            {/* Set by the Approve action (with the approver); not editable. */}
             <EditableField
-              name="authorization_date"
               value={formData.authorization_date || ''}
               label="Authorization Date"
-              isEditing={isEditing}
-              onChange={(v) => updateField('authorization_date', v)}
-              type="date"
-            />
-            <EditableUserSelect
-              name="authorization_id"
-              organizationId={orgId}
-              value={formData.authorization_id || ''}
-              label="Authorized By"
-              isEditing={isEditing}
-              onChange={(v) => updateField('authorization_id', v)}
-              helpText="The person in your organization who authorized the acquisition."
+              isEditing={false}
+              onChange={() => {}}
+              emptyText="Set when the acquisition is approved"
             />
             <EditableField
               name="authorization_note"

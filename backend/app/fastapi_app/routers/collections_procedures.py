@@ -60,6 +60,7 @@ from app.fastapi_app.schemas.collections_procedures import (
 )
 from app.fastapi_app.schemas.common import MessageResponse
 from app.services.procedure_enforcement import raise_if_requirements_unmet
+from app.services.collections.record_fields import apply_record_fields
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +70,25 @@ router = APIRouter(tags=["collections-procedures"])
 def _enforce_procedure(organization_id: UUID, procedure_type: str, entity, target_status: str, db: Session):
     """Raise 422 if procedure enforcement is enabled and blocking requirements are unmet."""
     raise_if_requirements_unmet(organization_id, procedure_type, entity, target_status, db)
+
+
+# Columns the form never writes, on create or update. Each procedure adds the
+# caller's write-restricted fields (field access) at request time.
+_ENTRY_PROTECTED = frozenset({'entry_id', 'entry_number', 'status'})
+# API name -> column, where they differ.
+_ENTRY_FIELD_MAPPING = {'reason': 'entry_reason'}
+# authorization_id / authorization_date record who approved and when; the
+# approve action sets them.
+_ACQUISITION_PROTECTED = frozenset({
+    'acquisition_id', 'acquisition_number', 'approved_by', 'approved_by_id', 'approval_date',
+    'authorization_id', 'authorization_date', 'status',
+})
+
+
+def _protected(base: frozenset[str], entity_type: str, organization_id, auth: AuthContext, db: Session) -> set[str]:
+    return set(base) | get_write_restricted_fields(
+        entity_type, str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override
+    )
 
 
 # ============================================================================
@@ -98,6 +118,11 @@ def create_object_entry(
 
     try:
         entry = _create_object_entry(db, organization_id, data, auth.user_id, open_approval=True)
+        # Every other form field, through the same path as update.
+        apply_record_fields(
+            entry, ObjectEntry, data, _protected(_ENTRY_PROTECTED, 'object_entry', organization_id, auth, db),
+            field_mapping=_ENTRY_FIELD_MAPPING, blank_to_none=True,
+        )
         db.commit()
     except ValueError as e:
         # Malformed field in the payload — bad input, not a server fault.
@@ -213,7 +238,7 @@ def update_object_entry(
         })
 
     # Map API field names to model attributes
-    field_mapping = {'reason': 'entry_reason'}
+    field_mapping = _ENTRY_FIELD_MAPPING
     # Validate enum fields against the model's CHECK sets (map API->column names
     # and treat "" as NULL) so a bad entry_reason returns 422, not a 500.
     from app.services.collections.field_enums import validate_enum_fields
@@ -222,24 +247,17 @@ def update_object_entry(
     })
 
     # Optimistic concurrency — reject stale updates
-    from app.services.coerce import check_version, coerce_value_for_column
+    from app.services.coerce import check_version
     check_version(entry, data)
 
     # Handle status change separately with validation
     old_status = entry.status
     new_status = data.pop('status', None)
 
-    protected_fields = {'entry_id', 'organization_id', 'entry_number', 'created_at', 'created_by', 'updated_by', 'version'}
-    protected_fields |= get_write_restricted_fields('object_entry', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
-    for key, value in data.items():
-        attr_name = field_mapping.get(key, key)
-        if hasattr(entry, attr_name) and key not in protected_fields:
-            if value == '':
-                value = None
-            if attr_name.endswith('_id') and value:
-                setattr(entry, attr_name, UUID(value))
-            else:
-                setattr(entry, attr_name, coerce_value_for_column(ObjectEntry, attr_name, value))
+    protected_fields = _protected(_ENTRY_PROTECTED, 'object_entry', organization_id, auth, db)
+    apply_record_fields(
+        entry, ObjectEntry, data, protected_fields, field_mapping=_ENTRY_FIELD_MAPPING, blank_to_none=True
+    )
 
     if new_status and new_status != old_status:
         from app.services.workflow_definitions import WORKFLOW_DEFINITIONS
@@ -1176,6 +1194,10 @@ def create_acquisition(
 
     try:
         acquisition = _create_acquisition(db, organization_id, data, auth.user_id, open_approval=True)
+        # Every other form field, through the same path as update.
+        apply_record_fields(
+            acquisition, Acquisition, data, _protected(_ACQUISITION_PROTECTED, 'acquisition', organization_id, auth, db)
+        )
         db.commit()
     except Exception:
         db.rollback()
@@ -1280,23 +1302,14 @@ def update_acquisition(
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(Acquisition, data)
 
-    from app.services.coerce import check_version, coerce_value_for_column
+    from app.services.coerce import check_version
     check_version(acq, data)
 
     old_status = acq.status
     new_status = data.pop('status', None)
 
-    protected_fields = {
-        'acquisition_id', 'organization_id', 'acquisition_number', 'created_at', 'created_by',
-        'updated_by', 'approved_by', 'approved_by_id', 'approval_date', 'authorization_id', 'authorization_date',
-    }
-    protected_fields |= get_write_restricted_fields('acquisition', organization_id, str(auth.user_id), session=db, role_override=auth.role_override)
-    for key, value in data.items():
-        if hasattr(acq, key) and key not in protected_fields:
-            if key.endswith('_id') and value:
-                setattr(acq, key, UUID(value))
-            else:
-                setattr(acq, key, coerce_value_for_column(Acquisition, key, value))
+    protected_fields = _protected(_ACQUISITION_PROTECTED, 'acquisition', organization_id, auth, db)
+    apply_record_fields(acq, Acquisition, data, protected_fields)
 
     if new_status and new_status != old_status:
         from app.services.workflow_definitions import WORKFLOW_DEFINITIONS

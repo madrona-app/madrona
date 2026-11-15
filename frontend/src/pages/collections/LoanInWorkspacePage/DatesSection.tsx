@@ -54,13 +54,13 @@ export function DatesSection({
           onChange={(v) => updateField('request_date', v)}
           type="date"
         />
+        {/* Set by the Approve action; not editable. */}
         <EditableField
-          name="approval_date"
           value={formData.approval_date}
           label="Approval Date"
-          isEditing={isEditing}
-          onChange={(v) => updateField('approval_date', v)}
-          type="date"
+          isEditing={false}
+          onChange={() => {}}
+          emptyText="Set when the loan is approved"
         />
         <EditableField
           name="loan_start_date"

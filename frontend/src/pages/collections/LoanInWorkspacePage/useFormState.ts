@@ -151,6 +151,21 @@ export function useFormState({
       loan_contact_name: data.loan_contact_name || null,
       loan_contact_email: data.loan_contact_email || null,
       loan_contact_phone: data.loan_contact_phone || null,
+      // Lender contact person and the closing section were edited on the form
+      // but never sent, so they were lost on create and on save.
+      lender_contact_id: data.lender_contact_id || null,
+      closing_invoice_sent: data.closing_invoice_sent,
+      closing_invoice_date: data.closing_invoice_date || null,
+      closing_invoice_reference: data.closing_invoice_reference || null,
+      closing_invoice_amount: data.closing_invoice_amount ? parseFloat(data.closing_invoice_amount) : null,
+      closing_invoice_currency: data.closing_invoice_currency || null,
+      receipt_acknowledged: data.receipt_acknowledged,
+      receipt_acknowledged_date: data.receipt_acknowledged_date || null,
+      receipt_acknowledged_reference: data.receipt_acknowledged_reference || null,
+      conditions_met_confirmed: data.conditions_met_confirmed,
+      conditions_met_date: data.conditions_met_date || null,
+      conditions_met_note: data.conditions_met_note || null,
+      closing_note: data.closing_note || null,
     };
   }, []);
 
