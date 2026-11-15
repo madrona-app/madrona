@@ -7,13 +7,13 @@ no plan could be saved through the form. The API now checks both fields
 against the organization's lookup values, as for other lookup-backed fields.
 
 Revision ID: 73098feecfda
-Revises: c7e2a94d1b36
+Revises: 5d9c1e7a3b42
 """
 
 from alembic import op
 
 revision = "73098feecfda"
-down_revision = "c7e2a94d1b36"
+down_revision = "5d9c1e7a3b42"
 branch_labels = None
 depends_on = None
 
