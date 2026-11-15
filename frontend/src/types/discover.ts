@@ -172,8 +172,18 @@ export interface DiscoverMediaDownload {
 
 export interface DiscoverMediaItem {
   media_id: string;
-  /** What the page displays or plays (never an image master). */
-  url: string;
+  /**
+   * What the page displays or plays: a rendition or access copy, or the
+   * original only when the file's download level allows it. Null when
+   * nothing may be served yet (see playback_status).
+   */
+  url: string | null;
+  /** 'access_copy' or 'original' when url is set. */
+  playback_source?: 'access_copy' | 'original' | string | null;
+  /** 'ready', 'preparing', 'unavailable', or 'text_only' (non-PDF documents). */
+  playback_status?: 'ready' | 'preparing' | 'unavailable' | 'text_only' | string | null;
+  /** Public API path of a document's text, when it has any. */
+  text_url?: string | null;
   media_type: string | null;
   mime_type: string | null;
   /** Human name for the file: its title, else its filename. */

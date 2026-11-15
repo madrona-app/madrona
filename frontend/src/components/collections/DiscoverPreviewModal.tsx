@@ -91,7 +91,7 @@ export function DiscoverPreviewModal({
                 {preview.media.length > 0 && (
                   <div className="bg-parchment rounded-lg overflow-hidden border border-lichen">
                     <ResponsiveImage
-                      src={preview.media[0].url}
+                      src={preview.media[0].url ?? ''}
                       srcset={preview.media[0].srcset}
                       alt={preview.media[0].alt_text || preview.title || ''}
                       sizes="(max-width: 768px) 100vw, 720px"
@@ -169,7 +169,7 @@ export function DiscoverPreviewModal({
                       {preview.media.slice(1).map((m) => (
                         <ResponsiveImage
                           key={m.media_id}
-                          src={m.url}
+                          src={m.url ?? ''}
                           srcset={m.srcset}
                           alt={m.alt_text || ''}
                           sizes="80px"

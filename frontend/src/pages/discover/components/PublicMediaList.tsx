@@ -1,6 +1,8 @@
 import { useId, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, ChevronRight, Download, FileText } from 'lucide-react';
 import type { DiscoverMediaItem } from '../../../types/discover';
+import { getDiscoverDocumentText } from '../../../lib/api/discover';
 import { formatFileSize } from '../../../lib/utils';
 import { documentTypeLabel, formatDuration, resolvePublicApiUrl } from './publicMedia';
 
@@ -13,10 +15,18 @@ import { documentTypeLabel, formatDuration, resolvePublicApiUrl } from './public
  * attribute is needed). A transcript, where one exists, sits behind a real
  * disclosure button. Documents are a named link stating type and size; no
  * inline PDF frame, because browser PDF viewers can capture keyboard focus.
+ *
+ * What plays or opens is an access copy unless the file's download level
+ * allows the original (the API decides; `url` is null when nothing may be
+ * served yet). A PDF's access copy is page images with no text layer, so the
+ * document's text is offered first, as HTML with a heading per page.
  */
 
 const LINK_CLASS =
   'text-bark hover:text-copper-dark underline underline-offset-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2';
+
+const DISCLOSURE_CLASS =
+  'inline-flex items-center gap-1 min-h-[44px] px-2 -mx-2 text-sm font-medium text-bark hover:text-copper-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2';
 
 function TranscriptDisclosure({ item }: { item: DiscoverMediaItem }) {
   const [open, setOpen] = useState(false);
@@ -29,7 +39,7 @@ function TranscriptDisclosure({ item }: { item: DiscoverMediaItem }) {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-1 min-h-[44px] px-2 -mx-2 text-sm font-medium text-bark hover:text-copper-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+        className={DISCLOSURE_CLASS}
       >
         {open ? <ChevronDown size={16} aria-hidden="true" /> : <ChevronRight size={16} aria-hidden="true" />}
         Transcript<span className="sr-only">: {item.name}</span>
@@ -41,6 +51,73 @@ function TranscriptDisclosure({ item }: { item: DiscoverMediaItem }) {
         <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap">{item.transcript}</p>
       </div>
     </div>
+  );
+}
+
+/** The document's text as HTML: one section and heading per page for PDFs. */
+function DocumentTextView({ item }: { item: DiscoverMediaItem }) {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  const name = item.name || 'this document';
+  const textUrl = item.text_url || '';
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['discover-document-text', textUrl],
+    queryFn: () => getDiscoverDocumentText(textUrl),
+    enabled: open && !!textUrl,
+    staleTime: 5 * 60 * 1000,
+  });
+  if (!textUrl) return null;
+  const pages = data?.pages || [];
+  const paged = pages.some((p) => p.page != null);
+
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((v) => !v)}
+        className={DISCLOSURE_CLASS}
+      >
+        {open ? <ChevronDown size={16} aria-hidden="true" /> : <ChevronRight size={16} aria-hidden="true" />}
+        Read the text{' '}<span className="sr-only">of {name}</span>
+      </button>
+      <div id={panelId} hidden={!open} className="mt-2 p-3 bg-stone/20 rounded border border-lichen">
+        {isLoading && <p role="status" className="text-sm text-archive">Loading the text…</p>}
+        {isError && <p role="status" className="text-sm text-ink">The text could not be loaded. Please try again later.</p>}
+        {data && (
+          <>
+            <p className="text-xs text-archive mb-2">
+              Text taken from the document. Layout such as columns and tables may not be kept.
+            </p>
+            {paged ? (
+              pages.map((p) => (
+                <PageText key={p.page ?? 'all'} page={p.page ?? null} text={p.text} />
+              ))
+            ) : (
+              <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap">{pages[0]?.text}</p>
+            )}
+            {data.truncated && (
+              <p className="text-sm text-ink mt-3">The text is too long to show in full here.</p>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PageText({ page, text }: { page: number | null; text: string }) {
+  const headingId = useId();
+  return (
+    <section aria-labelledby={headingId} className="mt-3 first:mt-0">
+      <h4 id={headingId} className="text-sm font-medium text-ink">Page {page}</h4>
+      {text ? (
+        <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap mt-1">{text}</p>
+      ) : (
+        <p className="text-sm text-archive mt-1">No text on this page.</p>
+      )}
+    </section>
   );
 }
 
@@ -111,10 +188,57 @@ function MediaFacts({ item }: { item: DiscoverMediaItem }) {
   );
 }
 
+/** Shown in place of a player or link when nothing may be served yet. */
+function NotYetAvailable({ item }: { item: DiscoverMediaItem }) {
+  const kind = item.media_type === 'audio' ? 'recording' : item.media_type === 'video' ? 'video' : 'document';
+  const hasText = !!(item.transcript || item.text_url || (item.text_alternatives || []).length > 0);
+  if (item.playback_status === 'text_only') {
+    return <p className="mt-3 text-sm text-ink">This document is available on this page as text.</p>;
+  }
+  const preparing = item.playback_status === 'preparing';
+  const what = item.media_type === 'document' ? 'A viewable copy' : 'A playable copy';
+  return (
+    <p role="status" className="mt-3 p-3 text-sm text-ink bg-stone/20 rounded border border-lichen">
+      {preparing
+        ? `${what} of this ${kind} is being prepared. Please check back later.`
+        : `This ${kind} cannot be ${item.media_type === 'document' ? 'opened' : 'played'} online yet.`}
+      {hasText && (item.media_type === 'document' ? ' Its text is below.' : ' Its text version is below.')}
+    </p>
+  );
+}
+
+function DocumentLink({ item, name }: { item: DiscoverMediaItem; name: string }) {
+  if (!item.url) return null;
+  if (item.playback_source === 'access_copy') {
+    const facts = ['PDF', item.page_count ? `${item.page_count} page${item.page_count === 1 ? '' : 's'}` : null, 'no text layer']
+      .filter(Boolean)
+      .join(', ');
+    return (
+      <p className="mt-3 text-sm">
+        <a href={item.url} className={`inline-flex items-center gap-1.5 ${LINK_CLASS}`}>
+          <FileText size={16} aria-hidden="true" />
+          Open page images of {name} ({facts})
+        </a>
+      </p>
+    );
+  }
+  return (
+    <p className="mt-3 text-sm">
+      <a href={item.url} className={`inline-flex items-center gap-1.5 ${LINK_CLASS}`}>
+        <FileText size={16} aria-hidden="true" />
+        Open {name} ({[documentTypeLabel(item.mime_type), item.file_size ? formatFileSize(item.file_size) : null]
+          .filter(Boolean)
+          .join(', ')})
+      </a>
+    </p>
+  );
+}
+
 function PublicMediaEntry({ item }: { item: DiscoverMediaItem }) {
   const headingId = useId();
   const name = item.name || 'Untitled file';
   const captions = item.captions || [];
+  const playable = !!item.url;
 
   return (
     <li className="py-5 border-b border-lichen last:border-b-0">
@@ -127,7 +251,9 @@ function PublicMediaEntry({ item }: { item: DiscoverMediaItem }) {
         </h3>
         <MediaFacts item={item} />
 
-        {item.media_type === 'audio' && (
+        {!playable && <NotYetAvailable item={item} />}
+
+        {item.media_type === 'audio' && item.url && (
           // Audio-only content is made accessible by its transcript (WCAG
           // 1.2.1); browsers do not render <track> on <audio>.
           // eslint-disable-next-line jsx-a11y/media-has-caption
@@ -142,7 +268,7 @@ function PublicMediaEntry({ item }: { item: DiscoverMediaItem }) {
           </audio>
         )}
 
-        {item.media_type === 'video' && (
+        {item.media_type === 'video' && item.url && (
           // Caption <track>s are rendered from item.captions below; the rule
           // cannot see a mapped child. A missing-captions notice follows.
           // eslint-disable-next-line jsx-a11y/media-has-caption
@@ -169,25 +295,26 @@ function PublicMediaEntry({ item }: { item: DiscoverMediaItem }) {
           </video>
         )}
 
-        {item.media_type === 'video' && captions.length === 0 && (
+        {item.media_type === 'video' && playable && captions.length === 0 && (
           <p className="text-xs text-archive mt-2">No captions are available for this video yet.</p>
         )}
 
         {item.media_type === 'document' && (
-          <p className="mt-3 text-sm">
-            <a href={item.url} className={`inline-flex items-center gap-1.5 ${LINK_CLASS}`}>
-              <FileText size={16} aria-hidden="true" />
-              Open {name} ({[documentTypeLabel(item.mime_type), item.file_size ? formatFileSize(item.file_size) : null]
-                .filter(Boolean)
-                .join(', ')})
-            </a>
-          </p>
+          <>
+            {/* The text first: a page-image copy has no text layer. */}
+            <DocumentTextView item={item} />
+            <DocumentLink item={item} name={name} />
+          </>
         )}
 
         <MediaDownloads item={item} />
         <TranscriptDisclosure item={item} />
-        {/* Audio players never render captions, so offer the timed text as a file. */}
-        <TextAlternativeLinks item={item} includeCaptionFiles={item.media_type === 'audio' && !item.transcript} />
+        {/* Audio players never render captions, and with no player at all a
+            video's captions can only be offered as files. */}
+        <TextAlternativeLinks
+          item={item}
+          includeCaptionFiles={(item.media_type === 'audio' && !item.transcript) || (item.media_type === 'video' && !playable)}
+        />
       </article>
     </li>
   );

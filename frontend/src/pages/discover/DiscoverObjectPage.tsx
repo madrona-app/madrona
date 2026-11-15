@@ -111,7 +111,7 @@ function Lightbox({
       )}
 
       <ResponsiveImage
-        src={item.url}
+        src={item.url ?? ''}
         srcset={item.srcset}
         alt={item.alt_text || 'Object image'}
         sizes="90vw"
@@ -421,7 +421,7 @@ export function DiscoverObjectPage() {
               className="relative group cursor-zoom-in rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             >
               <ResponsiveImage
-                src={currentMedia.url}
+                src={currentMedia.url ?? ''}
                 srcset={currentMedia.srcset}
                 alt={currentMedia.alt_text || obj.title || 'Object'}
                 sizes="(max-width: 768px) 100vw, 60vw"
@@ -469,7 +469,7 @@ export function DiscoverObjectPage() {
                   }`}
                 >
                   <ResponsiveImage
-                    src={m.url}
+                    src={m.url ?? ''}
                     srcset={m.srcset}
                     alt={m.alt_text || `Image ${i + 1}`}
                     sizes="64px"
