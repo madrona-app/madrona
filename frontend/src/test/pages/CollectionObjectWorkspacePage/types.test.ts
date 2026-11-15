@@ -40,15 +40,12 @@ describe('CollectionObjectWorkspacePage / types', () => {
   });
 
   describe('OBJECT_STATUSES', () => {
-    it('includes the procedure lifecycle statuses', () => {
+    it('offers exactly the statuses collection_objects.object_status accepts', () => {
+      // 'active' and 'in_conservation' were offered but refused by the CHECK.
       const values = OBJECT_STATUSES.map((o) => o.value);
-      expect(values).toContain('accessioned');
-      expect(values).toContain('active');
-      expect(values).toContain('on_loan');
-      expect(values).toContain('in_conservation');
-      expect(values).toContain('pending');
-      expect(values).toContain('deaccessioned');
-      expect(values).toContain('missing');
+      expect(values.sort()).toEqual(
+        ['accessioned', 'deaccessioned', 'destroyed', 'missing', 'on_loan', 'pending'],
+      );
     });
   });
 

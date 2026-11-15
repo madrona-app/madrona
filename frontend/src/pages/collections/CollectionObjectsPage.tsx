@@ -1271,9 +1271,9 @@ function ObjectRow({
       <td className="px-4 py-3">
         <span className={cn(
           'inline-flex px-2 py-0.5 text-xs font-medium rounded-full',
-          hit.object_status === 'active' ? 'bg-semantic-success/10 text-semantic-success' : 'bg-stone text-ink'
+          hit.object_status === 'accessioned' ? 'bg-semantic-success/10 text-semantic-success' : 'bg-stone text-ink'
         )}>
-          {hit.object_status || 'active'}
+          {hit.object_status || 'pending'}
         </span>
       </td>
 

@@ -309,6 +309,9 @@ def create_collections_review(
     if not body.get("review_type"):
         raise HTTPException(status_code=400, detail="Missing: review_type")
 
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, CollectionsReview, body)
+
     review_number = body.get("review_number")
     if not review_number:
         from app.services.sequence import next_sequential_number
@@ -386,6 +389,9 @@ def update_collections_review(
     ).first()
     if not review:
         raise HTTPException(status_code=404, detail="Collections review not found")
+
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, CollectionsReview, body, current=review)
 
     # Attribute names, not column names — see the note in
     # collections_procedure_rights.py. CollectionsReview maps
@@ -561,6 +567,9 @@ def create_audit_campaign(
     if not body.get("audit_type"):
         raise HTTPException(status_code=400, detail="Missing: audit_type")
 
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, AuditCampaign, body)
+
     audit_number = body.get("audit_number")
     if not audit_number:
         from app.services.sequence import next_sequential_number
@@ -650,6 +659,9 @@ def update_audit_campaign(
     ).first()
     if not audit:
         raise HTTPException(status_code=404, detail="Audit campaign not found")
+
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, AuditCampaign, body, current=audit)
 
     # Attribute names, not column names. AuditCampaign maps `approved_by_id`
     # and `signed_off_by_id` onto the columns "approved_by"/"signed_off_by";

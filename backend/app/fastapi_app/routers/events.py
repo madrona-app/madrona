@@ -323,6 +323,9 @@ def create_event(
     if not body.get("event_type"):
         raise HTTPException(status_code=400, detail="Event type is required")
 
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, Event, body)
+
     try:
         ref_number = _generate_event_reference_number(org_id, db)
 
@@ -395,6 +398,9 @@ def update_event(
 
     if not body:
         raise HTTPException(status_code=400, detail="Request body is required")
+
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, Event, body, current=event)
 
     try:
         if "title" in body:

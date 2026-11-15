@@ -236,6 +236,9 @@ def create_incident(
     if not body.get("incident_description"):
         raise HTTPException(status_code=400, detail="Missing: incident_description")
 
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, IncidentReport, body)
+
     report_number = body.get("report_number")
     if not report_number:
         from app.services.sequence import next_sequential_number
@@ -269,6 +272,11 @@ def create_incident(
         police_report_number=body.get("police_report_number"),
         police_contact=body.get("police_contact"),
         insurance_claim_filed=body.get("insurance_claim_filed", False),
+        # The form sends the claim fields on create too; they were dropped.
+        insurance_claim_number=body.get("insurance_claim_number") or None,
+        insurance_claim_date=body.get("insurance_claim_date") or None,
+        insurance_claim_status=body.get("insurance_claim_status") or None,
+        insurance_claim_amount=body.get("insurance_claim_amount"),
         investigation_required=body.get("investigation_required", False),
         status=body.get("status", "draft"),
         report_note=body.get("report_note"),
@@ -322,6 +330,9 @@ def update_incident(
     ).first()
     if not report:
         raise HTTPException(status_code=404, detail="Incident report not found")
+
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, IncidentReport, body, current=report)
 
     protected = {"report_id", "organization_id", "created_at", "created_by", "updated_by"}
     uuid_fields = {"incident_location_id", "discovered_by", "investigation_lead", "assigned_to_user_id"}

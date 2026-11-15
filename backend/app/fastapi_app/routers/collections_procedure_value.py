@@ -214,6 +214,9 @@ def create_valuation(
     if not body.get("valuation_date"):
         raise HTTPException(status_code=400, detail="Missing: valuation_date")
 
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, Valuation, body)
+
     object_uuid = parse_uuid_or_raise(body["object_id"])
 
     obj = db.query(CollectionObject).filter(
@@ -294,6 +297,9 @@ def update_valuation(
     ).first()
     if not valuation:
         raise HTTPException(status_code=404, detail="Valuation not found")
+
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, Valuation, body, current=valuation)
 
     updatable = {
         "valuation_type", "valuation_currency", "valuation_date",
@@ -432,6 +438,9 @@ def create_reproduction_request(
     if not body.get("reproduction_type"):
         raise HTTPException(status_code=400, detail="Missing: reproduction_type")
 
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, ReproductionRequest, body)
+
     # Validate optional UUID inputs up front so a malformed id is a 400, not a
     # 500 from the create path (parity with prior behavior).
     if body.get("use_request_id"):
@@ -488,6 +497,9 @@ def update_reproduction_request(
     ).first()
     if not rr:
         raise HTTPException(status_code=404, detail="Reproduction request not found")
+
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, ReproductionRequest, body, current=rr)
 
     updatable = {
         "requester_name", "requester_institution", "requester_email", "requester_phone",

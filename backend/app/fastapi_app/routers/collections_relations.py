@@ -518,6 +518,9 @@ def create_citation(
     if not body.get("brief_citation"):
         raise HTTPException(status_code=400, detail="Missing: brief_citation")
 
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, Citation, body)
+
     citation = Citation(
         organization_id=org_id,
         citation_type=body.get("citation_type", "book"),
@@ -581,6 +584,9 @@ def update_citation(
     ).first()
     if not citation:
         raise HTTPException(status_code=404, detail="Citation not found")
+
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, Citation, body, current=citation)
 
     protected = {'citation_id', 'organization_id', 'created_at', 'created_by', 'updated_by'}
     for api_key, value in body.items():

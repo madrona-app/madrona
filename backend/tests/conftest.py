@@ -493,6 +493,13 @@ def test_engine():
         # we apply the grants manually here.
         _grant_madrona_app_for_tests(engine)
 
+        # Lookup values are core bootstrap data (entrypoint.sh seeds them on
+        # every boot), and lookup-backed fields are validated against them
+        # (app/services/lookup_fields.py), so the test DB carries them too.
+        from seeds.seed_lookup_data import insert_lookup_rows
+        with engine.begin() as conn:
+            insert_lookup_rows(conn)
+
     yield engine
 
     # Teardown: the model has mutual FKs (object_entries↔object_exits,

@@ -60,42 +60,6 @@ _EMERGENCY_PLAN_API_TO_MODEL = {
 # PLAN TYPE / REVIEW FREQUENCY / ACTIONS
 # ============================================================================
 
-# Both fields are lookup-backed (categories below), so organizations can add
-# their own values. They used to be pinned by CHECK constraints listing a
-# different vocabulary from the one the form offers, so every save through
-# the form was refused; the lookups are now the only source of truth.
-_DOC_PLAN_LOOKUP_FIELDS = {
-    "plan_type": "documentation_plan_type",
-    "review_frequency": "review_frequency",
-}
-
-
-def _check_doc_plan_lookups(db: Session, org_id: UUID, body: dict) -> None:
-    """400 unless each lookup-backed value is an active value for the org."""
-    from app.models import LookupCategory, LookupValue
-
-    for field, category in _DOC_PLAN_LOOKUP_FIELDS.items():
-        value = body.get(field)
-        if value in (None, ""):
-            continue
-        found = (
-            db.query(LookupValue.value_id)
-            .join(LookupCategory, LookupValue.category_id == LookupCategory.category_id)
-            .filter(
-                LookupCategory.category_key == category,
-                LookupValue.value_key == value,
-                LookupValue.is_active.is_(True),
-                or_(
-                    LookupValue.organization_id == org_id,
-                    LookupValue.organization_id.is_(None),
-                ),
-            )
-            .first()
-        )
-        if not found:
-            raise HTTPException(status_code=400, detail=f"Unknown {field}: {value}")
-
-
 def _save_plan_actions(db: Session, plan: DocumentationPlan, body: dict, user_id) -> None:
     """Write the plan's actions and milestones as compliance_actions rows.
 
@@ -414,7 +378,10 @@ def create_documentation_plan(
         plan_number = next_sequential_number(db, org_id, 'DP', include_year=False, separator='-')
 
     user_uuid = auth.user_id
-    _check_doc_plan_lookups(db, org_id, {**body, "plan_type": body.get("plan_type") or "documentation_policy"})
+    # plan_type and review_frequency are lookup-backed (organizations add
+    # their own values); app/services/lookup_fields.py checks them.
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, DocumentationPlan, {**body, "plan_type": body.get("plan_type") or "documentation_policy"})
 
     plan = DocumentationPlan(
         organization_id=org_id,
@@ -486,7 +453,8 @@ def update_documentation_plan(
     if not plan:
         raise HTTPException(status_code=404, detail="Documentation plan not found")
 
-    _check_doc_plan_lookups(db, org_id, body)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, DocumentationPlan, body, current=plan)
     if "plan_type" in body and not body["plan_type"]:
         raise HTTPException(status_code=400, detail="plan_type cannot be empty")
 

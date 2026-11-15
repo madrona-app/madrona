@@ -286,6 +286,9 @@ def create_object_right(
     if not body.get("right_type"):
         raise HTTPException(status_code=400, detail="Missing: right_type")
 
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, ObjectRight, body)
+
     obj = db.query(CollectionObject).filter(
         CollectionObject.object_id == object_id,
         CollectionObject.organization_id == org_id,
@@ -335,6 +338,9 @@ def update_object_right(
     ).first()
     if not right:
         raise HTTPException(status_code=404, detail="Right not found")
+
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, ObjectRight, body, current=right)
 
     protected = {
         "right_id", "organization_id", "object_id", "created_at", "created_by_id", "created_by", "updated_by_id",
@@ -455,6 +461,9 @@ def create_use_request(
     """Create use request."""
     if not body.get("use_type"):
         raise HTTPException(status_code=400, detail="Missing: use_type")
+
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, UseRequest, body)
     if not body.get("requester_name"):
         raise HTTPException(status_code=400, detail="Missing: requester_name")
     if not body.get("use_purpose"):
@@ -516,6 +525,9 @@ def update_use_request(
     ).first()
     if not req:
         raise HTTPException(status_code=404, detail="Use request not found")
+
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, UseRequest, body, current=req)
 
     # Attribution is server-set and never accepted from the body.
     #

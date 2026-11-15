@@ -90,6 +90,8 @@ def create_loan_in(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(LoanIn, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, LoanIn, data)
 
     # Create via the shared service — the same code the draft applier runs. It
     # owns the LI number and the loan_in/create approval gate.
@@ -222,6 +224,8 @@ def update_loan_in(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(LoanIn, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, LoanIn, data, current=loan)
 
     old_status = loan.status
 
@@ -822,6 +826,8 @@ def create_loan_out(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(LoanOut, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, LoanOut, data)
 
     # Create via the shared service — the same code the draft applier runs. It
     # owns the LO number and the loan_out/create approval gate.
@@ -985,6 +991,8 @@ def update_loan_out(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(LoanOut, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, LoanOut, data, current=loan)
 
     old_status = loan.status
 
