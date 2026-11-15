@@ -36,6 +36,7 @@ from app.fastapi_app.serializers.collections import (
     _serialize_loan_out_object,
 )
 from app.services.procedure_enforcement import raise_if_requirements_unmet
+from app.services.collections.record_fields import apply_record_fields
 from app.fastapi_app.schemas.collections_loans import (
     LoanInOut,
     LoanInDetailOut,
@@ -61,6 +62,19 @@ router = APIRouter(tags=["collections-loans"])
 def _enforce_procedure(organization_id: UUID, procedure_type: str, entity, target_status: str, db: Session):
     """Raise 422 if procedure enforcement is enabled and blocking requirements are unmet."""
     raise_if_requirements_unmet(organization_id, procedure_type, entity, target_status, db)
+
+
+# Columns the form never writes, on create or update. Each procedure adds the
+# caller's write-restricted fields (field access) at request time.
+_LOAN_IN_PROTECTED = frozenset({'loan_in_id', 'loan_number', 'approved_by', 'approval_date', 'approved_at', 'status'})
+# Loan out status changes go through the workflow action endpoints.
+_LOAN_OUT_PROTECTED = frozenset({'loan_out_id', 'loan_number', 'approved_by', 'approval_date', 'approved_at', 'status'})
+
+
+def _protected(base: frozenset[str], entity_type: str, organization_id, auth: AuthContext, db: Session) -> set[str]:
+    return set(base) | get_write_restricted_fields(
+        entity_type, str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override
+    )
 
 
 # ============================================================================
@@ -93,6 +107,8 @@ def create_loan_in(
 
     try:
         loan = _create_loan_in(db, organization_id, data, auth.user_id, open_approval=True)
+        # Every other form field, through the same path as update.
+        apply_record_fields(loan, LoanIn, data, _protected(_LOAN_IN_PROTECTED, 'loan_in', organization_id, auth, db))
         db.commit()
     except Exception:
         db.rollback()
@@ -220,23 +236,14 @@ def update_loan_in(
     old_status = loan.status
 
     # Optimistic concurrency — reject stale updates
-    from app.services.coerce import coerce_value_for_column, check_version
+    from app.services.coerce import check_version
     check_version(loan, data)
 
     old_status = loan.status
     new_status = data.pop('status', None)
 
-    protected_fields = {
-        'loan_in_id', 'organization_id', 'loan_number', 'created_at', 'created_by',
-        'updated_by', 'approved_by', 'approval_date', 'approved_at', 'version',
-    }
-    protected_fields |= get_write_restricted_fields('loan_in', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
-    for key, value in data.items():
-        if hasattr(loan, key) and key not in protected_fields:
-            if key.endswith('_id') and value:
-                setattr(loan, key, UUID(value))
-            else:
-                setattr(loan, key, coerce_value_for_column(LoanIn, key, value))
+    protected_fields = _protected(_LOAN_IN_PROTECTED, 'loan_in', organization_id, auth, db)
+    apply_record_fields(loan, LoanIn, data, protected_fields)
 
     if new_status and new_status != old_status:
         from app.services.workflow_definitions import WORKFLOW_DEFINITIONS
@@ -825,6 +832,8 @@ def create_loan_out(
 
     try:
         loan = _create_loan_out(db, organization_id, data, auth.user_id, open_approval=True)
+        # Every other form field, through the same path as update.
+        apply_record_fields(loan, LoanOut, data, _protected(_LOAN_OUT_PROTECTED, 'loan_out', organization_id, auth, db))
         db.commit()
     except Exception:
         db.rollback()
@@ -983,21 +992,11 @@ def update_loan_out(
     old_status = loan.status
 
     # Optimistic concurrency — reject stale updates
-    from app.services.coerce import coerce_value_for_column, check_version
+    from app.services.coerce import check_version
     check_version(loan, data)
 
-    protected_fields = {
-        'loan_out_id', 'organization_id', 'loan_number', 'created_at', 'created_by',
-        'updated_by', 'approved_by', 'approval_date', 'approved_at', 'version',
-        'status',  # status changes must go through workflow action endpoints
-    }
-    protected_fields |= get_write_restricted_fields('loan_out', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
-    for key, value in data.items():
-        if hasattr(loan, key) and key not in protected_fields:
-            if key.endswith('_id') and value:
-                setattr(loan, key, UUID(value))
-            else:
-                setattr(loan, key, coerce_value_for_column(LoanOut, key, value))
+    protected_fields = _protected(_LOAN_OUT_PROTECTED, 'loan_out', organization_id, auth, db)
+    apply_record_fields(loan, LoanOut, data, protected_fields)
 
     loan.updated_by = auth.user_id
     loan.updated_at = datetime.now(timezone.utc)
