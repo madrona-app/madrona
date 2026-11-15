@@ -1552,7 +1552,7 @@ SUPPORTED_BULK_ACTIONS = {
         "label": "Flag for Conservation",
         "description": "Mark objects as needing conservation attention",
         "permission": Permission.CONSERVATION_CREATE,
-        "required_params": ["urgency", "concern_type"],
+        "required_params": ["urgency", "treatment_type"],
         "optional_params": ["concern_description", "assigned_to_user_id"],
         "category": "condition",
     },
@@ -1589,6 +1589,45 @@ SUPPORTED_BULK_ACTIONS = {
         "category": "discovery",
     },
 }
+
+
+def _normalize_bulk_params(action: str, action_params: dict) -> dict:
+    """Accept the pre-lookup ``concern_type`` name for the treatment type."""
+    if (
+        action == "flag_for_conservation"
+        and "treatment_type" not in action_params
+        and "concern_type" in action_params
+    ):
+        action_params = {**action_params, "treatment_type": action_params["concern_type"]}
+    return action_params
+
+
+def _check_bulk_lookups(db, org_id, action: str, action_params: dict) -> None:
+    """Lookup-backed bulk parameters must be the org's lookup values (400 naming
+    the field), as on the single-record forms; the closed condition scale gets
+    the CHECK-derived 422."""
+    from app.models import ConditionReport, ConservationTreatment, IncidentReport
+    from app.services.collections.field_enums import validate_enum_fields
+    from app.services.lookup_fields import check_lookup_values, is_active_lookup_value
+
+    if action == "create_condition_report":
+        validate_enum_fields(
+            ConditionReport, {"overall_condition": action_params.get("overall_condition") or None}
+        )
+        check_lookup_values(db, org_id, ConditionReport, action_params)
+    elif action == "report_incident":
+        check_lookup_values(db, org_id, IncidentReport, action_params)
+    elif action == "flag_for_conservation":
+        check_lookup_values(
+            db, org_id, ConservationTreatment, {"treatment_type": action_params.get("treatment_type")}
+        )
+        urgency = action_params.get("urgency")
+        if not isinstance(urgency, str) or not is_active_lookup_value(db, org_id, "priority", urgency):
+            raise HTTPException(status_code=400, detail={
+                "code": "invalid_lookup_value",
+                "message": f"Unknown urgency: {urgency}",
+                "field": "urgency",
+            })
 
 
 @router.get("/api/organizations/{org_id}/workspaces/{workspace_id}/actions", response_model=BulkActionListResponse, summary="List bulk actions")
@@ -1754,9 +1793,11 @@ async def validate_bulk_action(
     object_ids = data.get("object_ids")
 
     # Validate required params
+    action_params = _normalize_bulk_params(action, action_params)
     missing = [p for p in action_config["required_params"] if p not in action_params]
     if missing:
         raise HTTPException(status_code=400, detail=f"Missing required parameters: {', '.join(missing)}")
+    _check_bulk_lookups(db, org_id, action, action_params)
 
     # Action-specific param validation
     if action == "record_movement":
@@ -1853,9 +1894,11 @@ async def execute_bulk_action(
     object_ids = data.get("object_ids")
     skip_blocked = data.get("skip_blocked", False)
 
+    action_params = _normalize_bulk_params(action, action_params)
     missing = [p for p in action_config["required_params"] if p not in action_params]
     if missing:
         raise HTTPException(status_code=400, detail=f"Missing required parameters: {', '.join(missing)}")
+    _check_bulk_lookups(db, org_id, action, action_params)
 
     query = db.query(WorkspaceItem, CollectionObject).join(
         CollectionObject,
@@ -2106,33 +2149,36 @@ async def execute_bulk_action(
                 success_count += 1
 
         elif action == "flag_for_conservation":
-            urgency = action_params["urgency"]
-            concern_type = action_params["concern_type"]
-            description = action_params.get("concern_description", "")
+            # Created through the same service as the conservation form. This
+            # branch used to pass treatment_status/treatment_reason/priority,
+            # none of which are columns, so every flag raised before saving.
+            from app.services.collections.creation.conservation_treatment import (
+                create_conservation_treatment,
+            )
+            from app.services.lookup_fields import lookup_label
 
-            base_count = db.query(func.count(ConservationTreatment.treatment_id)).filter(
-                ConservationTreatment.organization_id == org_id
-            ).scalar()
+            urgency_label = lookup_label(db, org_id, "priority", action_params["urgency"])
+            description = action_params.get("concern_description") or None
+            assignee = action_params.get("assigned_to_user_id")
 
-            for idx, (item, obj) in enumerate(items):
+            for item, obj in items:
                 result = {"object_id": str(obj.object_id), "accession_number": obj.object_number}
-                treatment_number = f"CON{datetime.now(timezone.utc).year}.{base_count + idx + 1:04d}"
-                treatment = ConservationTreatment(
-                    organization_id=org_id,
-                    treatment_number=treatment_number,
-                    object_id=obj.object_id,
-                    treatment_status="proposed",
-                    treatment_type=concern_type,
-                    treatment_reason=description,
-                    priority=urgency,
-                    conservator_id=UUID(action_params["assigned_to_user_id"]) if action_params.get("assigned_to_user_id") else None,
-                    created_by=user_id,
-                    updated_by=user_id,
+                treatment = create_conservation_treatment(
+                    db,
+                    org_id,
+                    {
+                        "object_id": obj.object_id,
+                        "treatment_type": action_params["treatment_type"],
+                        "proposal_summary": description,
+                        "treatment_note": f"Flagged for conservation. Urgency: {urgency_label}.",
+                    },
+                    user_id,
                 )
-                db.add(treatment)
+                if assignee:
+                    treatment.assigned_to_user_id = UUID(assignee)
                 result["status"] = "success"
                 result["record_id"] = str(treatment.treatment_id)
-                result["reference_number"] = treatment_number
+                result["reference_number"] = treatment.treatment_number
                 results.append(result)
                 success_count += 1
 

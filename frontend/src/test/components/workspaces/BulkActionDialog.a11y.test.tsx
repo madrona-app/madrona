@@ -5,7 +5,7 @@ import BulkActionDialog from '../../../components/workspaces/BulkActionDialog';
 import { checkA11y, formatViolations } from '../../a11y';
 
 vi.mock('../../../contexts/useOrganization', () => ({
-  useOrganization: () => ({ activeOrganization: { organization_id: 'org-1' } }),
+  useOrganization: () => ({ activeOrganization: { organization_id: 'org-1' }, activeOrganizationId: 'org-1' }),
 }));
 
 const api = vi.hoisted(() => ({
@@ -14,6 +14,7 @@ const api = vi.hoisted(() => ({
   validateBulkAction: vi.fn(),
   executeBulkAction: vi.fn(),
   getLocations: vi.fn(),
+  getAllLookups: vi.fn(),
 }));
 
 vi.mock('../../../lib/api', async (importOriginal) => ({
@@ -43,7 +44,53 @@ const ACTIONS = [
     required_params: ['handling_requirements'],
     optional_params: ['handling_notes'],
   },
+  {
+    key: 'flag_for_conservation',
+    label: 'Flag for Conservation',
+    description: 'Mark objects as needing conservation attention',
+    required_params: ['urgency', 'treatment_type'],
+    optional_params: ['concern_description', 'assigned_to_user_id'],
+  },
+  {
+    key: 'report_incident',
+    label: 'Report Incident',
+    description: 'Create an incident report linking all objects',
+    required_params: ['incident_type', 'incident_description'],
+    optional_params: ['incident_location_id'],
+  },
+  {
+    key: 'create_condition_report',
+    label: 'Create Condition Reports',
+    description: 'Create condition reports for all objects',
+    required_params: ['report_type'],
+    optional_params: ['overall_condition', 'condition_summary', 'conservation_needed'],
+  },
 ];
+
+function lookupCategory(key: string, values: [string, string][], orgValue?: [string, string]) {
+  const all = orgValue ? [...values, orgValue] : values;
+  return {
+    category_id: key, category_key: key, display_name: key, description: null,
+    applicable_contexts: [], supports_icons: false,
+    values: all.map(([value_key, label], i) => ({
+      value_id: `${key}-${i}`, category_id: key, organization_id: orgValue && value_key === orgValue[0] ? 'org-1' : null,
+      value_key, label, description: null, icon_name: null, sort_order: i,
+      is_active: true, is_hidden: false, is_system: !(orgValue && value_key === orgValue[0]),
+    })),
+  };
+}
+
+const LOOKUPS = [
+  lookupCategory('treatment_type', [['preventive', 'Preventive'], ['cleaning', 'Cleaning']], ['wet_cleaning', 'Wet cleaning']),
+  lookupCategory('priority', [['urgent', 'Urgent'], ['low', 'Low']]),
+  lookupCategory('incident_type', [['damage', 'Damage'], ['theft', 'Theft']], ['mould', 'Mould']),
+  lookupCategory('report_type', [['periodic', 'Periodic'], ['intake', 'Intake']], ['tactile_check', 'Tactile check']),
+  lookupCategory('condition', [['good', 'Good'], ['poor', 'Poor']]),
+];
+
+function optionLabels(select: HTMLElement) {
+  return Array.from((select as HTMLSelectElement).options).map((o) => o.textContent);
+}
 
 function renderDialog() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
@@ -66,6 +113,7 @@ describe('BulkActionDialog accessibility', () => {
     vi.clearAllMocks();
     api.listBulkActions.mockResolvedValue({ workspace_id: 'ws-1', actions: ACTIONS });
     api.getLocations.mockResolvedValue({ items: [], total: 0 });
+    api.getAllLookups.mockResolvedValue(LOOKUPS);
   });
 
   it('action picker: dialog is named and has no axe violations', async () => {
@@ -147,6 +195,51 @@ describe('BulkActionDialog accessibility', () => {
     await waitFor(() => expect(screen.getByRole('region', { name: 'Blocked objects' })).toBeInTheDocument());
     expect(screen.getByRole('checkbox', { name: /Skip blocked objects/ })).toBeChecked();
     results = await checkA11y(baseElement);
+    expect(results.violations, formatViolations(results)).toEqual([]);
+  });
+
+  it("Flag for Conservation: choices are the organization's lookup values", async () => {
+    const { baseElement } = await openAction('Flag for Conservation');
+    const treatment = screen.getByRole('combobox', { name: 'Treatment Type' });
+    expect(treatment).toHaveAttribute('aria-required', 'true');
+    await waitFor(() => expect(optionLabels(treatment)).toContain('Wet cleaning'));
+    expect(optionLabels(treatment)).not.toContain('Structural Damage');
+    const urgency = screen.getByRole('combobox', { name: 'Urgency' });
+    expect(optionLabels(urgency)).toEqual(['Select urgency...', 'Urgent', 'Low']);
+    fireEvent.change(treatment, { target: { value: 'wet_cleaning' } });
+    fireEvent.change(urgency, { target: { value: 'urgent' } });
+    fireEvent.click(screen.getByRole('button', { name: /Next/ }));
+    await waitFor(() =>
+      expect(api.previewBulkAction).toHaveBeenCalledWith(
+        'org-1', 'ws-1', 'flag_for_conservation',
+        expect.objectContaining({ treatment_type: 'wet_cleaning', urgency: 'urgent' }),
+      ),
+    );
+    const results = await checkA11y(baseElement);
+    expect(results.violations, formatViolations(results)).toEqual([]);
+  });
+
+  it('Report Incident and Create Condition Reports offer lookup values; a refusal is announced', async () => {
+    api.previewBulkAction.mockRejectedValueOnce(new Error('Unknown incident_type: mould'));
+    const { baseElement } = await openAction('Report Incident');
+    const type = screen.getByRole('combobox', { name: 'Incident Type' });
+    await waitFor(() => expect(optionLabels(type)).toContain('Mould'));
+    fireEvent.change(type, { target: { value: 'mould' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Description' }), { target: { value: 'Spores on frame' } });
+    fireEvent.click(screen.getByRole('button', { name: /Next/ }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Unknown incident_type: mould');
+    const results = await checkA11y(baseElement);
+    expect(results.violations, formatViolations(results)).toEqual([]);
+  });
+
+  it('Create Condition Reports: report type and condition come from lookups', async () => {
+    const { baseElement } = await openAction('Create Condition Reports');
+    const type = screen.getByRole('combobox', { name: 'Report Type' });
+    await waitFor(() => expect(optionLabels(type)).toContain('Tactile check'));
+    expect(optionLabels(screen.getByRole('combobox', { name: 'Overall Condition (optional)' }))).toEqual(
+      ['To be determined...', 'Good', 'Poor'],
+    );
+    const results = await checkA11y(baseElement);
     expect(results.violations, formatViolations(results)).toEqual([]);
   });
 });

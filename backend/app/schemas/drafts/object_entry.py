@@ -2,23 +2,23 @@
 
 The proposable subset of the live ObjectEntry create shape
 (`app/models/objects.py::ObjectEntry`). The draft field `reason` maps to the
-model's `entry_reason` (a `Literal` mirroring the live CHECK). System-derived
+model's `entry_reason` (a lookup key checked against the organization's lookup values). System-derived
 fields (entry_number, entry_date, status) are not proposable. `extra='forbid'`
 rejects anything else.
 """
 
 from datetime import date
 from decimal import Decimal
-from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-EntryReason = Literal[
-    "loan_consideration", "gift_offer", "purchase_consideration",
-    "identification", "conservation", "photography", "research", "enquiry",
-    "other",
-]
+from app.schemas.drafts.base import LookupKey
+
+# Lookup-backed (organizations add values): checked against the org's
+# active lookup values when the draft is proposed or edited
+# (app/services/lookup_fields.check_draft_lookup_values), not a fixed list.
+EntryReason = LookupKey
 
 
 class ObjectEntryDraftPayload(BaseModel):

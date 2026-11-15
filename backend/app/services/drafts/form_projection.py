@@ -23,6 +23,7 @@ import uuid
 from app.services.agent_tools.form_registry import FORM_REGISTRY
 from app.services.drafts.factory.registry import build_payload_schemas
 from app.services.drafts.references import reference_kind as _reference_kind
+from app.services.lookup_fields import field_enum_options
 
 # Draft entity_type → form-registry key, where they differ.
 _FORM_ALIAS: dict[str, str] = {
@@ -94,7 +95,7 @@ def _derive_type(annotation) -> tuple[str, list[str] | None]:
     return "text", None
 
 
-def draft_form_schema(entity_type: str) -> dict | None:
+def draft_form_schema(entity_type: str, db=None, org_id=None) -> dict | None:
     """Editable field descriptors for a draft entity, or None if the entity has
     no draft payload schema. Shape:
 
@@ -115,7 +116,8 @@ def draft_form_schema(entity_type: str) -> dict | None:
         meta = fr_by_name.get(name)
         if meta is not None:
             ftype = _UI_TYPE.get(meta.field_type, "text")
-            enum = list(meta.enum_values) if meta.enum_values else None
+            # A lookup-backed field offers the organization's own values.
+            enum = field_enum_options(meta, db, org_id)
             label, section, lookup = meta.label, meta.section, meta.lookup_category
         else:
             ftype, enum = _derive_type(info.annotation)

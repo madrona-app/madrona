@@ -8,22 +8,16 @@ than surviving into the audit trail.
 
 from datetime import date
 from decimal import Decimal
-from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-# Documented set on Valuation.valuation_type (String(30) — no DB CHECK, but the
-# create routes only ever produce these). Mirroring it here turns a bad type
-# into a clear tool error at draft creation.
-ValuationType = Literal[
-    "insurance",
-    "market",
-    "replacement",
-    "probate",
-    "donation",
-    "internal",
-]
+from app.schemas.drafts.base import LookupKey
+
+# Lookup-backed (organizations add values): checked against the org's
+# active lookup values when the draft is proposed or edited
+# (app/services/lookup_fields.check_draft_lookup_values), not a fixed list.
+ValuationType = LookupKey
 
 
 class ValuationDraftPayload(BaseModel):
