@@ -121,12 +121,14 @@ class TestFormDefinitionStructure:
 
     @pytest.mark.parametrize("entity_type", list(FORM_REGISTRY.keys()))
     def test_enum_fields_have_values(self, entity_type):
-        """Enum fields must define their enum_values list."""
+        """Enum fields define their options: a fixed enum_values list, or the
+        lookup category whose org values are the options (lookup_values)."""
         form_def = FORM_REGISTRY[entity_type]
         for field in form_def.fields:
             if field.field_type == "enum":
-                assert field.enum_values and len(field.enum_values) > 0, (
-                    f"{entity_type}.{field.name}: enum field has no enum_values"
+                assert bool(field.enum_values) != bool(field.lookup_values), (
+                    f"{entity_type}.{field.name}: enum field needs exactly one of "
+                    "enum_values or lookup_values"
                 )
 
     @pytest.mark.parametrize("entity_type", list(FORM_REGISTRY.keys()))
