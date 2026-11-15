@@ -52,6 +52,20 @@ def _enforce_procedure(organization_id: UUID, procedure_type: str, entity, targe
     raise_if_requirements_unmet(organization_id, procedure_type, entity, target_status, db)
 
 
+def _sync_materials(db: Session, treatment, value, actor) -> None:
+    """Write ``materials_used`` to treatment_materials; 422 on a bad shape."""
+    from app.services.collections.treatment_materials import sync_treatment_materials
+
+    try:
+        sync_treatment_materials(db, treatment, value, actor)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail={
+            "code": "validation_error",
+            "message": str(exc),
+            "field": "materials_used",
+        }) from exc
+
+
 def _sync_entry_outcome_from_exit(
     db: Session,
     exit_rec: "ObjectExit",
@@ -136,6 +150,8 @@ def create_conservation_treatment(
         treatment = _create_conservation_treatment(
             db, organization_id, data, auth.user_id, open_approval=True
         )
+        if data.get("materials_used") is not None:
+            _sync_materials(db, treatment, data["materials_used"], auth.user_id)
         db.commit()
     except Exception:
         db.rollback()
@@ -258,6 +274,9 @@ def update_conservation_treatment(
 
     old_status = treatment.status
     new_status = data.pop('status', None)
+    # Materials live in their own table; the form sends them as a list.
+    materials_present = 'materials_used' in data
+    materials_value = data.pop('materials_used', None)
 
     protected_fields = {
         'treatment_id', 'organization_id', 'treatment_number', 'created_at', 'created_by',
@@ -270,6 +289,9 @@ def update_conservation_treatment(
                 setattr(treatment, key, UUID(value))
             else:
                 setattr(treatment, key, coerce_value_for_column(ConservationTreatment, key, value))
+
+    if materials_present and 'materials_used' not in protected_fields:
+        _sync_materials(db, treatment, materials_value, auth.user_id)
 
     if new_status and new_status != old_status:
         from app.services.workflow_definitions import WORKFLOW_DEFINITIONS

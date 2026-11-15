@@ -123,7 +123,8 @@ export function EditableField({
     register(el);
   }, [register]);
   const invalid = saveStatus === 'error' || !!fieldError;
-  const describedBy = joinIds(saveStatus === 'error' && errorId, fieldError?.id);
+  const helpId = helpText ? `${fieldId}-help` : undefined;
+  const describedBy = joinIds(saveStatus === 'error' && errorId, fieldError?.id, helpId);
 
   // Handle blur to trigger save
   const handleBlur = useCallback(() => {
@@ -232,7 +233,7 @@ export function EditableField({
       )}
 
       {fieldError && <RequiredFieldMessage error={fieldError} />}
-      {helpText && <p className="text-xs text-archive">{helpText}</p>}
+      {helpText && <p id={helpId} className="text-xs text-archive">{helpText}</p>}
     </div>
   );
 }

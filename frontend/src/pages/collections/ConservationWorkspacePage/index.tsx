@@ -565,13 +565,14 @@ function ConservationWorkspacePageContent() {
             />
             <EditableField
               name="materials_used"
-              label="Materials Used (JSON)"
+              label="Materials Used"
               value={formData.materials_used}
               isEditing={isEditing}
               onChange={(v) => updateField('materials_used', v)}
               multiline
               rows={3}
-              placeholder='[{"material": "Paraloid B-72", "supplier": "Kremer", "lot_number": "12345"}]'
+              helpText="One material per line."
+              placeholder="Paraloid B-72"
               className="md:col-span-2"
               restricted={isRestricted('materials_used')}
             />

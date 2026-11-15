@@ -1377,7 +1377,7 @@ def _serialize_conservation_treatment(treatment: ConservationTreatment) -> dict:
         "materials_used": [
             {"material_name": m.material_name, "manufacturer": m.manufacturer,
              "quantity": m.quantity, "purpose": m.purpose}
-            for m in (treatment.materials or [])
+            for m in sorted(treatment.materials or [], key=lambda m: (m.display_order or 0, m.material_name))
         ],
         "cost_breakdown": [
             {"category": c.cost_category, "amount": float(c.amount) if c.amount else None,

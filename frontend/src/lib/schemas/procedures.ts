@@ -599,9 +599,10 @@ export const ConservationTreatmentSchema = z.object({
   actual_cost_currency: z.string().nullable().optional(),
   treatment_description: z.string().nullable().optional(),
   materials_used: z.array(z.object({
-    material: z.string().nullable().optional(),
-    supplier: z.string().nullable().optional(),
-    lot_number: z.string().nullable().optional(),
+    material_name: z.string(),
+    manufacturer: z.string().nullable().optional(),
+    quantity: z.string().nullable().optional(),
+    purpose: z.string().nullable().optional(),
   })).nullable().optional(),
   methods_used: z.string().nullable().optional(),
   condition_before_id: z.string().nullable().optional(),
