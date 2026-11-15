@@ -24,6 +24,7 @@ from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import (
@@ -315,9 +316,9 @@ def create_object_right(
     try:
         right = _create_object_right(db, org_id, payload, auth.user_id, open_approval=True)
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="This right may already exist")
+        raise integrity_http_error(exc, "This right may already exist") from None
 
     db.refresh(right)
     return _serialize_object_right(right)
@@ -482,9 +483,9 @@ def create_use_request(
     try:
         req = _create_use_request(db, org_id, body, auth.user_id, open_approval=True)
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="A request with this number may already exist")
+        raise integrity_http_error(exc, "A request with this number may already exist") from None
 
     db.refresh(req)
     return _serialize_use_request(req)
@@ -601,9 +602,9 @@ def add_use_request_object(
     db.add(link)
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="This object is already linked to this request")
+        raise integrity_http_error(exc, "This object is already linked to this request") from None
 
     db.refresh(link)
     return _serialize_use_request_object(link)

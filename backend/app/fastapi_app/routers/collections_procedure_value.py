@@ -32,6 +32,7 @@ from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import CollectionObject, Valuation, ReproductionRequest
@@ -245,9 +246,9 @@ def create_valuation(
             db, org_id, body, auth.user_id, open_approval=True
         )
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="This valuation may already exist")
+        raise integrity_http_error(exc, "This valuation may already exist") from None
 
     db.refresh(valuation)
     return _serialize_valuation(
@@ -456,9 +457,9 @@ def create_reproduction_request(
     try:
         rr = _create_reproduction_request(db, org_id, body, auth.user_id, open_approval=True)
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="A request with this number may already exist")
+        raise integrity_http_error(exc, "A request with this number may already exist") from None
 
     db.refresh(rr)
     return _serialize_reproduction_request(rr)

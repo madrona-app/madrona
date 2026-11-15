@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from sqlalchemy import func
@@ -321,9 +322,9 @@ def create_tag_definition(
     db.add(definition)
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Tag key already exists")
+        raise integrity_http_error(exc, "Tag key already exists") from None
 
     db.refresh(definition)
     return _serialize_tag_definition(definition)
@@ -404,9 +405,9 @@ def update_tag_definition(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Tag definition conflict")
+        raise integrity_http_error(exc, "Tag definition conflict") from None
 
     db.refresh(definition)
     return _serialize_tag_definition(definition)
@@ -598,9 +599,9 @@ def set_media_tag(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Tag already exists for this media")
+        raise integrity_http_error(exc, "Tag already exists for this media") from None
 
     db.refresh(tag)
     _reindex_media_for_tags(media, db)
@@ -722,9 +723,9 @@ def bulk_update_media_tags(
     try:
         new_tags = set_media_tags(db, org_id, media_id, new_tags, auth.user_id)
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Duplicate tag in batch operation")
+        raise integrity_http_error(exc, "Duplicate tag in batch operation") from None
 
     _reindex_media_for_tags(media, db)
 
@@ -872,9 +873,9 @@ def add_tag_value(
     db.add(node)
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Value already exists at this level")
+        raise integrity_http_error(exc, "Value already exists at this level") from None
     db.refresh(node)
     return _serialize_tag_value(node)
 
@@ -951,9 +952,9 @@ def update_tag_value(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Value conflict (duplicate sibling)")
+        raise integrity_http_error(exc, "Value conflict (duplicate sibling)") from None
     db.refresh(node)
     # If the canonical value string changed, keep denormalized MediaTag rows in sync.
     if "value" in body:

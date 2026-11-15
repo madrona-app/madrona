@@ -22,6 +22,7 @@ from sqlalchemy import and_, case, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import (
@@ -897,12 +898,9 @@ def create_doc(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(
-            status_code=409,
-            detail=f"Documentation already exists for page_key '{page_key}' in this organization",
-        )
+        raise integrity_http_error(exc, f"Documentation already exists for page_key '{page_key}' in this organization") from None
 
     return {"doc": _serialize_doc(doc)}
 

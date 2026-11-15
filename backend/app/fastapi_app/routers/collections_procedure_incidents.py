@@ -23,6 +23,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.orm import object_session
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import CollectionObject, IncidentReport, IncidentReportObject
@@ -287,9 +288,9 @@ def create_incident(
     db.add(report)
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="A report with this number may already exist")
+        raise integrity_http_error(exc, "A report with this number may already exist") from None
 
     db.refresh(report)
     return _serialize_incident_report(report)
@@ -412,9 +413,9 @@ def add_incident_object(
     db.add(link)
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="This object is already linked to this incident")
+        raise integrity_http_error(exc, "This object is already linked to this incident") from None
 
     db.refresh(link)
     return _serialize_incident_object(link)

@@ -19,6 +19,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import (
@@ -142,12 +143,9 @@ def create_watermark_template(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(
-            status_code=409,
-            detail="Watermark template with this name already exists",
-        )
+        raise integrity_http_error(exc, "Watermark template with this name already exists") from None
 
     db.refresh(template)
     return _serialize_watermark_template(template)
@@ -344,9 +342,9 @@ def create_field_inheritance_config(
             session=db,
         )
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Field configuration already exists")
+        raise integrity_http_error(exc, "Field configuration already exists") from None
 
     return _serialize_inheritance_config(config)
 
@@ -369,9 +367,9 @@ def update_field_inheritance_config(
             session=db,
             **body,
         )
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Field inheritance config already exists")
+        raise integrity_http_error(exc, "Field inheritance config already exists") from None
 
     if not config:
         raise HTTPException(status_code=404, detail="Configuration not found")

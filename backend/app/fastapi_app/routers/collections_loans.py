@@ -14,6 +14,7 @@ from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_auth, require_permission
 from app.models import (
@@ -745,12 +746,12 @@ def add_loan_in_object_entry(
             "created_at": link.created_at.isoformat() if link.created_at else None,
         }
 
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail={
+        raise integrity_http_error(exc, {
             "code": "conflict",
             "message": "Entry is already linked to this loan",
-        })
+        }) from None
 
 
 @router.delete("/api/organizations/{organization_id}/collections/loans-in/{loan_id}/object-entries/{loan_in_entry_id}", summary="Unlink entry from loan in")

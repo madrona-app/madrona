@@ -22,6 +22,7 @@ from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import DocumentationPlan, EmergencyPlan
@@ -409,9 +410,9 @@ def create_documentation_plan(
     db.add(plan)
     try:
         db.flush()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="A plan with this number already exists")
+        raise integrity_http_error(exc, "A plan with this number already exists") from None
     _save_plan_actions(db, plan, body, user_uuid)
     db.commit()
 
@@ -618,9 +619,9 @@ def create_emergency_plan(
     db.add(plan)
     try:
         db.flush()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="A plan with this number may already exist")
+        raise integrity_http_error(exc, "A plan with this number may already exist") from None
 
     # Create child records from request body
     from app.models import (EmergencyRiskAssessment, EmergencyPlanContact,

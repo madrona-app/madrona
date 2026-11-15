@@ -23,6 +23,7 @@ from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, object_session
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import (
@@ -348,9 +349,9 @@ def create_collections_review(
     db.add(review)
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="A review with this number may already exist")
+        raise integrity_http_error(exc, "A review with this number may already exist") from None
 
     db.refresh(review)
     return _serialize_collections_review(review)
@@ -501,9 +502,9 @@ def create_review_assessment(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="An assessment for this object already exists in this review")
+        raise integrity_http_error(exc, "An assessment for this object already exists in this review") from None
 
     db.refresh(assessment)
     return _serialize_object_review_assessment(assessment)
@@ -616,9 +617,9 @@ def create_audit_campaign(
     db.add(audit)
     try:
         db.flush()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="An audit with this number already exists")
+        raise integrity_http_error(exc, "An audit with this number already exists") from None
     _save_remedial_actions(db, audit, body, user_uuid)
     db.commit()
 
@@ -939,9 +940,9 @@ def create_audit_result(
         # barcode scans and ad hoc results all agree.
         recompute_campaign_counters(db, audit)
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="A result for this object/location may already exist")
+        raise integrity_http_error(exc, "A result for this object/location may already exist") from None
 
     db.refresh(result)
     return _serialize_audit_result(result)

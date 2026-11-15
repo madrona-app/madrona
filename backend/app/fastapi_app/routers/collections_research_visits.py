@@ -31,6 +31,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.fastapi_app.schemas.collections_research_visits import (
@@ -357,9 +358,9 @@ def add_research_visit_object(
     db.add(link)
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="This object is already recorded for this visit")
+        raise integrity_http_error(exc, "This object is already recorded for this visit") from None
 
     db.refresh(link)
     return _serialize_visit_object(link)

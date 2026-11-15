@@ -24,6 +24,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import (
@@ -296,9 +297,9 @@ def create_collection(
     db.add(collection)
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Collection with this name already exists")
+        raise integrity_http_error(exc, "Collection with this name already exists") from None
 
     db.refresh(collection)
     return _serialize_collection(collection, db)
@@ -361,9 +362,9 @@ def update_collection(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Collection with this name already exists")
+        raise integrity_http_error(exc, "Collection with this name already exists") from None
 
     db.refresh(collection)
     return _serialize_collection(collection, db)
@@ -498,9 +499,9 @@ def add_collection_item(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Media item already exists in collection")
+        raise integrity_http_error(exc, "Media item already exists in collection") from None
 
     return {
         "collection_id": str(collection_id),
@@ -697,9 +698,9 @@ def share_collection(
     db.add(share)
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Share already exists")
+        raise integrity_http_error(exc, "Share already exists") from None
 
     db.refresh(share)
     return JSONResponse(status_code=201, content=_serialize_share(share))
@@ -1446,9 +1447,9 @@ def create_metadata_template(
     db.add(template)
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Metadata template with this name already exists")
+        raise integrity_http_error(exc, "Metadata template with this name already exists") from None
 
     db.refresh(template)
     return {
@@ -1530,9 +1531,9 @@ def update_metadata_template(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Metadata template with this name already exists")
+        raise integrity_http_error(exc, "Metadata template with this name already exists") from None
 
     db.refresh(template)
     return {

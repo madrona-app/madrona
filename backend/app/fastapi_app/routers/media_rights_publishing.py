@@ -21,6 +21,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import (
@@ -303,9 +304,9 @@ def create_media_rights(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Rights record already exists")
+        raise integrity_http_error(exc, "Rights record already exists") from None
 
     return {
         "rights_id": str(rights.rights_id),
@@ -353,9 +354,9 @@ def update_media_rights(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Rights record conflict")
+        raise integrity_http_error(exc, "Rights record conflict") from None
 
     return {"rights_id": str(rights.rights_id)}
 
@@ -437,9 +438,9 @@ def create_media_consent(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Consent record already exists")
+        raise integrity_http_error(exc, "Consent record already exists") from None
 
     return {
         "consent_id": str(consent.consent_id),
@@ -486,9 +487,9 @@ def update_media_consent(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Consent record conflict")
+        raise integrity_http_error(exc, "Consent record conflict") from None
 
     return {
         "consent_id": str(consent.consent_id),
