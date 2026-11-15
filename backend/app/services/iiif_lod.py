@@ -254,7 +254,9 @@ class IIIFLODService:
         # Thumbnail from primary image
         primary_media = self._get_primary_media(media_items)
         if primary_media and primary_media.media:
-            manifest["thumbnail"] = [self._create_thumbnail(primary_media.media)]
+            thumb = self._create_thumbnail(primary_media.media)
+            if thumb:
+                manifest["thumbnail"] = [thumb]
 
         # Create canvases for each image
         for idx, link in enumerate(media_items):
@@ -718,6 +720,23 @@ class IIIFLODService:
     # CANVAS CREATION
     # ========================================================================
 
+    def _image_server_on(self) -> bool:
+        return bool(self.image_service and self.image_service.is_available())
+
+    def _public_source(self, media: Media):
+        """The rendition the public Image API serves, when an image server
+        is configured; None otherwise or when the image has no rendition."""
+        if not self._image_server_on():
+            return None
+        from app.services.iiif_public_image import public_iiif_source
+
+        return public_iiif_source(media)
+
+    def _public_service_id(self, media: Media) -> str:
+        from app.services.iiif_public_image import public_service_id
+
+        return public_service_id(media)
+
     def _create_canvas(
         self,
         media: Media,
@@ -740,9 +759,21 @@ class IIIFLODService:
         else:
             canvas_id = f"{self.base_url}canvas/{media.media_id}"
 
-        # Use actual dimensions or defaults
-        width = media.width or 1000
-        height = media.height or 1000
+        # These manifests are anonymous. With an image server, images come
+        # through the public Image API, which serves the rendition only, so
+        # the canvas uses the rendition's coordinate space. An image with no
+        # rendition keeps its canvas (canvas numbers must match get_canvas)
+        # but paints nothing.
+        source = self._public_source(media)
+        if source is not None:
+            width, height = source.width, source.height
+        else:
+            width = media.width or 1000
+            height = media.height or 1000
+
+        painting = []
+        if source is not None or not self._image_server_on():
+            painting = [self._create_image_annotation(media, canvas_id, width, height)]
 
         canvas = {
             "id": canvas_id,
@@ -756,15 +787,15 @@ class IIIFLODService:
                 {
                     "id": f"{canvas_id}/page",
                     "type": "AnnotationPage",
-                    "items": [
-                        self._create_image_annotation(media, canvas_id, width, height)
-                    ],
+                    "items": painting,
                 }
             ],
         }
 
         # Add thumbnail
-        canvas["thumbnail"] = [self._create_thumbnail(media)]
+        thumb = self._create_thumbnail(media)
+        if thumb:
+            canvas["thumbnail"] = [thumb]
 
         # Add metadata about the media itself
         canvas["metadata"] = self._build_media_metadata(media)
@@ -798,23 +829,13 @@ class IIIFLODService:
         """Create an image annotation for a canvas."""
         annotation_id = f"{canvas_id}/annotation"
 
-        # Get IIIF image info URL
-        if self.image_service and self.image_service.is_available():
-            image_service_id = self.image_service.get_info_url(media).replace('/info.json', '')
-            image_body = {
-                "id": f"{image_service_id}/full/max/0/default.jpg",
-                "type": "Image",
-                "format": "image/jpeg",
-                "width": width,
-                "height": height,
-                "service": [
-                    {
-                        "id": image_service_id,
-                        "type": "ImageService3",
-                        "profile": "level2",
-                    }
-                ],
-            }
+        # Never the image server's own identifier: it resolves to the master.
+        # The public Image API serves the rendition, capped.
+        source = self._public_source(media)
+        if source is not None:
+            from app.services.iiif_public_image import image_body as public_body
+
+            image_body = public_body(self._public_service_id(media), source)
         else:
             # Fallback to static image
             image_body = {
@@ -870,9 +891,12 @@ class IIIFLODService:
         return metadata
 
     def _create_thumbnail(self, media: Media) -> Dict[str, Any]:
-        """Create a thumbnail object."""
-        if self.image_service and self.image_service.is_available():
-            thumbnail_url = self.image_service.get_thumbnail_url(media, width=200)
+        """Create a thumbnail object (None when there is no public source)."""
+        if self._image_server_on():
+            from app.services.iiif_public_image import thumbnail
+
+            source = self._public_source(media)
+            return thumbnail(self._public_service_id(media), source) if source else None
         else:
             thumbnail_url = f"{self.base_url}media/{media.media_id}/thumbnail.jpg"
 

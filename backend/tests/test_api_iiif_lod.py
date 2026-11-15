@@ -373,6 +373,10 @@ class TestMediaLOD:
 
         org = _make_org(db_session, slug="museum")
         media = _make_media(db_session, org, title="Test Photo")
+        # Public media must be linked to a discoverable object (Discover rule).
+        obj = _make_object(db_session, org)
+        obj.is_discoverable = True
+        _link_media(db_session, obj, media)
         db_session.commit()
 
         resp = client.get(f"/org/museum/media/{media.media_id}")
