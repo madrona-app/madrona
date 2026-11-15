@@ -31,6 +31,12 @@ import {
   RecordAuditHistory,
   ReadOnlyBanner,
 } from '../../../components/workspace';
+import {
+  RequiredFieldsProvider,
+} from '../../../components/workspace/RequiredFieldsContext';
+import {
+  useRevealSection,
+} from '../../../components/workspace/requiredFields';
 import { cn } from '../../../lib/utils';
 import { useWorkspacePage } from '../../../hooks/useWorkspacePage';
 import { useAuth } from '../../../hooks/useAuth';
@@ -90,7 +96,9 @@ import { MadronaLoader } from '../../../components/ui/MadronaLoader';
 export default function ObjectEntryWorkspacePage() {
   return (
     <SectionOrderProvider>
-      <ObjectEntryWorkspacePageContent />
+      <RequiredFieldsProvider procedureType="object_entry">
+        <ObjectEntryWorkspacePageContent />
+      </RequiredFieldsProvider>
     </SectionOrderProvider>
   );
 }
@@ -384,6 +392,9 @@ function ObjectEntryWorkspacePageContent() {
     const excluded = getExcludedSections(effectiveReason ?? '');
     return ALL_SECTION_IDS.filter(id => !excluded.includes(id));
   }, [effectiveReason]);
+
+  // Lets the required-fields error summary open a collapsed section.
+  useRevealSection(handleEnterEditMode);
 
   // Loading state
   if (!isCreateMode && isLoading) {

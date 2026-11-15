@@ -39,6 +39,7 @@ export function AgreementSection({
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <EditableField
+            name="loan_agreement_reference"
             label="Agreement Reference"
             value={formData.loan_agreement_reference}
             isEditing={isEditing}
@@ -46,6 +47,7 @@ export function AgreementSection({
             onSave={onFieldBlur}
           />
           <EditableField
+            name="loan_agreement_signed_date"
             label="Signed Date"
             value={formData.loan_agreement_signed_date}
             isEditing={isEditing}
@@ -54,6 +56,7 @@ export function AgreementSection({
             type="date"
           />
           <EditableField
+            name="document_location"
             label="Document location"
             value={formData.document_location}
             isEditing={isEditing}

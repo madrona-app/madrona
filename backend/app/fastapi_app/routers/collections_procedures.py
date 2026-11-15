@@ -59,7 +59,7 @@ from app.fastapi_app.schemas.collections_procedures import (
     ObjectAcquisitionResponse,
 )
 from app.fastapi_app.schemas.common import MessageResponse
-from app.services.procedure_enforcement import check_blocking_requirements
+from app.services.procedure_enforcement import raise_if_requirements_unmet
 
 logger = logging.getLogger(__name__)
 
@@ -68,13 +68,7 @@ router = APIRouter(tags=["collections-procedures"])
 
 def _enforce_procedure(organization_id: UUID, procedure_type: str, entity, target_status: str, db: Session):
     """Raise 422 if procedure enforcement is enabled and blocking requirements are unmet."""
-    missing = check_blocking_requirements(organization_id, procedure_type, entity, target_status, db)
-    if missing:
-        raise HTTPException(status_code=422, detail={
-            "code": "procedure_requirements_not_met",
-            "message": f"Cannot advance to {target_status}: unmet requirements",
-            "blocking_requirements": missing,
-        })
+    raise_if_requirements_unmet(organization_id, procedure_type, entity, target_status, db)
 
 
 # ============================================================================

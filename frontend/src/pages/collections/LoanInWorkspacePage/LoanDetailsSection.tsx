@@ -76,6 +76,7 @@ export function LoanDetailsSection({
     >
       <div className="grid grid-cols-2 gap-6">
         <EditableSelect
+          name="loan_purpose"
           value={formData.loan_purpose}
           label="Loan Purpose"
           isEditing={isEditing}
@@ -196,6 +197,7 @@ export function LoanDetailsSection({
       </div>
       <div className="mt-6 space-y-6">
         <EditableField
+          name="loan_conditions"
           value={formData.loan_conditions}
           label="Loan Conditions"
           isEditing={isEditing}
@@ -206,6 +208,7 @@ export function LoanDetailsSection({
           restricted={isRestricted('loan_conditions')}
         />
         <EditableField
+          name="special_requirements"
           value={formData.special_requirements}
           label="Special Requirements"
           isEditing={isEditing}
@@ -216,6 +219,7 @@ export function LoanDetailsSection({
           restricted={isRestricted('special_requirements')}
         />
         <EditableField
+          name="display_requirements"
           value={formData.display_requirements}
           label="Display Requirements"
           isEditing={isEditing}
@@ -225,6 +229,7 @@ export function LoanDetailsSection({
           placeholder="Lighting, mounting, case requirements..."
         />
         <EditableField
+          name="photography_restrictions"
           value={formData.photography_restrictions}
           label="Photography Restrictions"
           isEditing={isEditing}

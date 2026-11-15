@@ -40,6 +40,7 @@ export function FacilitySection({
           onSave={onFieldBlur}
         />
         <EditableField
+          name="facility_report_date"
           label="Report Date"
           value={formData.facility_report_date}
           isEditing={isEditing}

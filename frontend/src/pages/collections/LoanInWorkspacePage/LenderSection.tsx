@@ -265,6 +265,7 @@ export function LenderSection({
             )}
           </div>
           <EditableField
+            name="lender_authorization_date"
             value={formData.lender_authorization_date}
             label="Authorization Date"
             isEditing={isEditing}

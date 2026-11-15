@@ -15,6 +15,12 @@ import {
   ReadOnlyBanner,
   PendingApprovalBanner,
 } from '../../../components/workspace';
+import {
+  RequiredFieldsProvider,
+} from '../../../components/workspace/RequiredFieldsContext';
+import {
+  useRevealSection,
+} from '../../../components/workspace/requiredFields';
 import { cn } from '../../../lib/utils';
 import { ProcedureRequirementsCard } from '../../../components/collections/ProcedureRequirementsCard';
 import { StatusAdvancementDialog } from '../../../components/collections/StatusAdvancementDialog';
@@ -66,7 +72,9 @@ import { LoanOutReturnDialog } from './LoanOutReturnDialog';
 export default function LoanOutWorkspacePage() {
   return (
     <SectionOrderProvider>
-      <LoanOutWorkspacePageContent />
+      <RequiredFieldsProvider procedureType="loan_out">
+        <LoanOutWorkspacePageContent />
+      </RequiredFieldsProvider>
     </SectionOrderProvider>
   );
 }
@@ -265,6 +273,9 @@ function LoanOutWorkspacePageContent() {
   const displaySubtitle = !isCreateMode
     ? (existingLoan?.exhibition_title || borrowerContact?.name || undefined)
     : undefined;
+
+  // Lets the required-fields error summary open a collapsed section.
+  useRevealSection(handleNavSectionClick);
 
   // Loading state
   if (!isCreateMode && isLoading) {

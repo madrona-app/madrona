@@ -41,6 +41,7 @@ export function ClosingSection({
           {formData.closing_invoice_sent && (
             <div className="mt-4 ml-6 grid grid-cols-1 md:grid-cols-2 gap-4">
               <EditableField
+                name="closing_invoice_date"
                 label="Invoice date"
                 value={formData.closing_invoice_date}
                 isEditing={isEditing}
@@ -48,12 +49,14 @@ export function ClosingSection({
                 type="date"
               />
               <EditableField
+                name="closing_invoice_reference"
                 label="Invoice reference"
                 value={formData.closing_invoice_reference}
                 isEditing={isEditing}
                 onChange={(v) => onUpdateField('closing_invoice_reference', v)}
               />
               <EditableField
+                name="closing_invoice_amount"
                 label="Invoice amount"
                 value={formData.closing_invoice_amount}
                 isEditing={isEditing}
@@ -61,6 +64,7 @@ export function ClosingSection({
                 type="number"
               />
               <EditableField
+                name="closing_invoice_currency"
                 label="Invoice currency"
                 value={formData.closing_invoice_currency}
                 isEditing={isEditing}
@@ -81,6 +85,7 @@ export function ClosingSection({
           {formData.receipt_acknowledged && (
             <div className="mt-4 ml-6 grid grid-cols-1 md:grid-cols-2 gap-4">
               <EditableField
+                name="receipt_acknowledged_date"
                 label="Acknowledgment date"
                 value={formData.receipt_acknowledged_date}
                 isEditing={isEditing}
@@ -88,6 +93,7 @@ export function ClosingSection({
                 type="date"
               />
               <EditableField
+                name="receipt_acknowledged_reference"
                 label="Acknowledgment reference"
                 value={formData.receipt_acknowledged_reference}
                 isEditing={isEditing}
@@ -108,6 +114,7 @@ export function ClosingSection({
           {formData.conditions_met_confirmed && (
             <div className="mt-4 ml-6 space-y-4">
               <EditableField
+                name="conditions_met_date"
                 label="Conditions met date"
                 value={formData.conditions_met_date}
                 isEditing={isEditing}
@@ -115,6 +122,7 @@ export function ClosingSection({
                 type="date"
               />
               <EditableField
+                name="conditions_met_note"
                 label="Conditions met notes"
                 value={formData.conditions_met_note}
                 isEditing={isEditing}
@@ -128,6 +136,7 @@ export function ClosingSection({
         {/* Closing notes — always shown */}
         <div>
           <EditableField
+            name="closing_note"
             label="Closing notes"
             value={formData.closing_note}
             isEditing={isEditing}

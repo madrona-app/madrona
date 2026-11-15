@@ -30,6 +30,7 @@ export function NotesSection({
       order={getSectionOrder('notes')}
     >
       <EditableField
+        name="entry_note"
         value={formData.entry_note || ''}
         label="Entry Notes"
         isEditing={isEditing}

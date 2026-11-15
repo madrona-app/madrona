@@ -35,7 +35,7 @@ from app.fastapi_app.serializers.collections import (
     _serialize_loan_out,
     _serialize_loan_out_object,
 )
-from app.services.procedure_enforcement import check_blocking_requirements
+from app.services.procedure_enforcement import raise_if_requirements_unmet
 from app.fastapi_app.schemas.collections_loans import (
     LoanInOut,
     LoanInDetailOut,
@@ -60,13 +60,7 @@ router = APIRouter(tags=["collections-loans"])
 
 def _enforce_procedure(organization_id: UUID, procedure_type: str, entity, target_status: str, db: Session):
     """Raise 422 if procedure enforcement is enabled and blocking requirements are unmet."""
-    missing = check_blocking_requirements(organization_id, procedure_type, entity, target_status, db)
-    if missing:
-        raise HTTPException(status_code=422, detail={
-            "code": "procedure_requirements_not_met",
-            "message": f"Cannot advance to {target_status}: unmet requirements",
-            "blocking_requirements": missing,
-        })
+    raise_if_requirements_unmet(organization_id, procedure_type, entity, target_status, db)
 
 
 # ============================================================================

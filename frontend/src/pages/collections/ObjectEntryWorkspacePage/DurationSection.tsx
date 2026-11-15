@@ -34,6 +34,7 @@ export function DurationSection({
     >
       <div className="grid grid-cols-2 gap-6">
         <EditableSelect
+          name="expected_duration"
           value={formData.expected_duration || ''}
           label="Expected Duration"
           isEditing={isEditing}
@@ -42,6 +43,7 @@ export function DurationSection({
           placeholder="Select duration..."
         />
         <EditableField
+          name="expected_return_date"
           value={formData.expected_return_date || ''}
           label="Expected Return Date"
           isEditing={isEditing}
@@ -51,6 +53,7 @@ export function DurationSection({
       </div>
       <div className="mt-6">
         <EditableField
+          name="conditions"
           value={formData.conditions || ''}
           label="Conditions"
           isEditing={isEditing}

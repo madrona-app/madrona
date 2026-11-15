@@ -33,6 +33,7 @@ export function VenueSection({
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <EditableField
+          name="venue_name"
           label="Venue Name"
           value={formData.venue_name}
           isEditing={isEditing}
@@ -41,6 +42,7 @@ export function VenueSection({
           className="md:col-span-2"
         />
         <EditableField
+          name="venue_street"
           label="Street Address"
           value={formData.venue_street}
           isEditing={isEditing}
@@ -49,6 +51,7 @@ export function VenueSection({
           className="md:col-span-2"
         />
         <EditableField
+          name="venue_city"
           label="City"
           value={formData.venue_city}
           isEditing={isEditing}
@@ -56,6 +59,7 @@ export function VenueSection({
           onSave={onFieldBlur}
         />
         <EditableField
+          name="venue_state"
           label="State/Province"
           value={formData.venue_state}
           isEditing={isEditing}
@@ -63,6 +67,7 @@ export function VenueSection({
           onSave={onFieldBlur}
         />
         <EditableField
+          name="venue_postal_code"
           label="Postal Code"
           value={formData.venue_postal_code}
           isEditing={isEditing}
@@ -70,6 +75,7 @@ export function VenueSection({
           onSave={onFieldBlur}
         />
         <EditableField
+          name="venue_country"
           label="Country"
           value={formData.venue_country}
           isEditing={isEditing}

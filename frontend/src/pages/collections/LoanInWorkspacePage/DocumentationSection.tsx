@@ -45,6 +45,7 @@ export function DocumentationSection({
         <div className="space-y-6">
           <div className="grid grid-cols-3 gap-6">
             <EditableField
+              name="loan_agreement_reference"
               value={formData.loan_agreement_reference}
               label="Agreement Reference"
               isEditing={isEditing}
@@ -52,6 +53,7 @@ export function DocumentationSection({
               placeholder="Agreement number"
             />
             <EditableField
+              name="loan_agreement_date"
               value={formData.loan_agreement_date}
               label="Agreement Date"
               isEditing={isEditing}
@@ -59,6 +61,7 @@ export function DocumentationSection({
               type="date"
             />
             <EditableField
+              name="loan_agreement_signed_date"
               value={formData.loan_agreement_signed_date}
               label="Date Signed"
               isEditing={isEditing}
@@ -100,6 +103,7 @@ export function DocumentationSection({
         </div>
         <div className="space-y-6">
           <EditableField
+            name="document_location"
             value={formData.document_location}
             label="File Location"
             isEditing={isEditing}
@@ -107,6 +111,7 @@ export function DocumentationSection({
             placeholder="e.g., Filing Cabinet A, Drawer 3, or Digital: S:/Loans/2026/"
           />
           <EditableField
+            name="document_location_note"
             value={formData.document_location_note}
             label="Location Notes"
             isEditing={isEditing}
@@ -136,6 +141,7 @@ export function DocumentationSection({
         </div>
         <div className="grid grid-cols-3 gap-6">
           <EditableField
+            name="loan_contact_name"
             value={formData.loan_contact_name}
             label="Contact Name"
             isEditing={isEditing}
@@ -143,6 +149,7 @@ export function DocumentationSection({
             placeholder="Name of loan manager"
           />
           <EditableField
+            name="loan_contact_email"
             value={formData.loan_contact_email}
             label="Contact Email"
             isEditing={isEditing}
@@ -151,6 +158,7 @@ export function DocumentationSection({
             placeholder="email@example.com"
           />
           <EditableField
+            name="loan_contact_phone"
             value={formData.loan_contact_phone}
             label="Contact Phone"
             isEditing={isEditing}
@@ -172,6 +180,7 @@ export function DocumentationSection({
       >
         <div className="space-y-6">
           <EditableField
+            name="loan_note"
             value={formData.loan_note}
             label="Loan Notes"
             isEditing={isEditing}
@@ -181,6 +190,7 @@ export function DocumentationSection({
             placeholder="General notes about this loan..."
           />
           <EditableField
+            name="internal_note"
             value={formData.internal_note}
             label="Internal Notes"
             isEditing={isEditing}

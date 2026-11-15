@@ -143,6 +143,7 @@ export function ObjectsSection({
     >
       <div className="space-y-6">
         <EditableField
+          name="objects_description"
           value={formData.objects_description || ''}
           label="Summary Description"
           isEditing={isEditing}

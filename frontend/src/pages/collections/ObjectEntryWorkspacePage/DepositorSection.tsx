@@ -7,7 +7,16 @@ import { useId } from 'react';
 
 import { User, Search, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { WorkspaceSection } from '../../../components/workspace';
+import {
+  WorkspaceSection,
+} from '../../../components/workspace';
+import {
+  RequiredGroupMarker,
+  RequiredFieldMessage,
+} from '../../../components/workspace/RequiredFieldsContext';
+import {
+  useRequiredField,
+} from '../../../components/workspace/requiredFields';
 import { SectionCompletionBadge } from '../../../components/collections/SectionCompletionBadge';
 import { ContactSelectorSlideOver } from '../../../components/collections/ConstituentSelectorSlideOver';
 import { getContact } from '../../../lib/api';
@@ -29,6 +38,17 @@ export function DepositorSection({
   // Contact selectors
   const depositorSelector = useContactSelector();
   const currentOwnerSelector = useContactSelector();
+  const {
+    error: depositorError,
+    register: depositorRegister,
+    onEdited: depositorEdited,
+  } = useRequiredField('depositor_id', true, 'depositor');
+  const {
+    required: currentOwnerRequired,
+    error: currentOwnerError,
+    register: currentOwnerRegister,
+    onEdited: currentOwnerEdited,
+  } = useRequiredField('current_owner_id', false, 'depositor');
 
   // Fetch depositor contact details
   const { data: depositorContact } = useQuery({
@@ -86,6 +106,8 @@ export function DepositorSection({
                 ) : (
                   <button
                     type="button"
+                    ref={depositorRegister}
+                    aria-describedby={depositorError?.id}
                     onClick={() => depositorSelector.open()}
                     className="flex-1 flex items-center gap-2 px-3 py-2 border border-dashed border-lichen rounded-lg text-sm text-archive hover:border-bark hover:text-bark transition-colors"
                   >
@@ -120,12 +142,14 @@ export function DepositorSection({
                 )}
               </div>
             )}
+            {depositorError && <RequiredFieldMessage error={depositorError} />}
           </div>
 
           {/* Current Owner */}
           <div role="group" aria-labelledby={`${uid}-current-owner`}>
             <span id={`${uid}-current-owner`} className="block text-sm font-medium text-ink mb-1.5">
               Current Owner
+              {currentOwnerRequired && <RequiredGroupMarker />}
             </span>
             {isEditing ? (
               <div className="flex items-center gap-2">
@@ -151,6 +175,8 @@ export function DepositorSection({
                 ) : (
                   <button
                     type="button"
+                    ref={currentOwnerRegister}
+                    aria-describedby={currentOwnerError?.id}
                     onClick={() => currentOwnerSelector.open()}
                     className="flex-1 flex items-center gap-2 px-3 py-2 border border-dashed border-lichen rounded-lg text-sm text-archive hover:border-bark hover:text-bark transition-colors"
                   >
@@ -185,6 +211,7 @@ export function DepositorSection({
                 )}
               </div>
             )}
+            {currentOwnerError && <RequiredFieldMessage error={currentOwnerError} />}
           </div>
         </div>
         <p className="mt-3 text-xs text-archive">
@@ -196,7 +223,10 @@ export function DepositorSection({
       <ContactSelectorSlideOver
         isOpen={depositorSelector.isOpen}
         onClose={depositorSelector.close}
-        onSelect={depositorSelector.createSelectHandler((id) => updateField('depositor_id', id))}
+        onSelect={depositorSelector.createSelectHandler((id) => {
+          depositorEdited();
+          updateField('depositor_id', id);
+        })}
         organizationId={orgId!}
         title="Select Depositor"
         subtitle="Search for an existing contact or create a new one to use as the depositor."
@@ -206,7 +236,10 @@ export function DepositorSection({
       <ContactSelectorSlideOver
         isOpen={currentOwnerSelector.isOpen}
         onClose={currentOwnerSelector.close}
-        onSelect={currentOwnerSelector.createSelectHandler((id) => updateField('current_owner_id', id))}
+        onSelect={currentOwnerSelector.createSelectHandler((id) => {
+          currentOwnerEdited();
+          updateField('current_owner_id', id);
+        })}
         organizationId={orgId!}
         title="Select Current Owner"
         subtitle="Search for an existing contact or create a new one to use as the current owner."

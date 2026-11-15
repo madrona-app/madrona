@@ -106,6 +106,7 @@ export function BorrowerSection({
 
           {/* Borrower Status */}
           <EditableField
+            name="borrower_status"
             label="Borrower Status"
             value={formData.borrower_status}
             isEditing={isEditing}

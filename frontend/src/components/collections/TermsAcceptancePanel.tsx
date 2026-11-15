@@ -23,6 +23,13 @@ import {
 import { getContact } from '../../lib/api';
 import { formatDateShort, formatDateTime } from '../../lib/formatters';
 import { ContactSelectorSlideOver } from './ConstituentSelectorSlideOver';
+import {
+  RequiredFieldMessage,
+  RequiredGroupMarker,
+} from '../workspace/RequiredFieldsContext';
+import {
+  useRequiredField,
+} from '../workspace/requiredFields';
 
 export interface TermsAcceptanceData {
   termsAccepted: boolean;
@@ -66,6 +73,32 @@ export function TermsAcceptancePanel({
 }: TermsAcceptancePanelProps) {
   const fid = useId();
   const [showContactSelector, setShowContactSelector] = useState(false);
+  // Record columns behind each control, so organization-added required
+  // fields and server-reported missing fields reach the right one.
+  const {
+    required: acceptedByRequired,
+    error: acceptedByError,
+    register: acceptedByRegister,
+    onEdited: acceptedByEdited,
+  } = useRequiredField('terms_accepted_by_id');
+  const {
+    required: acceptedDateRequired,
+    error: acceptedDateError,
+    onEdited: acceptedDateEdited,
+    controlProps: acceptedDateProps,
+  } = useRequiredField('terms_accepted_date');
+  const {
+    required: methodRequired,
+    error: methodError,
+    onEdited: methodEdited,
+    controlProps: methodProps,
+  } = useRequiredField('acceptance_method');
+  const {
+    required: noteRequired,
+    error: noteError,
+    onEdited: noteEdited,
+    controlProps: noteProps,
+  } = useRequiredField('acceptance_note');
 
   // Fetch accepted by contact details
   const { data: acceptedByContact } = useQuery({
@@ -161,6 +194,7 @@ export function TermsAcceptancePanel({
             <span id={`${fid}-accepted-by`} className="flex items-center gap-1.5 text-sm font-medium text-bark mb-1.5">
               <User className="h-4 w-4" aria-hidden="true" />
               Accepted By
+              {acceptedByRequired && <RequiredGroupMarker />}
             </span>
             {isEditing ? (
               <div className="flex items-center gap-2">
@@ -180,6 +214,8 @@ export function TermsAcceptancePanel({
                 ) : (
                   <button
                     type="button"
+                    ref={acceptedByRegister}
+                    aria-describedby={acceptedByError?.id}
                     onClick={() => setShowContactSelector(true)}
                     className="flex-1 flex items-center gap-2 px-3 py-2 border-2 border-dashed border-lichen rounded-lg text-archive hover:border-bark hover:text-bark transition-colors"
                   >
@@ -201,6 +237,7 @@ export function TermsAcceptancePanel({
             ) : (
               <p className="text-sm text-ink">{acceptedByName || 'Not recorded'}</p>
             )}
+            {acceptedByError && <RequiredFieldMessage error={acceptedByError} />}
           </div>
 
           {/* Acceptance Date */}
@@ -208,13 +245,15 @@ export function TermsAcceptancePanel({
             <label htmlFor={`${fid}-accepted-date`} className="flex items-center gap-1.5 text-sm font-medium text-bark mb-1.5">
               <Calendar className="h-4 w-4" aria-hidden="true" />
               Acceptance Date
+              {acceptedDateRequired && <span className="text-semantic-error ml-0.5">*</span>}
             </label>
             {isEditing ? (
               <input
                 id={`${fid}-accepted-date`}
                 type="date"
                 value={data.acceptedDate || ''}
-                onChange={(e) => onChange({ acceptedDate: e.target.value })}
+                {...acceptedDateProps}
+                onChange={(e) => { acceptedDateEdited(); onChange({ acceptedDate: e.target.value }); }}
                 className="w-full px-3 py-2 border border-lichen rounded-md text-sm focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
               />
             ) : (
@@ -222,6 +261,7 @@ export function TermsAcceptancePanel({
                 {data.acceptedDate ? formatDateShort(data.acceptedDate) : 'Not recorded'}
               </p>
             )}
+            {acceptedDateError && <RequiredFieldMessage error={acceptedDateError} />}
           </div>
 
           {/* Acceptance Method */}
@@ -229,12 +269,17 @@ export function TermsAcceptancePanel({
             <label htmlFor={`${fid}-acceptance-method`} className="flex items-center gap-1.5 text-sm font-medium text-bark mb-1.5">
               <CheckCircle className="h-4 w-4" aria-hidden="true" />
               Acceptance Method
+              {methodRequired && <span className="text-semantic-error ml-0.5">*</span>}
             </label>
             {isEditing ? (
               <select
                 id={`${fid}-acceptance-method`}
                 value={data.acceptanceMethod || 'signature'}
-                onChange={(e) => onChange({ acceptanceMethod: e.target.value as TermsAcceptanceData['acceptanceMethod'] })}
+                {...methodProps}
+                onChange={(e) => {
+                  methodEdited();
+                  onChange({ acceptanceMethod: e.target.value as TermsAcceptanceData['acceptanceMethod'] });
+                }}
                 className="w-full px-3 py-2 border border-lichen rounded-md text-sm focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
               >
                 {ACCEPTANCE_METHODS.map((method) => (
@@ -248,6 +293,7 @@ export function TermsAcceptancePanel({
                 {ACCEPTANCE_METHODS.find(m => m.value === data.acceptanceMethod)?.label || 'Physical Signature'}
               </p>
             )}
+            {methodError && <RequiredFieldMessage error={methodError} />}
           </div>
 
         </div>
@@ -265,12 +311,14 @@ export function TermsAcceptancePanel({
         <div>
           <label htmlFor={`${fid}-acceptance-notes`} className="text-sm font-medium text-bark mb-1.5 block">
             Acceptance Notes
+            {noteRequired && <span className="text-semantic-error ml-0.5">*</span>}
           </label>
           {isEditing ? (
             <textarea
               id={`${fid}-acceptance-notes`}
               value={data.acceptanceNote || ''}
-              onChange={(e) => onChange({ acceptanceNote: e.target.value })}
+              {...noteProps}
+              onChange={(e) => { noteEdited(); onChange({ acceptanceNote: e.target.value }); }}
               placeholder="Additional notes about how acceptance was obtained..."
               rows={3}
               className="w-full px-3 py-2 border border-lichen rounded-md text-sm focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -280,6 +328,7 @@ export function TermsAcceptancePanel({
               {data.acceptanceNote || 'No notes recorded'}
             </p>
           )}
+          {noteError && <RequiredFieldMessage error={noteError} />}
         </div>
       )}
 
@@ -356,6 +405,7 @@ export function TermsAcceptancePanel({
         organizationId={organizationId}
         onClose={() => setShowContactSelector(false)}
         onSelect={(contactId) => {
+          acceptedByEdited();
           onChange({ acceptedById: contactId });
           setShowContactSelector(false);
         }}

@@ -42,6 +42,7 @@ export function LoanDetailsSection({
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <EditableSelect
+          name="loan_purpose"
           label="Loan Purpose"
           value={formData.loan_purpose}
           isEditing={isEditing}
@@ -51,6 +52,7 @@ export function LoanDetailsSection({
           required
         />
         <EditableField
+          name="exhibition_title"
           label="Exhibition Title"
           value={formData.exhibition_title}
           isEditing={isEditing}
@@ -58,6 +60,7 @@ export function LoanDetailsSection({
           onSave={onFieldBlur}
         />
         <EditableField
+          name="loan_conditions"
           label="Loan Conditions"
           value={formData.loan_conditions}
           isEditing={isEditing}
@@ -70,6 +73,7 @@ export function LoanDetailsSection({
         />
 
         <EditableField
+          name="special_conditions"
           label="Special Conditions of Loan"
           value={formData.special_conditions}
           isEditing={isEditing}
@@ -149,6 +153,7 @@ export function LoanDetailsSection({
         {/* Photography conditions - only shown when photography is permitted */}
         {formData.photography_permitted === true && (
           <EditableField
+            name="photography_conditions"
             label="Photography conditions"
             value={formData.photography_conditions}
             isEditing={isEditing}
@@ -163,6 +168,7 @@ export function LoanDetailsSection({
 
         {/* Reproduction & intellectual property rights */}
         <EditableField
+          name="reproduction_rights_note"
           label="Reproduction & intellectual property rights"
           value={formData.reproduction_rights_note}
           isEditing={isEditing}

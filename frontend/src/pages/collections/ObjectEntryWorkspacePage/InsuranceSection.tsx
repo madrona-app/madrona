@@ -34,6 +34,7 @@ export function InsuranceSection({
     >
       <div className="grid grid-cols-2 gap-6">
         <EditableField
+          name="insurance_value"
           value={formData.insurance_value || ''}
           label="Insurance Value"
           isEditing={isEditing}
@@ -43,6 +44,7 @@ export function InsuranceSection({
           restricted={isRestricted('insurance_value')}
         />
         <EditableSelect
+          name="insurance_currency"
           value={formData.insurance_currency || 'USD'}
           label="Currency"
           isEditing={isEditing}
@@ -52,6 +54,7 @@ export function InsuranceSection({
       </div>
       <div className="mt-6">
         <EditableField
+          name="insurance_note"
           value={formData.insurance_note || ''}
           label="Insurance Note"
           isEditing={isEditing}

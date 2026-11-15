@@ -1,8 +1,19 @@
 import { useId, useRef, useCallback } from 'react';
 import { Check, Loader2, AlertCircle, Lock } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import {
+  RequiredFieldMessage,
+} from './RequiredFieldsContext';
+import {
+  useRequiredField,
+} from './requiredFields';
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+
+function joinIds(...ids: Array<string | undefined | false | null>): string | undefined {
+  const out = ids.filter(Boolean).join(' ');
+  return out || undefined;
+}
 
 /**
  * Placeholder shown when a field is restricted by role-based field access.
@@ -65,6 +76,12 @@ interface EditableFieldProps {
   emptyText?: string;
   /** If true, show label with restricted indicator instead of the field */
   restricted?: boolean;
+  /**
+   * The record column this field edits. Inside a RequiredFieldsProvider it
+   * marks the field required when the organization added it, and invalid
+   * when the server reports it missing.
+   */
+  name?: string;
 }
 
 /**
@@ -89,10 +106,24 @@ export function EditableField({
   className,
   emptyText = '—',
   restricted = false,
+  name,
 }: EditableFieldProps) {
   const fieldId = useId();
-  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const errorId = label ? `editable-field-${label.toLowerCase().replace(/\s+/g, '-')}-error` : undefined;
+  const {
+    required: showRequired,
+    orgRequired,
+    error: fieldError,
+    register,
+    onEdited,
+  } = useRequiredField(name, required);
+  const setInputRef = useCallback((el: HTMLInputElement | HTMLTextAreaElement | null) => {
+    inputRef.current = el;
+    register(el);
+  }, [register]);
+  const invalid = saveStatus === 'error' || !!fieldError;
+  const describedBy = joinIds(saveStatus === 'error' && errorId, fieldError?.id);
 
   // Handle blur to trigger save
   const handleBlur = useCallback(() => {
@@ -111,6 +142,7 @@ export function EditableField({
         <dl className={className}>
           <dt className="text-sm font-medium text-archive mb-1">{label}</dt>
           <dd className="text-archive italic text-sm">{emptyText}</dd>
+          {fieldError && <RequiredFieldMessage error={fieldError} as="dd" />}
         </dl>
       );
     }
@@ -127,6 +159,7 @@ export function EditableField({
             value
           )}
         </dd>
+        {fieldError && <RequiredFieldMessage error={fieldError} as="dd" />}
       </dl>
     );
   }
@@ -137,7 +170,7 @@ export function EditableField({
       <label htmlFor={fieldId} className="flex items-center justify-between">
         <span className="text-sm font-medium text-ink">
           {label}
-          {required && <span className="text-semantic-error ml-0.5">*</span>}
+          {showRequired && <span className="text-semantic-error ml-0.5">*</span>}
         </span>
         {/* Inline save status */}
         {saveStatus !== 'idle' && (
@@ -169,33 +202,36 @@ export function EditableField({
       {multiline ? (
         <textarea
           id={fieldId}
-          ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+          ref={setInputRef}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => { onEdited(); onChange(e.target.value); }}
           onBlur={handleBlur}
           placeholder={placeholder}
           rows={rows}
           required={required}
-          aria-invalid={saveStatus === 'error' ? true : undefined}
-          aria-describedby={saveStatus === 'error' && errorId ? errorId : undefined}
+          aria-required={orgRequired ? true : undefined}
+          aria-invalid={invalid ? true : undefined}
+          aria-describedby={describedBy}
           className="input w-full"
         />
       ) : (
         <input
           id={fieldId}
-          ref={inputRef as React.RefObject<HTMLInputElement>}
+          ref={setInputRef}
           type={type}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => { onEdited(); onChange(e.target.value); }}
           onBlur={handleBlur}
           placeholder={placeholder}
           required={required}
-          aria-invalid={saveStatus === 'error' ? true : undefined}
-          aria-describedby={saveStatus === 'error' && errorId ? errorId : undefined}
+          aria-required={orgRequired ? true : undefined}
+          aria-invalid={invalid ? true : undefined}
+          aria-describedby={describedBy}
           className="input w-full"
         />
       )}
 
+      {fieldError && <RequiredFieldMessage error={fieldError} />}
       {helpText && <p className="text-xs text-archive">{helpText}</p>}
     </div>
   );
@@ -219,6 +255,8 @@ interface EditableSelectProps {
   emptyText?: string;
   /** If true, show label with restricted indicator instead of the field */
   restricted?: boolean;
+  /** The record column this select edits (see EditableField `name`). */
+  name?: string;
 }
 
 /**
@@ -239,9 +277,19 @@ export function EditableSelect({
   className,
   emptyText = '—',
   restricted = false,
+  name,
 }: EditableSelectProps) {
   const fieldId = useId();
   const errorId = label ? `editable-select-${label.toLowerCase().replace(/\s+/g, '-')}-error` : undefined;
+  const {
+    required: showRequired,
+    orgRequired,
+    error: fieldError,
+    register,
+    onEdited,
+  } = useRequiredField(name, required);
+  const invalid = saveStatus === 'error' || !!fieldError;
+  const describedBy = joinIds(saveStatus === 'error' && errorId, fieldError?.id);
   const displayValue = options.find((o) => o.value === value)?.label || value;
 
   // Restricted field rendering
@@ -256,6 +304,7 @@ export function EditableSelect({
         <dl className={className}>
           <dt className="text-sm font-medium text-archive mb-1">{label}</dt>
           <dd className="text-archive italic text-sm">{emptyText}</dd>
+          {fieldError && <RequiredFieldMessage error={fieldError} as="dd" />}
         </dl>
       );
     }
@@ -266,6 +315,7 @@ export function EditableSelect({
         <dd className="text-ink">
           {badge ? <span className="badge">{displayValue}</span> : displayValue}
         </dd>
+        {fieldError && <RequiredFieldMessage error={fieldError} as="dd" />}
       </dl>
     );
   }
@@ -276,7 +326,7 @@ export function EditableSelect({
       <label htmlFor={fieldId} className="flex items-center justify-between">
         <span className="text-sm font-medium text-ink">
           {label}
-          {required && <span className="text-semantic-error ml-0.5">*</span>}
+          {showRequired && <span className="text-semantic-error ml-0.5">*</span>}
         </span>
         {/* Inline save status */}
         {saveStatus !== 'idle' && (
@@ -306,14 +356,17 @@ export function EditableSelect({
       </label>
       <select
         id={fieldId}
+        ref={register}
         value={value}
         onChange={(e) => {
+          onEdited();
           onChange(e.target.value);
           onSave?.();
         }}
         required={required}
-        aria-invalid={saveStatus === 'error' ? true : undefined}
-        aria-describedby={saveStatus === 'error' && errorId ? errorId : undefined}
+        aria-required={orgRequired ? true : undefined}
+        aria-invalid={invalid ? true : undefined}
+        aria-describedby={describedBy}
         className="input w-full"
       >
         <option value="">{placeholder}</option>
@@ -323,6 +376,7 @@ export function EditableSelect({
           </option>
         ))}
       </select>
+      {fieldError && <RequiredFieldMessage error={fieldError} />}
     </div>
   );
 }

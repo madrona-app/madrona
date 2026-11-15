@@ -6,6 +6,15 @@
  */
 
 export { EditableField, EditableSelect, EditableCheckbox, RestrictedFieldPlaceholder } from './EditableField';
+export { RequiredFieldsProvider, RequiredFieldMessage, RequiredGroupMarker } from './RequiredFieldsContext';
+export {
+  useRequiredFields,
+  useRequiredField,
+  useRequiredFieldsContext,
+  useRevealSection,
+  parseMissingRequirements,
+} from './requiredFields';
+export type { MissingRequirement, RequiredFieldError } from './requiredFields';
 export { EditablePlaceField } from './EditablePlaceField';
 export { WorkspaceSection, SectionEmptyState } from './WorkspaceSection';
 export { WorkspaceHeader, EditModeIndicator, ReadOnlyBanner } from './WorkspaceHeader';
