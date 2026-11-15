@@ -45,7 +45,23 @@ ID_KEYS = {
 API_NAMES = {"object_entry": {"entry_reason": "reason"}}
 
 
+def _seeded_lookup_value(model, name):
+    """A seeded value for a lookup-backed column (validated by lookup_fields)."""
+    from app.services.lookup_fields import _open_fields
+    from seeds.seed_lookup_data import LOOKUP_VALUES
+
+    category = _open_fields(model.__table__.fullname).get(name)
+    if category is None:
+        return None
+    keys = sorted(row[2] for row in LOOKUP_VALUES if row[0] == category)
+    assert keys, f"no seeded {category} value for {name}"
+    return keys[0]
+
+
 def _value(proc, model, name, column, refs, n):
+    lookup = _seeded_lookup_value(model, name)
+    if lookup is not None:
+        return lookup
     enums = _enum_columns(model)
     if name in enums:
         return sorted(enums[name])[0]
