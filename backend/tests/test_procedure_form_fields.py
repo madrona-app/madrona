@@ -80,7 +80,10 @@ def test_core_fields_with_new_controls_are_offered():
     assert {"venue_id", "venue_name", "facility_report_note"} <= offered["loan_out"]
     assert {"expected_return_date", "insurance_value"} <= offered["object_exit"]
     assert {"treatment_place", "treatment_rationale"} <= offered["conservation"]
-    assert {"authorization_id"} <= offered["acquisition"]
+    # Set by the Approve action after enforcement runs, so requiring them
+    # would block approval for good; the forms show them read-only.
+    assert not {"authorization_id", "authorization_date"} & offered["acquisition"]
+    assert "approval_date" not in offered["loan_in"]
 
 
 def test_stored_ineligible_field_is_ignored_and_listed(auth_setup, db_session):

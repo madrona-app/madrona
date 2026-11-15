@@ -48,7 +48,6 @@
     "venue_street"
   ],
   "loan_in": [
-    "approval_date",
     "closing_invoice_amount",
     "closing_invoice_currency",
     "closing_invoice_date",
@@ -136,8 +135,6 @@
     "appraised_value",
     "appraised_value_currency",
     "appraiser_name",
-    "authorization_date",
-    "authorization_id",
     "authorization_note",
     "board_approval_date",
     "board_approval_reference",

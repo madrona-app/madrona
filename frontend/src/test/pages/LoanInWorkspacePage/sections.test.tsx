@@ -49,12 +49,14 @@ describe('DatesSection (LoanIn)', () => {
       />
     );
     expect(screen.getByLabelText(/request date/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/approval date/i)).toBeInTheDocument();
+    // Set by the Approve action, so shown read-only rather than as an input.
+    expect(screen.queryByLabelText(/approval date/i)).toBeNull();
+    expect(screen.getByText('Approval Date')).toBeInTheDocument();
     expect(screen.getByLabelText(/loan start date/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/loan end date/i)).toBeInTheDocument();
   });
 
-  it('updates approval_date when changed', () => {
+  it('updates request_date when changed', () => {
     const updateField = vi.fn();
     render(
       <DatesSection
@@ -69,8 +71,8 @@ describe('DatesSection (LoanIn)', () => {
         getSectionOrder={() => undefined}
       />
     );
-    fireEvent.change(screen.getByLabelText(/approval date/i), { target: { value: '2025-01-15' } });
-    expect(updateField).toHaveBeenCalledWith('approval_date', '2025-01-15');
+    fireEvent.change(screen.getByLabelText(/request date/i), { target: { value: '2025-01-15' } });
+    expect(updateField).toHaveBeenCalledWith('request_date', '2025-01-15');
   });
 });
 
