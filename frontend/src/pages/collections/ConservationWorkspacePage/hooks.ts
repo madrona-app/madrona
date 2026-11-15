@@ -15,6 +15,23 @@ import { validateCreateForm } from '../../../lib/formValidation';
 import type { SaveStatus, ConservationFormData } from './types';
 import { defaultFormData, SECTION_GROUPS, GROUP_ORDER, INITIAL_EXPANDED_SECTIONS } from './types';
 
+/**
+ * Materials are stored one row per material; the form edits them as one
+ * material name per line. Saving keeps the other details (manufacturer,
+ * quantity) of names that are still listed.
+ */
+export function materialsToText(materials: unknown): string {
+  if (!Array.isArray(materials)) return typeof materials === 'string' ? materials : '';
+  return materials
+    .map((m) => (typeof m === 'string' ? m : (m as { material_name?: string } | null)?.material_name ?? ''))
+    .filter(Boolean)
+    .join('\n');
+}
+
+export function textToMaterials(text: string): string[] {
+  return (text || '').split('\n').map((l) => l.trim()).filter(Boolean);
+}
+
 // =============================================================================
 // useFormState
 // =============================================================================
@@ -78,11 +95,15 @@ export function useFormState({
         actual_cost: conservation.actual_cost?.toString() || '',
         actual_cost_currency: conservation.actual_cost_currency || 'USD',
         treatment_description: conservation.treatment_description || '',
-        materials_used: conservation.materials_used ? JSON.stringify(conservation.materials_used) : '',
+        materials_used: materialsToText(conservation.materials_used),
         methods_used: conservation.methods_used || '',
         recommendations: conservation.recommendations || '',
         restrictions: conservation.restrictions || '',
         treatment_note: conservation.treatment_note || '',
+        insurance_value: conservation.insurance_value?.toString() || '',
+        future_care_instructions: conservation.future_care_instructions || '',
+        treatment_rationale: conservation.treatment_rationale || '',
+        treatment_place: conservation.treatment_place || '',
       };
       setFormData(data);
       originalDataRef.current = JSON.stringify(data);
@@ -107,11 +128,15 @@ export function useFormState({
       actual_cost: fd.actual_cost ? parseFloat(fd.actual_cost) : null,
       actual_cost_currency: fd.actual_cost_currency,
       treatment_description: fd.treatment_description || null,
-      materials_used: fd.materials_used ? JSON.parse(fd.materials_used) : null,
+      materials_used: textToMaterials(fd.materials_used),
       methods_used: fd.methods_used || null,
       recommendations: fd.recommendations || null,
       restrictions: fd.restrictions || null,
       treatment_note: fd.treatment_note || null,
+      insurance_value: fd.insurance_value ? parseFloat(fd.insurance_value) : null,
+      future_care_instructions: fd.future_care_instructions || null,
+      treatment_rationale: fd.treatment_rationale || null,
+      treatment_place: fd.treatment_place || null,
     };
   }, []);
 

@@ -11,9 +11,17 @@ Storage: ``organizations.procedure_required_fields`` (JSONB)
 Org-added fields are blocking for every status after a procedure's first
 status, and are enforced wherever the baseline is (procedure_enforcement),
 only while enforcement is switched on for that procedure.
+
+Only fields that have a control on the procedure's staff form can be added
+(procedure_form_fields.json, kept in step with the forms by a frontend test
+that reads it). A stored field that is no longer eligible is ignored: it is
+not enforced, and the settings page lists it so an admin can remove it.
 """
 from __future__ import annotations
 
+import json
+from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
 import sqlalchemy as sa
@@ -63,6 +71,16 @@ _EXCLUDED_FIELDS = frozenset({
 _EXCLUDED_TYPES = (sa.Boolean, JSON, JSONB, sa.JSON, ARRAY)
 
 
+_FORM_FIELDS_PATH = Path(__file__).with_name("procedure_form_fields.json")
+
+
+@lru_cache(maxsize=1)
+def form_fields() -> dict[str, frozenset[str]]:
+    """Per procedure, the record fields its staff form has a control for."""
+    data = json.loads(_FORM_FIELDS_PATH.read_text())
+    return {proc: frozenset(names) for proc, names in data.items()}
+
+
 def supports_org_fields(procedure_type: str) -> bool:
     return procedure_type in _entity_models() and procedure_type in PROCEDURE_REQUIREMENTS
 
@@ -98,10 +116,13 @@ def _baseline_field_set(procedure_type: str) -> set[str]:
 
 def eligible_fields(procedure_type: str) -> list[dict[str, str]]:
     """Fields an admin may add: real columns of the procedure's entity that
-    are not system columns, not booleans/JSON, and not already baseline."""
+    are not system columns, not booleans/JSON, not already baseline, and that
+    the procedure's form has a control for (a requirement nobody can fill in
+    on the form would block the record for good)."""
     model = _entity_models().get(procedure_type)
     if model is None:
         return []
+    on_form = form_fields().get(procedure_type, frozenset())
     mapper = sa.inspect(model)
     pk_keys = {mapper.get_property_by_column(c).key for c in mapper.primary_key}
     baseline = _baseline_field_set(procedure_type)
@@ -109,7 +130,7 @@ def eligible_fields(procedure_type: str) -> list[dict[str, str]]:
     for attr in mapper.column_attrs:
         key = attr.key
         col = attr.columns[0]
-        if key in pk_keys or key in _EXCLUDED_FIELDS or key in baseline:
+        if key in pk_keys or key in _EXCLUDED_FIELDS or key in baseline or key not in on_form:
             continue
         if isinstance(col.type, _EXCLUDED_TYPES):
             continue
@@ -131,6 +152,15 @@ def org_added_fields(org, procedure_type: str) -> list[dict[str, str]]:
     stored = ((getattr(org, "procedure_required_fields", None) or {}).get(procedure_type)) or []
     valid = {f["field"]: f["label"] for f in eligible_fields(procedure_type)}
     return [{"field": f, "label": valid[f]} for f in stored if f in valid]
+
+
+def ignored_org_fields(org, procedure_type: str) -> list[dict[str, str]]:
+    """Stored org-added fields that are no longer eligible (for example the
+    form lost its control, or the column was removed). They are not
+    enforced; the settings page shows them so an admin can remove them."""
+    stored = ((getattr(org, "procedure_required_fields", None) or {}).get(procedure_type)) or []
+    valid = {f["field"] for f in eligible_fields(procedure_type)}
+    return [{"field": f, "label": _humanize(f)} for f in stored if f not in valid]
 
 
 def org_required_statuses(procedure_type: str) -> list[str]:

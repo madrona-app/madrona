@@ -28,6 +28,15 @@ import {
   SectionGroupDivider,
   ReadOnlyBanner,
 } from '../../../components/workspace';
+import {
+  RequiredFieldsProvider,
+  RequiredGroupMarker,
+  RequiredFieldMessage,
+} from '../../../components/workspace/RequiredFieldsContext';
+import {
+  useRevealSection,
+  useRequiredField,
+} from '../../../components/workspace/requiredFields';
 import { RecordDetailPageWrapper, SectionOrderProvider } from '../../../components/record-detail';
 import { CreateTaskSlideOver } from '../../../components/work/CreateTaskSlideOver';
 import { cn } from '../../../lib/utils';
@@ -50,13 +59,21 @@ import { MadronaLoader } from '../../../components/ui/MadronaLoader';
 export default function ConservationWorkspacePage() {
   return (
     <SectionOrderProvider>
-      <ConservationWorkspacePageContent />
+      <RequiredFieldsProvider procedureType="conservation">
+        <ConservationWorkspacePageContent />
+      </RequiredFieldsProvider>
     </SectionOrderProvider>
   );
 }
 
 function ConservationWorkspacePageContent() {
   const uid = useId();
+  const {
+    required: conservatorRequired,
+    error: conservatorError,
+    register: conservatorRegister,
+    onEdited: conservatorEdited,
+  } = useRequiredField('conservator_id', false, 'conservator');
   const { orgId, treatmentId } = useParams<{ orgId: string; treatmentId?: string }>();
 
   const { requirementGroups } = useProcedureRequirements('conservation', orgId);
@@ -165,6 +182,9 @@ function ConservationWorkspacePageContent() {
   const displayTitle = isCreateMode
     ? 'New Conservation Treatment'
     : getLabel('treatment_type', conservation?.treatment_type || '');
+
+  // Lets the required-fields error summary open a collapsed section.
+  useRevealSection(handleEnterEditMode);
 
   // Loading state
   if (!isCreateMode && isLoading) {
@@ -316,6 +336,7 @@ function ConservationWorkspacePageContent() {
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <EditableSelect
+              name="treatment_type"
               label="Treatment Type"
               value={formData.treatment_type}
               isEditing={isEditing}
@@ -324,6 +345,7 @@ function ConservationWorkspacePageContent() {
               options={getLookup('treatment_type')}
             />
             <ObjectSelector
+              name="object_id"
               organizationId={orgId!}
               objectId={formData.object_id || null}
               onChange={(id) => updateField('object_id', id || '')}
@@ -351,6 +373,7 @@ function ConservationWorkspacePageContent() {
             <div role="group" aria-labelledby={`${uid}-conservator`}>
               <span id={`${uid}-conservator`} className="block text-sm font-medium text-ink mb-1.5">
                 Conservator
+                {conservatorRequired && <RequiredGroupMarker />}
               </span>
               {isEditing ? (
                 <div className="flex items-center gap-2">
@@ -375,6 +398,8 @@ function ConservationWorkspacePageContent() {
                   ) : (
                     <button
                       type="button"
+                      ref={conservatorRegister}
+                      aria-describedby={conservatorError?.id}
                       onClick={() => setShowConservatorSelector(true)}
                       className="flex-1 flex items-center gap-2 px-3 py-2 border border-dashed border-lichen rounded-lg text-sm text-archive hover:border-bark hover:text-bark transition-colors"
                     >
@@ -407,6 +432,7 @@ function ConservationWorkspacePageContent() {
                   )}
                 </div>
               )}
+              {conservatorError && <RequiredFieldMessage error={conservatorError} />}
             </div>
           )}
         </WorkspaceSection>
@@ -428,6 +454,7 @@ function ConservationWorkspacePageContent() {
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <EditableField
+              name="proposal_date"
               label="Proposal Date"
               value={formData.proposal_date}
               isEditing={isEditing}
@@ -435,6 +462,7 @@ function ConservationWorkspacePageContent() {
               type="date"
             />
             <EditableField
+              name="proposal_document_ref"
               label="Document Reference"
               value={formData.proposal_document_ref}
               isEditing={isEditing}
@@ -442,6 +470,7 @@ function ConservationWorkspacePageContent() {
               placeholder="Proposal document number"
             />
             <EditableField
+              name="proposal_summary"
               label="Proposal Summary"
               value={formData.proposal_summary}
               isEditing={isEditing}
@@ -452,6 +481,23 @@ function ConservationWorkspacePageContent() {
               className="md:col-span-2"
             />
             <EditableField
+              name="treatment_rationale"
+              label="Treatment Rationale"
+              value={formData.treatment_rationale || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('treatment_rationale', v)}
+              multiline
+              rows={2}
+            />
+            <EditableField
+              name="treatment_place"
+              label="Treatment Place"
+              value={formData.treatment_place || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('treatment_place', v)}
+            />
+            <EditableField
+              name="estimated_duration_days"
               label="Estimated Duration (days)"
               value={formData.estimated_duration_days}
               isEditing={isEditing}
@@ -459,6 +505,7 @@ function ConservationWorkspacePageContent() {
               type="number"
             />
             <EditableField
+              name="estimated_cost"
               label="Estimated Cost"
               value={formData.estimated_cost}
               isEditing={isEditing}
@@ -468,11 +515,20 @@ function ConservationWorkspacePageContent() {
               restricted={isRestricted('estimated_cost')}
             />
             <EditableSelect
+              name="estimated_cost_currency"
               label="Currency"
               value={formData.estimated_cost_currency}
               isEditing={isEditing}
               onChange={(v) => updateField('estimated_cost_currency', v)}
               options={getLookup('currency')}
+            />
+            <EditableField
+              name="insurance_value"
+              label="Insurance Value"
+              value={formData.insurance_value || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('insurance_value', v)}
+              type="number"
             />
           </div>
         </WorkspaceSection>
@@ -494,6 +550,7 @@ function ConservationWorkspacePageContent() {
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <EditableField
+              name="start_date"
               label="Start Date"
               value={formData.start_date}
               isEditing={isEditing}
@@ -501,6 +558,7 @@ function ConservationWorkspacePageContent() {
               type="date"
             />
             <EditableField
+              name="end_date"
               label="End Date"
               value={formData.end_date}
               isEditing={isEditing}
@@ -508,6 +566,7 @@ function ConservationWorkspacePageContent() {
               type="date"
             />
             <EditableField
+              name="treatment_description"
               label="Treatment Description"
               value={formData.treatment_description}
               isEditing={isEditing}
@@ -519,6 +578,7 @@ function ConservationWorkspacePageContent() {
               restricted={isRestricted('treatment_description')}
             />
             <EditableField
+              name="methods_used"
               label="Methods Used"
               value={formData.methods_used}
               isEditing={isEditing}
@@ -529,13 +589,15 @@ function ConservationWorkspacePageContent() {
               className="md:col-span-2"
             />
             <EditableField
-              label="Materials Used (JSON)"
+              name="materials_used"
+              label="Materials Used"
               value={formData.materials_used}
               isEditing={isEditing}
               onChange={(v) => updateField('materials_used', v)}
               multiline
               rows={3}
-              placeholder='[{"material": "Paraloid B-72", "supplier": "Kremer", "lot_number": "12345"}]'
+              helpText="One material per line."
+              placeholder="Paraloid B-72"
               className="md:col-span-2"
               restricted={isRestricted('materials_used')}
             />
@@ -556,6 +618,7 @@ function ConservationWorkspacePageContent() {
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <EditableField
+              name="actual_duration_days"
               label="Actual Duration (days)"
               value={formData.actual_duration_days}
               isEditing={isEditing}
@@ -563,6 +626,7 @@ function ConservationWorkspacePageContent() {
               type="number"
             />
             <EditableField
+              name="actual_cost"
               label="Actual Cost"
               value={formData.actual_cost}
               isEditing={isEditing}
@@ -572,6 +636,7 @@ function ConservationWorkspacePageContent() {
               restricted={isRestricted('actual_cost')}
             />
             <EditableSelect
+              name="actual_cost_currency"
               label="Currency"
               value={formData.actual_cost_currency}
               isEditing={isEditing}
@@ -598,6 +663,7 @@ function ConservationWorkspacePageContent() {
         >
           <div className="grid grid-cols-1 gap-4">
             <EditableField
+              name="recommendations"
               label="Recommendations"
               value={formData.recommendations}
               isEditing={isEditing}
@@ -607,6 +673,16 @@ function ConservationWorkspacePageContent() {
               placeholder="Future care recommendations..."
             />
             <EditableField
+              name="future_care_instructions"
+              label="Future Care Instructions"
+              value={formData.future_care_instructions || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('future_care_instructions', v)}
+              multiline
+              rows={2}
+            />
+            <EditableField
+              name="restrictions"
               label="Restrictions"
               value={formData.restrictions}
               isEditing={isEditing}
@@ -631,6 +707,7 @@ function ConservationWorkspacePageContent() {
           summary={sectionSummaries.notes}
         >
           <EditableField
+            name="treatment_note"
             label="Treatment Notes"
             value={formData.treatment_note}
             isEditing={isEditing}
@@ -704,6 +781,7 @@ function ConservationWorkspacePageContent() {
         organizationId={orgId!}
         onClose={() => setShowConservatorSelector(false)}
         onSelect={(contactId) => {
+          conservatorEdited();
           updateField('conservator_id', contactId);
           setShowConservatorSelector(false);
         }}

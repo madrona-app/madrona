@@ -38,6 +38,7 @@ export function DatesSection({
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <EditableField
+          name="request_date"
           label="Request Date"
           value={formData.request_date}
           isEditing={isEditing}
@@ -46,6 +47,7 @@ export function DatesSection({
           type="date"
         />
         <EditableField
+          name="loan_start_date"
           label="Loan Start Date"
           value={formData.loan_start_date}
           isEditing={isEditing}
@@ -54,6 +56,7 @@ export function DatesSection({
           type="date"
         />
         <EditableField
+          name="loan_end_date"
           label="Loan End Date"
           value={formData.loan_end_date}
           isEditing={isEditing}

@@ -220,4 +220,37 @@ describe('Procedure required fields settings', () => {
     expect(within(section).queryByRole('combobox')).toBeNull();
     expect(within(section).getByText(/not available for this procedure/)).toBeInTheDocument();
   });
+
+  it('lists stored fields that are no longer enforced, with a note, and removes them', async () => {
+    const user = userEvent.setup();
+    const withIgnored = settings([{ field: 'credit_line', label: 'Credit line' }]);
+    (withIgnored.procedures.acquisition as Record<string, unknown>).ignored_required_fields = [
+      { field: 'completed_date', label: 'Completed date' },
+    ];
+    mockApiFetch.mockResolvedValueOnce(withIgnored);
+    const { container } = renderPage();
+    await screen.findByRole('region', { name: 'Acquisition required fields' });
+    const section = acquisitionSection();
+
+    const list = within(section).getByRole('list', { name: 'Not enforced' });
+    expect(list).toHaveAccessibleDescription(/no longer be required, because the acquisition form has no field for them/);
+    expect(within(list).getByText(/Completed date/)).toBeInTheDocument();
+    // Still-valid fields stay in their own list.
+    expect(within(section).getByRole('list', { name: 'Added by your organization' })).toHaveTextContent('Credit line');
+    expect((await checkA11y(container)).violations).toEqual([]);
+
+    const after = settings([{ field: 'credit_line', label: 'Credit line' }]).procedures.acquisition;
+    mockApiFetch.mockResolvedValueOnce({ procedure_type: 'acquisition', ...after, ignored_required_fields: [] });
+    mockApiFetch.mockResolvedValue(settings([{ field: 'credit_line', label: 'Credit line' }]));
+    await user.click(within(section).getByRole('button', { name: 'Remove ignored field Completed date from Acquisition' }));
+    expect(mockApiFetch).toHaveBeenCalledWith(
+      '/organizations/org-1/settings/procedure-enforcement/acquisition/required-fields/completed_date',
+      { method: 'DELETE' },
+    );
+    await waitFor(() => expect(within(section).queryByRole('list', { name: 'Not enforced' })).toBeNull());
+    expect(screen.getByRole('status')).toHaveTextContent('Completed date is no longer required for Acquisition.');
+    await waitFor(() =>
+      expect(within(section).getByRole('combobox', { name: 'Field to require' })).toHaveFocus(),
+    );
+  });
 });

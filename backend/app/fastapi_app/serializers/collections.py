@@ -902,6 +902,10 @@ def _serialize_object_entry(entry: ObjectEntry) -> dict:
         "insurance_value": float(entry.insurance_value) if entry.insurance_value else None,
         "insurance_currency": entry.insurance_currency,
         "insurance_note": entry.insurance_note,
+        "insurance_policy": entry.insurance_policy,
+        "depositor_requirements": entry.depositor_requirements,
+        "special_conditions": entry.special_conditions,
+        "packing_note": entry.packing_note,
         "conditions": entry.conditions,
         # Terms acceptance (procedure compliance)
         "terms_accepted": entry.terms_accepted,
@@ -1204,6 +1208,7 @@ def _serialize_loan_out(loan: LoanOut) -> dict:
         "borrower_contact_name": loan.borrower_contact_name,
         # Venue
         "venue_name": loan.venue_name,
+        "venue_id": str(loan.venue_id) if loan.venue_id else None,
         "venue_address": loan.venue_address,
         # Purpose
         "loan_purpose": loan.loan_purpose,
@@ -1236,6 +1241,12 @@ def _serialize_loan_out(loan: LoanOut) -> dict:
         # Conditions
         "loan_conditions": loan.loan_conditions,
         "special_conditions": loan.special_conditions,
+        "display_requirements": loan.display_requirements,
+        "installation_requirements": loan.installation_requirements,
+        "photography_restrictions": loan.photography_restrictions,
+        "loan_fee": float(loan.loan_fee) if loan.loan_fee is not None else None,
+        "loan_fee_currency": loan.loan_fee_currency,
+        "loan_agreement_date": _iso(loan.loan_agreement_date),
         # Insurance
         "insurance_requirements": loan.insurance_requirements,
         "insurance_value_total": float(loan.insurance_value_total) if loan.insurance_value_total else None,
@@ -1246,6 +1257,7 @@ def _serialize_loan_out(loan: LoanOut) -> dict:
         # Facility report
         "facility_report_received": loan.facility_report_received,
         "facility_report_date": _iso(loan.facility_report_date),
+        "facility_report_note": loan.facility_report_note,
         "facility_report_approved": loan.facility_report_approved,
         "facility_report_approved_by": str(loan.facility_report_approved_by) if loan.facility_report_approved_by else None,
         "security_conditions_confirmed": loan.security_conditions_confirmed,
@@ -1358,6 +1370,11 @@ def _serialize_conservation_treatment(treatment: ConservationTreatment) -> dict:
         "conservator_id": str(treatment.conservator_id) if treatment.conservator_id else None,
         "conservator_name": treatment.conservator_name,
         "conservator_institution": treatment.conservator_institution,
+        "treatment_place": treatment.treatment_place,
+        "treatment_rationale": treatment.treatment_rationale,
+        "future_care_instructions": treatment.future_care_instructions,
+        "insurance_value": float(treatment.insurance_value) if treatment.insurance_value is not None else None,
+        "insurance_currency": treatment.insurance_currency,
         "treatment_type": treatment.treatment_type,
         "proposal_date": _iso(treatment.proposal_date),
         "proposal_summary": treatment.proposal_summary,
@@ -1377,7 +1394,7 @@ def _serialize_conservation_treatment(treatment: ConservationTreatment) -> dict:
         "materials_used": [
             {"material_name": m.material_name, "manufacturer": m.manufacturer,
              "quantity": m.quantity, "purpose": m.purpose}
-            for m in (treatment.materials or [])
+            for m in sorted(treatment.materials or [], key=lambda m: (m.display_order or 0, m.material_name))
         ],
         "cost_breakdown": [
             {"category": c.cost_category, "amount": float(c.amount) if c.amount else None,
@@ -1522,6 +1539,7 @@ def _serialize_deaccession(deacc: Deaccession) -> dict:
         "appraised_value_currency": deacc.appraised_value_currency,
         "appraised_date": _iso(deacc.appraised_date),
         "appraiser_name": deacc.appraiser_name,
+        "appraiser_id": str(deacc.appraiser_id) if deacc.appraiser_id else None,
         "sale_method": deacc.sale_method,
         "sale_price": float(deacc.sale_price) if deacc.sale_price else None,
         "sale_currency": deacc.sale_currency,

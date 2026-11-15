@@ -116,8 +116,8 @@ describe('LoanOutWorkspacePage constants', () => {
       });
     });
 
-    it('ALL_SECTION_IDS lists 15 sections', () => {
-      expect(ALL_SECTION_IDS).toHaveLength(15);
+    it('ALL_SECTION_IDS lists 16 sections', () => {
+      expect(ALL_SECTION_IDS).toHaveLength(16);
     });
 
     it('CREATE_MODE_EXCLUDE hides post-creation sections', () => {

@@ -2049,6 +2049,7 @@ def _procedure_settings_entry(org, proc_type: str) -> dict:
         "supports_org_required_fields": supports,
         "baseline_required_fields": prf.baseline_required_fields(proc_type),
         "org_required_fields": added,
+        "ignored_required_fields": prf.ignored_org_fields(org, proc_type) if supports else [],
         "eligible_fields": (
             [f for f in prf.eligible_fields(proc_type) if f["field"] not in added_names]
             if supports else []

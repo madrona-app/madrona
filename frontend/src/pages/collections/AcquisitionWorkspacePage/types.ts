@@ -14,6 +14,7 @@ export interface FormData {
   source_id: string;
   source_type: string;
   authorization_date: string;
+  authorization_id: string;
   authorization_note: string;
   funding_source: string;
   funding_account: string;

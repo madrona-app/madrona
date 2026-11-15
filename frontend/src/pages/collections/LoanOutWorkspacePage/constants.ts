@@ -93,6 +93,7 @@ export const LOAN_OUT_SECTION_GROUPS: SectionGroup[] = [
     sections: [
       { id: 'borrower', label: 'Borrower', dataKey: 'borrower' },
       { id: 'details', label: 'Loan Details', dataKey: 'details' },
+      { id: 'venue', label: 'Venue', dataKey: 'venue' },
     ],
   },
   {
@@ -178,6 +179,7 @@ export const LOAN_OUT_SECTION_GROUPS: SectionGroup[] = [
 export const SECTION_GROUPS: Record<string, string> = {
   borrower: 'overview',
   details: 'overview',
+  venue: 'overview',
   dates: 'dates',
   authorization: 'dates',
   renewals: 'dates',
@@ -195,7 +197,7 @@ export const SECTION_GROUPS: Record<string, string> = {
 
 // Default section order within groups
 export const DEFAULT_SECTION_ORDER: Record<string, string[]> = {
-  overview: ['borrower', 'details'],
+  overview: ['borrower', 'details', 'venue'],
   objects: ['objects'],
   dates: ['dates', 'authorization', 'renewals'],
   logistics: ['insurance', 'facility', 'shipments'],
@@ -227,6 +229,12 @@ export const defaultFormData: FormData = {
   loan_end_date: '',
   loan_conditions: '',
   special_conditions: '',
+  venue_id: '',
+  loan_agreement_date: '',
+  photography_restrictions: '',
+  installation_requirements: '',
+  display_requirements: '',
+  facility_report_note: '',
   // Authorization
   authorizer_id: '',
   authorization_date: '',
@@ -272,6 +280,7 @@ export const defaultFormData: FormData = {
 export const ALL_SECTION_IDS = [
   'borrower',
   'details',
+  'venue',
   'dates',
   'authorization',
   'renewals',

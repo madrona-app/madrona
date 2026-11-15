@@ -54,6 +54,7 @@ export function InsuranceSection({
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <EditableField
+          name="insurance_value_total"
           label="Insurance Value"
           value={formData.insurance_value_total}
           isEditing={isEditing}
@@ -64,6 +65,7 @@ export function InsuranceSection({
           restricted={isRestricted('insurance_value_total')}
         />
         <EditableSelect
+          name="insurance_currency"
           label="Currency"
           value={formData.insurance_currency}
           isEditing={isEditing}
@@ -72,6 +74,7 @@ export function InsuranceSection({
           options={CURRENCY_OPTIONS}
         />
         <EditableSelect
+          name="insurance_coverage_type"
           label="Coverage Type"
           value={formData.insurance_coverage_type}
           isEditing={isEditing}
@@ -80,6 +83,7 @@ export function InsuranceSection({
           options={COVERAGE_TYPE_OPTIONS}
         />
         <EditableField
+          name="insurance_requirements"
           label="Insurance Requirements"
           value={formData.insurance_requirements}
           isEditing={isEditing}
@@ -97,6 +101,7 @@ export function InsuranceSection({
           onSave={onFieldBlur}
         />
         <EditableField
+          name="certificate_of_insurance_date"
           label="Certificate Date"
           value={formData.certificate_of_insurance_date}
           isEditing={isEditing}

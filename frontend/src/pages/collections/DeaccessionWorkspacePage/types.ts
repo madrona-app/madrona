@@ -15,6 +15,14 @@ export interface DeaccessionFormData {
   proposal_date: string;
   reason: string;
   reason_detail: string;
+  public_notice_publication: string;
+  public_notice_period_end: string;
+  buyer_name: string;
+  sale_method: string;
+  sale_date: string;
+  provenance_review_date: string;
+  board_resolution: string;
+  justification: string;
   disposal_method: string;
   disposal_method_detail: string;
   recipient_name: string;

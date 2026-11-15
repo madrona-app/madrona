@@ -3,6 +3,9 @@ import { AlertTriangle, RefreshCw, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useActiveSection } from '../record-detail/ActiveSectionContext';
 import { logger } from '../../lib/logger';
+import {
+  WorkspaceSectionIdContext,
+} from './requiredFields';
 
 interface WorkspaceSectionProps extends Omit<HTMLAttributes<HTMLElement>, 'id' | 'title' | 'children'> {
   /** Section ID for scroll targeting */
@@ -324,7 +327,9 @@ export const WorkspaceSection = memo(function WorkspaceSection({
             </button>
           )}
           <SectionContentErrorBoundary sectionTitle={title}>
-            {children}
+            <WorkspaceSectionIdContext.Provider value={id}>
+              {children}
+            </WorkspaceSectionIdContext.Provider>
           </SectionContentErrorBoundary>
         </div>
       )}

@@ -19,6 +19,12 @@ export interface FormData {
   loan_end_date: string;
   loan_conditions: string;
   special_conditions: string;
+  venue_id: string;
+  loan_agreement_date: string;
+  photography_restrictions: string;
+  installation_requirements: string;
+  display_requirements: string;
+  facility_report_note: string;
   insurance_requirements: string;
   insurance_value_total: string;
   insurance_currency: string;
@@ -149,6 +155,12 @@ export interface ExistingLoan {
   loan_end_date?: string | null;
   loan_conditions?: string | null;
   special_conditions?: string | null;
+  venue_id?: string | null;
+  loan_agreement_date?: string | null;
+  photography_restrictions?: string | null;
+  installation_requirements?: string | null;
+  display_requirements?: string | null;
+  facility_report_note?: string | null;
   insurance_requirements?: string | null;
   insurance_value_total?: number | null;
   insurance_currency?: string | null;

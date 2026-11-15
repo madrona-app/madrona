@@ -17,6 +17,7 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { ProcedureRequirementsCard } from '../../../components/collections/ProcedureRequirementsCard';
+import { EditableUserSelect } from '../../../components/workspace/EditableUserSelect';
 import { StatusAdvancementDialog } from '../../../components/collections/StatusAdvancementDialog';
 import { AdvanceWithExceptionDialog } from '../../../components/collections/AdvanceWithExceptionDialog';
 import { ChangeStatusDropdown } from '../../../components/collections/ChangeStatusDropdown';
@@ -34,6 +35,12 @@ import {
   ReadOnlyBanner,
   PendingApprovalBanner,
 } from '../../../components/workspace';
+import {
+  RequiredFieldsProvider,
+} from '../../../components/workspace/RequiredFieldsContext';
+import {
+  useRevealSection,
+} from '../../../components/workspace/requiredFields';
 import { RecordDetailPageWrapper, SectionOrderProvider } from '../../../components/record-detail';
 import { CreateTaskSlideOver } from '../../../components/work/CreateTaskSlideOver';
 import { GenerateReportSlideOver } from '../../../components/reports/GenerateReportSlideOver';
@@ -60,7 +67,9 @@ import {
 export default function ObjectExitWorkspacePage() {
   return (
     <SectionOrderProvider>
-      <ObjectExitWorkspacePageContent />
+      <RequiredFieldsProvider procedureType="object_exit">
+        <ObjectExitWorkspacePageContent />
+      </RequiredFieldsProvider>
     </SectionOrderProvider>
   );
 }
@@ -214,6 +223,9 @@ function ObjectExitWorkspacePageContent() {
     if (status === 'cancelled') return -1;
     return 0;
   };
+
+  // Lets the required-fields error summary open a collapsed section.
+  useRevealSection(handleEnterEditMode);
 
   // Loading state
   if (!isCreateMode && isLoading) {
@@ -456,6 +468,7 @@ function ObjectExitWorkspacePageContent() {
         >
           <div className="grid grid-cols-2 gap-6">
             <EditableField
+              name="exit_date"
               value={formData.exit_date || ''}
               label="Exit Date"
               isEditing={isEditing}
@@ -464,6 +477,7 @@ function ObjectExitWorkspacePageContent() {
               required
             />
             <EditableSelect
+              name="exit_reason"
               value={formData.exit_reason || ''}
               label="Exit Reason"
               isEditing={isEditing}
@@ -472,12 +486,28 @@ function ObjectExitWorkspacePageContent() {
               required
             />
             <EditableSelect
+              name="exit_method"
               value={formData.exit_method || ''}
               label="Exit Method"
               isEditing={isEditing}
               onChange={(v) => updateField('exit_method', v)}
               options={getLookup('shipping_method')}
               placeholder="Select method..."
+            />
+            <EditableField
+              name="expected_return_date"
+              label="Expected Return Date"
+              value={formData.expected_return_date || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('expected_return_date', v)}
+              type="date"
+            />
+            <EditableField
+              name="expected_return_method"
+              label="Expected Return Method"
+              value={formData.expected_return_method || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('expected_return_method', v)}
             />
           </div>
         </WorkspaceSection>
@@ -494,6 +524,7 @@ function ObjectExitWorkspacePageContent() {
         >
           <div className="grid grid-cols-2 gap-6">
             <EditableField
+              name="recipient_name"
               value={formData.recipient_name || ''}
               label="Recipient Name"
               isEditing={isEditing}
@@ -529,12 +560,30 @@ function ObjectExitWorkspacePageContent() {
         >
           <div className="grid grid-cols-2 gap-6">
             <EditableSelect
+              name="condition_at_exit"
               value={formData.condition_at_exit || ''}
               label="Condition"
               isEditing={isEditing}
               onChange={(v) => updateField('condition_at_exit', v)}
               options={getLookup('condition')}
               placeholder="Select condition..."
+            />
+            <EditableField
+              name="insurance_value"
+              label="Insurance Value"
+              value={formData.insurance_value || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('insurance_value', v)}
+              type="number"
+            />
+            <EditableField
+              name="insurance_note"
+              label="Insurance Note"
+              value={formData.insurance_note || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('insurance_note', v)}
+              multiline
+              rows={2}
             />
           </div>
           {!isCreateMode && exit && exit.condition_report_id && !isEditing && (
@@ -560,7 +609,17 @@ function ObjectExitWorkspacePageContent() {
           order={getSectionOrder('authorization')}
         >
           <div className="grid grid-cols-2 gap-6">
+            <EditableUserSelect
+              name="authorization_id"
+              organizationId={orgId}
+              value={formData.authorization_id || ''}
+              label="Exit Authorizer"
+              isEditing={isEditing}
+              onChange={(v) => updateField('authorization_id', v)}
+              helpText="The person in your organization authorizing the exit."
+            />
             <EditableField
+              name="authorization_date"
               value={formData.authorization_date || ''}
               label="Authorization Date"
               isEditing={isEditing}
@@ -570,6 +629,7 @@ function ObjectExitWorkspacePageContent() {
           </div>
           <div className="mt-6">
             <EditableField
+              name="authorization_note"
               value={formData.authorization_note || ''}
               label="Authorization Note"
               isEditing={isEditing}
@@ -649,6 +709,7 @@ function ObjectExitWorkspacePageContent() {
           )}
           <div className="grid grid-cols-2 gap-6">
             <EditableField
+              name="receipt_reference"
               value={formData.receipt_reference || ''}
               label="Receipt Reference"
               isEditing={isEditing}
@@ -658,6 +719,7 @@ function ObjectExitWorkspacePageContent() {
           </div>
           <div className="mt-6">
             <EditableField
+              name="receipt_note"
               value={formData.receipt_note || ''}
               label="Receipt Note"
               isEditing={isEditing}
@@ -680,6 +742,7 @@ function ObjectExitWorkspacePageContent() {
           order={getSectionOrder('notes')}
         >
           <EditableField
+            name="exit_note"
             value={formData.exit_note || ''}
             label="Exit Notes"
             isEditing={isEditing}
@@ -691,6 +754,7 @@ function ObjectExitWorkspacePageContent() {
           />
           <div className="mt-6">
             <EditableField
+              name="internal_note"
               value={formData.internal_note || ''}
               label="Internal Notes"
               isEditing={isEditing}

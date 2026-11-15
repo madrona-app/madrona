@@ -255,6 +255,27 @@ class TestEnforcement:
         resp = self._advance(client, org.organization_id, acq, credit_line="Gift of the Donor, 2026")
         assert resp.status_code == 200, resp.text
 
+    def test_error_names_the_missing_fields(self, auth_setup, db_session):
+        """The 422 names each unmet requirement's record fields so the form
+        can mark those controls invalid and move focus to them."""
+        client, org, _ = auth_setup
+        acq = self._seed_acquisition(db_session, org.organization_id)
+        self._enable(client, org.organization_id)
+        _add(client, org.organization_id, "credit_line")
+
+        resp = self._advance(client, org.organization_id, acq)
+        assert resp.status_code == 422, resp.text
+        details = resp.json["error"]["details"]
+        assert details["procedure_type"] == "acquisition"
+        assert details["target_status"] == "approved"
+        assert "credit_line" in details["missing_fields"]
+        org_reqs = [m for m in details["missing_requirements"] if m["source"] == "org"]
+        assert org_reqs == [
+            {"id": "org:credit_line", "label": "Credit line", "fields": ["credit_line"], "source": "org"}
+        ]
+        # Labels stay where existing clients read them.
+        assert [m["label"] for m in details["missing_requirements"]] == resp.json["error"]["blocking_requirements"]
+
     def test_added_field_not_enforced_when_enforcement_off(self, auth_setup, db_session):
         client, org, _ = auth_setup
         acq = self._seed_acquisition(db_session, org.organization_id)
@@ -305,6 +326,7 @@ class TestConservationEnforcement:
         resp = client.put(url, json={"status": "approved"})
         assert resp.status_code == 422, resp.text
         assert resp.json["error"]["blocking_requirements"] == ["Treatment place"]
+        assert resp.json["error"]["details"]["missing_fields"] == ["treatment_place"]
 
         resp = client.put(url, json={"status": "approved", "treatment_place": "Studio 2"})
         assert resp.status_code == 200, resp.text

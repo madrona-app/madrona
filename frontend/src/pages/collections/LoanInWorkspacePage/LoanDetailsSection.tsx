@@ -9,6 +9,8 @@ import { SectionCompletionBadge } from '../../../components/collections/SectionC
 import type { SectionCompletion } from '../../../lib/procedureValidation';
 import type { FormData } from './types';
 import type { LookupOption } from '../../../hooks/useLookupValues';
+import { useRequiredField } from '../../../components/workspace/requiredFields';
+import { RequiredFieldMessage } from '../../../components/workspace/RequiredFieldsContext';
 
 interface Exhibition {
   exhibition_id: string;
@@ -61,6 +63,7 @@ export function LoanDetailsSection({
     if (showExhibitionSelector) exhibitionSearchRef.current?.focus();
   }, [showExhibitionSelector]);
   const uid = useId();
+  const { register: exhibitionRegister, error: exhibitionError } = useRequiredField('exhibition_id', false, 'details', formData.exhibition_id);
   return (
     <WorkspaceSection
       id="details"
@@ -76,12 +79,27 @@ export function LoanDetailsSection({
     >
       <div className="grid grid-cols-2 gap-6">
         <EditableSelect
+          name="loan_purpose"
           value={formData.loan_purpose}
           label="Loan Purpose"
           isEditing={isEditing}
           onChange={(v) => updateField('loan_purpose', v)}
           options={loanPurposeOptions}
           required
+        />
+        <EditableField
+          name="exhibition_name"
+          label="Exhibition Name"
+          value={formData.exhibition_name || ''}
+          isEditing={isEditing}
+          onChange={(v) => updateField('exhibition_name', v)}
+        />
+        <EditableField
+          name="exhibition_venue"
+          label="Exhibition Venue"
+          value={formData.exhibition_venue || ''}
+          isEditing={isEditing}
+          onChange={(v) => updateField('exhibition_venue', v)}
         />
         {formData.loan_purpose === 'exhibition' && (
           <div role="group" aria-labelledby={`${uid}-exhibition`}>
@@ -108,6 +126,8 @@ export function LoanDetailsSection({
                     </div>
                     <button
                       type="button"
+                      ref={exhibitionRegister}
+                      aria-describedby={exhibitionError?.id}
                       onClick={() => setShowExhibitionSelector(true)}
                       className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
                       aria-label="Change exhibition"
@@ -119,6 +139,8 @@ export function LoanDetailsSection({
                   <>
                     <button
                       type="button"
+                      ref={exhibitionRegister}
+                      aria-describedby={exhibitionError?.id}
                       onClick={() => setShowExhibitionSelector(true)}
                       className="w-full flex items-center gap-2 px-3 py-2 border border-dashed border-lichen rounded-lg text-sm text-archive hover:border-bark hover:text-bark transition-colors"
                     >
@@ -191,11 +213,13 @@ export function LoanDetailsSection({
                 )}
               </div>
             )}
+            {exhibitionError && <RequiredFieldMessage error={exhibitionError} />}
           </div>
         )}
       </div>
       <div className="mt-6 space-y-6">
         <EditableField
+          name="loan_conditions"
           value={formData.loan_conditions}
           label="Loan Conditions"
           isEditing={isEditing}
@@ -206,6 +230,7 @@ export function LoanDetailsSection({
           restricted={isRestricted('loan_conditions')}
         />
         <EditableField
+          name="special_requirements"
           value={formData.special_requirements}
           label="Special Requirements"
           isEditing={isEditing}
@@ -216,6 +241,7 @@ export function LoanDetailsSection({
           restricted={isRestricted('special_requirements')}
         />
         <EditableField
+          name="display_requirements"
           value={formData.display_requirements}
           label="Display Requirements"
           isEditing={isEditing}
@@ -225,6 +251,7 @@ export function LoanDetailsSection({
           placeholder="Lighting, mounting, case requirements..."
         />
         <EditableField
+          name="photography_restrictions"
           value={formData.photography_restrictions}
           label="Photography Restrictions"
           isEditing={isEditing}
