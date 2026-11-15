@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ListPlus, Plus } from 'lucide-react';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 import { getFriendlyErrorMessage } from '../../lib/apiClient';
 import {
   FIELD_TYPE_LABELS,
@@ -107,6 +108,12 @@ export default function CustomFieldsSettingsPage() {
                         Deactivate
                       </button>
                     )}
+                    <RecordHistoryButton
+                      organizationId={orgId}
+                      entityType="custom_field_definition"
+                      entityId={f.field_id}
+                      recordName={f.label}
+                    />
                   </div>
                 </td>
               </tr>

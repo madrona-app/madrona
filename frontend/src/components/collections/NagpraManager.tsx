@@ -29,6 +29,7 @@ import {
 } from '../../lib/api/collections';
 import type { NagpraConsultationEvent } from '../../lib/schemas';
 import ConfirmDialog from '../ConfirmDialog';
+import { RecordHistoryButton } from '../audit/RecordHistoryButton';
 
 interface NagpraManagerProps {
   organizationId: string;
@@ -231,6 +232,13 @@ export function NagpraManager({ organizationId, objectId, readOnly }: NagpraMana
             </span>
           )}
         </div>
+        <div className="flex items-center gap-1">
+        <RecordHistoryButton
+          organizationId={organizationId}
+          entityType="nagpra_action"
+          entityId={action.action_id}
+          recordName={action.action_number}
+        />
         {!readOnly && (
           <button
             onClick={() => setShowDeleteConfirm(true)}
@@ -241,6 +249,7 @@ export function NagpraManager({ organizationId, objectId, readOnly }: NagpraMana
             <Trash2 size={16} aria-hidden="true" />
           </button>
         )}
+        </div>
       </div>
 
       {/* Key fields grid */}

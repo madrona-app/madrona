@@ -34,6 +34,7 @@ import { getDocumentationPlan } from '../../../lib/api';
 import { ProcedureRequirementsCard } from '../../../components/collections/ProcedureRequirementsCard';
 import { useProcedureRequirements } from '../../../hooks/useProcedureRequirements';
 import ConfirmDialog from '../../../components/ConfirmDialog';
+import { ComplianceActionsHistoryList } from '../../../components/collections/ComplianceActionsHistoryList';
 
 import { useFormState, useSectionState, useSectionSummaries, useHasContent } from './hooks';
 import {
@@ -417,7 +418,13 @@ function DocumentationPlanWorkspacePageContent() {
                 Actions
               </span>
               <div className="space-y-2 mb-2">
-                {(formData.actions || []).map((action: string, i: number) => (
+                {(formData.actions || []).map((rawAction: string, i: number) => {
+                  // The API returns actions as records ({ action_id, title, ... });
+                  // older payloads held plain strings. Show the title either way.
+                  const action = typeof rawAction === 'string'
+                    ? rawAction
+                    : String((rawAction as { title?: string | null } | null)?.title ?? '');
+                  return (
                   <div key={i} className="flex items-center gap-2 p-2 bg-stone/30 rounded-lg">
                     <span className="text-xs text-archive shrink-0">{i + 1}.</span>
                     <span className="flex-1 text-sm text-ink">{action}</span>
@@ -432,7 +439,8 @@ function DocumentationPlanWorkspacePageContent() {
                       </button>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
               {isEditing && (
                 <div className="flex gap-2">
@@ -459,6 +467,12 @@ function DocumentationPlanWorkspacePageContent() {
                     <Plus size={16} aria-hidden="true" />
                   </button>
                 </div>
+              )}
+              {orgId && (
+                <ComplianceActionsHistoryList
+                  organizationId={orgId}
+                  actions={(existingPlan as { actions?: unknown } | undefined)?.actions}
+                />
               )}
             </div>
 

@@ -42,6 +42,7 @@ import {
   type LookupCategoryWithValues,
   type LookupValue,
 } from '../../lib/api';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 import ConfirmDialog from '../../components/ConfirmDialog';
 
 interface EditingValue {
@@ -60,6 +61,7 @@ const generateValueKey = (label: string): string => {
 
 // Sortable row component for drag and drop
 interface SortableRowProps {
+  organizationId: string;
   value: LookupValue;
   isHiddenByOrg: boolean;
   onEdit: () => void;
@@ -71,6 +73,7 @@ interface SortableRowProps {
 }
 
 function SortableRow({
+  organizationId,
   value,
   isHiddenByOrg,
   onEdit,
@@ -153,6 +156,14 @@ function SortableRow({
             </button>
           ) : (
             <>
+              {/* Only organization-owned values are audited; system values have no organization. */}
+              <RecordHistoryButton
+                organizationId={organizationId}
+                entityType="lookup_value"
+                entityId={value.value_id}
+                recordName={value.label}
+                showLabel={false}
+              />
               <button
                 onClick={onEdit}
                 className="p-1.5 hover:bg-stone rounded transition-colors"
@@ -672,6 +683,7 @@ export default function LookupValuesPage() {
                               return (
                                 <SortableRow
                                   key={value.value_id}
+                                  organizationId={orgId!}
                                   value={value}
                                   isHiddenByOrg={isHiddenByOrg}
                                   isSystem={value.is_system}

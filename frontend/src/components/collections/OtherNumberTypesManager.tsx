@@ -12,6 +12,7 @@ import {
 import type { OtherNumberType } from '../../lib/schemas';
 import { useToast } from '../../contexts/ToastContext';
 import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
+import { RecordHistoryButton } from '../audit/RecordHistoryButton';
 import { ModalPortal } from '../ModalPortal';
 
 interface OtherNumberTypesManagerProps {
@@ -271,6 +272,13 @@ export function OtherNumberTypesManager({ organizationId }: OtherNumberTypesMana
                 )}
               </div>
               <div className="flex items-center gap-1">
+                <RecordHistoryButton
+                  organizationId={organizationId}
+                  entityType="other_number_type"
+                  entityId={type.type_id}
+                  recordName={type.name}
+                  showLabel={false}
+                />
                 {!type.is_active ? (
                   <button
                     onClick={() => handleReactivate(type)}
