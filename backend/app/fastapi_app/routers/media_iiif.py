@@ -114,7 +114,13 @@ def _load_media_links(db: Session, object_id: UUID, *, published_only: bool = Fa
             Media.media_id == link.media_id
         )
         if published_only:
-            media_query = media_query.filter(Media.is_published.is_(True))
+            # Published, and owned by the object's organization: a link row
+            # must not carry another organization's file onto a public page.
+            media_query = media_query.filter(
+                Media.is_published.is_(True),
+                Media.organization_id == CollectionObject.organization_id,
+                CollectionObject.object_id == object_id,
+            )
         media = media_query.first()
         if published_only and media is None:
             # Unpublished media never appears in a public manifest. Skip the
@@ -401,6 +407,35 @@ def get_authenticated_manifest(
 # ============================================================================
 
 
+# Database session for the anonymous LOD routes.
+#
+# These routes used to take `get_db`: the app role (NOBYPASSRLS) with no org
+# context, because an anonymous request has no user and therefore no org.
+# Every org-scoped read — the organization lookup by slug included — came
+# back empty, so in production they 404'd for public records too; only the
+# superuser test connection made them look working. They now use the owner
+# session like the other anonymous surfaces (Discover, the /iiif/3/ routes),
+# which makes the code-level gates the access control:
+#   * the organization comes from the URL slug (active orgs only), and every
+#     query below is scoped to it — nothing resolves across organizations;
+#   * objects must pass the Discover gates (_lod_object_is_public);
+#   * media must be published and linked to a public object of the org.
+# tests/test_lod_routes_app_role.py runs these routes under the production
+# roles.
+_lod_db = get_admin_db
+
+
+def _lod_org(db: Session, org_slug: str) -> Organization:
+    org = (
+        db.query(Organization)
+        .filter(Organization.slug == org_slug, Organization.status == "active")
+        .first()
+    )
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    return org
+
+
 def _lod_object_is_public(db: Session, obj: CollectionObject | None) -> bool:
     from app.services.deaccession_visibility import public_object_visible
 
@@ -442,18 +477,23 @@ def _generate_lod_manifest_response(
 def get_object_manifest_lod(
     org_slug: str,
     public_id: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(_lod_db),
 ):
     """Get IIIF Presentation 3.0 manifest via stable URI (public LOD)."""
+    org = _lod_org(db, org_slug)
     full_uri = f"{BASE_URI}/org/{org_slug}/object/{public_id}"
 
-    record = db.query(URIRegistry).filter(URIRegistry.full_uri == full_uri).first()
+    record = (
+        db.query(URIRegistry)
+        .filter(
+            URIRegistry.full_uri == full_uri,
+            URIRegistry.organization_id == org.organization_id,
+            URIRegistry.entity_type == "collection_object",
+        )
+        .first()
+    )
 
     if not record:
-        org = db.query(Organization).filter(Organization.slug == org_slug).first()
-        if not org:
-            raise HTTPException(status_code=404, detail="Organization not found")
-
         obj = _find_object_by_public_id(db, org.organization_id, public_id)
         if not obj:
             raise HTTPException(status_code=404, detail="Object not found")
@@ -476,14 +516,12 @@ def get_object_manifest_lod(
         )
 
     # Active URI
-    org = (
-        db.query(Organization)
-        .filter(Organization.organization_id == record.organization_id)
-        .first()
-    )
     obj = (
         db.query(CollectionObject)
-        .filter(CollectionObject.object_id == record.entity_id)
+        .filter(
+            CollectionObject.object_id == record.entity_id,
+            CollectionObject.organization_id == org.organization_id,
+        )
         .first()
     )
     if not obj:
@@ -492,22 +530,24 @@ def get_object_manifest_lod(
     return _generate_lod_manifest_response(db, obj, org, org_slug)
 
 
+# Plain `def`, not `async def`: these call the blocking DB code above, which
+# must not run on the event loop.
 @router.get("/org/{org_slug}/object/{public_id}/manifest.json", summary="Get object manifest lod json")
-async def get_object_manifest_lod_json(
+def get_object_manifest_lod_json(
     org_slug: str,
     public_id: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(_lod_db),
 ):
     """Get manifest with .json extension (alternative URL pattern)."""
     return get_object_manifest_lod(org_slug, public_id, db)
 
 
 @router.get("/org/{org_slug}/object/{public_id}", summary="Resolve object uri")
-async def resolve_object_uri(
+def resolve_object_uri(
     org_slug: str,
     public_id: str,
     request: Request,
-    db: Session = Depends(get_db),
+    db: Session = Depends(_lod_db),
 ):
     """Resolve a stable object URI with content negotiation (public LOD)."""
     preferred_format = _get_preferred_format(request)
@@ -526,12 +566,10 @@ def get_canvas(
     org_slug: str,
     public_id: str,
     sequence: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(_lod_db),
 ):
     """Get a specific canvas from an object manifest (public LOD)."""
-    org = db.query(Organization).filter(Organization.slug == org_slug).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
+    org = _lod_org(db, org_slug)
 
     obj = _find_object_by_public_id(db, org.organization_id, public_id)
     if not _lod_object_is_public(db, obj):
@@ -573,12 +611,10 @@ def get_lod_collection_manifest(
     object_ids: str = Query(None),
     classification: str = Query(None),
     limit: int = Query(100, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(_lod_db),
 ):
     """Get a IIIF Collection manifest (public LOD)."""
-    org = db.query(Organization).filter(Organization.slug == org_slug).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
+    org = _lod_org(db, org_slug)
 
     if object_ids:
         public_ids = [pid.strip() for pid in object_ids.split(",")]
@@ -640,12 +676,10 @@ def get_activity_stream(
     org_slug: str,
     since: str = Query(None),
     limit: int = Query(100, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(_lod_db),
 ):
     """Get IIIF Change Discovery activity stream (public LOD)."""
-    org = db.query(Organization).filter(Organization.slug == org_slug).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
+    org = _lod_org(db, org_slug)
 
     from app.services.discover_media import public_object_clauses
 
@@ -697,7 +731,7 @@ def get_activity_stream(
 def get_media_lod(
     org_slug: str,
     public_id: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(_lod_db),
 ):
     """Get LOD representation of a media item (public).
 
@@ -710,28 +744,22 @@ def get_media_lod(
       * it ignored `org_slug` completely, so the org in the URL was decoration;
       * it had no `is_published` filter, unlike every other public IIIF route.
 
-    Repairing the 404 by handing this an admin session — the obvious fix, and
-    what its /iiif/3/ siblings use — would have turned it into a cross-org
-    media enumerator. Resolve the org, match the full id, require published.
+    Repairing the 404 by handing this an admin session without fixing those
+    would have turned it into a cross-org media enumerator. It now runs on
+    the owner session (see _lod_db) with all three fixed: the org comes from
+    the slug, the id must match in full, and the media must pass the Discover
+    gates (published, linked to a public object of this org).
     """
-    org = db.query(Organization).filter(Organization.slug == org_slug).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
+    from app.services.discover_media import get_public_media
+
+    org = _lod_org(db, org_slug)
 
     try:
         media_uuid = UUID(public_id)
     except (ValueError, AttributeError):
         raise HTTPException(status_code=404, detail="Media not found")
 
-    media = (
-        db.query(Media)
-        .filter(
-            Media.media_id == media_uuid,
-            Media.organization_id == org.organization_id,
-            Media.is_published == True,  # noqa: E712
-        )
-        .first()
-    )
+    media = get_public_media(db, org, media_uuid)
     if not media:
         raise HTTPException(status_code=404, detail="Media not found")
 

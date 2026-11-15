@@ -78,6 +78,27 @@ def _make_uri_record(
     return record
 
 
+def _make_public_creator(session, org, name="Claude Monet"):
+    """A constituent credited as creator of a discoverable object.
+
+    Person URIs resolve anonymously only for creators of public objects.
+    """
+    from app.models import CollectionObject, PersonAuthority
+    from app.models.contacts import ConstituentXref
+
+    person = PersonAuthority(organization_id=org.organization_id, name=name,
+                             display_name=name, constituent_type="person")
+    obj = CollectionObject(organization_id=org.organization_id,
+                           object_number=f"C.{uuid.uuid4().hex[:6]}", object_name="Painting",
+                           is_discoverable=True)
+    session.add_all([person, obj])
+    session.flush()
+    session.add(ConstituentXref(organization_id=org.organization_id, constituent_id=person.constituent_id,
+                                entity_type="collection_object", entity_id=obj.object_id, role="creator"))
+    session.flush()
+    return person.constituent_id
+
+
 # ---------------------------------------------------------------------------
 # Tests: GET resolve_uri
 # ---------------------------------------------------------------------------
@@ -173,6 +194,7 @@ class TestResolveURI:
             db_session,
             org,
             public_id="html-redirect-test",
+            entity_id=_make_public_creator(db_session, org),
         )
         db_session.commit()
 
@@ -278,7 +300,7 @@ class TestURIHistory:
     def test_history_returns_entries(self, client, db_session):
         """History for an existing URI returns history entries."""
         org = _make_org(db_session, slug="museum")
-        entity_id = uuid.uuid4()
+        entity_id = _make_public_creator(db_session, org)
         _make_uri_record(
             db_session,
             org,

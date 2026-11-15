@@ -21,7 +21,7 @@ from fastapi.responses import JSONResponse, RedirectResponse, Response
 from pydantic import Field
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.database import get_admin_db, get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import (
     Organization,
@@ -828,17 +828,39 @@ def get_simple_object_frame():
     )
 
 
+# ============================================================================
+# PUBLIC (ANONYMOUS) ROUTES
+# ============================================================================
+#
+# These used to take `get_db`: the app role (NOBYPASSRLS) with no org context,
+# because an anonymous request has no user and so no org. Every org-scoped
+# read came back empty, so in production they returned 404 for public records
+# as well; only the superuser test connection made them look working. They now
+# use the owner session like the other anonymous surfaces (Discover, /iiif/3/),
+# which makes the code-level gates below the access control: the organization
+# comes from the URL and scopes every lookup, objects must pass the Discover
+# gates, media must be published and linked to a public object, and entity
+# types without a public rule are not served. tests/test_lod_routes_app_role.py
+# runs these routes under the production roles.
+
+
 @router.get("/api/public/v1/organizations/{org_id}/objects/{object_id}/jsonld", summary="Export object jsonld public")
 def export_object_jsonld_public(
     org_id: str,
     object_id: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_admin_db),
 ):
     """Export a collection object as JSON-LD (public endpoint)."""
-    org_uuid = UUID(org_id)
-    obj_uuid = UUID(object_id)
+    try:
+        org_uuid = UUID(org_id)
+        obj_uuid = UUID(object_id)
+    except (ValueError, AttributeError):
+        raise HTTPException(status_code=404, detail="Object not found or not published")
 
-    org = db.query(Organization).filter(Organization.organization_id == org_uuid).first()
+    org = db.query(Organization).filter(
+        Organization.organization_id == org_uuid,
+        Organization.status == "active",
+    ).first()
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -900,28 +922,62 @@ def _get_preferred_content_type(request: Request) -> str:
     return "text/html"
 
 
+def _find_uri_record(db: Session, org_slug: str, entity_type: str, public_id: str):
+    """(org, registry record) for a stable URI, scoped to the URL's org.
+
+    None when the organization (active) or the record does not exist. The
+    fallback lookup by public id used to ignore the organization entirely, so
+    one organization's URL could resolve another organization's record.
+    """
+    from app.services.uri_persistence import URL_SEGMENT_TO_ENTITY
+
+    org = db.query(Organization).filter(
+        Organization.slug == org_slug,
+        Organization.status == "active",
+    ).first()
+    if not org:
+        return None, None
+
+    full_uri = f"{BASE_URI}/org/{org_slug}/{entity_type}/{public_id}"
+    record = db.query(URIRegistry).filter(
+        URIRegistry.full_uri == full_uri,
+        URIRegistry.organization_id == org.organization_id,
+    ).first()
+    if not record:
+        internal_type = URL_SEGMENT_TO_ENTITY.get(entity_type, entity_type)
+        record = db.query(URIRegistry).filter(
+            URIRegistry.public_id == public_id,
+            URIRegistry.entity_type == internal_type,
+            URIRegistry.organization_id == org.organization_id,
+        ).first()
+    return org, record
+
+
+def _public_entity(db: Session, org, record, content_type: str = "application/json") -> dict | None:
+    """The entity's public representation, or None when it is not public.
+
+    Entity types without a loader (and person authorities, whose loader has
+    no public rule) are never public.
+    """
+    from app.serializers.uri_resolution import ENTITY_LOADERS
+
+    loader = ENTITY_LOADERS.get(record.entity_type)
+    if loader is None:
+        return None
+    return loader(record.entity_id, content_type, org.slug, db=db, organization_id=org.organization_id)
+
+
 @router.get("/org/{org_slug}/{entity_type}/{public_id}", summary="Resolve uri")
 def resolve_uri(
     org_slug: str,
     entity_type: str,
     public_id: str,
     request: Request,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_admin_db),
 ):
     """Resolve a stable URI to entity data."""
     try:
-        full_uri = f"{BASE_URI}/org/{org_slug}/{entity_type}/{public_id}"
-
-        record = db.query(URIRegistry).filter(URIRegistry.full_uri == full_uri).first()
-
-        if not record:
-            from app.services.uri_persistence import URL_SEGMENT_TO_ENTITY
-            internal_type = URL_SEGMENT_TO_ENTITY.get(entity_type, entity_type)
-            record = db.query(URIRegistry).filter(
-                URIRegistry.public_id == public_id,
-                URIRegistry.entity_type == internal_type,
-            ).first()
-
+        org, record = _find_uri_record(db, org_slug, entity_type, public_id)
         if not record:
             raise HTTPException(status_code=404, detail="URI not found")
 
@@ -942,19 +998,17 @@ def resolve_uri(
 
         content_type = _get_preferred_content_type(request)
 
+        # Gate before any representation, the HTML redirect included: it
+        # names the internal id.
+        entity_data = _public_entity(
+            db, org, record, "application/json" if content_type == "text/html" else content_type,
+        )
+        if not entity_data:
+            raise HTTPException(status_code=404, detail="Entity not found")
+
         if content_type == "text/html":
             ui_url = f"/organizations/{org_slug}/collections/{entity_type}s/{record.entity_id}"
             return RedirectResponse(url=ui_url, status_code=303)
-
-        # Import entity loaders from uri_resolution module
-        from app.serializers.uri_resolution import ENTITY_LOADERS
-        loader = ENTITY_LOADERS.get(record.entity_type)
-        if not loader:
-            raise HTTPException(status_code=500, detail=f"Unknown entity type: {record.entity_type}")
-
-        entity_data = loader(record.entity_id, content_type, org_slug)
-        if not entity_data:
-            raise HTTPException(status_code=404, detail="Entity not found")
 
         return JSONResponse(
             content=entity_data,
@@ -975,22 +1029,15 @@ def head_uri(
     org_slug: str,
     entity_type: str,
     public_id: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_admin_db),
 ):
-    """HEAD request for URI — check if it exists without returning body."""
+    """HEAD request for URI — check if it exists without returning body.
+
+    200 only for what GET would serve; a non-public entity is a 404, so HEAD
+    does not confirm that a private record exists.
+    """
     try:
-        full_uri = f"{BASE_URI}/org/{org_slug}/{entity_type}/{public_id}"
-
-        record = db.query(URIRegistry).filter(URIRegistry.full_uri == full_uri).first()
-
-        if not record:
-            from app.services.uri_persistence import URL_SEGMENT_TO_ENTITY
-            internal_type = URL_SEGMENT_TO_ENTITY.get(entity_type, entity_type)
-            record = db.query(URIRegistry).filter(
-                URIRegistry.public_id == public_id,
-                URIRegistry.entity_type == internal_type,
-            ).first()
-
+        org, record = _find_uri_record(db, org_slug, entity_type, public_id)
         if not record:
             return Response(status_code=404)
 
@@ -1001,6 +1048,8 @@ def head_uri(
         if record.status == URIStatus.TOMBSTONE.value:
             return Response(status_code=410)
 
+        if not _public_entity(db, org, record):
+            return Response(status_code=404)
         return Response(status_code=200)
     except Exception as e:
         logger.error(f"Error in HEAD request for URI: {e}")
@@ -1012,25 +1061,27 @@ def get_uri_history(
     org_slug: str,
     entity_type: str,
     public_id: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_admin_db),
 ):
-    """Get the history of a URI."""
+    """Get the history of a URI (this organization's, for a public entity)."""
     try:
         from app.services.uri_persistence import URL_SEGMENT_TO_ENTITY
         internal_type = URL_SEGMENT_TO_ENTITY.get(entity_type, entity_type)
 
-        record = db.query(URIRegistry).filter(
-            URIRegistry.public_id == public_id,
-            URIRegistry.entity_type == internal_type,
-        ).first()
-
-        if not record:
+        org, record = _find_uri_record(db, org_slug, entity_type, public_id)
+        if not record or record.entity_type != internal_type:
             raise HTTPException(status_code=404, detail="URI not found")
 
         all_records = db.query(URIRegistry).filter(
             URIRegistry.entity_id == record.entity_id,
             URIRegistry.entity_type == internal_type,
+            URIRegistry.organization_id == org.organization_id,
         ).order_by(URIRegistry.created_at).all()
+
+        # A live entity's history is public only when the entity is; a
+        # merged or deleted one keeps its redirect/tombstone trail.
+        if any(r.status == URIStatus.ACTIVE.value for r in all_records) and not _public_entity(db, org, record):
+            raise HTTPException(status_code=404, detail="URI not found")
 
         history = []
         for r in all_records:
