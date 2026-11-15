@@ -44,6 +44,7 @@ import { useConstituentSelector } from '../../../hooks/useContactSelector';
 import { getContact } from '../../../lib/api';
 import { RecordDetailPageWrapper, SectionOrderProvider } from '../../../components/record-detail';
 import { ProcedureRequirementsCard } from '../../../components/collections/ProcedureRequirementsCard';
+import { EditableUserSelect } from '../../../components/workspace/EditableUserSelect';
 import { StatusAdvancementDialog } from '../../../components/collections/StatusAdvancementDialog';
 import { AdvanceWithExceptionDialog } from '../../../components/collections/AdvanceWithExceptionDialog';
 import { ChangeStatusDropdown } from '../../../components/collections/ChangeStatusDropdown';
@@ -898,6 +899,15 @@ function AcquisitionWorkspacePageContent() {
               isEditing={isEditing}
               onChange={(v) => updateField('authorization_date', v)}
               type="date"
+            />
+            <EditableUserSelect
+              name="authorization_id"
+              organizationId={orgId}
+              value={formData.authorization_id || ''}
+              label="Authorized By"
+              isEditing={isEditing}
+              onChange={(v) => updateField('authorization_id', v)}
+              helpText="The person in your organization who authorized the acquisition."
             />
             <EditableField
               name="authorization_note"

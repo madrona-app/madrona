@@ -44,12 +44,8 @@ import {
   ReadOnlyBanner,
   PendingApprovalBanner,
 } from '../../../components/workspace';
-import {
-  RequiredFieldsProvider,
-} from '../../../components/workspace/RequiredFieldsContext';
-import {
-  useRevealSection,
-} from '../../../components/workspace/requiredFields';
+import { RequiredFieldsProvider, RequiredFieldMessage } from '../../../components/workspace/RequiredFieldsContext';
+import { useRevealSection, useRequiredField } from '../../../components/workspace/requiredFields';
 import { RecordDetailPageWrapper, SectionOrderProvider } from '../../../components/record-detail';
 import { CreateTaskSlideOver } from '../../../components/work/CreateTaskSlideOver';
 import { cn } from '../../../lib/utils';
@@ -239,6 +235,7 @@ function DeaccessionWorkspacePageContent() {
     history: {},
   };
 
+  const { register: appraiserRegister, error: appraiserError } = useRequiredField('appraiser_id', false, 'valuation', formData.appraiser_id);
   // Lets the required-fields error summary open a collapsed section.
   useRevealSection(handleEnterEditMode);
 
@@ -508,6 +505,15 @@ function DeaccessionWorkspacePageContent() {
               className="md:col-span-2"
               restricted={isRestricted('reason_detail')}
             />
+            <EditableField
+              name="justification"
+              label="Justification"
+              value={formData.justification || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('justification', v)}
+              multiline
+              rows={2}
+            />
           </div>
         </WorkspaceSection>
 
@@ -640,6 +646,13 @@ function DeaccessionWorkspacePageContent() {
               className="md:col-span-2"
               restricted={isRestricted('board_note')}
             />
+            <EditableField
+              name="board_resolution"
+              label="Board Resolution"
+              value={formData.board_resolution || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('board_resolution', v)}
+            />
           </div>
           {!isCreateMode && deaccession?.deaccession_id && orgId && (
             <div className="mt-6 pt-6 border-t border-lichen">
@@ -703,6 +716,14 @@ function DeaccessionWorkspacePageContent() {
               multiline
               rows={2}
               restricted={isRestricted('provenance_review_note')}
+            />
+            <EditableField
+              name="provenance_review_date"
+              label="Provenance Review Date"
+              value={formData.provenance_review_date || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('provenance_review_date', v)}
+              type="date"
             />
           </div>
         </WorkspaceSection>
@@ -769,6 +790,8 @@ function DeaccessionWorkspacePageContent() {
                   ) : (
                     <button
                       type="button"
+                      ref={appraiserRegister}
+                      aria-describedby={appraiserError?.id}
                       onClick={() => setShowAppraiserSelector(true)}
                       className="flex-1 flex items-center gap-2 px-3 py-2 border border-dashed border-lichen rounded-lg text-sm text-archive hover:border-bark hover:text-bark transition-colors"
                     >
@@ -779,6 +802,8 @@ function DeaccessionWorkspacePageContent() {
                   {formData.appraiser_id && (
                     <button
                       type="button"
+                      ref={appraiserRegister}
+                      aria-describedby={appraiserError?.id}
                       onClick={() => setShowAppraiserSelector(true)}
                       className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
                       aria-label="Change appraiser"
@@ -801,6 +826,7 @@ function DeaccessionWorkspacePageContent() {
                   )}
                 </div>
               )}
+              {appraiserError && <RequiredFieldMessage error={appraiserError} />}
             </div>
             {formData.disposal_method === 'sale' && (
               <>
@@ -831,6 +857,28 @@ function DeaccessionWorkspacePageContent() {
                   multiline
                   rows={2}
                   className="md:col-span-2"
+                />
+                <EditableField
+                  name="sale_date"
+                  label="Sale Date"
+                  value={formData.sale_date || ''}
+                  isEditing={isEditing}
+                  onChange={(v) => updateField('sale_date', v)}
+                  type="date"
+                />
+                <EditableField
+                  name="sale_method"
+                  label="Sale Method"
+                  value={formData.sale_method || ''}
+                  isEditing={isEditing}
+                  onChange={(v) => updateField('sale_method', v)}
+                />
+                <EditableField
+                  name="buyer_name"
+                  label="Buyer Name"
+                  value={formData.buyer_name || ''}
+                  isEditing={isEditing}
+                  onChange={(v) => updateField('buyer_name', v)}
                 />
               </>
             )}
@@ -869,6 +917,21 @@ function DeaccessionWorkspacePageContent() {
               isEditing={isEditing}
               onChange={(v) => updateField('public_notice_reference', v)}
               className="md:col-span-2"
+            />
+            <EditableField
+              name="public_notice_period_end"
+              label="Public Notice Period End"
+              value={formData.public_notice_period_end || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('public_notice_period_end', v)}
+              type="date"
+            />
+            <EditableField
+              name="public_notice_publication"
+              label="Public Notice Publication"
+              value={formData.public_notice_publication || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('public_notice_publication', v)}
             />
           </div>
         </WorkspaceSection>

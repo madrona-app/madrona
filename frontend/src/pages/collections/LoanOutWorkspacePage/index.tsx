@@ -55,6 +55,7 @@ import { AgreementSection } from './AgreementSection';
 import { NotesSection } from './NotesSection';
 import { DiscussionSection } from './DiscussionSection';
 import { AuthorizationSection } from '../../../components/collections/AuthorizationSection';
+import { VenueSection } from './VenueSection';
 import { ClosingSection } from './ClosingSection';
 import { MonitoringSection } from './MonitoringSection';
 import { RenewalsSection } from './RenewalsSection';
@@ -413,6 +414,17 @@ function LoanOutWorkspacePageContent() {
           onOpenSelector={() => setShowBorrowerSelector(true)}
           onOpenContactPersonSelector={() => setShowBorrowerContactSelector(true)}
           isRestricted={isRestricted}
+        />
+
+        <VenueSection
+          formData={formData}
+          isExpanded={expandedSections.venue}
+          isEditing={isEditing}
+          order={getSectionOrder('venue')}
+          onToggle={() => handleSectionToggle('venue')}
+          onUpdateField={updateField as <K extends keyof FormData>(field: K, value: FormData[K]) => void}
+          onFieldBlur={handleFieldBlur}
+          organizationId={orgId}
         />
 
         <LoanDetailsSection

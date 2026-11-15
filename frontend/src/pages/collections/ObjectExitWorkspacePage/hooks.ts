@@ -136,6 +136,10 @@ export function useExitForm(
         receipt_reference: exit.receipt_reference || '',
         receipt_note: exit.receipt_note || '',
         exit_note: exit.exit_note || '',
+        insurance_note: exit.insurance_note || '',
+        insurance_value: exit.insurance_value?.toString() || '',
+        expected_return_method: exit.expected_return_method || '',
+        expected_return_date: exit.expected_return_date || '',
         internal_note: exit.internal_note || '',
       };
       setFormData(data);

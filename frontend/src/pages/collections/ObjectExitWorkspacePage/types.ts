@@ -26,6 +26,10 @@ export interface FormData {
   receipt_reference: string;
   receipt_note: string;
   exit_note: string;
+  insurance_note: string;
+  insurance_value: string;
+  expected_return_method: string;
+  expected_return_date: string;
   internal_note: string;
 }
 

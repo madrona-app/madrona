@@ -42,5 +42,9 @@ export const DEFAULT_FORM_DATA: FormData = {
   receipt_reference: '',
   receipt_note: '',
   exit_note: '',
+  insurance_note: '',
+  insurance_value: '',
+  expected_return_method: '',
+  expected_return_date: '',
   internal_note: '',
 };

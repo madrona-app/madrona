@@ -85,6 +85,34 @@ export function LoanDetailsSection({
           helpText="Indemnity or insurance provisions, specific requirements for display, handling, or security"
           restricted={isRestricted('special_conditions')}
         />
+        <EditableField
+          name="display_requirements"
+          label="Display Requirements"
+          value={formData.display_requirements || ''}
+          isEditing={isEditing}
+          onChange={(v) => onUpdateField('display_requirements', v)}
+          multiline
+          rows={2}
+          onSave={onFieldBlur}
+        />
+        <EditableField
+          name="installation_requirements"
+          label="Installation Requirements"
+          value={formData.installation_requirements || ''}
+          isEditing={isEditing}
+          onChange={(v) => onUpdateField('installation_requirements', v)}
+          multiline
+          rows={2}
+          onSave={onFieldBlur}
+        />
+        <EditableField
+          name="photography_restrictions"
+          label="Photography Restrictions"
+          value={formData.photography_restrictions || ''}
+          isEditing={isEditing}
+          onChange={(v) => onUpdateField('photography_restrictions', v)}
+          onSave={onFieldBlur}
+        />
 
         {/* Photography permitted */}
         <div role="group" aria-labelledby={`${uid}-photography-permitted`} className="md:col-span-2">

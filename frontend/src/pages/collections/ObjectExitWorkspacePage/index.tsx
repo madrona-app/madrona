@@ -494,6 +494,21 @@ function ObjectExitWorkspacePageContent() {
               options={getLookup('shipping_method')}
               placeholder="Select method..."
             />
+            <EditableField
+              name="expected_return_date"
+              label="Expected Return Date"
+              value={formData.expected_return_date || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('expected_return_date', v)}
+              type="date"
+            />
+            <EditableField
+              name="expected_return_method"
+              label="Expected Return Method"
+              value={formData.expected_return_method || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('expected_return_method', v)}
+            />
           </div>
         </WorkspaceSection>
 
@@ -552,6 +567,23 @@ function ObjectExitWorkspacePageContent() {
               onChange={(v) => updateField('condition_at_exit', v)}
               options={getLookup('condition')}
               placeholder="Select condition..."
+            />
+            <EditableField
+              name="insurance_value"
+              label="Insurance Value"
+              value={formData.insurance_value || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('insurance_value', v)}
+              type="number"
+            />
+            <EditableField
+              name="insurance_note"
+              label="Insurance Note"
+              value={formData.insurance_note || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('insurance_note', v)}
+              multiline
+              rows={2}
             />
           </div>
           {!isCreateMode && exit && exit.condition_report_id && !isEditing && (

@@ -63,6 +63,13 @@ export function InsuranceSection({
           rows={2}
           placeholder="Insurance arrangements or special instructions..."
         />
+        <EditableField
+          name="insurance_policy"
+          label="Insurance Policy"
+          value={formData.insurance_policy || ''}
+          isEditing={isEditing}
+          onChange={(v) => updateField('insurance_policy', v)}
+        />
       </div>
     </WorkspaceSection>
   );

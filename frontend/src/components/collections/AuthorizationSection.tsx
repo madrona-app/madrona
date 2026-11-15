@@ -134,6 +134,7 @@ export function AuthorizationSection({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <EditableField
+            name="authorization_date"
             label="Authorization date"
             value={authorizationDate}
             isEditing={isEditing}
@@ -144,6 +145,7 @@ export function AuthorizationSection({
         </div>
 
         <EditableField
+          name="authorization_note"
           label="Authorization notes"
           value={authorizationNote}
           isEditing={isEditing}

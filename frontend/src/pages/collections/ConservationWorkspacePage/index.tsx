@@ -481,6 +481,22 @@ function ConservationWorkspacePageContent() {
               className="md:col-span-2"
             />
             <EditableField
+              name="treatment_rationale"
+              label="Treatment Rationale"
+              value={formData.treatment_rationale || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('treatment_rationale', v)}
+              multiline
+              rows={2}
+            />
+            <EditableField
+              name="treatment_place"
+              label="Treatment Place"
+              value={formData.treatment_place || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('treatment_place', v)}
+            />
+            <EditableField
               name="estimated_duration_days"
               label="Estimated Duration (days)"
               value={formData.estimated_duration_days}
@@ -505,6 +521,14 @@ function ConservationWorkspacePageContent() {
               isEditing={isEditing}
               onChange={(v) => updateField('estimated_cost_currency', v)}
               options={getLookup('currency')}
+            />
+            <EditableField
+              name="insurance_value"
+              label="Insurance Value"
+              value={formData.insurance_value || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('insurance_value', v)}
+              type="number"
             />
           </div>
         </WorkspaceSection>
@@ -647,6 +671,15 @@ function ConservationWorkspacePageContent() {
               multiline
               rows={3}
               placeholder="Future care recommendations..."
+            />
+            <EditableField
+              name="future_care_instructions"
+              label="Future Care Instructions"
+              value={formData.future_care_instructions || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('future_care_instructions', v)}
+              multiline
+              rows={2}
             />
             <EditableField
               name="restrictions"

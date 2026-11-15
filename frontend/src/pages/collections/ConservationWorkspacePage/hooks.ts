@@ -100,6 +100,10 @@ export function useFormState({
         recommendations: conservation.recommendations || '',
         restrictions: conservation.restrictions || '',
         treatment_note: conservation.treatment_note || '',
+        insurance_value: conservation.insurance_value?.toString() || '',
+        future_care_instructions: conservation.future_care_instructions || '',
+        treatment_rationale: conservation.treatment_rationale || '',
+        treatment_place: conservation.treatment_place || '',
       };
       setFormData(data);
       originalDataRef.current = JSON.stringify(data);
@@ -129,6 +133,10 @@ export function useFormState({
       recommendations: fd.recommendations || null,
       restrictions: fd.restrictions || null,
       treatment_note: fd.treatment_note || null,
+      insurance_value: fd.insurance_value ? parseFloat(fd.insurance_value) : null,
+      future_care_instructions: fd.future_care_instructions || null,
+      treatment_rationale: fd.treatment_rationale || null,
+      treatment_place: fd.treatment_place || null,
     };
   }, []);
 

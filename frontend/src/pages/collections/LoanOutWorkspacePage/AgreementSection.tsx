@@ -47,6 +47,15 @@ export function AgreementSection({
             onSave={onFieldBlur}
           />
           <EditableField
+            name="loan_agreement_date"
+            label="Loan Agreement Date"
+            value={formData.loan_agreement_date || ''}
+            isEditing={isEditing}
+            onChange={(v) => onUpdateField('loan_agreement_date', v)}
+            type="date"
+            onSave={onFieldBlur}
+          />
+          <EditableField
             name="loan_agreement_signed_date"
             label="Signed Date"
             value={formData.loan_agreement_signed_date}

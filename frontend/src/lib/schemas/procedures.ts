@@ -168,6 +168,10 @@ export const ObjectEntrySchema = z.object({
   insurance_value: z.number().nullable().optional(),
   insurance_currency: z.string().nullable().optional(),
   insurance_note: z.string().nullable().optional(),
+  insurance_policy: z.string().nullable().optional(),
+  depositor_requirements: z.string().nullable().optional(),
+  special_conditions: z.string().nullable().optional(),
+  packing_note: z.string().nullable().optional(),
   conditions: z.string().nullable().optional(),
   // Entry method
   entry_method: z.string().nullable().optional(),
@@ -598,6 +602,11 @@ export const ConservationTreatmentSchema = z.object({
   actual_cost: z.number().nullable().optional(),
   actual_cost_currency: z.string().nullable().optional(),
   treatment_description: z.string().nullable().optional(),
+  treatment_place: z.string().nullable().optional(),
+  treatment_rationale: z.string().nullable().optional(),
+  future_care_instructions: z.string().nullable().optional(),
+  insurance_value: z.number().nullable().optional(),
+  insurance_currency: z.string().nullable().optional(),
   materials_used: z.array(z.object({
     material_name: z.string(),
     manufacturer: z.string().nullable().optional(),

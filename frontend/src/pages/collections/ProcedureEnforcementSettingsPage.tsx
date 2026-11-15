@@ -27,6 +27,8 @@ interface ProcedureInfo {
   supports_org_required_fields?: boolean;
   baseline_required_fields?: BaselineRequirement[];
   org_required_fields?: FieldOption[];
+  /** Stored org-added fields that are no longer eligible: not enforced. */
+  ignored_required_fields?: FieldOption[];
   eligible_fields?: FieldOption[];
   first_status?: string | null;
 }
@@ -206,6 +208,8 @@ function ProcedureRequiredFields({ orgId, procedureType, info, onUpdated, announ
   const headingId = `${uid}-heading`;
   const baselineId = `${uid}-baseline`;
   const addedId = `${uid}-added`;
+  const ignoredId = `${uid}-ignored`;
+  const ignoredHintId = `${uid}-ignored-hint`;
   const selectId = `${uid}-select`;
   const hintId = `${uid}-hint`;
   const errorId = `${uid}-error`;
@@ -219,17 +223,19 @@ function ProcedureRequiredFields({ orgId, procedureType, info, onUpdated, announ
 
   const baseline = info.baseline_required_fields ?? [];
   const added = info.org_required_fields ?? [];
+  const ignored = info.ignored_required_fields ?? [];
   const eligible = info.eligible_fields ?? [];
   const supports = !!info.supports_org_required_fields;
 
   const addedFromServer = info.org_required_fields;
+  const ignoredFromServer = info.ignored_required_fields;
   useEffect(() => {
     const target = focusTarget.current;
     if (!target) return;
     focusTarget.current = null;
     const el = (target.field && removeRefs.current.get(target.field)) || selectRef.current;
     el?.focus();
-  }, [addedFromServer]);
+  }, [addedFromServer, ignoredFromServer]);
 
   const basePath = `/organizations/${orgId}/settings/procedure-enforcement/${procedureType}/required-fields`;
 
@@ -256,9 +262,10 @@ function ProcedureRequiredFields({ orgId, procedureType, info, onUpdated, announ
     mutationFn: (field: string) =>
       apiFetch<ProcedureInfo>(`${basePath}/${encodeURIComponent(field)}`, { method: 'DELETE' }),
     onSuccess: (updated, field) => {
-      const index = added.findIndex((f) => f.field === field);
-      const label = added[index]?.label ?? field;
-      const remaining = added.filter((f) => f.field !== field);
+      const list = added.some((f) => f.field === field) ? added : ignored;
+      const index = list.findIndex((f) => f.field === field);
+      const label = list[index]?.label ?? field;
+      const remaining = list.filter((f) => f.field !== field);
       const next = remaining[Math.min(index, remaining.length - 1)];
       focusTarget.current = { field: next ? next.field : null };
       onUpdated(updated);
@@ -326,6 +333,38 @@ function ProcedureRequiredFields({ orgId, procedureType, info, onUpdated, announ
             </ul>
           ) : (
             <p className="mt-1 text-sm text-archive">None added</p>
+          )}
+
+          {ignored.length > 0 && (
+            <>
+              <p id={ignoredId} className="mt-4 text-xs font-medium text-archive uppercase tracking-wide">
+                Not enforced
+              </p>
+              <p id={ignoredHintId} className="mt-1 text-sm text-archive">
+                These were added earlier but can no longer be required, because the {info.label.toLowerCase()} form
+                has no field for them. They are ignored on status changes; remove them to tidy the list.
+              </p>
+              <ul aria-labelledby={ignoredId} aria-describedby={ignoredHintId} className="mt-1 flex flex-col gap-1">
+                {ignored.map((f) => (
+                  <li key={f.field} className="flex items-center justify-between gap-2 text-sm text-ink">
+                    <span>{f.label} <span className="text-archive">(not enforced)</span></span>
+                    <button
+                      type="button"
+                      ref={(el) => {
+                        if (el) removeRefs.current.set(f.field, el);
+                        else removeRefs.current.delete(f.field);
+                      }}
+                      onClick={() => removeMutation.mutate(f.field)}
+                      disabled={removeMutation.isPending}
+                      aria-label={`Remove ignored field ${f.label} from ${info.label}`}
+                      className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-archive hover:text-semantic-error rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 disabled:opacity-50"
+                    >
+                      <X size={16} aria-hidden="true" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
 
           <form onSubmit={handleAdd} className="mt-4" noValidate>
