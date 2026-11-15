@@ -179,7 +179,9 @@ class TestPublicMediaPayload:
         assert media["audio"]["duration_seconds"] == 1800
         assert media["audio"]["transcript"] == "Hello and welcome."
         assert media["audio"]["transcript_machine_generated"] is True
-        assert media["audio"]["url"].startswith("https://media.test/")
+        # No access copy and no right to the original: nothing plays yet.
+        assert media["audio"]["url"] is None
+        assert media["audio"]["playback_status"] in ("preparing", "unavailable")
 
         assert media["document"]["name"] == "Exhibition catalogue"
         assert media["document"]["mime_type"] == "application/pdf"
@@ -493,3 +495,397 @@ def test_file_level_only_narrows_a_share():
     assert narrow_share_level("derivatives", SimpleNamespace(public_download_level="originals")) == "derivatives"
     assert narrow_share_level("none", SimpleNamespace(public_download_level="originals")) == "none"
     assert narrow_share_level("originals", SimpleNamespace(public_download_level="none")) == "none"
+
+
+# ---------------------------------------------------------------------------
+# Playback never serves the original unless the level is 'originals'
+# ---------------------------------------------------------------------------
+
+import json  # noqa: E402
+
+
+def _deriv(db_session, media, derivative_type, fmt, key, **kw):
+    from app.models import MediaDerivative
+
+    d = MediaDerivative(
+        media_id=media.media_id, organization_id=media.organization_id,
+        derivative_type=derivative_type, format=fmt, s3_key=key,
+        width=kw.pop("width", 0), height=kw.pop("height", 0), file_size=kw.pop("file_size", 4096),
+    )
+    db_session.add(d)
+    db_session.flush()
+    return d
+
+
+def _job(db_session, media, job_type, status):
+    from app.models import MediaProcessingJob
+
+    db_session.add(MediaProcessingJob(
+        media_id=media.media_id, organization_id=media.organization_id,
+        job_type=job_type, status=status,
+    ))
+    db_session.flush()
+
+
+@pytest.fixture()
+def queued():
+    """Capture queue requests instead of running the tasks; generation is possible."""
+    calls = {"access_copy": [], "transcode": []}
+    with patch(
+        "app.tasks.media.generate_access_copy_task.delay",
+        side_effect=lambda **kw: calls["access_copy"].append(kw),
+    ), patch(
+        "app.tasks.media.transcode_video_task.delay",
+        side_effect=lambda **kw: calls["transcode"].append(kw),
+    ), patch(
+        "app.services.public_access_copy.can_generate", return_value=True,
+    ), patch(
+        "app.services.discover_media._claim_queue_slot", return_value=True,
+    ):
+        yield calls
+
+
+def _payload_text(payload) -> str:
+    return json.dumps(payload)
+
+
+class TestPlaybackHonoursTheDownloadLevel:
+    @pytest.mark.parametrize("level", [None, "none", "derivatives"])
+    def test_audio_without_proxy_never_plays_the_master(self, client, db_session, org, obj, queued, level):
+        audio = _media(db_session, org, "audio", "audio/wav", public_download_level=level,
+                       transcript="Words spoken.")
+        vtt = _alt(db_session, audio, "subtitle_vtt", "alts/a.vtt")
+        _link(db_session, obj, audio)
+
+        payload = _get(client, org, obj)
+        item = _by_type(payload)["audio"]
+        assert item["url"] is None
+        assert item["playback_status"] == "preparing"
+        assert item["playback_source"] is None
+        assert audio.s3_key not in _payload_text(payload)
+        # Captions and transcript stay available without a playable copy.
+        assert item["transcript"] == "Words spoken."
+        assert item["captions"][0]["url"].endswith(str(vtt.alternative_id))
+        assert queued["access_copy"] == [{"media_id": str(audio.media_id), "organization_id": str(org.organization_id)}]
+
+    @pytest.mark.parametrize("level", [None, "none", "derivatives"])
+    def test_audio_plays_its_proxy(self, client, db_session, org, obj, queued, level):
+        audio = _media(db_session, org, "audio", "audio/wav", public_download_level=level)
+        _deriv(db_session, audio, "web_audio_aac", "mp4", f"derivs/{audio.media_id}/web_audio_aac.m4a")
+        _link(db_session, obj, audio)
+        payload = _get(client, org, obj)
+        item = _by_type(payload)["audio"]
+        assert item["url"].endswith("web_audio_aac.m4a")
+        assert item["playback_mime_type"] == "audio/mp4"
+        assert item["playback_source"] == "access_copy"
+        assert item["playback_status"] == "ready"
+        assert audio.s3_key not in _payload_text(payload)
+        assert queued["access_copy"] == []
+
+    def test_audio_proxy_is_the_access_copy_download(self, client, db_session, org, obj, queued):
+        audio = _media(db_session, org, "audio", "audio/wav", public_download_level="derivatives")
+        _deriv(db_session, audio, "web_audio_aac", "mp4", "derivs/a.m4a", file_size=5000)
+        _link(db_session, obj, audio)
+        downloads = _by_type(_get(client, org, obj))["audio"]["downloads"]
+        assert [(d["variant"], d["format"], d["mime_type"]) for d in downloads] == [("access", "M4A", "audio/mp4")]
+
+    def test_original_level_may_play_the_master(self, client, db_session, org, obj, queued):
+        audio = _media(db_session, org, "audio", "audio/mpeg", public_download_level="originals")
+        _link(db_session, obj, audio)
+        item = _by_type(_get(client, org, obj))["audio"]
+        assert item["url"] == f"https://media.test/{audio.s3_key}"
+        assert item["playback_source"] == "original"
+        assert item["playback_status"] == "ready"
+        assert queued["access_copy"] == []
+
+    def test_original_level_still_prefers_the_proxy_for_audio(self, client, db_session, org, obj, queued):
+        audio = _media(db_session, org, "audio", "audio/wav", public_download_level="originals")
+        _deriv(db_session, audio, "web_audio_aac", "mp4", "derivs/p.m4a")
+        _link(db_session, obj, audio)
+        assert _by_type(_get(client, org, obj))["audio"]["url"].endswith("derivs/p.m4a")
+
+    def test_original_level_with_rights_refusal_does_not_play_the_master(self, client, db_session, org, obj, queued):
+        audio = _media(db_session, org, "audio", "audio/mpeg", public_download_level="originals")
+        _link(db_session, obj, audio)
+        org.media_rights_enforcement = True  # no open-access grant -> original refused
+        db_session.flush()
+        payload = _get(client, org, obj)
+        assert _by_type(payload)["audio"]["url"] is None
+        assert audio.s3_key not in _payload_text(payload)
+
+    def test_video_without_proxy_never_plays_the_master(self, client, db_session, org, obj, queued):
+        video = _media(db_session, org, "video", "video/quicktime", public_download_level="derivatives")
+        _link(db_session, obj, video)
+        payload = _get(client, org, obj)
+        item = _by_type(payload)["video"]
+        assert item["url"] is None
+        assert item["playback_status"] == "preparing"
+        assert video.s3_key not in _payload_text(payload)
+        assert queued["transcode"] == [{"media_id": str(video.media_id), "organization_id": str(org.organization_id)}]
+
+    def test_running_job_is_preparing_and_not_queued_again(self, client, db_session, org, obj, queued):
+        audio = _media(db_session, org, "audio", "audio/wav")
+        _job(db_session, audio, "access_copy", "processing")
+        _link(db_session, obj, audio)
+        item = _by_type(_get(client, org, obj))["audio"]
+        assert item["playback_status"] == "preparing"
+        assert queued["access_copy"] == []
+
+    def test_failed_job_is_unavailable_and_not_retried_by_visitors(self, client, db_session, org, obj, queued):
+        audio = _media(db_session, org, "audio", "audio/wav")
+        _job(db_session, audio, "access_copy", "failed")
+        _link(db_session, obj, audio)
+        item = _by_type(_get(client, org, obj))["audio"]
+        assert item["url"] is None
+        assert item["playback_status"] == "unavailable"
+        assert queued["access_copy"] == []
+
+    def test_no_transcoder_is_unavailable_and_nothing_is_queued(self, client, db_session, org, obj, queued):
+        audio = _media(db_session, org, "audio", "audio/wav")
+        _link(db_session, obj, audio)
+        with patch("app.services.public_access_copy.can_generate", return_value=False):
+            item = _by_type(_get(client, org, obj))["audio"]
+        assert item["url"] is None
+        assert item["playback_status"] == "unavailable"
+        assert queued["access_copy"] == []
+
+
+class TestPdfAccessCopy:
+    def _pdf(self, db_session, org, obj, level, **kw):
+        doc = _media(db_session, org, "document", "application/pdf", public_download_level=level,
+                     filename="catalogue.pdf", page_count=2, **kw)
+        _link(db_session, obj, doc)
+        return doc
+
+    @pytest.mark.parametrize("level", [None, "none", "derivatives"])
+    def test_pdf_opens_its_page_image_copy(self, client, db_session, org, obj, queued, level):
+        doc = self._pdf(db_session, org, obj, level,
+                        extra_metadata={"access_text_pages": ["Page one words.", "Page two words."]})
+        _deriv(db_session, doc, "access_pdf", "pdf", f"derivs/{doc.media_id}/access_pdf.pdf", width=816, height=1056)
+        payload = _get(client, org, obj)
+        item = _by_type(payload)["document"]
+        assert item["url"].endswith("access_pdf.pdf")
+        assert item["playback_source"] == "access_copy"
+        assert item["playback_mime_type"] == "application/pdf"
+        assert item["text_url"] == f"/api/discover/{org.slug}/media/{doc.media_id}/text"
+        assert doc.s3_key not in _payload_text(payload)
+
+    def test_pdf_without_copy_serves_nothing_and_queues_one(self, client, db_session, org, obj, queued):
+        doc = self._pdf(db_session, org, obj, "none")
+        payload = _get(client, org, obj)
+        item = _by_type(payload)["document"]
+        assert item["url"] is None
+        assert item["playback_status"] == "preparing"
+        assert item["text_url"] is None
+        assert doc.s3_key not in _payload_text(payload)
+        assert [c["media_id"] for c in queued["access_copy"]] == [str(doc.media_id)]
+
+    def test_pdf_at_originals_opens_the_original(self, client, db_session, org, obj, queued):
+        doc = self._pdf(db_session, org, obj, "originals",
+                        extra_metadata={"access_text_pages": ["Text."]})
+        _deriv(db_session, doc, "access_pdf", "pdf", "derivs/access.pdf")
+        item = _by_type(_get(client, org, obj))["document"]
+        # The original keeps its text layer and tags, so it is preferred.
+        assert item["url"] == f"https://media.test/{doc.s3_key}"
+        assert item["playback_source"] == "original"
+
+    def test_access_pdf_is_the_access_copy_download(self, client, db_session, org, obj, queued):
+        doc = self._pdf(db_session, org, obj, "derivatives")
+        _deriv(db_session, doc, "access_pdf", "pdf", f"derivs/{doc.media_id}/access_pdf.pdf", file_size=9000)
+        downloads = _by_type(_get(client, org, obj))["document"]["downloads"]
+        assert [(d["variant"], d["format"], d["mime_type"], d["width"]) for d in downloads] == [
+            ("access", "PDF", "application/pdf", None)
+        ]
+        with patch(
+            "app.services.uploads.get_org_media_url_byob",
+            side_effect=lambda key, **kw: f"https://media.test/{key}?dl={kw.get('filename')}",
+        ):
+            resp = client.get(f"/api/discover/{org.slug}/media/{doc.media_id}/download",
+                              params={"variant": "access"}, follow_redirects=False)
+        assert resp.status_code == 302
+        assert "access_pdf.pdf?dl=catalogue_access.pdf" in resp.headers["location"]
+        assert doc.s3_key not in resp.headers["location"]
+
+    def test_non_pdf_document_is_text_only(self, client, db_session, org, obj, queued):
+        doc = _media(db_session, org, "document",
+                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                     extra_metadata={"extracted_text": "Minutes of the meeting."})
+        _link(db_session, obj, doc)
+        payload = _get(client, org, obj)
+        item = _by_type(payload)["document"]
+        assert item["url"] is None
+        assert item["playback_status"] == "text_only"
+        assert item["text_url"].endswith(f"/media/{doc.media_id}/text")
+        assert doc.s3_key not in _payload_text(payload)
+        assert queued["access_copy"] == []
+
+
+class TestDocumentTextEndpoint:
+    def _text(self, client, org, media):
+        return client.get(f"/api/discover/{org.slug}/media/{media.media_id}/text")
+
+    def test_pdf_text_is_served_page_by_page(self, client, db_session, org, obj):
+        doc = _media(db_session, org, "document", "application/pdf",
+                     extra_metadata={"access_text_pages": ["First page.", "", "Third page."]})
+        _link(db_session, obj, doc)
+        resp = self._text(client, org, doc)
+        assert resp.status_code == 200
+        assert resp.json() == {"pages": [
+            {"page": 1, "text": "First page."},
+            {"page": 2, "text": ""},
+            {"page": 3, "text": "Third page."},
+        ], "truncated": False}
+
+    def test_other_document_text_is_one_entry(self, client, db_session, org, obj):
+        doc = _media(db_session, org, "document", "text/plain", extra_metadata={"extracted_text": "Plain."})
+        _link(db_session, obj, doc)
+        assert self._text(client, org, doc).json() == {"pages": [{"page": None, "text": "Plain."}], "truncated": False}
+
+    def test_long_text_is_truncated(self, client, db_session, org, obj):
+        doc = _media(db_session, org, "document", "text/plain", extra_metadata={"extracted_text": "x" * 50})
+        _link(db_session, obj, doc)
+        with patch("app.services.discover_media.MAX_DOCUMENT_TEXT_CHARS", 10):
+            body = self._text(client, org, doc).json()
+        assert body == {"pages": [{"page": None, "text": "x" * 10}], "truncated": True}
+
+    def test_unpublished_or_unlinked_or_textless_is_404(self, client, db_session, org, obj):
+        hidden = _media(db_session, org, "document", "application/pdf", published=False,
+                        extra_metadata={"access_text_pages": ["Secret."]})
+        _link(db_session, obj, hidden)
+        unlinked = _media(db_session, org, "document", "application/pdf",
+                          extra_metadata={"access_text_pages": ["Loose."]})
+        textless = _media(db_session, org, "document", "application/pdf")
+        _link(db_session, obj, textless)
+        audio = _media(db_session, org, "audio", "audio/mpeg", extra_metadata={"extracted_text": "No."})
+        _link(db_session, obj, audio)
+        for m in (hidden, unlinked, textless, audio):
+            assert self._text(client, org, m).status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Making the access copies
+# ---------------------------------------------------------------------------
+
+
+def _pdf_with_text(pages: list[str]) -> bytes:
+    """A real PDF whose pages carry a text layer."""
+    import ctypes
+    import io as _io
+
+    import pypdfium2 as pdfium
+    import pypdfium2.raw as raw
+
+    doc = pdfium.PdfDocument.new()
+    for words in pages:
+        page = doc.new_page(612, 792)
+        text_obj = raw.FPDFPageObj_NewTextObj(doc.raw, b"Helvetica", 24)
+        buf = ctypes.create_string_buffer((words + "\x00").encode("utf-16-le"))
+        raw.FPDFText_SetText(text_obj, ctypes.cast(buf, ctypes.POINTER(raw.FPDF_WCHAR)))
+        raw.FPDFPageObj_Transform(text_obj, 1, 0, 0, 1, 72, 700)
+        raw.FPDFPage_InsertObject(page.raw, text_obj)
+        page.gen_content()
+        page.close()
+    out = _io.BytesIO()
+    doc.save(out)
+    doc.close()
+    return out.getvalue()
+
+
+class _MemoryStorage:
+    def __init__(self, blobs):
+        self.blobs = dict(blobs)
+        self.types = {}
+
+    def get_object_sync(self, key):
+        return self.blobs[key], None
+
+    def put_object_sync(self, key, body, content_type=None, **kw):
+        self.blobs[key] = body
+        self.types[key] = content_type
+
+
+class TestGenerateAccessCopy:
+    def test_pdf_copy_is_page_images_with_the_text_kept(self, db_session, org):
+        import pypdfium2 as pdfium
+        from app.models import MediaDerivative
+        from app.services.public_access_copy import generate_access_copy
+
+        doc = _media(db_session, org, "document", "application/pdf")
+        storage = _MemoryStorage({doc.s3_key: _pdf_with_text(["Hello reader", "Second page"])})
+        with patch("app.services.storage.get_storage_backend", return_value=storage):
+            summary = generate_access_copy(doc, db_session)
+
+        assert summary["status"] == "created" and summary["pages"] == 2
+        d = db_session.query(MediaDerivative).filter_by(media_id=doc.media_id, derivative_type="access_pdf").one()
+        assert d.format == "pdf" and d.s3_key != doc.s3_key
+        assert storage.types[d.s3_key] == "application/pdf"
+        copy = pdfium.PdfDocument(storage.blobs[d.s3_key])
+        assert len(copy) == 2
+        # Page images only: no text layer, no vector content.
+        assert copy[0].get_textpage().get_text_bounded() == ""
+        assert {o.type for o in copy[0].get_objects()} == {pdfium.raw.FPDF_PAGEOBJ_IMAGE}
+        db_session.refresh(doc)
+        assert doc.extra_metadata["access_text_pages"] == ["Hello reader", "Second page"]
+        assert doc.extra_metadata["extracted_text"] == "Hello reader\n\nSecond page"
+
+    @pytest.mark.skipif(__import__("shutil").which("ffmpeg") is None, reason="ffmpeg not installed")
+    def test_audio_proxy_is_aac_in_mp4(self, db_session, org):
+        import subprocess
+        import tempfile
+        from app.models import MediaDerivative
+        from app.services.public_access_copy import generate_access_copy
+
+        with tempfile.NamedTemporaryFile(suffix=".wav") as tmp:
+            subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-y", "-f", "lavfi",
+                            "-i", "sine=frequency=440:duration=1", tmp.name], check=True)
+            with open(tmp.name, "rb") as fh:
+                wav = fh.read()
+        audio = _media(db_session, org, "audio", "audio/wav", filename="tone.wav")
+        storage = _MemoryStorage({audio.s3_key: wav})
+        with patch("app.services.storage.get_storage_backend", return_value=storage):
+            summary = generate_access_copy(audio, db_session)
+        assert summary["status"] == "created"
+        d = db_session.query(MediaDerivative).filter_by(media_id=audio.media_id, derivative_type="web_audio_aac").one()
+        assert d.format == "mp4" and d.s3_key.endswith(".m4a")
+        assert storage.blobs[d.s3_key][4:8] == b"ftyp"
+        # A second run leaves the copy alone.
+        with patch("app.services.storage.get_storage_backend", return_value=storage):
+            assert generate_access_copy(audio, db_session) == {"status": "exists"}
+
+    def test_audio_without_ffmpeg_goes_to_mediaconvert(self, db_session, org):
+        from app.services.public_access_copy import generate_access_copy
+
+        audio = _media(db_session, org, "audio", "audio/wav")
+        with patch("app.services.public_access_copy.ffmpeg_available", return_value=False), \
+                patch("app.services.video_transcoding.is_video_transcoding_available", return_value=True), \
+                patch("app.services.storage.get_storage_backend", return_value=_MemoryStorage({})), \
+                patch("app.tasks.media.transcode_video_task.delay") as delay:
+            assert generate_access_copy(audio, db_session) == {"delegated": "transcode"}
+        delay.assert_called_once_with(
+            media_id=str(audio.media_id), organization_id=str(org.organization_id),
+            derivatives=["web_audio_aac"], extract_poster=False,
+        )
+
+
+def test_mediaconvert_audio_job_is_audio_only():
+    from app.services.video_transcoding import VideoTranscodingService
+
+    svc = VideoTranscodingService()
+    captured = {}
+
+    class _Client:
+        def create_job(self, **kw):
+            captured.update(kw)
+            return {"Job": {"Id": "job-1", "Status": "SUBMITTED"}}
+
+    svc._client = _Client()
+    with patch.dict("os.environ", {"MEDIACONVERT_ROLE_ARN": "arn:aws:iam::0:role/x"}):
+        svc.create_transcode_job("s3://b/in.wav", "s3://b/out/", uuid.uuid4(), derivatives=["web_audio_aac"])
+    settings = captured["Settings"]
+    assert "VideoSelector" not in settings["Inputs"][0]
+    groups = settings["OutputGroups"]
+    assert [g["Name"] for g in groups] == ["web_audio_aac"]  # no poster frame
+    output = groups[0]["Outputs"][0]
+    assert "VideoDescription" not in output
+    assert output["AudioDescriptions"][0]["CodecSettings"]["Codec"] == "AAC"
+    assert output["Extension"] == "m4a"

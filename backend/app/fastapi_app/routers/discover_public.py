@@ -60,6 +60,7 @@ from app.services.rate_limiter import RateLimiter
 from app.services.uploads import get_org_media_url
 from app.services.public_cache import pub_cache_get, pub_cache_set, pub_cache_key_with_params
 from app.fastapi_app.schemas.discover_public import (
+    DiscoverDocumentTextOut,
     DiscoverEventDetailOut,
     DiscoverEventListResponse,
     DiscoverExhibitionDetailOut,
@@ -687,6 +688,42 @@ def get_public_media_alternative(
         media_type=content_type,
         headers={"Cache-Control": "public, max-age=300", "X-Content-Type-Options": "nosniff"},
     )
+
+
+@router.get(
+    "/api/discover/{org_slug}/media/{media_id}/text",
+    summary="Get the text of a public document",
+    response_model=DiscoverDocumentTextOut,
+)
+def get_public_document_text(
+    org_slug: str,
+    media_id: UUID,
+    request: Request,
+    db: Session = Depends(get_admin_db),
+):
+    """The text of a published document, page by page for PDFs.
+
+    The record page shows it as HTML so that a page-image access copy, which
+    has no text layer, never leaves screen-reader users without the words.
+    Same gates as every other public media route; anything else is a 404.
+    """
+    from app.fastapi_app.middleware.rate_limit import _get_client_ip
+    from app.services.discover_media import public_document_text
+
+    if not _media_limiter.allow(_get_client_ip(request), "discover_media_text"):
+        return JSONResponse(
+            status_code=429,
+            content={"error": {"code": "rate_limit_exceeded", "message": "Too many requests, please try again in a minute", "details": {}}},
+            headers={"Retry-After": "60"},
+        )
+    not_found = JSONResponse(status_code=404, content={"error": {"code": "not_found", "message": "Text not found"}})
+    org = _get_org_by_slug(db, org_slug)
+    if not org:
+        return not_found
+    found = public_document_text(db, org, media_id)
+    if not found:
+        return not_found
+    return JSONResponse(content=found, headers={"Cache-Control": "public, max-age=300"})
 
 
 @router.get(

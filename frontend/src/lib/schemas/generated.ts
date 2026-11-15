@@ -3843,6 +3843,20 @@ export const DiscoverConfigOutSchema = z.object({
 
 export type DiscoverConfigOut = z.infer<typeof DiscoverConfigOutSchema>;
 
+export const DiscoverDocumentTextPageOutSchema = z.object({
+  page: z.number().nullable().optional(),
+  text: z.string(),
+}).passthrough();
+
+export type DiscoverDocumentTextPageOut = z.infer<typeof DiscoverDocumentTextPageOutSchema>;
+
+export const DiscoverDocumentTextOutSchema = z.object({
+  pages: z.array(DiscoverDocumentTextPageOutSchema),
+  truncated: z.boolean().optional(),
+}).passthrough();
+
+export type DiscoverDocumentTextOut = z.infer<typeof DiscoverDocumentTextOutSchema>;
+
 export const DiscoverDownloadOutSchema = z.object({
   variant: z.string(),
   url: z.string(),
@@ -4090,11 +4104,14 @@ export const DiscoverMediaOutSchema = z.object({
   is_primary: z.boolean().nullable().optional(),
   caption: z.string().nullable().optional(),
   playback_mime_type: z.string().nullable().optional(),
+  playback_source: z.string().nullable().optional(),
+  playback_status: z.string().nullable().optional(),
   poster_url: z.string().nullable().optional(),
   captions: z.array(DiscoverCaptionTrackOutSchema).optional(),
   transcript: z.string().nullable().optional(),
   transcript_machine_generated: z.boolean().optional(),
   text_alternatives: z.array(DiscoverTextAlternativeOutSchema).optional(),
+  text_url: z.string().nullable().optional(),
   downloads: z.array(DiscoverDownloadOutSchema).optional(),
 }).passthrough();
 

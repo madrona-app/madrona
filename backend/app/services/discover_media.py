@@ -12,19 +12,28 @@ Access rules, all enforced here rather than in the browser:
   else is reachable, whatever ID a caller guesses.
 * Images are displayed from a rendition, never the master (see
   ``build_display_key_for_media``). An image with no rendition is omitted.
-* Video plays from a transcoded web proxy (a ``web_mp4_*`` / ``web_webm_*``
-  derivative) when one exists. Audio and documents have no rendition
-  pipeline, so the published file itself is what plays or opens; that is
-  what publishing an audio file or PDF means. Publishing is the gate.
+* Audio, video and PDFs play or open from an access copy
+  (services/public_access_copy.py): a video's transcoded web proxy, an
+  audio file's AAC proxy, a PDF's page-image copy. Playing a file transfers
+  it as surely as downloading it, so the original plays or opens only when
+  the file's public download level is ``originals`` and its rights allow it
+  (:func:`public_may_take_original`), the same rule as the original download.
+  With no access copy and no right to the original, nothing is served:
+  ``url`` is None, ``playback_status`` says whether a copy is being prepared,
+  and one is queued (:func:`request_access_copy`).
+* A document's text (per page for PDFs) is served as JSON for the record
+  page's text view (:func:`public_document_text`), so a page-image PDF never
+  leaves screen-reader users without the words.
 * Caption and transcript files are served through this API (same origin as
-  the page, so ``<track>`` loads without CORS), never as raw storage URLs.
+  the page, so ``<track>`` loads without CORS), never as raw storage URLs,
+  and are listed whether or not a playable copy exists yet.
 
 Downloads are a separate, per-file decision (``Media.public_download_level``):
 
 * ``none`` (and NULL, the default): no download is offered and the download
   endpoint refuses every variant.
-* ``derivatives``: the access copy only — an image's best JPEG rendition or a
-  video's web proxy. Audio and documents have no access copy, so nothing.
+* ``derivatives``: the access copy only — an image's best JPEG rendition, a
+  video's or audio file's web proxy, a PDF's page-image copy.
 * ``originals``: the access copy and the original master.
 
 Download links point at ``/api/discover/{org}/media/{id}/download``, which
@@ -32,11 +41,6 @@ re-checks everything server side; a hidden link is not the control. Rights
 are honoured too: expired rights block every public download, and when the
 organization has media-rights enforcement on, the original needs an
 open-access grant.
-
-Limit, stated plainly for operators: the level governs downloads. Playing a
-published audio file, or opening a published PDF, necessarily transfers the
-file, so a visitor can still save what they can play or read. Do not publish
-a file that must not leave the building.
 """
 from __future__ import annotations
 
@@ -250,30 +254,159 @@ def _image_item(media: Media, db: Session) -> dict | None:
     }
 
 
-def _time_based_or_document_item(media: Media, org_slug: str, db: Session) -> dict | None:
-    derivs = _derivatives(media, db)
+def _access_playback(media: Media, derivs: list[MediaDerivative]) -> tuple[str, str] | None:
+    """(key, mime type) of the access copy a file plays or opens from, if any."""
+    from app.services.public_access_copy import AUDIO_PROXY_MIME, audio_proxy, is_pdf, pdf_access_copy
+
     if media.media_type == "video":
         proxy = video_proxy(derivs)
-        # No web proxy: the published file is the only playable source.
-        play_key = proxy.s3_key if proxy else media.s3_key
-        mime = (f"video/{proxy.format}" if proxy and proxy.format in ("mp4", "webm") else media.mime_type)
+        if proxy:
+            mime = f"video/{proxy.format}" if proxy.format in ("mp4", "webm") else "video/mp4"
+            return proxy.s3_key, mime
+    elif media.media_type == "audio":
+        proxy = audio_proxy(derivs)
+        if proxy:
+            return proxy.s3_key, AUDIO_PROXY_MIME
+    elif media.media_type == "document" and is_pdf(media):
+        copy = pdf_access_copy(derivs)
+        if copy:
+            return copy.s3_key, "application/pdf"
+    return None
+
+
+def public_playback(media: Media, db: Session, derivs: list[MediaDerivative] | None = None) -> dict:
+    """What the public may play or open for an audio, video or document file.
+
+    ``{"key", "mime", "source"}`` where ``source`` is ``"access_copy"``,
+    ``"original"`` or None (nothing may be served). The original is chosen
+    only when :func:`public_may_take_original` allows it: first for documents
+    (the original PDF keeps its text layer and tags), and only as a fallback
+    for audio and video (the proxy streams better).
+    """
+    if derivs is None:
+        derivs = _derivatives(media, db)
+    access = _access_playback(media, derivs)
+    original_ok = public_may_take_original(media, db)
+    if media.media_type == "document" and original_ok:
+        return {"key": media.s3_key, "mime": media.mime_type, "source": "original"}
+    if access:
+        return {"key": access[0], "mime": access[1], "source": "access_copy"}
+    if original_ok:
+        return {"key": media.s3_key, "mime": media.mime_type, "source": "original"}
+    return {"key": None, "mime": None, "source": None}
+
+
+_QUEUE_CLAIM_SECONDS = 3600
+_ACTIVE_JOB_STATUSES = ("pending", "processing")
+
+
+def _claim_queue_slot(media: Media) -> bool:
+    """One queue request per file per hour, however many visitors arrive."""
+    try:
+        from app.services.redis_client import get_redis_client
+
+        redis = get_redis_client()
+        if not redis.is_available():
+            return True
+        return bool(redis.client.set(
+            f"madrona:access-copy-queued:{media.media_id}", "1", nx=True, ex=_QUEUE_CLAIM_SECONDS,
+        ))
+    except Exception:  # noqa: BLE001 - without Redis the task's own checks apply
+        return True
+
+
+def _enqueue_access_copy(media: Media) -> bool:
+    if media.media_type == "video":
+        try:
+            from app.tasks.media import transcode_video_task
+
+            transcode_video_task.delay(
+                media_id=str(media.media_id), organization_id=str(media.organization_id),
+            )
+            return True
+        except Exception as e:  # noqa: BLE001
+            logger.warning("Could not queue transcode for %s: %s", media.media_id, e)
+            return False
+    from app.tasks.media import queue_access_copy
+
+    return queue_access_copy(str(media.media_id), str(media.organization_id))
+
+
+def request_access_copy(media: Media, db: Session) -> str:
+    """Make sure an access copy is on its way. Returns the public status.
+
+    ``"preparing"`` when a job is pending or running (or was just queued);
+    ``"unavailable"`` when this deployment cannot make one, or an earlier
+    attempt finished without one (staff can regenerate it; anonymous traffic
+    does not retry a failing job forever).
+    """
+    from app.models import MediaProcessingJob
+    from app.services.public_access_copy import ACCESS_COPY_JOB_TYPE, can_generate
+
+    jobs = (
+        db.query(MediaProcessingJob.status)
+        .filter(
+            MediaProcessingJob.media_id == media.media_id,
+            MediaProcessingJob.job_type.in_((ACCESS_COPY_JOB_TYPE, "transcode")),
+        )
+        .all()
+    )
+    if any(status in _ACTIVE_JOB_STATUSES for (status,) in jobs):
+        return "preparing"
+    if jobs or not can_generate(media):
+        return "unavailable"
+    if not _claim_queue_slot(media):
+        return "preparing"
+    return "preparing" if _enqueue_access_copy(media) else "unavailable"
+
+
+def document_text_path(org_slug: str, media_id) -> str:
+    return f"/api/discover/{org_slug}/media/{media_id}/text"
+
+
+def _has_document_text(media: Media) -> bool:
+    from app.services.public_access_copy import TEXT_PAGES_KEY
+
+    extra = media.extra_metadata or {}
+    pages = extra.get(TEXT_PAGES_KEY)
+    if isinstance(pages, list) and any(isinstance(p, str) and p.strip() for p in pages):
+        return True
+    text = extra.get("extracted_text")
+    return isinstance(text, str) and bool(text.strip())
+
+
+def _time_based_or_document_item(media: Media, org_slug: str, db: Session) -> dict | None:
+    derivs = _derivatives(media, db)
+    playback = public_playback(media, db, derivs)
+    url = _sign(playback["key"], media.organization_id, db) if playback["key"] else None
+    from app.services.public_access_copy import is_pdf
+
+    if url:
+        status = "ready"
+    elif media.media_type == "document" and not is_pdf(media) and _has_document_text(media):
+        # The extracted text is this document's whole access copy.
+        status = "text_only"
     else:
-        play_key = media.s3_key
-        mime = media.mime_type
-    url = _sign(play_key, media.organization_id, db)
-    if not url:
-        return None
+        status = request_access_copy(media, db)
+    if url and media.media_type == "document" and not _has_document_text(media):
+        # The text view's text is extracted by the same job, so queue it even
+        # when the original may be opened.
+        request_access_copy(media, db)
     captions, texts = _text_tracks(media, org_slug, db)
     transcript = (media.transcript or "").strip() or None
     return {
         "url": url,
         "srcset": None,
-        "playback_mime_type": mime,
+        "playback_mime_type": playback["mime"] if url else None,
+        "playback_source": playback["source"] if url else None,
+        "playback_status": status,
         "poster_url": _sign(_poster_key(media, derivs), media.organization_id, db) if media.media_type == "video" else None,
         "captions": captions,
         "transcript": transcript,
         "transcript_machine_generated": bool(transcript and media.transcription_model),
         "text_alternatives": texts,
+        "text_url": document_text_path(org_slug, media.media_id)
+        if media.media_type == "document" and _has_document_text(media) else None,
     }
 
 
@@ -334,6 +467,9 @@ def build_public_media_items(
             "text_alternatives": [],
             "poster_url": None,
             "playback_mime_type": None,
+            "playback_source": None,
+            "playback_status": None,
+            "text_url": None,
             "downloads": downloads,
             **specific,
         })
@@ -389,6 +525,45 @@ def read_public_alternative(
     return text, "text/plain; charset=utf-8"
 
 
+# Upper bound on the document text returned in one response.
+MAX_DOCUMENT_TEXT_CHARS = 2_000_000
+
+
+def public_document_text(db: Session, org: Organization, media_id: UUID) -> dict | None:
+    """The text of a public document, for the record page's text view.
+
+    ``{"pages": [{"page": n | None, "text": str}], "truncated": bool}``.
+    PDFs give one entry per page (empty text for a page with none, so page
+    numbers line up with the page-image copy); other documents give a single
+    entry with ``page`` None. None when the file is not public or has no text.
+    """
+    from app.services.public_access_copy import TEXT_PAGES_KEY
+
+    media = get_public_media(db, org, media_id)
+    if not media or media.media_type != "document" or not _has_document_text(media):
+        return None
+    extra = media.extra_metadata or {}
+    pages = extra.get(TEXT_PAGES_KEY)
+    if isinstance(pages, list) and any(isinstance(p, str) and p.strip() for p in pages):
+        entries = [{"page": i + 1, "text": p if isinstance(p, str) else ""} for i, p in enumerate(pages)]
+    else:
+        entries = [{"page": None, "text": extra.get("extracted_text") or ""}]
+
+    out: list[dict] = []
+    budget = MAX_DOCUMENT_TEXT_CHARS
+    truncated = False
+    for entry in entries:
+        text = entry["text"].strip()
+        if len(text) > budget:
+            text = text[:budget]
+            truncated = True
+        out.append({"page": entry["page"], "text": text})
+        budget -= len(text)
+        if truncated:
+            break
+    return {"pages": out, "truncated": truncated}
+
+
 # ---------------------------------------------------------------------------
 # Downloads
 # ---------------------------------------------------------------------------
@@ -430,7 +605,25 @@ def access_copy(media: Media, derivs: list[MediaDerivative]) -> MediaDerivative 
         return None
     if media.media_type == "video":
         return video_proxy(derivs)
+    from app.services.public_access_copy import audio_proxy, is_pdf, pdf_access_copy
+
+    if media.media_type == "audio":
+        return audio_proxy(derivs)
+    if media.media_type == "document" and is_pdf(media):
+        return pdf_access_copy(derivs)
     return None
+
+
+def _access_copy_file_facts(media: Media, d: MediaDerivative) -> tuple[str, str, str]:
+    """(extension, format label, mime type) of an access copy."""
+    fmt = (d.format or "").lower()
+    if media.media_type == "audio":
+        return "m4a", "M4A", "audio/mp4"
+    if media.media_type == "document":
+        return "pdf", "PDF", "application/pdf"
+    if media.media_type == "video":
+        return fmt, fmt.upper(), f"video/{fmt}"
+    return fmt, fmt.upper(), f"image/{fmt}"
 
 
 def _rights_allow(media: Media, db: Session, variant: str) -> bool:
@@ -474,16 +667,17 @@ def _download_entries(media: Media, org_slug: str, db: Session, derivs: list[Med
     for variant in allowed_variants(media, db, derivs):
         if variant == "access":
             d = access_copy(media, derivs)
-            fmt = (d.format or "").lower()
+            _, label, mime = _access_copy_file_facts(media, d)
+            has_frame = media.media_type in ("image", "video")
             entries.append({
                 "variant": "access",
                 "url": download_path(org_slug, media.media_id, "access"),
                 "label": "Access copy",
-                "format": fmt.upper() if fmt else None,
-                "mime_type": f"video/{fmt}" if media.media_type == "video" else f"image/{fmt}",
+                "format": label or None,
+                "mime_type": mime,
                 "file_size": d.file_size or None,
-                "width": d.width or None,
-                "height": d.height or None,
+                "width": (d.width or None) if has_frame else None,
+                "height": (d.height or None) if has_frame else None,
             })
         else:
             ext = (media.filename or "").rsplit(".", 1)[-1] if "." in (media.filename or "") else ""
@@ -536,7 +730,8 @@ def resolve_public_download(
     stem = (media.filename or "download").rsplit(".", 1)[0]
     if variant == "access":
         d = access_copy(media, derivs)
-        return d.s3_key, _safe_filename(f"{stem}_access.{d.format}")
+        ext, _, _ = _access_copy_file_facts(media, d)
+        return d.s3_key, _safe_filename(f"{stem}_access.{ext}")
     return media.s3_key, _safe_filename(media.filename or "download")
 
 

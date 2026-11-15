@@ -142,9 +142,12 @@ class DiscoverDownloadOut(BaseModel):
 class DiscoverMediaOut(BaseModel):
     """Media item in object detail.
 
-    ``url`` is what the page displays or plays: an image rendition, a video
-    web proxy (or the published file when none exists), or the published
-    audio/document file.
+    ``url`` is what the page displays or plays: an image rendition, or an
+    audio/video/PDF access copy. The original is served only when the file's
+    public download level is 'originals' (``playback_source`` says which).
+    ``url`` is None when neither may be served; ``playback_status`` is then
+    'preparing' (an access copy is being made), 'unavailable', or, for a
+    non-PDF document, 'text_only' (its text at ``text_url`` is the access copy).
     """
     media_id: str
     url: str | None = None
@@ -164,12 +167,27 @@ class DiscoverMediaOut(BaseModel):
     is_primary: bool | None = None
     caption: str | None = None
     playback_mime_type: str | None = None
+    playback_source: str | None = None
+    playback_status: str | None = None
     poster_url: str | None = None
     captions: list[DiscoverCaptionTrackOut] = []
     transcript: str | None = None
     transcript_machine_generated: bool = False
     text_alternatives: list[DiscoverTextAlternativeOut] = []
+    text_url: str | None = None
     downloads: list[DiscoverDownloadOut] = []
+
+
+class DiscoverDocumentTextPageOut(BaseModel):
+    """One page of a document's text (``page`` None for non-paged documents)."""
+    page: int | None = None
+    text: str
+
+
+class DiscoverDocumentTextOut(BaseModel):
+    """The text of a public document, for the record page's text view."""
+    pages: list[DiscoverDocumentTextPageOut]
+    truncated: bool = False
 
 
 class DiscoverObjectDetailOut(BaseModel):
