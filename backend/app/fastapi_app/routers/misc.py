@@ -256,6 +256,11 @@ def create_lookup_value(
             "message": f"Category '{category_key}' not found",
         })
 
+    # A closed category's values are the CHECK on the column it fills, and a
+    # key longer than that column could be picked but never saved.
+    from app.services.lookup_fields import check_new_value_key
+    check_new_value_key(category_key, body.value_key)
+
     # Check duplicate
     existing = db.query(LookupValue).filter(
         LookupValue.category_id == category.category_id,

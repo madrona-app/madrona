@@ -1,8 +1,10 @@
 """Backend enum write-validation (the demo "Invalid input" second root cause).
 
 Covers the single-source validator that derives allowed enum values from the
-models' DB CHECK constraints, and the new acquisition source_type / legal_status
-CHECKs added by migration bdf1c9cfaf27.
+models' DB CHECK constraints. Columns whose values come from lookup categories
+organizations extend (acquisition method, source type, legal status, ...) no
+longer carry a CHECK (migration 7af089abb738); they are validated against the
+organization's lookup values instead (tests/test_lookup_backed_columns.py).
 """
 from __future__ import annotations
 
@@ -12,6 +14,7 @@ import pytest
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 
+from app.models import CollectionObject, ConditionReport
 from app.models.procedures import Acquisition
 from app.services.collections.field_enums import (
     _enum_columns,
@@ -20,59 +23,51 @@ from app.services.collections.field_enums import (
 
 
 class TestEnumRegistry:
-    def test_source_type_and_legal_status_are_enrolled(self):
+    def test_closed_vocabularies_are_enrolled(self):
+        assert _enum_columns(ConditionReport)["overall_condition"] == frozenset(
+            {"excellent", "good", "fair", "poor", "unacceptable"}
+        )
+        assert "destroyed" in _enum_columns(CollectionObject)["object_status"]
+
+    def test_lookup_backed_columns_are_not_enrolled(self):
         cols = _enum_columns(Acquisition)
-        assert cols["source_type"] == frozenset(
-            {"individual", "institution", "estate", "dealer", "other"}
-        )
-        assert cols["legal_status"] == frozenset(
-            {"clear", "pending_provenance", "disputed", "restricted"}
-        )
+        for column in ("acquisition_method", "source_type", "legal_status"):
+            assert column not in cols
 
     def test_status_is_excluded(self):
         # status transitions are governed by workflow_definitions, not this 422.
         assert "status" not in _enum_columns(Acquisition)
 
-    def test_acquisition_method_enrolled_from_existing_check(self):
-        assert "gift" in _enum_columns(Acquisition)["acquisition_method"]
-
 
 class TestValidateEnumFields:
-    def test_rejects_invalid_source_type(self):
+    def test_rejects_value_outside_the_check(self):
         with pytest.raises(HTTPException) as exc:
-            validate_enum_fields(Acquisition, {"source_type": "Auction House"})
+            validate_enum_fields(ConditionReport, {"overall_condition": "critical"})
         assert exc.value.status_code == 422
         assert exc.value.detail["code"] == "invalid_enum_value"
-        assert "source_type" in exc.value.detail["fields"]
-
-    def test_rejects_invalid_legal_status(self):
-        with pytest.raises(HTTPException) as exc:
-            validate_enum_fields(Acquisition, {"legal_status": "Critical"})
-        assert exc.value.status_code == 422
+        assert "overall_condition" in exc.value.detail["fields"]
 
     def test_reports_all_violations_at_once(self):
         with pytest.raises(HTTPException) as exc:
             validate_enum_fields(
-                Acquisition,
-                {"source_type": "nope", "legal_status": "nope"},
+                CollectionObject,
+                {"object_status": "active", "catalog_level": "nope"},
             )
-        assert set(exc.value.detail["fields"]) == {"source_type", "legal_status"}
+        assert set(exc.value.detail["fields"]) == {"object_status", "catalog_level"}
 
     def test_allows_valid_values(self):
-        validate_enum_fields(
-            Acquisition,
-            {"source_type": "institution", "legal_status": "clear", "acquisition_method": "gift"},
-        )
+        validate_enum_fields(ConditionReport, {"overall_condition": "fair"})
+        validate_enum_fields(CollectionObject, {"object_status": "destroyed"})
 
     def test_none_and_unknown_keys_ignored(self):
         # None clears a nullable field; unrelated keys aren't enum-constrained.
-        validate_enum_fields(Acquisition, {"source_type": None, "credit_line": "anything"})
+        validate_enum_fields(ConditionReport, {"overall_condition": None, "condition_summary": "x"})
 
 
-class TestSourceTypeDbCheck:
+class TestConditionDbCheck:
     """The CHECK is the durable backstop even if a write bypasses the router."""
 
-    def _org(self, db_session):
+    def _report(self, db_session, overall_condition):
         from app.models import Organization
 
         org = Organization(
@@ -82,28 +77,24 @@ class TestSourceTypeDbCheck:
         )
         db_session.add(org)
         db_session.commit()
-        return org.organization_id
+        return ConditionReport(
+            organization_id=org.organization_id,
+            report_number=f"CR-{uuid.uuid4().hex[:6]}",
+            report_type="periodic",
+            report_date=__import__("datetime").date.today(),
+            linked_entity_type="loan_in",
+            linked_entity_id=uuid.uuid4(),
+            overall_condition=overall_condition,
+            status="draft",
+        )
 
-    def test_invalid_source_type_rejected_by_db(self, db_session):
-        org_id = self._org(db_session)
-        db_session.add(Acquisition(
-            organization_id=org_id,
-            acquisition_number="ACQ2026.9001",
-            acquisition_method="gift",
-            source_type="Auction House",  # not in the CHECK set
-        ))
+    def test_condition_outside_the_scale_rejected_by_db(self, db_session):
+        db_session.add(self._report(db_session, "critical"))
         with pytest.raises(IntegrityError):
             db_session.flush()
         db_session.rollback()
 
-    def test_valid_source_type_and_null_accepted(self, db_session):
-        org_id = self._org(db_session)
-        db_session.add(Acquisition(
-            organization_id=org_id,
-            acquisition_number="ACQ2026.9002",
-            acquisition_method="gift",
-            source_type="institution",
-            legal_status=None,
-        ))
+    def test_condition_on_the_scale_and_null_accepted(self, db_session):
+        db_session.add(self._report(db_session, "poor"))
         db_session.flush()  # no IntegrityError
         db_session.rollback()

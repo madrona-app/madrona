@@ -32,6 +32,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import (
@@ -518,6 +519,9 @@ def create_citation(
     if not body.get("brief_citation"):
         raise HTTPException(status_code=400, detail="Missing: brief_citation")
 
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, Citation, body)
+
     citation = Citation(
         organization_id=org_id,
         citation_type=body.get("citation_type", "book"),
@@ -581,6 +585,9 @@ def update_citation(
     ).first()
     if not citation:
         raise HTTPException(status_code=404, detail="Citation not found")
+
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, Citation, body, current=citation)
 
     protected = {'citation_id', 'organization_id', 'created_at', 'created_by', 'updated_by'}
     for api_key, value in body.items():
@@ -799,9 +806,9 @@ def create_critical_response(
 
         return _serialize_critical_response(cr)
 
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Invalid reference")
+        raise integrity_http_error(exc, "Invalid reference") from None
 
 
 @router.get("/api/organizations/{org_id}/collections/critical-responses/{response_id}", response_model=CriticalResponseOut, summary="Get critical response")
@@ -924,9 +931,9 @@ def create_cataloging_history(
 
         return _serialize_cataloging_history(ch)
 
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Invalid reference")
+        raise integrity_http_error(exc, "Invalid reference") from None
 
 
 @router.get("/api/organizations/{org_id}/collections/cataloging-history/{history_id}", response_model=CatalogingHistoryOut, summary="Get cataloging history")
@@ -1008,9 +1015,9 @@ def create_object_context(
 
         return _serialize_object_context(oc)
 
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Invalid reference")
+        raise integrity_http_error(exc, "Invalid reference") from None
 
 
 @router.put("/api/organizations/{org_id}/collections/contexts/{context_id}", response_model=ObjectContextOut, summary="Update object context")

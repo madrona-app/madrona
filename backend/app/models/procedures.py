@@ -228,11 +228,7 @@ class ObjectEntry(Base):
         Index("ix_object_entries_org_status", "organization_id", "status"),
         Index("ix_object_entries_org_dept", "organization_id", "department_id"),
         Index("ix_object_entries_depositor", "depositor_id"),
-        CheckConstraint(
-            "entry_reason IN ('loan_consideration', 'gift_offer', 'purchase_consideration', "
-            "'identification', 'conservation', 'photography', 'research', 'enquiry', 'other')",
-            name="check_entry_reason",
-        ),
+        # entry_reason: lookup-backed (app/services/lookup_fields.py), no CHECK.
         CheckConstraint(
             "status IN ('pending', 'received', 'processing', 'processed', 'returned', 'acquired')",
             name="check_entry_status",
@@ -559,28 +555,13 @@ class Acquisition(Base):
         Index("ix_acquisitions_org_status", "organization_id", "status"),
         Index("ix_acquisitions_org_dept", "organization_id", "department_id"),
         Index("ix_acquisitions_source", "source_id"),
-        CheckConstraint(
-            "acquisition_method IN ('gift', 'purchase', 'bequest', 'transfer', 'exchange', "
-            "'field_collection', 'commission', 'found_in_collection', 'conversion', 'donation', 'unknown')",
-            name="check_acquisition_method_acq",
-        ),
+        # acquisition_method: lookup-backed (app/services/lookup_fields.py), no CHECK.
         CheckConstraint(
             "status IN ('proposed', 'pending_approval', 'approved', 'completed', 'accessioned', 'cancelled')",
             name="check_acquisition_status",
         ),
-        # source_type is its OWN enum (NOT constituent_type) — the UI validates it
-        # against individual|institution|estate|dealer|other. Without this CHECK a
-        # live edit could persist e.g. 'Auction House' and brick the page on read.
-        CheckConstraint(
-            "source_type IS NULL OR source_type IN ('individual', 'institution', "
-            "'estate', 'dealer', 'other')",
-            name="check_acquisition_source_type",
-        ),
-        CheckConstraint(
-            "legal_status IS NULL OR legal_status IN ('clear', 'pending_provenance', "
-            "'disputed', 'restricted')",
-            name="check_acquisition_legal_status",
-        ),
+        # source_type: lookup-backed (app/services/lookup_fields.py), no CHECK.
+        # legal_status: lookup-backed (app/services/lookup_fields.py), no CHECK.
         {"schema": "collections"},
     )
 
@@ -866,11 +847,7 @@ class LoanIn(Base):
         Index("ix_loans_in_org_dept", "organization_id", "department_id"),
         Index("ix_loans_in_lender", "lender_id"),
         Index("ix_loans_in_entry", "entry_id"),
-        CheckConstraint(
-            "loan_purpose IN ('exhibition', 'research', 'conservation', 'long_term', "
-            "'photography', 'education', 'study', 'other')",
-            name="check_loan_in_purpose",
-        ),
+        # loan_purpose: lookup-backed (app/services/lookup_fields.py), no CHECK.
         CheckConstraint(
             "status IN ('requested', 'pending_approval', 'approved', 'agreement_sent', "
             "'agreement_signed', 'in_transit', 'received', 'on_loan', 'return_initiated', "
@@ -1244,11 +1221,7 @@ class LoanOut(Base):
         Index("ix_loans_out_org_status", "organization_id", "status"),
         Index("ix_loans_out_org_dept", "organization_id", "department_id"),
         Index("ix_loans_out_borrower", "borrower_id"),
-        CheckConstraint(
-            "loan_purpose IN ('exhibition', 'research', 'conservation', 'education', "
-            "'photography', 'touring', 'inter_museum', 'other')",
-            name="check_loan_out_purpose",
-        ),
+        # loan_purpose: lookup-backed (app/services/lookup_fields.py), no CHECK.
         CheckConstraint(
             "status IN ('requested', 'pending_approval', 'approved', 'agreement_sent', "
             "'agreement_signed', 'in_transit', 'on_loan', 'return_scheduled', "
@@ -1593,12 +1566,7 @@ class ConservationTreatment(Base):
         Index("ix_conservation_object", "object_id"),
         Index("ix_conservation_org_dept", "organization_id", "department_id"),
         Index("ix_conservation_org_status", "organization_id", "status"),
-        CheckConstraint(
-            "treatment_type IN ('preventive', 'remedial', 'restoration', 'analysis', "
-            "'stabilization', 'cleaning', 'repair', 'documentation', "
-            "'mount_making', 'rehousing', 'pest_treatment', 'other')",
-            name="check_treatment_type",
-        ),
+        # treatment_type: lookup-backed (app/services/lookup_fields.py), no CHECK.
         CheckConstraint(
             "status IN ('proposed', 'pending_approval', 'approved', 'in_progress', "
             "'on_hold', 'completed', 'cancelled')",
@@ -1758,12 +1726,7 @@ class ObjectExit(Base):
         Index("ix_object_exits_org_dept", "organization_id", "department_id"),
         Index("ix_object_exits_recipient", "recipient_id"),
         Index("ix_object_exits_entry", "entry_id"),
-        CheckConstraint(
-            "exit_reason IN ('loan_return', 'loan_out', 'transfer', 'disposal', 'deaccession', "
-            "'conservation', 'photography', 'enquiry_return', 'repatriation', "
-            "'destruction', 'theft_loss', 'other')",
-            name="check_exit_reason",
-        ),
+        # exit_reason: lookup-backed (app/services/lookup_fields.py), no CHECK.
         CheckConstraint(
             "status IN ('pending', 'preparing', 'dispatched', 'in_transit', 'acknowledged', 'cancelled')",
             name="check_exit_status",
@@ -2032,12 +1995,7 @@ class Deaccession(Base):
         Index("ix_deaccessions_object", "object_id"),
         Index("ix_deaccessions_org_dept", "organization_id", "department_id"),
         Index("ix_deaccessions_org_status", "organization_id", "status"),
-        CheckConstraint(
-            "reason IN ('duplicate', 'outside_scope', 'deterioration', 'damage', "
-            "'repatriation', 'theft_loss', 'exchange', 'ethical', "
-            "'donor_request', 'legal_requirement', 'hazard', 'other')",
-            name="check_deaccession_reason",
-        ),
+        # reason: lookup-backed (app/services/lookup_fields.py), no CHECK.
         CheckConstraint(
             "status IN ('proposed', 'under_review', 'committee_reviewed', 'pending_board', "
             "'approved', 'in_progress', 'completed', 'cancelled', 'rejected')",

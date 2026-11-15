@@ -68,7 +68,7 @@ export const CollectionObjectSchema = z.object({
     term: z.string().nullish(),
     value_key: z.string().nullish(),
   })).nullish(),
-  object_status: z.string().default('active'),
+  object_status: z.string().default('pending'),
   is_discoverable: z.boolean().nullable().optional().default(false),
   discoverable_at: z.string().nullable().optional(),
 

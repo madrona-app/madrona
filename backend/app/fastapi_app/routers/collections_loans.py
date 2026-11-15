@@ -14,6 +14,7 @@ from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_auth, require_permission
 from app.models import (
@@ -98,6 +99,8 @@ def create_loan_in(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(LoanIn, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, LoanIn, data)
 
     # Create via the shared service — the same code the draft applier runs. It
     # owns the LI number and the loan_in/create approval gate.
@@ -232,6 +235,8 @@ def update_loan_in(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(LoanIn, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, LoanIn, data, current=loan)
 
     old_status = loan.status
 
@@ -742,12 +747,12 @@ def add_loan_in_object_entry(
             "created_at": link.created_at.isoformat() if link.created_at else None,
         }
 
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail={
+        raise integrity_http_error(exc, {
             "code": "conflict",
             "message": "Entry is already linked to this loan",
-        })
+        }) from None
 
 
 @router.delete("/api/organizations/{organization_id}/collections/loans-in/{loan_id}/object-entries/{loan_in_entry_id}", summary="Unlink entry from loan in")
@@ -823,6 +828,8 @@ def create_loan_out(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(LoanOut, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, LoanOut, data)
 
     # Create via the shared service — the same code the draft applier runs. It
     # owns the LO number and the loan_out/create approval gate.
@@ -988,6 +995,8 @@ def update_loan_out(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(LoanOut, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, LoanOut, data, current=loan)
 
     old_status = loan.status
 

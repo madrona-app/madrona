@@ -23,6 +23,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import (
@@ -194,9 +195,9 @@ def link_object_material(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="This material link may already exist")
+        raise integrity_http_error(exc, "This material link may already exist") from None
 
     db.refresh(link)
     return _serialize_object_material(link, include_term=True)
@@ -302,9 +303,9 @@ def link_object_technique(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="This technique link may already exist")
+        raise integrity_http_error(exc, "This technique link may already exist") from None
 
     db.refresh(link)
     return _serialize_object_technique(link, include_term=True)
@@ -408,9 +409,9 @@ def link_object_classification(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="This classification link may already exist")
+        raise integrity_http_error(exc, "This classification link may already exist") from None
 
     db.refresh(link)
     return _serialize_object_classification(link, include_value=True)

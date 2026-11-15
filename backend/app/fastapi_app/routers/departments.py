@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_auth, require_permission
 from app.fastapi_app.schemas.common import MessageResponse
@@ -130,12 +131,12 @@ def create_department(
     try:
         db.add(dept)
         db.flush()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail={
+        raise integrity_http_error(exc, {
             "code": "conflict",
             "message": "A department with this code already exists in this organization",
-        })
+        }) from None
 
     db.commit()
     dept = db.query(Department).options(
@@ -206,12 +207,12 @@ def update_department(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail={
+        raise integrity_http_error(exc, {
             "code": "conflict",
             "message": "A department with this code already exists in this organization",
-        })
+        }) from None
 
     dept = db.query(Department).options(
         joinedload(Department.members)
@@ -309,12 +310,12 @@ def add_department_member(
     try:
         db.add(membership)
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail={
+        raise integrity_http_error(exc, {
             "code": "conflict",
             "message": "User is already a member of this department",
-        })
+        }) from None
 
     return _serialize_membership(membership)
 

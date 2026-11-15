@@ -111,6 +111,9 @@ def create_object_entry(
             "field": "reason",
         })
 
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, ObjectEntry, data, aliases={"entry_reason": "reason"})
+
     # Create via the shared service — the same code the draft applier runs.
     from app.services.collections.creation.object_entry import (
         create_object_entry as _create_object_entry,
@@ -245,6 +248,8 @@ def update_object_entry(
     validate_enum_fields(ObjectEntry, {
         field_mapping.get(k, k): (None if v == '' else v) for k, v in data.items()
     })
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, ObjectEntry, data, current=entry, aliases={"entry_reason": "reason"})
 
     # Optimistic concurrency — reject stale updates
     from app.services.coerce import check_version
@@ -1184,6 +1189,8 @@ def create_acquisition(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(Acquisition, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, Acquisition, data)
 
     # Create via the shared service — the same code the draft applier runs. It
     # owns the ACQ number and the acquisition/create approval gate. This router
@@ -1301,6 +1308,8 @@ def update_acquisition(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(Acquisition, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, Acquisition, data, current=acq)
 
     from app.services.coerce import check_version
     check_version(acq, data)

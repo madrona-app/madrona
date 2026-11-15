@@ -21,6 +21,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import (
@@ -323,6 +324,9 @@ def create_event(
     if not body.get("event_type"):
         raise HTTPException(status_code=400, detail="Event type is required")
 
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, Event, body)
+
     try:
         ref_number = _generate_event_reference_number(org_id, db)
 
@@ -361,10 +365,7 @@ def create_event(
     except IntegrityError as e:
         db.rollback()
         logger.error(f"Integrity error creating event: {e}")
-        raise HTTPException(
-            status_code=409,
-            detail="Event could not be created due to a conflict. A record with this reference number may already exist.",
-        )
+        raise integrity_http_error(e, "Event could not be created due to a conflict. A record with this reference number may already exist.") from None
     except HTTPException:
         raise
     except Exception as e:
@@ -395,6 +396,9 @@ def update_event(
 
     if not body:
         raise HTTPException(status_code=400, detail="Request body is required")
+
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, Event, body, current=event)
 
     try:
         if "title" in body:
@@ -450,7 +454,7 @@ def update_event(
     except IntegrityError as e:
         db.rollback()
         logger.error(f"Integrity error updating event: {e}")
-        raise HTTPException(status_code=409, detail="Event could not be updated due to a conflict")
+        raise integrity_http_error(e, "Event could not be updated due to a conflict") from None
     except HTTPException:
         raise
     except Exception as e:
@@ -592,12 +596,9 @@ def add_event_object(
 
         return _serialize_event_object_link(link, include_object=True)
 
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(
-            status_code=409,
-            detail="Object is already linked to this event with this role",
-        )
+        raise integrity_http_error(exc, "Object is already linked to this event with this role") from None
     except HTTPException:
         raise
     except Exception as e:
@@ -650,9 +651,9 @@ def update_event_object(
 
         return _serialize_event_object_link(link, include_object=True)
 
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Update would cause a conflict")
+        raise integrity_http_error(exc, "Update would cause a conflict") from None
     except HTTPException:
         raise
     except Exception as e:
@@ -798,12 +799,9 @@ def add_event_participant(
 
         return _serialize_event_participant(xref, include_constituent=True)
 
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(
-            status_code=409,
-            detail="Constituent is already a participant in this event with this role",
-        )
+        raise integrity_http_error(exc, "Constituent is already a participant in this event with this role") from None
     except HTTPException:
         raise
     except Exception as e:

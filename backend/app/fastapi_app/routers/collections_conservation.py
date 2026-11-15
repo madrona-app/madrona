@@ -156,6 +156,8 @@ def create_conservation_treatment(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(ConservationTreatment, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, ConservationTreatment, data)
 
     # Create via the shared service — the same code the draft applier runs.
     from app.services.collections.creation.conservation_treatment import (
@@ -276,6 +278,8 @@ def update_conservation_treatment(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(ConservationTreatment, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, ConservationTreatment, data, current=treatment)
 
     old_status = treatment.status
 
@@ -468,6 +472,8 @@ def create_object_exit(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(ObjectExit, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, ObjectExit, data)
 
     # Create via the shared service — the same code the draft applier runs. It
     # owns the EX number, the object_exit/create approval gate, and the
@@ -594,6 +600,8 @@ def update_object_exit(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(ObjectExit, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, ObjectExit, data, current=exit_rec)
 
     from app.services.coerce import check_version
     check_version(exit_rec, data)
@@ -810,6 +818,8 @@ def create_deaccession(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(Deaccession, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, Deaccession, data)
 
     # Create via the shared service — the same code the draft applier runs. It
     # owns the DA number, the deaccession/create approval gate, and the
@@ -934,6 +944,8 @@ def update_deaccession(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(Deaccession, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, Deaccession, data, current=deacc)
 
     # Optimistic concurrency — reject stale updates
     from app.services.coerce import check_version

@@ -70,6 +70,9 @@ def create_condition_report(
     if not has_object and not has_linked_entity:
         raise HTTPException(status_code=400, detail="A condition report must be linked to an object or other entity")
 
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_uuid, ConditionReport, body.model_dump())
+
     from app.services.sequence import next_sequential_number
     report_number = next_sequential_number(db, org_uuid, 'CR')
 
@@ -232,6 +235,8 @@ def update_condition_report(
             updates[_f] = None
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(ConditionReport, updates)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_uuid, ConditionReport, updates, current=report)
     for key, value in updates.items():
         if hasattr(report, key) and key not in protected_fields:
             if key in check_constraint_fields and value == "":

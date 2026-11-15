@@ -102,14 +102,16 @@ def lookup_auth(auth_setup, db_session):
 
 
 class TestListAllLookups:
-    def test_list_lookups_empty(self, lookup_auth):
+    def test_list_lookups_returns_seeded_categories(self, lookup_auth):
+        # The harness seeds the system lookups a booted install has.
         auth_client, org, _ = lookup_auth
         url = f"/api/organizations/{org.organization_id}/lookups"
         resp = auth_client.get(url)
         assert resp.status_code == 200
         data = resp.get_json()
         assert isinstance(data, list)
-        assert len(data) == 0
+        keys = {c["category_key"] for c in data}
+        assert {"acquisition_method", "object_status", "condition"} <= keys
 
     def test_list_lookups_with_data(self, lookup_auth, db_session):
         auth_client, org, _ = lookup_auth
@@ -121,9 +123,8 @@ class TestListAllLookups:
         url = f"/api/organizations/{org.organization_id}/lookups"
         resp = auth_client.get(url)
         assert resp.status_code == 200
-        data = resp.get_json()
+        data = [c for c in resp.get_json() if c["category_key"] == "acq_method"]
         assert len(data) == 1
-        assert data[0]["category_key"] == "acq_method"
         assert len(data[0]["values"]) == 2
 
 
@@ -135,15 +136,15 @@ class TestListAllLookups:
 class TestGetCategoryValues:
     def test_get_category_values(self, lookup_auth, db_session):
         auth_client, org, _ = lookup_auth
-        cat = _seed_category(db_session, key="condition")
+        cat = _seed_category(db_session, key="test_condition")
         _seed_value(db_session, cat, value_key="good", label="Good")
         db_session.commit()
 
-        url = f"/api/organizations/{org.organization_id}/lookups/condition"
+        url = f"/api/organizations/{org.organization_id}/lookups/test_condition"
         resp = auth_client.get(url)
         assert resp.status_code == 200
         data = resp.get_json()
-        assert data["category"]["category_key"] == "condition"
+        assert data["category"]["category_key"] == "test_condition"
         assert len(data["values"]) == 1
         assert data["values"][0]["value_key"] == "good"
 

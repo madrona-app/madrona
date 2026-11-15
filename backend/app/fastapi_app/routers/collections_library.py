@@ -42,6 +42,7 @@ from sqlalchemy import exists, func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.fastapi_app.schemas.collections_library import (
@@ -291,9 +292,9 @@ def _touch(record: BibRecord, auth: AuthContext) -> None:
 def _commit_or_conflict(db: Session, message: str) -> None:
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail=message)
+        raise integrity_http_error(exc, message) from None
 
 
 _BARCODE_CONFLICT = "Another item in this organization already has that barcode"

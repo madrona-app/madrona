@@ -409,18 +409,12 @@ class IncidentReport(Base):
         Index("ix_incidents_org_status", "organization_id", "status"),
         Index("ix_incidents_org_type", "organization_id", "incident_type"),
         Index("ix_incidents_org_date", "organization_id", "incident_date"),
-        CheckConstraint(
-            "incident_type IN ('damage', 'loss', 'theft', 'vandalism', 'environmental', 'fire', 'water', 'pest', 'other')",
-            name="check_incident_type",
-        ),
+        # incident_type: lookup-backed (app/services/lookup_fields.py), no CHECK.
         CheckConstraint(
             "status IN ('draft', 'submitted', 'under_investigation', 'resolved', 'closed')",
             name="check_incident_status",
         ),
-        CheckConstraint(
-            "insurance_claim_status IS NULL OR insurance_claim_status IN ('pending', 'approved', 'denied', 'settled', 'withdrawn')",
-            name="check_insurance_claim_status",
-        ),
+        # insurance_claim_status: lookup-backed (app/services/lookup_fields.py), no CHECK.
         {"schema": "collections"},
     )
 
@@ -588,10 +582,7 @@ class CollectionsReview(Base):
         Index("ix_reviews_org_number", "organization_id", "review_number", unique=True),
         Index("ix_reviews_org_status", "organization_id", "status"),
         Index("ix_reviews_org_type", "organization_id", "review_type"),
-        CheckConstraint(
-            "review_type IN ('significance', 'relevance', 'care', 'deaccession', 'rationalization', 'thematic', 'condition', 'documentation', 'comprehensive')",
-            name="check_review_type",
-        ),
+        # review_type: lookup-backed (app/services/lookup_fields.py), no CHECK.
         CheckConstraint(
             "status IN ('draft', 'approved', 'in_progress', 'completed', 'cancelled')",
             name="check_review_status",
@@ -805,18 +796,12 @@ class AuditCampaign(Base):
         Index("ix_audits_org_number", "organization_id", "campaign_number", unique=True),
         Index("ix_audits_org_status", "organization_id", "status"),
         Index("ix_audits_org_type", "organization_id", "audit_type"),
-        CheckConstraint(
-            "audit_type IN ('location', 'condition', 'documentation', 'security', 'comprehensive', 'spot_check', 'annual')",
-            name="check_audit_type",
-        ),
+        # audit_type: lookup-backed (app/services/lookup_fields.py), no CHECK.
         CheckConstraint(
             "status IN ('draft', 'approved', 'in_progress', 'completed', 'cancelled')",
             name="check_audit_status",
         ),
-        CheckConstraint(
-            "sample_method IS NULL OR sample_method IN ('complete', 'random', 'stratified', 'systematic', 'targeted')",
-            name="check_sample_method",
-        ),
+        # sample_method: lookup-backed (app/services/lookup_fields.py), no CHECK.
         {"schema": "collections"},
     )
 

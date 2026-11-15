@@ -18,6 +18,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import (
@@ -286,9 +287,9 @@ def create_person_authority(
     try:
         db.add(authority)
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="A similar authority may already exist")
+        raise integrity_http_error(exc, "A similar authority may already exist") from None
 
     return _serialize_person_authority(authority)
 
@@ -587,9 +588,9 @@ def create_authority_relation(
     try:
         db.add(relation)
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="This relation may already exist")
+        raise integrity_http_error(exc, "This relation may already exist") from None
 
     return _serialize_person_authority_relation(relation)
 
@@ -704,9 +705,9 @@ def link_object_authority(
     try:
         db.add(link)
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="This link may already exist")
+        raise integrity_http_error(exc, "This link may already exist") from None
 
     return _serialize_object_person_authority(link, include_authority=True)
 

@@ -712,11 +712,7 @@ class ConditionReport(Base):
         Index("ix_condition_reports_object", "object_id"),
         Index("ix_condition_reports_org_dept", "organization_id", "department_id"),
         Index("ix_condition_reports_org_status", "organization_id", "status"),
-        CheckConstraint(
-            "report_type IN ('intake', 'loan_out', 'loan_in', 'loan_return', "
-            "'periodic', 'conservation', 'incident', 'pre_treatment', 'post_treatment')",
-            name="check_report_type",
-        ),
+        # report_type: lookup-backed (app/services/lookup_fields.py), no CHECK.
         CheckConstraint(
             "overall_condition IS NULL OR overall_condition IN ('excellent', 'good', 'fair', 'poor', 'unacceptable')",
             name="check_report_overall_condition",
@@ -957,13 +953,7 @@ class Citation(Base):
         Index("ix_citations_object", "object_id"),
         Index("ix_citations_type", "organization_id", "citation_type"),
         Index("ix_citations_year", "organization_id", "publication_year"),
-        CheckConstraint(
-            "citation_type IN ('book', 'monograph', 'article', 'journal_article', "
-            "'exhibition_catalog', 'collection_catalog', 'auction_catalog', "
-            "'dissertation', 'thesis', 'website', 'database', 'unpublished', "
-            "'correspondence', 'archival', 'newspaper', 'magazine', 'other')",
-            name="check_citation_type",
-        ),
+        # citation_type: lookup-backed (app/services/lookup_fields.py), no CHECK.
         {"schema": "collections"},
     )
 
@@ -1159,10 +1149,7 @@ class ObjectRight(Base):
         Index("ix_rights_status", "organization_id", "status"),
         Index("ix_rights_holder_contact", "rights_holder_contact_id"),
         Index("ix_rights_holder_agent_contact", "rights_holder_agent_contact_id"),
-        CheckConstraint(
-            "right_type IN ('copyright', 'reproduction', 'exhibition', 'publication', 'broadcast', 'performance', 'adaptation', 'distribution', 'moral_rights', 'database_rights', 'trademark', 'other')",
-            name="check_right_type",
-        ),
+        # right_type: lookup-backed (app/services/lookup_fields.py), no CHECK.
         CheckConstraint(
             "status IN ('unknown', 'public_domain', 'owned', 'licensed', 'granted', 'requested', 'denied', 'expired', 'orphan', 'disputed')",
             name="check_right_status",
@@ -1317,10 +1304,7 @@ class UseRequest(Base):
         Index("ix_use_requests_org_status", "organization_id", "status"),
         Index("ix_use_requests_org_type", "organization_id", "use_type"),
         Index("ix_use_requests_requester", "requester_user_id"),
-        CheckConstraint(
-            "use_type IN ('research', 'exhibition', 'reproduction', 'education', 'publication', 'broadcast', 'commercial', 'conservation', 'loan', 'digitization', 'other')",
-            name="check_use_type",
-        ),
+        # use_type: lookup-backed (app/services/lookup_fields.py), no CHECK.
         CheckConstraint(
             "status IN ('submitted', 'under_review', 'approved', 'denied', 'in_progress', 'completed', 'cancelled', 'withdrawn')",
             name="check_use_request_status",
@@ -1495,14 +1479,8 @@ class Valuation(Base):
         Index("ix_valuations_object", "object_id"),
         Index("ix_valuations_org_type", "organization_id", "valuation_type"),
         Index("ix_valuations_org_current", "organization_id", "is_current"),
-        CheckConstraint(
-            "valuation_type IN ('insurance', 'market', 'replacement', 'probate', 'donation', 'internal')",
-            name="check_valuation_type",
-        ),
-        CheckConstraint(
-            "valuation_method IS NULL OR valuation_method IN ('comparable_sales', 'replacement_cost', 'income_approach', 'expert_opinion', 'formula', 'hybrid')",
-            name="check_valuation_method",
-        ),
+        # valuation_type: lookup-backed (app/services/lookup_fields.py), no CHECK.
+        # valuation_method: lookup-backed (app/services/lookup_fields.py), no CHECK.
         {"schema": "collections"},
     )
 
@@ -1631,10 +1609,7 @@ class ReproductionRequest(Base):
         Index("ix_reproduction_req_object", "object_id"),
         Index("ix_reproduction_req_org_status", "organization_id", "status"),
         UniqueConstraint("organization_id", "request_number", name="uq_reproduction_req_number"),
-        CheckConstraint(
-            "reproduction_type IN ('photograph', 'scan', 'cast', '3d_print', 'digital_copy', 'film', 'video', 'other')",
-            name="check_reproduction_type",
-        ),
+        # reproduction_type: lookup-backed (app/services/lookup_fields.py), no CHECK.
         CheckConstraint(
             "status IN ('submitted', 'rights_review', 'approved', 'denied', 'in_production', 'delivered', 'completed', 'cancelled')",
             name="check_reproduction_status",

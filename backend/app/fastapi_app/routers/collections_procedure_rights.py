@@ -24,6 +24,7 @@ from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import (
@@ -286,6 +287,9 @@ def create_object_right(
     if not body.get("right_type"):
         raise HTTPException(status_code=400, detail="Missing: right_type")
 
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, ObjectRight, body)
+
     obj = db.query(CollectionObject).filter(
         CollectionObject.object_id == object_id,
         CollectionObject.organization_id == org_id,
@@ -312,9 +316,9 @@ def create_object_right(
     try:
         right = _create_object_right(db, org_id, payload, auth.user_id, open_approval=True)
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="This right may already exist")
+        raise integrity_http_error(exc, "This right may already exist") from None
 
     db.refresh(right)
     return _serialize_object_right(right)
@@ -335,6 +339,9 @@ def update_object_right(
     ).first()
     if not right:
         raise HTTPException(status_code=404, detail="Right not found")
+
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, ObjectRight, body, current=right)
 
     protected = {
         "right_id", "organization_id", "object_id", "created_at", "created_by_id", "created_by", "updated_by_id",
@@ -455,6 +462,9 @@ def create_use_request(
     """Create use request."""
     if not body.get("use_type"):
         raise HTTPException(status_code=400, detail="Missing: use_type")
+
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, UseRequest, body)
     if not body.get("requester_name"):
         raise HTTPException(status_code=400, detail="Missing: requester_name")
     if not body.get("use_purpose"):
@@ -473,9 +483,9 @@ def create_use_request(
     try:
         req = _create_use_request(db, org_id, body, auth.user_id, open_approval=True)
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="A request with this number may already exist")
+        raise integrity_http_error(exc, "A request with this number may already exist") from None
 
     db.refresh(req)
     return _serialize_use_request(req)
@@ -516,6 +526,9 @@ def update_use_request(
     ).first()
     if not req:
         raise HTTPException(status_code=404, detail="Use request not found")
+
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, UseRequest, body, current=req)
 
     # Attribution is server-set and never accepted from the body.
     #
@@ -589,9 +602,9 @@ def add_use_request_object(
     db.add(link)
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="This object is already linked to this request")
+        raise integrity_http_error(exc, "This object is already linked to this request") from None
 
     db.refresh(link)
     return _serialize_use_request_object(link)

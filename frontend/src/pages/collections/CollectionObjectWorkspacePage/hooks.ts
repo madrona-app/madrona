@@ -485,7 +485,7 @@ export function useFormState(
         object_name: object.object_name || '',
         object_type: object.object_type || '',
         classifications: object.classifications || [],
-        object_status: object.object_status || 'active',
+        object_status: object.object_status || 'pending',
         other_numbers: object.other_numbers || [],
         number_of_objects: object.number_of_objects ?? 1,
         department_id: object.department_id ?? null,
