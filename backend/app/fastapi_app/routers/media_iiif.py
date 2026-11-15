@@ -236,6 +236,41 @@ def get_collection_manifest(
     return _iiif_json_response(manifest, IIIF_PRESENTATION_CT, cache_max_age=300)
 
 
+def _public_iiif_media(db: Session, media_id: UUID):
+    """(media, rendition source) for the anonymous Image API, or 404.
+
+    The Discover gates: published, linked to a public object of its own
+    organization. Unpublished, unlinked, hidden-object and nonexistent media
+    are one indistinguishable 404. A published image with no rendition has no
+    public IIIF source (never the master) and is a 404 too.
+    """
+    from app.services.discover_media import get_public_media
+    from app.services.iiif_public_image import public_iiif_source
+
+    media = (
+        db.query(Media)
+        .filter(Media.media_id == media_id, Media.is_published.is_(True))
+        .first()
+    )
+    org = None
+    if media is not None:
+        org = (
+            db.query(Organization)
+            .filter(Organization.organization_id == media.organization_id)
+            .first()
+        )
+    if media is None or org is None or get_public_media(db, org, media_id) is None:
+        raise HTTPException(status_code=404, detail="Media not found")
+
+    if media.media_type != "image":
+        raise HTTPException(status_code=400, detail="Only images support IIIF")
+
+    source = public_iiif_source(media)
+    if source is None:
+        raise HTTPException(status_code=404, detail="No public image rendition for this media")
+    return media, source
+
+
 @router.get("/iiif/3/media/{media_id}/info.json", summary="Get media info")
 def get_media_info(
     media_id: UUID,
@@ -244,47 +279,82 @@ def get_media_info(
 ):
     """Public IIIF Image API 3.0 info.json for a media item.
 
-    Anonymous + BYPASSRLS, so the `is_published` gate is the access control:
-    an unpublished (or nonexistent) media item is an indistinguishable 404.
+    Anonymous + BYPASSRLS, so the Discover gates are the access control (see
+    _public_iiif_media). The service describes the published rendition, never
+    the master: width/height are the rendition's, and maxWidth/maxHeight
+    advertise the public size cap (services/iiif_public_image.py). Image
+    requests against this service id are answered by get_media_image below.
+    It used to redirect to the image server's info.json for the master.
     """
-    media = (
-        db.query(Media)
-        .filter(Media.media_id == media_id, Media.is_published.is_(True))
-        .first()
-    )
-    if not media:
-        raise HTTPException(status_code=404, detail="Media not found")
+    from app.services.iiif_image import IIIFImageService
+    from app.services.iiif_public_image import info_json
 
-    if media.media_type != "image":
-        raise HTTPException(status_code=400, detail="Only images support IIIF")
+    _, source = _public_iiif_media(db, media_id)
+    service_id = str(request.url).split("?", 1)[0][: -len("/info.json")]
+    info = info_json(service_id, source)
 
-    from app.services.iiif_image import IIIFImageService, get_iiif_image_service
-
-    image_service = get_iiif_image_service()
-    if IIIFImageService.is_available():
-        info_url = image_service.get_info_url(media)
-        return RedirectResponse(url=info_url, status_code=302)
-
-    # Return basic info.json
-    width = media.width or 1000
-    height = media.height or 1000
-
-    info = {
-        "@context": "http://iiif.io/api/image/3/context.json",
-        "id": str(request.url).replace("/info.json", ""),
-        "type": "ImageService3",
-        "protocol": "http://iiif.io/api/image",
-        "profile": "level0",
-        "width": width,
-        "height": height,
-        "sizes": [
-            {"width": 200, "height": int(200 * height / width)},
-            {"width": 800, "height": int(800 * height / width)},
-            {"width": width, "height": height},
-        ],
-    }
+    if not IIIFImageService.is_available():
+        # No image server, so no region or tile requests can be answered.
+        info["profile"] = "level0"
+        info.pop("tiles", None)
 
     return _iiif_json_response(info, IIIF_IMAGE_CT, cache_max_age=3600)
+
+
+@router.get(
+    "/iiif/3/media/{media_id}/{region}/{size}/{rotation}/{quality}.{fmt}",
+    summary="Get public media image",
+)
+def get_media_image(
+    media_id: UUID,
+    region: str,
+    size: str,
+    rotation: str,
+    quality: str,
+    fmt: str,
+    db: Session = Depends(get_admin_db),
+):
+    """Public IIIF Image API 3.0 image request, served from the rendition.
+
+    The request is validated against the rendition and the public size cap
+    before anything reaches the image server: ``max`` returns the capped
+    image; any other size beyond maxWidth/maxHeight is a 400. Cantaloupe is
+    asked for the rendition by its storage key with an explicit pixel region
+    and size, so neither the master nor an uncapped size can come back.
+    """
+    from fastapi.responses import Response
+
+    from app.services.iiif_image import IIIFImageService, get_iiif_image_service
+    from app.services import iiif_public_image as pub
+
+    _, source = _public_iiif_media(db, media_id)
+
+    if not IIIFImageService.is_available():
+        raise HTTPException(status_code=404, detail="IIIF image server not configured")
+
+    try:
+        plan = pub.plan_request(source, region, size, rotation, quality, fmt)
+    except pub.IIIFRequestError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    url = pub.upstream_url(get_iiif_image_service().server_url, source, plan)
+    try:
+        status, content, content_type = pub.fetch_upstream(url)
+    except Exception as e:  # noqa: BLE001 - an unreachable image server is a gateway error
+        logger.warning("IIIF image server request failed for %s: %s", media_id, e)
+        raise HTTPException(status_code=502, detail="Image server unavailable")
+    if status != 200:
+        logger.warning("IIIF image server returned %s for media %s", status, media_id)
+        raise HTTPException(status_code=502, detail="Image server error")
+
+    return Response(
+        content=content,
+        media_type=content_type or plan.content_type,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Cache-Control": "public, max-age=3600",
+        },
+    )
 
 
 @router.get("/api/organizations/{org_id}/iiif/objects/{object_id}/manifest.json", summary="Get authenticated manifest")
@@ -724,7 +794,12 @@ def get_media_lod(
 
     image_service = get_iiif_image_service()
     if image_service.is_available():
-        jsonld["url"] = image_service.get_info_url(media)
+        # The public Image API (rendition, capped), never the image server's
+        # own identifier for the master.
+        from app.services.iiif_public_image import public_iiif_source, public_service_id
+
+        if public_iiif_source(media) is not None:
+            jsonld["url"] = f"{public_service_id(media)}/info.json"
 
     return JSONResponse(
         content=jsonld,

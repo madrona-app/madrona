@@ -157,10 +157,24 @@ class IIIFPresentationService:
 
     def _has_public_source(self, media: Media) -> bool:
         """Public mode: whether this image can be shown without its master."""
-        if not self.public or self.image_service.is_available():
+        if not self.public:
             return True
+        if self.image_service.is_available():
+            return self._public_iiif_source(media) is not None
         key, _, _ = self._pick_display_source(media)
         return bool(key)
+
+    def _public_iiif_source(self, media: Media):
+        """Public mode with an image server: the rendition the public Image
+        API serves (services/iiif_public_image.py), or None. Never the master."""
+        from app.services.iiif_public_image import public_iiif_source
+
+        return public_iiif_source(media)
+
+    def _public_service_id(self, media: Media) -> str:
+        from app.services.iiif_public_image import public_service_id
+
+        return public_service_id(media, self.base_url)
 
     def generate_manifest(
         self,
@@ -273,8 +287,15 @@ class IIIFPresentationService:
         # Canvas dimensions follow the image source we're actually going to
         # serve (access_master derivative by default, or original). For the
         # Cantaloupe path, dimensions still reflect the original — Cantaloupe
-        # reads the original and serves tiles at any size.
-        if self.image_service.is_available():
+        # reads the original and serves tiles at any size. Public manifests
+        # use the public Image API, whose coordinates are the rendition's.
+        public_source = (
+            self._public_iiif_source(media)
+            if self.public and self.image_service.is_available() else None
+        )
+        if public_source is not None:
+            width, height = public_source.width, public_source.height
+        elif self.image_service.is_available():
             width = media.width or 1000
             height = media.height or 1000
         else:
@@ -314,8 +335,19 @@ class IIIFPresentationService:
         """Create an image annotation for a canvas."""
         annotation_id = f"{canvas_id}/annotation"
 
-        # Get IIIF image info URL
-        if self.image_service.is_available():
+        public_source = (
+            self._public_iiif_source(media)
+            if self.public and self.image_service.is_available() else None
+        )
+        if self.public and self.image_service.is_available():
+            # Anonymous callers never get the image server's master
+            # identifier: the public Image API serves the rendition, capped.
+            from app.services.iiif_public_image import image_body as public_body
+
+            if public_source is None:
+                raise ValueError("No public rendition")  # canvas is skipped
+            image_body = public_body(self._public_service_id(media), public_source)
+        elif self.image_service.is_available():
             # TODO: when the source is a flat (non-pyramidal) TIFF or large
             # JPEG, consider pointing Cantaloupe at the access_master
             # derivative instead of the original. Gated on media.is_pyramidal_tiff.
@@ -371,6 +403,13 @@ class IIIFPresentationService:
 
     def _create_thumbnail(self, media: Media) -> Optional[dict[str, Any]]:
         """Create a thumbnail object."""
+        if self.public and self.image_service.is_available():
+            from app.services.iiif_public_image import thumbnail
+
+            source = self._public_iiif_source(media)
+            if source is None:
+                return None
+            return thumbnail(self._public_service_id(media), source)
         if self.image_service.is_available():
             thumbnail_url = self.image_service.get_thumbnail_url(media, width=200)
         elif self.public:
