@@ -48,7 +48,8 @@ interface RequiredFieldsProviderProps {
 }
 
 interface RegisteredField {
-  el: HTMLElement | null;
+  /** Controls for the field; a picker can show more than one (Search, Change). */
+  els: Set<HTMLElement>;
   sectionId: string | null;
 }
 
@@ -130,11 +131,12 @@ export function RequiredFieldsProvider({
   }, []);
 
   const registerField = useCallback((name: string, el: HTMLElement | null | undefined, sectionId: string | null) => {
-    const prev = registry.current.get(name);
-    registry.current.set(name, {
-      el: el === undefined ? prev?.el ?? null : el,
-      sectionId: sectionId ?? prev?.sectionId ?? null,
-    });
+    const entry = registry.current.get(name) ?? { els: new Set<HTMLElement>(), sectionId: null };
+    // React calls a callback ref with null on unmount without saying which
+    // element left, so unmounted elements are pruned when looked up instead.
+    if (el) entry.els.add(el);
+    if (sectionId) entry.sectionId = sectionId;
+    registry.current.set(name, entry);
   }, []);
 
   const focusField = useCallback((req: MissingRequirement) => {
@@ -144,8 +146,12 @@ export function RequiredFieldsProvider({
     };
     const findEl = () => {
       for (const f of req.fields) {
-        const el = registry.current.get(f)?.el;
-        if (el && el.isConnected) return el;
+        const entry = registry.current.get(f);
+        if (!entry) continue;
+        for (const el of entry.els) {
+          if (el.isConnected) return el;
+          entry.els.delete(el);
+        }
       }
       return null;
     };

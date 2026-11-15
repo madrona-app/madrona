@@ -455,6 +455,7 @@ function DeaccessionWorkspacePageContent() {
           order={getSectionOrder('linkedObject')}
         >
           <ObjectSelector
+            name="object_id"
             organizationId={orgId!}
             objectId={formData.object_id || null}
             onChange={(id) => updateField('object_id', id || '')}

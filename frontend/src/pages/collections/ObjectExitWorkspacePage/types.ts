@@ -20,6 +20,7 @@ export interface FormData {
   tracking_number: string;
   courier_id: string;
   condition_at_exit: string;
+  authorization_id: string;
   authorization_date: string;
   authorization_note: string;
   receipt_reference: string;

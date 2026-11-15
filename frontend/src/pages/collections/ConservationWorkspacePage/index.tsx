@@ -345,6 +345,7 @@ function ConservationWorkspacePageContent() {
               options={getLookup('treatment_type')}
             />
             <ObjectSelector
+              name="object_id"
               organizationId={orgId!}
               objectId={formData.object_id || null}
               onChange={(id) => updateField('object_id', id || '')}

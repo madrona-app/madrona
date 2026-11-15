@@ -1,9 +1,11 @@
-import { useState, useId, useRef, useEffect } from 'react';
+import { useState, useId, useRef, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { X, Search, Package, ExternalLink } from 'lucide-react';
 import { getCollectionObjects, getCollectionObject } from '../../lib/api';
 import { MadronaLoader } from '../ui/MadronaLoader';
+import { useRequiredField } from '../workspace/requiredFields';
+import { RequiredFieldMessage } from '../workspace/RequiredFieldsContext';
 
 interface ObjectSelectorProps {
   organizationId: string;
@@ -13,6 +15,12 @@ interface ObjectSelectorProps {
   isEditing?: boolean;
   label?: string;
   placeholder?: string;
+  /**
+   * The record column this selector fills (e.g. "object_id"). Inside a
+   * RequiredFieldsProvider a server-reported missing value is shown here and
+   * the error summary moves focus to the selector.
+   */
+  name?: string;
 }
 
 /**
@@ -27,13 +35,19 @@ export function ObjectSelector({
   isEditing = false,
   label = 'Linked Object',
   placeholder = 'Search objects by number or title...',
+  name,
 }: ObjectSelectorProps) {
   const [showSearch, setShowSearch] = useState(false);
   const labelId = useId();
   // Opening the search moves focus into it; closing it returns focus to
   // the trigger that replaced it.
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const { register, error: requiredError } = useRequiredField(name, false, undefined, objectId);
+  const setTriggerRef = useCallback((el: HTMLButtonElement | null) => {
+    triggerRef.current = el;
+    register(el);
+  }, [register]);
   const wasSearching = useRef(false);
   useEffect(() => {
     if (showSearch) searchInputRef.current?.focus();
@@ -162,8 +176,9 @@ export function ObjectSelector({
       {/* Search trigger */}
       {!showSearch && (
         <button
-          ref={triggerRef}
+          ref={setTriggerRef}
           type="button"
+          aria-describedby={requiredError?.id}
           onClick={() => setShowSearch(true)}
           className="flex items-center gap-2 text-sm text-bark hover:text-copper-dark"
         >
@@ -171,6 +186,7 @@ export function ObjectSelector({
           {objectId ? 'Change object' : 'Select an object'}
         </button>
       )}
+      {requiredError && <RequiredFieldMessage error={requiredError} />}
 
       {/* Search interface */}
       {showSearch && (

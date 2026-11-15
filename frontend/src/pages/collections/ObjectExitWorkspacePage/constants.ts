@@ -36,6 +36,7 @@ export const DEFAULT_FORM_DATA: FormData = {
   tracking_number: '',
   courier_id: '',
   condition_at_exit: '',
+  authorization_id: '',
   authorization_date: '',
   authorization_note: '',
   receipt_reference: '',

@@ -146,6 +146,11 @@ export function useRequiredField(
   baseRequired = false,
   /** Section holding the control, when the hook runs outside that section. */
   sectionIdOverride?: string,
+  /**
+   * The field's current value, for controls that are filled elsewhere (a
+   * picker's slide-over): the error clears once it has a value.
+   */
+  currentValue?: unknown,
 ) {
   const ctx = useRequiredFieldsContext();
   const sectionFromContext = useContext(WorkspaceSectionIdContext);
@@ -165,6 +170,11 @@ export function useRequiredField(
   const onEdited = useCallback(() => {
     if (ctx && name && error) ctx.clearError(name);
   }, [ctx, name, error]);
+
+  const filled = currentValue !== undefined && currentValue !== null && currentValue !== '';
+  useEffect(() => {
+    if (filled && ctx && name && error) ctx.clearError(name);
+  }, [filled, ctx, name, error]);
 
   const onlyOrg = orgRequired && !baseRequired;
   return {

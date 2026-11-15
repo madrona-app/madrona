@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useId } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { formatDateShort, formatDateTime } from '@/lib/formatters';
@@ -35,12 +35,8 @@ import {
   ReadOnlyBanner,
   PendingApprovalBanner,
 } from '../../../components/workspace';
-import {
-  RequiredFieldsProvider,
-} from '../../../components/workspace/RequiredFieldsContext';
-import {
-  useRevealSection,
-} from '../../../components/workspace/requiredFields';
+import { RequiredFieldsProvider, RequiredFieldMessage } from '../../../components/workspace/RequiredFieldsContext';
+import { useRevealSection, useRequiredField } from '../../../components/workspace/requiredFields';
 import { ContactSelectorSlideOver } from '../../../components/collections/ConstituentSelectorSlideOver';
 import { SignedDocumentSlot } from '../../../components/collections/SignedDocumentSlot';
 import { ProcedureAttachments } from '../../../components/collections/ProcedureAttachments';
@@ -116,6 +112,8 @@ function AcquisitionWorkspacePageContent() {
 
   // Source contact selector
   const sourceSelector = useConstituentSelector();
+  const sourceLabelId = useId();
+  const { register: sourceRegister, error: sourceError } = useRequiredField('source_id', false, 'source', formData.source_id);
 
   const { data: sourceContact } = useQuery({
     queryKey: ['contact', orgId, formData.source_id],
@@ -531,8 +529,8 @@ function AcquisitionWorkspacePageContent() {
         >
           <div className="grid grid-cols-2 gap-6">
             {/* Contact-linked source selector */}
-            <div className="col-span-2">
-              <dt className="text-sm font-medium text-archive mb-1">Source</dt>
+            <div className="col-span-2" role="group" aria-labelledby={`${sourceLabelId}`}>
+              <span id={sourceLabelId} className="block text-sm font-medium text-archive mb-1">Source</span>
               {isEditing ? (
                 <div className="flex items-center gap-2">
                   {formData.source_id && sourceContact ? (
@@ -546,13 +544,16 @@ function AcquisitionWorkspacePageContent() {
                         <button
                           type="button"
                           onClick={() => updateField('source_id', '')}
+                          aria-label={`Clear source ${sourceContact.name}`}
                           className="ml-auto p-1 text-archive hover:text-semantic-error"
                         >
-                          <X size={14} />
+                          <X size={14} aria-hidden="true" />
                         </button>
                       </div>
                       <button
                         type="button"
+                        ref={sourceRegister}
+                        aria-describedby={sourceError?.id}
                         onClick={() => sourceSelector.open()}
                         className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
                       >
@@ -562,6 +563,8 @@ function AcquisitionWorkspacePageContent() {
                   ) : (
                     <button
                       type="button"
+                      ref={sourceRegister}
+                      aria-describedby={sourceError?.id}
                       onClick={() => sourceSelector.open()}
                       className="flex-1 flex items-center gap-2 px-3 py-2 border border-dashed border-lichen rounded-lg text-sm text-archive hover:border-bark hover:text-bark transition-colors"
                     >
@@ -571,7 +574,7 @@ function AcquisitionWorkspacePageContent() {
                   )}
                 </div>
               ) : (
-                <dd className="text-ink">
+                <div className="text-ink">
                   {sourceContact ? (
                     <span>
                       {sourceContact.name}
@@ -582,8 +585,9 @@ function AcquisitionWorkspacePageContent() {
                   ) : (
                     <span className="text-archive">Not specified</span>
                   )}
-                </dd>
+                </div>
               )}
+              {sourceError && <RequiredFieldMessage error={sourceError} />}
             </div>
             <EditableSelect
               name="source_type"

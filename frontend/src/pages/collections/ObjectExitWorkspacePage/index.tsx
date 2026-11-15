@@ -17,6 +17,7 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { ProcedureRequirementsCard } from '../../../components/collections/ProcedureRequirementsCard';
+import { EditableUserSelect } from '../../../components/workspace/EditableUserSelect';
 import { StatusAdvancementDialog } from '../../../components/collections/StatusAdvancementDialog';
 import { AdvanceWithExceptionDialog } from '../../../components/collections/AdvanceWithExceptionDialog';
 import { ChangeStatusDropdown } from '../../../components/collections/ChangeStatusDropdown';
@@ -576,6 +577,15 @@ function ObjectExitWorkspacePageContent() {
           order={getSectionOrder('authorization')}
         >
           <div className="grid grid-cols-2 gap-6">
+            <EditableUserSelect
+              name="authorization_id"
+              organizationId={orgId}
+              value={formData.authorization_id || ''}
+              label="Exit Authorizer"
+              isEditing={isEditing}
+              onChange={(v) => updateField('authorization_id', v)}
+              helpText="The person in your organization authorizing the exit."
+            />
             <EditableField
               name="authorization_date"
               value={formData.authorization_date || ''}

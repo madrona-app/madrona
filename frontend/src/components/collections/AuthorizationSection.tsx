@@ -1,6 +1,8 @@
 import { useId } from 'react';
 import { ShieldCheck, User, Search, X } from 'lucide-react';
 import { WorkspaceSection, EditableField } from '../workspace';
+import { useRequiredField } from '../workspace/requiredFields';
+import { RequiredFieldMessage } from '../workspace/RequiredFieldsContext';
 
 interface AuthorizationSectionProps {
   /** Current authorizer constituent ID (empty string = not set) */
@@ -53,6 +55,7 @@ export function AuthorizationSection({
   sectionId = 'authorization',
 }: AuthorizationSectionProps) {
   const authorizerLabelId = useId();
+  const { register: authorizerRegister, error: authorizerError } = useRequiredField('authorizer_id', false, sectionId, authorizerId || undefined);
   return (
     <WorkspaceSection
       id={sectionId}
@@ -90,6 +93,8 @@ export function AuthorizationSection({
               ) : (
                 <button
                   type="button"
+                  ref={authorizerRegister}
+                  aria-describedby={authorizerError?.id}
                   onClick={onOpenAuthorizerSelector}
                   className="flex-1 flex items-center gap-2 px-3 py-2 border border-dashed border-lichen rounded-lg text-sm text-archive hover:border-bark hover:text-bark transition-colors"
                 >
@@ -100,6 +105,8 @@ export function AuthorizationSection({
               {authorizerId && (
                 <button
                   type="button"
+                  ref={authorizerRegister}
+                  aria-describedby={authorizerError?.id}
                   onClick={onOpenAuthorizerSelector}
                   aria-label="Change authorizer"
                   className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
@@ -122,6 +129,7 @@ export function AuthorizationSection({
               )}
             </div>
           )}
+          {authorizerError && <RequiredFieldMessage error={authorizerError} />}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

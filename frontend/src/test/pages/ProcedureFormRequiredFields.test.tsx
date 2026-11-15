@@ -11,6 +11,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { checkA11y } from '../a11y';
 import { ApiError } from '../../lib/apiClient';
+import type { RequirementGroup } from '../../lib/procedureComplianceUtils';
 import * as procedureHook from '../../hooks/useProcedureRequirements';
 import * as workspacePageHook from '../../hooks/useWorkspacePage';
 import * as lookupHook from '../../hooks/useLookupValues';
@@ -23,6 +24,11 @@ import ObjectExitWorkspacePage from '../../pages/collections/ObjectExitWorkspace
 import DeaccessionWorkspacePage from '../../pages/collections/DeaccessionWorkspacePage';
 
 vi.mock('../../lib/api');
+vi.mock('../../lib/api/workspaces', () => ({
+  getAssignableUsers: vi.fn().mockResolvedValue({
+    users: [{ user_id: 'u-9', name: 'Ada Registrar', email: 'ada@example.com' }],
+  }),
+}));
 
 vi.mock('../../hooks/useProcedureRequirements', () => ({
   useProcedureRequirements: vi.fn(),
@@ -91,9 +97,9 @@ const CASES: Case[] = [
   { procedureType: 'deaccession', Page: DeaccessionWorkspacePage, field: 'reason_detail', label: 'Reason Detail', role: 'textbox' },
 ];
 
-function setup(c: Case, enforcementEnabled = true) {
+function setup(c: Case, enforcementEnabled = true, requirementGroups: RequirementGroup[] = []) {
   mockUseProcedure.mockImplementation((type: string) => ({
-    requirementGroups: [],
+    requirementGroups: type === c.procedureType ? requirementGroups : [],
     statusOrder: [],
     procedureLabel: '',
     enforcementEnabled,
@@ -223,5 +229,66 @@ describe('contact picker fields', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Conservator' }));
     expect(search).toHaveFocus();
     expect(await checkA11y(container.querySelector('#section-conservator')!)).toHaveNoViolations();
+  });
+});
+
+interface PickerCase {
+  procedureType: string;
+  Page: ComponentType;
+  field: string;
+  label: string;
+  control: { role: 'button' | 'combobox'; name: RegExp };
+  /** Section the requirement belongs to (from the requirements API). */
+  sectionId: string;
+}
+
+// The fixed pickers each form family uses for a baseline requirement. When
+// the server reports one missing, the summary moves focus to the picker
+// itself, opening its section first when it is collapsed.
+const PICKERS: PickerCase[] = [
+  { procedureType: 'acquisition', Page: AcquisitionWorkspacePage, field: 'source_id', label: 'Source', control: { role: 'button', name: /Search or create source/ }, sectionId: 'source' },
+  { procedureType: 'loan_out', Page: LoanOutWorkspacePage, field: 'borrower_id', label: 'Borrower', control: { role: 'button', name: /Search or create borrowing institution/ }, sectionId: 'borrower' },
+  { procedureType: 'loan_in', Page: LoanInWorkspacePage, field: 'lender_id', label: 'Lender', control: { role: 'button', name: /Search or create lender/ }, sectionId: 'lender' },
+  { procedureType: 'object_entry', Page: ObjectEntryWorkspacePage, field: 'authorizer_id', label: 'Authorizer', control: { role: 'button', name: /Search or create authorizer/ }, sectionId: 'authorization' },
+  { procedureType: 'conservation', Page: ConservationWorkspacePage, field: 'object_id', label: 'Object', control: { role: 'button', name: /Select an object/ }, sectionId: 'treatment' },
+  { procedureType: 'deaccession', Page: DeaccessionWorkspacePage, field: 'object_id', label: 'Object', control: { role: 'button', name: /Select an object/ }, sectionId: 'linkedObject' },
+  { procedureType: 'object_exit', Page: ObjectExitWorkspacePage, field: 'authorization_id', label: 'Exit authorizer', control: { role: 'combobox', name: /Exit Authorizer/ }, sectionId: 'authorization' },
+];
+
+describe.each(PICKERS)('$procedureType $field picker', (p) => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('receives focus from the error summary and carries the message', async () => {
+    const { qc } = setup(
+      { procedureType: p.procedureType, Page: p.Page, field: '__none__', label: '__none__', role: 'textbox' },
+      true,
+      [{
+        id: 'g',
+        label: 'Group',
+        sectionId: p.sectionId,
+        requirements: [{ id: p.field, label: p.label, groupId: 'g', fieldPaths: [p.field], requiredForStatuses: ['approved'], severity: 'blocking' }],
+      }],
+    );
+    const error = new ApiError('unmet', 422, 'procedure_requirements_not_met', {
+      procedure_type: p.procedureType,
+      target_status: 'approved',
+      missing_requirements: [{ id: p.field, label: p.label, fields: [p.field], source: 'baseline' }],
+      missing_fields: [p.field],
+    });
+    await act(async () => {
+      await qc.getMutationCache().build(qc, { mutationFn: () => Promise.reject(error) }).execute(undefined).catch(() => {});
+    });
+    await screen.findByRole('region', { name: /1 required field is missing/ });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: p.label }));
+    });
+    const control = await waitFor(() => {
+      const el = screen.getByRole(p.control.role, { name: p.control.name });
+      expect(el).toHaveFocus();
+      return el;
+    });
+    expect(control).toHaveAccessibleDescription(new RegExp(`${p.label} is required before the status can change to approved`));
   });
 });
