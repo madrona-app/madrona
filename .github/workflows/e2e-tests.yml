@@ -222,6 +222,10 @@ jobs:
         run: |
           python -m seeds.seed_roles_and_permissions
           python -m seeds.seed_role_profiles || echo "Role profiles may already exist"
+          # entrypoint.sh runs this on every boot. Lookup-backed fields accept
+          # only the organization's lookup values, so without it every
+          # procedure create here is refused as invalid_lookup_value.
+          python -m seeds.seed_lookup_data
           python -m seeds.seed_e2e_test_data --enable-all-apps --include-contract-apps --org-id c62f6243-b50e-4f10-a6b3-80425de6c01d
 
       - name: Start backend server
@@ -475,6 +479,10 @@ jobs:
         run: |
           python -m seeds.seed_roles_and_permissions
           python -m seeds.seed_role_profiles || echo "Role profiles may already exist"
+          # entrypoint.sh runs this on every boot. Lookup-backed fields accept
+          # only the organization's lookup values, so without it every
+          # procedure create here is refused as invalid_lookup_value.
+          python -m seeds.seed_lookup_data
           python -m seeds.seed_e2e_test_data --enable-all-apps --include-contract-apps --org-id c62f6243-b50e-4f10-a6b3-80425de6c01d
 
       - name: Start backend server
