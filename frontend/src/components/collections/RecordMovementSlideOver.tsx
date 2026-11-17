@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MapPin, ArrowRight, Calendar, FileText, Loader2, Package } from 'lucide-react';
 import { SlideOver } from '../ui/SlideOver';
@@ -59,6 +59,7 @@ export function RecordMovementSlideOver({
   parts,
   onSuccess,
 }: RecordMovementSlideOverProps) {
+  const fid = useId();
   const queryClient = useQueryClient();
   const isMultiPart = parts && parts.length > 1;
 
@@ -212,11 +213,12 @@ export function RecordMovementSlideOver({
         {/* Part Selector (multi-part objects only) */}
         {isMultiPart && (
           <div>
-            <label className="text-sm font-medium text-ink block mb-1.5">
+            <label htmlFor={`${fid}-part-to-move`} className="text-sm font-medium text-ink block mb-1.5">
               <Package size={14} className="inline mr-1.5" />
               Part to Move <span className="text-semantic-error">*</span>
             </label>
             <select
+              id={`${fid}-part-to-move`}
               value={selectedPartId}
               onChange={(e) => setSelectedPartId(e.target.value)}
               className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -236,9 +238,9 @@ export function RecordMovementSlideOver({
 
         {/* From Location (read-only) */}
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">From Location</label>
+          <span className="text-sm font-medium text-ink block mb-1.5">From Location</span>
           <div className="flex items-center gap-2 p-3 bg-stone/30 rounded-lg text-sm">
-            <MapPin size={16} className="text-archive" />
+            <MapPin size={16} className="text-archive" aria-hidden="true" />
             <span>{isMultiPart && !selectedPartId ? 'Select a part first' : fromLocationName}</span>
           </div>
           {!isMultiPart && (
@@ -249,11 +251,13 @@ export function RecordMovementSlideOver({
         {/* To Location */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-sm font-medium text-ink">
-              To Location <span className="text-semantic-error">*</span>
+            <label id={`${fid}-to-location-label`} htmlFor={`${fid}-to-location`} className="text-sm font-medium text-ink">
+              To Location <span className="text-semantic-error" aria-hidden="true">*</span>
+              {' '}<span className="sr-only">(required)</span>
             </label>
             {homeLocationId && homeLocationId !== fromLocationId && (
               <button
+                type="button"
                 onClick={handleMoveToHome}
                 className="text-xs text-bark hover:text-copper-dark"
               >
@@ -262,6 +266,8 @@ export function RecordMovementSlideOver({
             )}
           </div>
           <LocationPickerButton
+            id={`${fid}-to-location`}
+            labelId={`${fid}-to-location-label`}
             organizationId={organizationId}
             value={formData.to_location_id || null}
             onChange={handleLocationChange}
@@ -271,10 +277,11 @@ export function RecordMovementSlideOver({
 
         {/* Reason */}
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">
+          <label htmlFor={`${fid}-reason`} className="text-sm font-medium text-ink block mb-1.5">
             Reason <span className="text-semantic-error">*</span>
           </label>
           <select
+            id={`${fid}-reason`}
             value={formData.reason}
             onChange={(e) => setFormData(prev => ({ ...prev, reason: e.target.value }))}
             className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -289,11 +296,12 @@ export function RecordMovementSlideOver({
 
         {/* Date */}
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">
+          <label htmlFor={`${fid}-movement-date`} className="text-sm font-medium text-ink block mb-1.5">
             <Calendar size={14} className="inline mr-1.5" />
             Movement Date
           </label>
           <input
+            id={`${fid}-movement-date`}
             type="date"
             value={formData.movement_date}
             max={today}
@@ -304,11 +312,12 @@ export function RecordMovementSlideOver({
 
         {/* Notes */}
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">
+          <label htmlFor={`${fid}-notes`} className="text-sm font-medium text-ink block mb-1.5">
             <FileText size={14} className="inline mr-1.5" />
             Notes
           </label>
           <textarea
+            id={`${fid}-notes`}
             value={formData.movement_note}
             onChange={(e) => setFormData(prev => ({ ...prev, movement_note: e.target.value }))}
             placeholder="Optional notes about this movement..."

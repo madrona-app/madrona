@@ -410,6 +410,7 @@ export const SubjectAuthoritySchema = z.object({
   subject_type: SubjectTypeEnum,
   aat_id: z.string().nullable().optional(),
   iconclass_id: z.string().nullable().optional(),
+  lcsh_id: z.string().nullable().optional(),
   wikidata_id: z.string().nullable().optional(),
   broader_subject_id: z.string().nullable().optional(),
   description: z.string().nullable().optional(),

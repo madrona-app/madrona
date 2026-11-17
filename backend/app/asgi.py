@@ -129,6 +129,8 @@ def create_app() -> FastAPI:
     from app.fastapi_app.routers.collections_procedure_incidents import router as procedure_incidents_router
     from app.fastapi_app.routers.collections_procedure_compliance import router as procedure_compliance_router
     from app.fastapi_app.routers.collections_procedure_rights import router as procedure_rights_router
+    from app.fastapi_app.routers.collections_research_visits import router as research_visits_router
+    from app.fastapi_app.routers.collections_library import router as library_router
     from app.fastapi_app.routers.collections_procedure_value import router as procedure_value_router
     from app.fastapi_app.routers.media_collections import router as media_collections_router
     from app.fastapi_app.routers.media_tags import router as media_tags_router
@@ -162,6 +164,9 @@ def create_app() -> FastAPI:
     from app.fastapi_app.routers.collections_locations import router as collections_locations_router
     from app.fastapi_app.routers.collections_discover import router as collections_discover_router
     from app.fastapi_app.routers.collections_objects import router as collections_objects_router
+    from app.fastapi_app.routers.record_workflow import router as record_workflow_router
+    from app.fastapi_app.routers.archival_hierarchy import router as archival_hierarchy_router
+    from app.fastapi_app.routers.custom_fields import router as custom_fields_router
     from app.fastapi_app.routers.collections_media import router as collections_media_router
     from app.fastapi_app.routers.collections_constituents import router as collections_constituents_router
     from app.fastapi_app.routers.collections_procedures import router as collections_procedures_router
@@ -187,11 +192,18 @@ def create_app() -> FastAPI:
     from app.fastapi_app.routers.reports_misc import router as reports_misc_router
     from app.fastapi_app.routers.data_tools import router as data_tools_router
     from app.fastapi_app.routers.relationships import router as relationships_router
-    from app.fastapi_app.routers.lod_exports import router as lod_exports_router
+    from app.fastapi_app.routers.lod_exports import (
+        jsonld_extension_router as lod_jsonld_extension_router,
+        router as lod_exports_router,
+    )
     from app.fastapi_app.routers.crm import router as crm_router
     from app.fastapi_app.routers.email_webhooks import router as email_webhooks_router
     from app.fastapi_app.routers.user_settings import router as user_settings_router
     from app.fastapi_app.routers.discover_public import router as discover_public_router
+    from app.fastapi_app.routers.discover_members import router as discover_members_router
+    from app.fastapi_app.routers.collections_discover_members import router as discover_members_admin_router
+    from app.fastapi_app.routers.collections_discover_public_fields import router as discover_public_fields_router
+    from app.fastapi_app.routers.collections_search_settings import router as collections_search_settings_router
     from app.fastapi_app.routers.guide_documents import router as guide_documents_router
     from app.fastapi_app.routers.guide_insights import router as guide_insights_router
     from app.fastapi_app.routers.guide_preferences import router as guide_preferences_router
@@ -245,6 +257,8 @@ def create_app() -> FastAPI:
     app.include_router(roles_router)
     app.include_router(approvals_router)
     app.include_router(procedure_rights_router)
+    app.include_router(research_visits_router)
+    app.include_router(library_router)
     app.include_router(procedure_value_router)
     app.include_router(media_collections_router)
     app.include_router(media_tags_router)
@@ -277,7 +291,13 @@ def create_app() -> FastAPI:
     app.include_router(collections_vocabulary_router)
     app.include_router(collections_locations_router)
     app.include_router(collections_discover_router)
+    # .../objects/{id}.jsonld must precede the object detail route, which
+    # would otherwise match it and reject the id with 422.
+    app.include_router(lod_jsonld_extension_router)
     app.include_router(collections_objects_router)
+    app.include_router(record_workflow_router)
+    app.include_router(archival_hierarchy_router)
+    app.include_router(custom_fields_router)
     app.include_router(collections_media_router)
     app.include_router(collections_constituents_router)
     app.include_router(collections_procedures_router)
@@ -306,6 +326,10 @@ def create_app() -> FastAPI:
     app.include_router(crm_router)
     app.include_router(email_webhooks_router)
     app.include_router(user_settings_router)
+    app.include_router(discover_members_router)
+    app.include_router(discover_members_admin_router)
+    app.include_router(discover_public_fields_router)
+    app.include_router(collections_search_settings_router)
     app.include_router(discover_public_router)
     app.include_router(guide_documents_router)
     app.include_router(guide_insights_router)

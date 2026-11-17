@@ -9,7 +9,7 @@
  * - Shows assignee and allows task assignment
  */
 
-import { useState, useContext } from 'react';
+import { useState, useContext, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -36,6 +36,7 @@ import { getWorkTasks, getAssignableUsers, assignWorkTask, listTasks, type WorkT
 import { useActiveProduct } from '../../hooks/useActiveProduct';
 import { AuthContext } from '../../contexts/AuthContext';
 import { formatDateShort } from '../../lib/formatters';
+import { useFocusWhen } from '../workspace/useFocusWhen';
 
 // Icon mapping for record types
 const RECORD_TYPE_ICONS: Record<string, LucideIcon> = {
@@ -87,6 +88,8 @@ export function MyTasks({
   const queryClient = useQueryClient();
   const [assigneeFilter, setAssigneeFilter] = useState<string | undefined>(assignedTo);
   const [assigningTaskId, setAssigningTaskId] = useState<string | null>(null);
+  const assignSelectRef = useRef<HTMLSelectElement>(null);
+  useFocusWhen(assignSelectRef, assigningTaskId !== null);
 
   // Fetch tasks from the backend
   const { data, isLoading } = useQuery({
@@ -230,8 +233,9 @@ export function MyTasks({
       {/* Filter controls */}
       {showFilters && (
         <div className="flex items-center gap-3 mb-4 pb-4 border-b border-lichen">
-          <label className="text-sm text-archive">Filter by:</label>
+          <label htmlFor="my-tasks-filter-by" className="text-sm text-archive">Filter by:</label>
           <select
+            id="my-tasks-filter-by"
             value={assigneeFilter || ''}
             onChange={(e) => setAssigneeFilter(e.target.value || undefined)}
             className="text-sm border border-lichen rounded px-2 py-1 bg-parchment"
@@ -340,12 +344,16 @@ export function MyTasks({
                 <div className="relative">
                   {isAssigning ? (
                     <select
-                      autoFocus
+                      ref={assignSelectRef}
                       value={task.assigned_to_user_id || ''}
                       onChange={(e) => {
                         handleAssign(task, e.target.value || null);
                       }}
                       onBlur={() => setAssigningTaskId(null)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') setAssigningTaskId(null);
+                      }}
+                      aria-label={`Assign ${groupLabel}`}
                       className="text-xs border border-bark rounded px-2 py-1 bg-parchment"
                     >
                       <option value="">Unassigned</option>
@@ -357,10 +365,12 @@ export function MyTasks({
                     </select>
                   ) : (
                     <button
+                      type="button"
                       onClick={() => setAssigningTaskId(task.id)}
+                      aria-label={`${task.assigned_to_user_id ? 'Reassign' : 'Assign'} ${groupLabel}`}
                       className="flex items-center gap-1 text-xs text-bark hover:text-copper-dark"
                     >
-                      <UserPlus size={12} />
+                      <UserPlus size={12} aria-hidden="true" />
                       {task.assigned_to_user_id ? 'Reassign' : 'Assign'}
                     </button>
                   )}

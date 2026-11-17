@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { FileText } from 'lucide-react';
 import { WorkspaceSection, EditableField, EditableSelect } from '../../../components/workspace';
 import type { LookupOption } from '../../../hooks/useLookupValues';
@@ -28,6 +29,7 @@ export function LoanDetailsSection({
   isRestricted,
   orgId: _orgId,
 }: LoanDetailsSectionProps) {
+  const uid = useId();
   return (
     <WorkspaceSection
       id="details"
@@ -40,6 +42,7 @@ export function LoanDetailsSection({
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <EditableSelect
+          name="loan_purpose"
           label="Loan Purpose"
           value={formData.loan_purpose}
           isEditing={isEditing}
@@ -49,6 +52,7 @@ export function LoanDetailsSection({
           required
         />
         <EditableField
+          name="exhibition_title"
           label="Exhibition Title"
           value={formData.exhibition_title}
           isEditing={isEditing}
@@ -56,6 +60,7 @@ export function LoanDetailsSection({
           onSave={onFieldBlur}
         />
         <EditableField
+          name="loan_conditions"
           label="Loan Conditions"
           value={formData.loan_conditions}
           isEditing={isEditing}
@@ -68,6 +73,7 @@ export function LoanDetailsSection({
         />
 
         <EditableField
+          name="special_conditions"
           label="Special Conditions of Loan"
           value={formData.special_conditions}
           isEditing={isEditing}
@@ -79,16 +85,45 @@ export function LoanDetailsSection({
           helpText="Indemnity or insurance provisions, specific requirements for display, handling, or security"
           restricted={isRestricted('special_conditions')}
         />
+        <EditableField
+          name="display_requirements"
+          label="Display Requirements"
+          value={formData.display_requirements || ''}
+          isEditing={isEditing}
+          onChange={(v) => onUpdateField('display_requirements', v)}
+          multiline
+          rows={2}
+          onSave={onFieldBlur}
+        />
+        <EditableField
+          name="installation_requirements"
+          label="Installation Requirements"
+          value={formData.installation_requirements || ''}
+          isEditing={isEditing}
+          onChange={(v) => onUpdateField('installation_requirements', v)}
+          multiline
+          rows={2}
+          onSave={onFieldBlur}
+        />
+        <EditableField
+          name="photography_restrictions"
+          label="Photography Restrictions"
+          value={formData.photography_restrictions || ''}
+          isEditing={isEditing}
+          onChange={(v) => onUpdateField('photography_restrictions', v)}
+          onSave={onFieldBlur}
+        />
 
         {/* Photography permitted */}
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-ink mb-1.5">
+        <div role="group" aria-labelledby={`${uid}-photography-permitted`} className="md:col-span-2">
+          <span id={`${uid}-photography-permitted`} className="block text-sm font-medium text-ink mb-1.5">
             Photography permitted
-          </label>
+          </span>
           {isEditing ? (
             <div className="flex items-center gap-1">
               <button
                 type="button"
+                aria-pressed={formData.photography_permitted === true}
                 onClick={() => {
                   onUpdateField('photography_permitted', true);
                   onFieldBlur();
@@ -103,6 +138,7 @@ export function LoanDetailsSection({
               </button>
               <button
                 type="button"
+                aria-pressed={formData.photography_permitted === false}
                 onClick={() => {
                   onUpdateField('photography_permitted', false);
                   onFieldBlur();
@@ -117,6 +153,7 @@ export function LoanDetailsSection({
               </button>
               <button
                 type="button"
+                aria-pressed={formData.photography_permitted === null}
                 onClick={() => {
                   onUpdateField('photography_permitted', null);
                   onFieldBlur();
@@ -144,6 +181,7 @@ export function LoanDetailsSection({
         {/* Photography conditions - only shown when photography is permitted */}
         {formData.photography_permitted === true && (
           <EditableField
+            name="photography_conditions"
             label="Photography conditions"
             value={formData.photography_conditions}
             isEditing={isEditing}
@@ -158,6 +196,7 @@ export function LoanDetailsSection({
 
         {/* Reproduction & intellectual property rights */}
         <EditableField
+          name="reproduction_rights_note"
           label="Reproduction & intellectual property rights"
           value={formData.reproduction_rights_note}
           isEditing={isEditing}

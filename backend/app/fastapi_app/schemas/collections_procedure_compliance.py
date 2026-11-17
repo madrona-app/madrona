@@ -72,6 +72,13 @@ class AuditCampaignOut(BaseModel):
     sample_method: str | None = None
     sample_size: int | None = None
     sample_percentage: float | None = None
+    sampling_criteria: str | None = None
+    target_locations: Any = None
+    target_object_types: Any = None
+    check_list_seed: int | None = None
+    check_list_generated_at: str | None = None
+    check_list_generated_by: str | None = None
+    check_list_params: Any = None
     start_date: str | None = None
     end_date: str | None = None
     items_total: int | None = None
@@ -79,6 +86,8 @@ class AuditCampaignOut(BaseModel):
     discrepancies_found: int | None = None
     accuracy_rate: float | None = None
     findings_summary: str | None = None
+    verification_procedures: str | None = None
+    recommendations: str | None = None
     remedial_actions: Any = None
     status: str | None = None
     lead_auditor: str | None = None
@@ -117,6 +126,8 @@ class AuditResultOut(BaseModel):
     resolution_notes: str | None = None
     resolved_at: str | None = None
     notes: str | None = None
+    result_status: str | None = None
+    check_sequence: int | None = None
 
 
 class AuditResultListResponse(BaseModel):
@@ -124,3 +135,64 @@ class AuditResultListResponse(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class CheckListItemOut(BaseModel):
+    result_id: str
+    check_sequence: int | None = None
+    object_id: str | None = None
+    object_number: str | None = None
+    title: str | None = None
+    expected_location_id: str | None = None
+    expected_location_name: str | None = None
+    expected_location_path: str | None = None
+    actual_location_id: str | None = None
+    actual_location_name: str | None = None
+    actual_location_path: str | None = None
+    current_location_id: str | None = None
+    outcome: str
+    result_status: str
+    checked_at: str | None = None
+    checked_by: str | None = None
+    note: str | None = None
+    follow_up_action: str | None = None
+
+
+class CheckListResponse(BaseModel):
+    audit_id: str
+    generated_at: str | None = None
+    generated_by: str | None = None
+    seed: int | None = None
+    params: Any = None
+    total: int
+    checked: int
+    counts: dict[str, int]
+    items: list[CheckListItemOut]
+    limit: int
+    offset: int
+
+
+class BulkUpdateRowOut(BaseModel):
+    result_id: str
+    object_id: str | None = None
+    object_number: str | None = None
+    title: str | None = None
+    outcome: str | None = None
+    current_location_name: str | None = None
+    found_location_name: str | None = None
+    changes: list[str] = []
+    skipped: list[str] = []
+    status: str | None = None
+    message: str | None = None
+    movement_reference: str | None = None
+
+
+class BulkUpdateResponse(BaseModel):
+    audit_id: str
+    update_location: bool
+    mark_inventoried: bool
+    rows: list[BulkUpdateRowOut]
+    location_update_count: int
+    inventoried_count: int
+    skipped_count: int
+    executed: bool

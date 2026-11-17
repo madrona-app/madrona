@@ -102,7 +102,12 @@ import {
   ConstituentsPage,
   DeaccessionsPage,
   DiscoverSettingsPage,
+  PublicFieldsSettingsPage,
   ProcedureEnforcementSettingsPage,
+  RecordRulesSettingsPage,
+  EadImportPage,
+  CustomFieldsSettingsPage,
+  VocabularyValidationSettingsPage,
   MediaRightsEnforcementSettingsPage,
   EmergencyPlansPage,
   EventsPage,
@@ -122,6 +127,10 @@ import {
   ReproductionRequestsPage,
   RiskOverviewPage,
   UseRequestsPage,
+  ResearchVisitsPage,
+  ResearchVisitPage,
+  LibraryRecordsPage,
+  LibraryRecordPage,
   ValuationsPage,
   VocabularyExplorerPage,
   // Collections — workspace (detail)
@@ -199,6 +208,10 @@ import {
   EventListPublicPage,
   ExhibitionDetailPublicPage,
   ExhibitionListPublicPage,
+  MemberCollectionPage,
+  MemberSignInPage,
+  MemberWelcomePage,
+  MyCollectionsPage,
   NotFoundPublicPage,
   PublicCollectionPage,
   VenueDetailPage,
@@ -227,6 +240,8 @@ import {
   BulkUserImportPage,
   DepartmentManagementPage,
   EntityAuditPage,
+  SecurityChangesPage,
+  SettingsChangesPage,
   LogsPage,
   OrganizationsPage,
   OrganizationUsersPage,
@@ -293,6 +308,10 @@ export function AppRoutes() {
       <Route path="/c/:orgSlug/events" element={<Suspense fallback={<PageLoadingFallback />}><EventListPublicPage /></Suspense>} />
       <Route path="/c/:orgSlug/events/:slug" element={<Suspense fallback={<PageLoadingFallback />}><EventDetailPublicPage /></Suspense>} />
       {/* Public 404 catch-all for discover site */}
+      <Route path="/c/:orgSlug/member/sign-in" element={<Suspense fallback={<PageLoadingFallback />}><MemberSignInPage /></Suspense>} />
+      <Route path="/c/:orgSlug/member/welcome" element={<Suspense fallback={<PageLoadingFallback />}><MemberWelcomePage /></Suspense>} />
+      <Route path="/c/:orgSlug/member/collections" element={<Suspense fallback={<PageLoadingFallback />}><MyCollectionsPage /></Suspense>} />
+      <Route path="/c/:orgSlug/member/collections/:collectionId" element={<Suspense fallback={<PageLoadingFallback />}><MemberCollectionPage /></Suspense>} />
       <Route path="/c/:orgSlug/*" element={<Suspense fallback={<PageLoadingFallback />}><NotFoundPublicPage /></Suspense>} />
 
       {/* Legacy routes - redirect to org-scoped routes */}
@@ -359,6 +378,8 @@ export function AppRoutes() {
           <Route path="/organizations/:orgId/admin/sso" element={<SSOConfigurationPage />} />
 
           <Route path="/organizations/:orgId/admin/entity-audit" element={<EntityAuditPage />} />
+          <Route path="/organizations/:orgId/admin/security-changes" element={<SecurityChangesPage />} />
+          <Route path="/organizations/:orgId/admin/settings-changes" element={<SettingsChangesPage />} />
           <Route path="/organizations/:orgId/admin/api-keys" element={<APIKeysPage />} />
           <Route path="/organizations/:orgId/admin/permissions" element={<PermissionManagementPage />} />
         </Route>
@@ -372,6 +393,7 @@ export function AppRoutes() {
         <Route path="/organizations/:orgId/collections/work/workspaces/:workspaceId/edit" element={<WorkspaceEditPage />} />
         <Route path="/organizations/:orgId/collections/work/workspaces/:workspaceId" element={<WorkspaceDetailPage />} />
         <Route path="/organizations/:orgId/collections/objects" element={<CollectionObjectsPage />} />
+        <Route path="/organizations/:orgId/collections/ead-import" element={<EadImportPage />} />
         <Route path="/organizations/:orgId/collections/objects/create" element={<RemountOnParams><CollectionObjectWorkspacePage /></RemountOnParams>} />
         <Route path="/organizations/:orgId/collections/objects/:objectId" element={<RemountOnParams><CollectionObjectWorkspacePage /></RemountOnParams>} />
         <Route path="/organizations/:orgId/collections/objects/:objectId/edit" element={<RemountOnParams><CollectionObjectWorkspacePage /></RemountOnParams>} />
@@ -381,11 +403,15 @@ export function AppRoutes() {
           <Route index element={<CollectionsGeneralSettingsPage />} />
           <Route path="locations" element={<CollectionLocationsPage />} />
           <Route path="lookup-values" element={<LookupValuesPage />} />
+          <Route path="vocabulary-validation" element={<VocabularyValidationSettingsPage />} />
           <Route path="branding" element={<BrandingSettingsPage />} />
           <Route path="scope" element={<CollectionScopeSettingsPage />} />
           <Route path="report-templates" element={<ReportTemplatesSettingsPage />} />
           <Route path="discover" element={<DiscoverSettingsPage />} />
+          <Route path="public-fields" element={<PublicFieldsSettingsPage />} />
           <Route path="procedure" element={<ProcedureEnforcementSettingsPage />} />
+          <Route path="record-rules" element={<RecordRulesSettingsPage />} />
+          <Route path="custom-fields" element={<CustomFieldsSettingsPage />} />
         </Route>
         {/* Media Library (DAM) */}
         <Route path="/organizations/:orgId/collections/media" element={<MediaLibraryPage />} />
@@ -481,6 +507,13 @@ export function AppRoutes() {
         <Route path="/organizations/:orgId/collections/use-requests/create" element={<RemountOnParams><UseRequestWorkspacePage /></RemountOnParams>} />
         <Route path="/organizations/:orgId/collections/use-requests/:requestId" element={<RemountOnParams><UseRequestWorkspacePage /></RemountOnParams>} />
         <Route path="/organizations/:orgId/collections/use-requests/:requestId/edit" element={<RemountOnParams><UseRequestWorkspacePage /></RemountOnParams>} />
+        <Route path="/organizations/:orgId/collections/research-visits" element={<ResearchVisitsPage />} />
+        <Route path="/organizations/:orgId/collections/research-visits/create" element={<RemountOnParams><ResearchVisitPage /></RemountOnParams>} />
+        <Route path="/organizations/:orgId/collections/research-visits/:visitId" element={<RemountOnParams><ResearchVisitPage /></RemountOnParams>} />
+        {/* Library catalog (bibliographic records, holdings, items) */}
+        <Route path="/organizations/:orgId/collections/library" element={<LibraryRecordsPage />} />
+        <Route path="/organizations/:orgId/collections/library/create" element={<RemountOnParams><LibraryRecordPage /></RemountOnParams>} />
+        <Route path="/organizations/:orgId/collections/library/:recordId" element={<RemountOnParams><LibraryRecordPage /></RemountOnParams>} />
         {/* Valuations */}
         <Route path="/organizations/:orgId/collections/valuations" element={<ValuationsPage />} />
         <Route path="/organizations/:orgId/collections/valuations/create" element={<RemountOnParams><ValuationWorkspacePage /></RemountOnParams>} />

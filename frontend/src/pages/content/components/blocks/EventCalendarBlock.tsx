@@ -5,6 +5,7 @@
  * Renderer: fetches from public events API and renders grouped event list.
  */
 
+import { useId } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Calendar, MapPin, ExternalLink } from 'lucide-react';
@@ -29,6 +30,7 @@ interface BlockRendererComponentProps {
 // =============================================================================
 
 export function EventCalendarEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const venueFilter = (content.venue_filter as string) || '';
   const typeFilter = (content.type_filter as string) || '';
   const limit = (content.limit as number) ?? 10;
@@ -36,10 +38,10 @@ export function EventCalendarEditor({ content, onChange }: BlockEditorComponentP
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-venue-filter`} className="block text-sm font-medium text-ink mb-1">
           Venue Filter
         </label>
-        <input
+        <input id={`${fieldId}-venue-filter`}
           type="text"
           value={venueFilter}
           onChange={(e) => onChange({ ...content, venue_filter: e.target.value })}
@@ -52,10 +54,10 @@ export function EventCalendarEditor({ content, onChange }: BlockEditorComponentP
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-type-filter`} className="block text-sm font-medium text-ink mb-1">
           Type Filter
         </label>
-        <input
+        <input id={`${fieldId}-type-filter`}
           type="text"
           value={typeFilter}
           onChange={(e) => onChange({ ...content, type_filter: e.target.value })}
@@ -68,10 +70,10 @@ export function EventCalendarEditor({ content, onChange }: BlockEditorComponentP
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-max-events`} className="block text-sm font-medium text-ink mb-1">
           Max Events
         </label>
-        <input
+        <input id={`${fieldId}-max-events`}
           type="number"
           min={1}
           max={100}

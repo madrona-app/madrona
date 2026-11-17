@@ -56,6 +56,7 @@ describe('AskGuideButton', () => {
     const parentClick = vi.fn();
     render(
       <AgentChatProvider>
+        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- test fixture: a parent click listener that must not fire */}
         <div onClick={parentClick}>
           <AskGuideButton prompt="hi" />
         </div>

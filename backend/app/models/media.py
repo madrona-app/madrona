@@ -150,6 +150,9 @@ class Media(Base):
 
     # Attribution
     credit: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # How researchers should cite this digital asset (free text, e.g. a full
+    # archival citation). Distinct from `credit`, which is a short credit line.
+    preferred_citation: Mapped[str | None] = mapped_column(Text, nullable=True)
     creator: Mapped[str | None] = mapped_column(String(255), nullable=True)
     source: Mapped[str | None] = mapped_column(String(500), nullable=True)
     date_created: Mapped[date | None] = mapped_column(Date, nullable=True)  # When media was created (not uploaded)
@@ -202,6 +205,16 @@ class Media(Base):
         ForeignKey("users.user_id", ondelete="SET NULL"),
         nullable=True,
     )
+    # What the public may download of this file (Discover record pages and
+    # public collection shares):
+    #   'none'        — view/play only, no download offered or served
+    #   'derivatives' — the access copy (an image/video rendition) only
+    #   'originals'   — the access copy and the original master
+    # NULL means "not set": Discover treats it as 'none' (the safe default,
+    # and what Discover did before this setting existed); a public collection
+    # share keeps its own share-level setting. When set, it can only narrow a
+    # share's level, never widen it.
+    public_download_level: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     # Metadata review for sensitive content (required before publishing)
     metadata_reviewed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -361,6 +374,10 @@ class Media(Base):
             name="check_media_processing_status",
         ),
         CheckConstraint(
+            "public_download_level IS NULL OR public_download_level IN ('none', 'derivatives', 'originals')",
+            name="check_media_public_download_level",
+        ),
+        CheckConstraint(
             "copyright_status IS NULL OR copyright_status IN ('public_domain', 'in_copyright', "
             "'copyright_undetermined', 'orphan_work', 'cc_by', 'cc_by_sa', 'cc_by_nc', "
             "'cc_by_nc_sa', 'cc0', 'rights_reserved')",
@@ -514,7 +531,7 @@ class MediaDerivative(Base):
         Index("ix_media_derivatives_media_type", "media_id", "derivative_type"),
         UniqueConstraint("media_id", "derivative_type", "format", name="uq_media_derivative_type_format"),
         CheckConstraint(
-            "format IN ('jpeg', 'webp', 'png', 'avif')",
+            "format IN ('jpeg', 'webp', 'png', 'avif', 'mp4', 'webm', 'pdf')",
             name="check_derivative_format",
         ),
         {"schema": "media"},
@@ -577,7 +594,7 @@ class MediaProcessingJob(Base):
         Index("ix_media_jobs_status_created", "status", "created_at"),
         Index("ix_media_jobs_celery", "celery_task_id"),
         CheckConstraint(
-            "job_type IN ('derivatives', 'transcode', 'metadata_extract', 'watermark', 'regenerate', 'model_3d_process', 'metadata_embed')",
+            "job_type IN ('derivatives', 'transcode', 'metadata_extract', 'watermark', 'regenerate', 'model_3d_process', 'metadata_embed', 'access_copy')",
             name="check_job_type",
         ),
         CheckConstraint(
@@ -806,6 +823,15 @@ class MediaRights(Base):
     rights_holder: Mapped[str | None] = mapped_column(String(255), nullable=True)
     rights_holder_contact: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
+    # Agent for the rights holder: a linked contact record, with a free-text
+    # name fallback (mirrors rights_holder, which is free text).
+    rights_holder_agent_contact_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("collections.constituents.constituent_id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    rights_holder_agent: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
     # License information
     license_type: Mapped[str | None] = mapped_column(String(50), nullable=True)  # CC-BY, CC0, ARR, etc.
     license_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
@@ -854,11 +880,16 @@ class MediaRights(Base):
         back_populates="rights",
         primaryjoin="MediaRights.media_id == Media.media_id",
     )
+    rights_holder_agent_contact: Mapped["Constituent | None"] = relationship(
+        "Constituent",
+        foreign_keys=[rights_holder_agent_contact_id],
+    )
 
     __table_args__ = (
         Index("ix_media_rights_media", "media_id"),
         Index("ix_media_rights_org", "organization_id"),
         Index("ix_media_rights_org_license", "organization_id", "license_type"),
+        Index("ix_media_rights_agent_contact", "rights_holder_agent_contact_id"),
         CheckConstraint(
             "rights_type IN ('copyright', 'license', 'restriction', 'permission', 'grant')",
             name="check_rights_type",

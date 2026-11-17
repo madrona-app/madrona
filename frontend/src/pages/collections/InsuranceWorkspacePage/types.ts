@@ -121,6 +121,7 @@ export const INSURANCE_SECTION_GROUPS: SectionGroup[] = [
     defaultExpanded: false,
     sections: [
       { id: 'coveredItems', label: 'Covered Items', dataKey: 'coveredItems' },
+      { id: 'claims', label: 'Claims', dataKey: 'claims' },
     ],
   },
   {
@@ -142,6 +143,7 @@ export const SECTION_GROUPS: Record<string, string> = {
   coverage: 'financial',
   dates: 'financial',
   coveredItems: 'linked',
+  claims: 'linked',
   notes: 'admin',
   history: 'admin',
 };
@@ -151,7 +153,7 @@ export const GROUP_ORDER = ['overview', 'financial', 'linked', 'admin'];
 export const ALL_SECTION_IDS = [
   'details', 'provider',
   'coverage', 'dates',
-  'coveredItems',
+  'coveredItems', 'claims',
   'notes', 'history',
 ];
 
@@ -161,6 +163,7 @@ export const INITIAL_EXPANDED_SECTIONS: Record<string, boolean> = {
   coverage: true,
   dates: false,
   coveredItems: true,
+  claims: true,
   notes: false,
   history: false,
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useId, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   User,
@@ -17,6 +17,7 @@ import type { AddAuthoritySlideOverProps } from './types';
 import { LIFE_ROLE_OPTIONS } from './constants';
 import { LinkDetailsForm } from './LinkDetailsForm';
 import SlideOver from '../../ui/SlideOver';
+import { useFocusFirstFieldOnViewChange } from '../useFocusFirstFieldOnViewChange';
 
 export function AddAuthoritySlideOver({
   isOpen,
@@ -25,10 +26,13 @@ export function AddAuthoritySlideOver({
   onClose,
   onSuccess,
 }: AddAuthoritySlideOverProps) {
+  const fid = useId();
   const queryClient = useQueryClient();
 
   // Mode: 'search' or 'create'
   const [mode, setMode] = useState<'search' | 'create'>('search');
+  const contentRef = useRef<HTMLDivElement>(null);
+  useFocusFirstFieldOnViewChange(contentRef, mode);
 
   // Search/Select state
   const [selectedAuthorityId, setSelectedAuthorityId] = useState<string>('');
@@ -193,9 +197,9 @@ export function AddAuthoritySlideOver({
         </div>
       }
     >
-      <div className="space-y-5">
+      <div className="space-y-5" ref={contentRef}>
         {error && (
-          <div className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-institutional text-sm text-semantic-error">
+          <div role="alert" className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-institutional text-sm text-semantic-error">
             {error}
           </div>
         )}
@@ -204,10 +208,11 @@ export function AddAuthoritySlideOver({
           <>
             {/* Biography Search */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+              <label htmlFor={`${fid}-search-biographies`} className="block text-sm font-medium text-ink mb-1.5">
                 Search Biographies <span className="text-semantic-error">*</span>
               </label>
               <input
+                id={`${fid}-search-biographies`}
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -216,8 +221,8 @@ export function AddAuthoritySlideOver({
               />
               <div className="max-h-48 overflow-y-auto border border-lichen rounded-institutional">
                 {loadingAuthorities ? (
-                  <div className="p-4 text-center text-archive">
-                    <Loader2 size={16} className="inline animate-spin mr-2" />
+                  <div className="p-4 text-center text-archive" role="status">
+                    <Loader2 size={16} className="inline animate-spin mr-2" aria-hidden="true" />
                     Searching...
                   </div>
                 ) : searchQuery.length <= 1 ? (
@@ -294,23 +299,24 @@ export function AddAuthoritySlideOver({
                 </h4>
 
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <label htmlFor={`${fid}-name`} className="block text-sm font-medium text-ink mb-1">
                     Name <span className="text-semantic-error">*</span>
                   </label>
                   <input
+                    id={`${fid}-name`}
                     type="text"
                     value={newAuthorityName}
                     onChange={(e) => setNewAuthorityName(e.target.value)}
                     placeholder="e.g., Vincent van Gogh"
                     className="input w-full"
-                    autoFocus
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">Nationality</label>
+                    <label htmlFor={`${fid}-nationality`} className="block text-sm font-medium text-ink mb-1">Nationality</label>
                     <input
+                      id={`${fid}-nationality`}
                       type="text"
                       value={newAuthorityNationality}
                       onChange={(e) => setNewAuthorityNationality(e.target.value)}
@@ -319,8 +325,9 @@ export function AddAuthoritySlideOver({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">Role/Profession</label>
+                    <label htmlFor={`${fid}-role-profession`} className="block text-sm font-medium text-ink mb-1">Role/Profession</label>
                     <select
+                      id={`${fid}-role-profession`}
                       value={newAuthorityLifeRole}
                       onChange={(e) => setNewAuthorityLifeRole(e.target.value)}
                       className="input w-full"
@@ -335,8 +342,9 @@ export function AddAuthoritySlideOver({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">Birth Date</label>
+                    <label htmlFor={`${fid}-birth-date`} className="block text-sm font-medium text-ink mb-1">Birth Date</label>
                     <input
+                      id={`${fid}-birth-date`}
                       type="text"
                       value={newAuthorityBirthDate}
                       onChange={(e) => setNewAuthorityBirthDate(e.target.value)}
@@ -345,8 +353,9 @@ export function AddAuthoritySlideOver({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1">Death Date</label>
+                    <label htmlFor={`${fid}-death-date`} className="block text-sm font-medium text-ink mb-1">Death Date</label>
                     <input
+                      id={`${fid}-death-date`}
                       type="text"
                       value={newAuthorityDeathDate}
                       onChange={(e) => setNewAuthorityDeathDate(e.target.value)}

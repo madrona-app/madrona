@@ -16,6 +16,7 @@ import {
 import { AddRightsModal } from './AddRightsModal';
 import ConfirmDialog from '../ConfirmDialog';
 import { formatDateShort } from '@/lib/formatters';
+import { RecordHistoryButton } from '../audit/RecordHistoryButton';
 
 interface MediaRightsManagerProps {
   organizationId: string;
@@ -149,6 +150,12 @@ export function MediaRightsManager({ organizationId, mediaId }: MediaRightsManag
                     </div>
                   )}
 
+                  {(r.rights_holder_agent_contact_name || r.rights_holder_agent) && (
+                    <div className="mt-1 text-sm text-accessible-gray">
+                      Agent for rights holder: {r.rights_holder_agent_contact_name || r.rights_holder_agent}
+                    </div>
+                  )}
+
                   {r.rights_statement && (
                     <p className="mt-1 text-sm text-stone-500">{r.rights_statement}</p>
                   )}
@@ -204,6 +211,13 @@ export function MediaRightsManager({ organizationId, mediaId }: MediaRightsManag
                 </div>
 
                 <div className="flex items-center gap-1">
+                  <RecordHistoryButton
+                    organizationId={organizationId}
+                    entityType="media_rights"
+                    entityId={r.rights_id}
+                    recordName={RIGHTS_TYPE_LABELS[r.rights_type] || r.rights_type}
+                    showLabel={false}
+                  />
                   <button
                     onClick={() => setEditingRights(r)}
                     className="p-1.5 hover:bg-stone-100 rounded text-stone-600"

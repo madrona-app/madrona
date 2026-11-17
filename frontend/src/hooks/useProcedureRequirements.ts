@@ -24,6 +24,7 @@ interface ApiRequirement {
   helpText?: string;
   helpLink?: string;
   hasPredicate?: boolean;
+  source?: 'baseline' | 'org';
 }
 
 interface ApiRequirementGroup {
@@ -161,6 +162,7 @@ function hydrateRequirements(apiGroups: ApiRequirementGroup[]): RequirementGroup
         severity: r.severity,
         helpText: r.helpText,
         helpLink: r.helpLink,
+        source: r.source,
       };
       if (r.hasPredicate && PREDICATE_REGISTRY[r.id]) {
         base.predicate = PREDICATE_REGISTRY[r.id];
@@ -179,6 +181,8 @@ interface UseProcedureRequirementsResult {
   statusOrder: string[];
   procedureLabel: string;
   enforcementEnabled: boolean;
+  /** Fields the organization added on top of the fixed requirements. */
+  orgRequiredFields: Array<{ field: string; label: string }>;
   isLoading: boolean;
   error: Error | null;
 }
@@ -187,10 +191,19 @@ export function useProcedureRequirements(
   procedureType: string,
   organizationId?: string,
 ): UseProcedureRequirementsResult {
-  const queryParam = organizationId ? `?organization_id=${organizationId}` : '';
-  const { data, isLoading, error } = useQuery<ApiProcedureRequirements & { enforcementEnabled?: boolean }>({
+  // Org-added fields and the enforcement flag come from the org-scoped route
+  // (members only); without an organization the shared baseline is fetched.
+  const path = organizationId
+    ? `/organizations/${organizationId}/procedure-requirements/${procedureType}`
+    : `/procedure-requirements/${procedureType}`;
+  const { data, isLoading, error } = useQuery<
+    ApiProcedureRequirements & {
+      enforcementEnabled?: boolean;
+      orgRequiredFields?: Array<{ field: string; label: string }>;
+    }
+  >({
     queryKey: ['procedure-requirements', procedureType, organizationId],
-    queryFn: () => apiFetch(`/procedure-requirements/${procedureType}${queryParam}`),
+    queryFn: () => apiFetch(path),
     staleTime: organizationId ? 5 * 60 * 1000 : Infinity, // Per-org: 5 min, global: forever
     gcTime: organizationId ? 10 * 60 * 1000 : Infinity,
   });
@@ -200,6 +213,7 @@ export function useProcedureRequirements(
     statusOrder: data?.statusOrder ?? [],
     procedureLabel: data?.procedureLabel ?? '',
     enforcementEnabled: data?.enforcementEnabled ?? false,
+    orgRequiredFields: data?.orgRequiredFields ?? [],
     isLoading,
     error: error as Error | null,
   };

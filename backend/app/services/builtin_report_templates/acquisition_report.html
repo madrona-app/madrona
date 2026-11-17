@@ -78,13 +78,13 @@
     page-break-after: avoid;
   }
 
-  table.field-grid {
+  .field-grid {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 6pt;
   }
 
-  table.field-grid td.field {
+  .field-grid .field {
     width: 50%;
     padding: 0 8pt 6pt 0;
     vertical-align: top;
@@ -114,7 +114,7 @@
     white-space: pre-wrap;
   }
 
-  table.record-info {
+  .record-info {
     width: 100%;
     border-collapse: collapse;
     margin-top: 14pt;
@@ -123,7 +123,7 @@
     color: var(--archive);
   }
 
-  table.record-info td {
+  .record-info .row > div {
     padding: 4pt 0;
     width: 50%;
   }
@@ -131,6 +131,16 @@
   .keep-together {
     break-inside: avoid;
   }
+
+  /* Layout rows (divs, not tables, so tagged PDF has no false data tables) */
+  .field-grid > .row, .ident-layout > .row, .record-info > .row, .signature-block > .row {
+    display: flex;
+  }
+  .field-grid > .row > div, .record-info > .row > div, .signature-block > .row > div {
+    flex: 1 1 0;
+  }
+  .ident-layout .ident-fields { flex: 1 1 auto; }
+  .ident-layout .ident-image { flex: 0 0 2.5in; }
 </style>
 </head>
 <body>
@@ -142,93 +152,93 @@
 
 {# ── Acquisition Details ── #}
 <h2 class="section-header">Acquisition Details</h2>
-<table class="field-grid">
+<div class="field-grid">
   {% if acquisition_number or acquisition_method %}
-  <tr>
+  <div class="row">
     {% if acquisition_number %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Acquisition Number</div>
       <div class="field-value">{{ acquisition_number }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if acquisition_method %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Method</div>
       <div class="field-value">{{ acquisition_method }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if acquisition_date or source_name %}
-  <tr>
+  <div class="row">
     {% if acquisition_date %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Acquisition Date</div>
       <div class="field-value">{{ acquisition_date }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if source_name %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Source</div>
       <div class="field-value">{{ source_name }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if source_type or status %}
-  <tr>
+  <div class="row">
     {% if source_type %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Source Type</div>
       <div class="field-value">{{ source_type }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if status %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Status</div>
       <div class="field-value">{{ status }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if objects_count or assigned_to_name %}
-  <tr>
+  <div class="row">
     {% if objects_count %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Number of Objects</div>
       <div class="field-value">{{ objects_count }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if assigned_to_name %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Assigned To</div>
       <div class="field-value">{{ assigned_to_name }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
-</table>
+</div>
 
 {# ── Accession ── #}
 {% if accession_number or accession_date %}
 <div class="keep-together">
   <h2 class="section-header">Accession</h2>
-  <table class="field-grid">
-    <tr>
+  <div class="field-grid">
+    <div class="row">
       {% if accession_number %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Accession Number</div>
         <div class="field-value">{{ accession_number }}</div>
-      </td>
+      </div>
       {% endif %}
       {% if accession_date %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Accession Date</div>
         <div class="field-value">{{ accession_date }}</div>
-      </td>
+      </div>
       {% endif %}
-    </tr>
-  </table>
+    </div>
+  </div>
 </div>
 {% endif %}
 
@@ -236,22 +246,22 @@
 {% if cost or funding_source %}
 <div class="keep-together">
   <h2 class="section-header">Financial</h2>
-  <table class="field-grid">
-    <tr>
+  <div class="field-grid">
+    <div class="row">
       {% if cost %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Cost</div>
         <div class="field-value">{{ cost }}</div>
-      </td>
+      </div>
       {% endif %}
       {% if funding_source %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Funding Source</div>
         <div class="field-value">{{ funding_source }}</div>
-      </td>
+      </div>
       {% endif %}
-    </tr>
-  </table>
+    </div>
+  </div>
 </div>
 {% endif %}
 
@@ -259,22 +269,22 @@
 {% if legal_status or credit_line %}
 <div class="keep-together">
   <h2 class="section-header">Legal &amp; Credits</h2>
-  <table class="field-grid">
-    <tr>
+  <div class="field-grid">
+    <div class="row">
       {% if legal_status %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Legal Status</div>
         <div class="field-value">{{ legal_status }}</div>
-      </td>
+      </div>
       {% endif %}
       {% if credit_line %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Credit Line</div>
         <div class="field-value">{{ credit_line }}</div>
-      </td>
+      </div>
       {% endif %}
-    </tr>
-  </table>
+    </div>
+  </div>
   {% if provisos %}
   <div class="field-full">
     <div class="field-label">Provisos</div>
@@ -301,14 +311,14 @@
 {% endif %}
 
 {# ── Record Information ── #}
-<table class="record-info">
-  <tr>
+<div class="record-info">
+  <div class="row">
     {% if created_at %}
-    <td>Created: {{ created_at }}</td>
+    <div>Created: {{ created_at }}</div>
     {% endif %}
-    <td></td>
-  </tr>
-</table>
+    <div></div>
+  </div>
+</div>
 
 </body>
 </html>

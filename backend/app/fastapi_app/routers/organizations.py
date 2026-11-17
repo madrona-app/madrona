@@ -1767,6 +1767,59 @@ def update_role_testing(
 
 
 # =============================================================================
+# REPORT PDF SETTING
+# =============================================================================
+
+
+@router.get("/api/organizations/{org_id}/settings/report-formats", response_model=dict, summary="Get report format setting")
+def get_report_formats(
+    org_id: UUID,
+    auth: AuthContext = Depends(require_permission(Permission.ORG_MANAGE_SETTINGS)),
+    db: Session = Depends(get_db),
+):
+    """Which PDF report exports this organization offers (all, tagged_only, none)."""
+    from app.models import Organization
+
+    org = db.query(Organization).filter_by(organization_id=org_id).first()
+    if not org:
+        raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Organization not found"})
+    return {"pdf_mode": org.report_pdf_mode or "all"}
+
+
+@router.put("/api/organizations/{org_id}/settings/report-formats", response_model=dict, summary="Set report format setting")
+def update_report_formats(
+    org_id: UUID,
+    body: dict,
+    auth: AuthContext = Depends(require_permission(Permission.ORG_MANAGE_SETTINGS)),
+    db: Session = Depends(get_db),
+):
+    """Choose which PDF report exports are offered.
+
+    'all' offers every PDF; 'tagged_only' hides PDFs that are not tagged for
+    access technology (tabular exports); 'none' offers accessible formats only.
+    Accessible formats (HTML, Word, plain text, CSV, Excel) are always offered.
+    """
+    from app.models import Organization
+    from app.services.report_formats import PDF_MODES
+
+    mode = body.get("pdf_mode") if isinstance(body, dict) else None
+    if mode not in PDF_MODES:
+        raise HTTPException(status_code=422, detail={
+            "code": "validation_error",
+            "message": f"Body must include 'pdf_mode', one of: {', '.join(PDF_MODES)}",
+        })
+
+    org = db.query(Organization).filter_by(organization_id=org_id).first()
+    if not org:
+        raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Organization not found"})
+
+    org.report_pdf_mode = mode
+    db.commit()
+    logger.info("Report PDF mode set to %s for org %s", mode, org_id)
+    return {"pdf_mode": org.report_pdf_mode}
+
+
+# =============================================================================
 # APPLICATION ENABLEMENT
 # =============================================================================
 
@@ -1965,21 +2018,159 @@ def get_procedure_enforcement(
     if not org:
         raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Organization not found"})
 
-    enforcement = org.procedure_enforcement or {}
-    # Return all known procedures with their enforcement state
-    procedures = {}
-    for proc_type, proc in PROCEDURE_REQUIREMENTS.items():
-        procedures[proc_type] = {
-            "enabled": bool(enforcement.get(proc_type, False)),
-            "label": proc.procedure_label,
-            "requirement_count": sum(len(g.requirements) for g in proc.requirement_groups),
-            "blocking_count": sum(
-                1 for g in proc.requirement_groups
-                for r in g.requirements if r.severity == "blocking"
-            ),
-        }
+    # Return all known procedures with their enforcement state and required fields
+    procedures = {
+        proc_type: _procedure_settings_entry(org, proc_type)
+        for proc_type in PROCEDURE_REQUIREMENTS
+    }
 
     return {"procedures": procedures}
+
+
+def _procedure_settings_entry(org, proc_type: str) -> dict:
+    """One procedure's enforcement toggle plus its baseline and org-added
+    required fields (and the fields an admin may still add)."""
+    from app.services import procedure_required_fields as prf
+    from app.services.procedure_requirements import PROCEDURE_REQUIREMENTS
+
+    proc = PROCEDURE_REQUIREMENTS[proc_type]
+    enforcement = org.procedure_enforcement or {}
+    supports = prf.supports_org_fields(proc_type)
+    added = prf.org_added_fields(org, proc_type) if supports else []
+    added_names = {f["field"] for f in added}
+    return {
+        "enabled": bool(enforcement.get(proc_type, False)),
+        "label": proc.procedure_label,
+        "requirement_count": sum(len(g.requirements) for g in proc.requirement_groups) + len(added),
+        "blocking_count": sum(
+            1 for g in proc.requirement_groups
+            for r in g.requirements if r.severity == "blocking"
+        ) + len(added),
+        "supports_org_required_fields": supports,
+        "baseline_required_fields": prf.baseline_required_fields(proc_type),
+        "org_required_fields": added,
+        "ignored_required_fields": prf.ignored_org_fields(org, proc_type) if supports else [],
+        "eligible_fields": (
+            [f for f in prf.eligible_fields(proc_type) if f["field"] not in added_names]
+            if supports else []
+        ),
+        "first_status": proc.status_order[0] if proc.status_order else None,
+    }
+
+
+def _org_for_settings(db: Session, org_id: UUID):
+    from app.models import Organization
+
+    org = db.query(Organization).filter_by(organization_id=org_id).first()
+    if not org:
+        raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Organization not found"})
+    return org
+
+
+def _require_supported_procedure(procedure_type: str) -> None:
+    from app.services import procedure_required_fields as prf
+    from app.services.procedure_requirements import PROCEDURE_REQUIREMENTS
+
+    if procedure_type not in PROCEDURE_REQUIREMENTS:
+        raise HTTPException(status_code=404, detail={
+            "code": "not_found", "message": f"Unknown procedure type: '{procedure_type}'",
+        })
+    if not prf.supports_org_fields(procedure_type):
+        raise HTTPException(status_code=422, detail={
+            "code": "not_supported",
+            "message": f"Additional required fields are not available for '{procedure_type}'",
+        })
+
+
+@router.post(
+    "/api/organizations/{org_id}/settings/procedure-enforcement/{procedure_type}/required-fields",
+    status_code=201,
+    response_model=dict,
+    summary="Add an org required field to a procedure",
+)
+def add_procedure_required_field(
+    org_id: UUID,
+    procedure_type: str,
+    data: dict,
+    auth: AuthContext = Depends(require_permission(Permission.ORG_MANAGE_SETTINGS)),
+    db: Session = Depends(get_db),
+):
+    """Make an extra field required for a procedure, on top of its baseline.
+
+    The field must be a column of the procedure's record that is not already
+    in the baseline. Enforced on status transitions while enforcement is on.
+    """
+    from sqlalchemy.orm.attributes import flag_modified
+    from app.services import procedure_required_fields as prf
+
+    _require_supported_procedure(procedure_type)
+    org = _org_for_settings(db, org_id)
+    field = data.get("field")
+    if not isinstance(field, str) or not field:
+        raise HTTPException(status_code=422, detail={"code": "validation_error", "message": "field is required"})
+
+    baseline = {f for r in prf.baseline_required_fields(procedure_type) for f in r["fields"]}
+    if field in baseline:
+        raise HTTPException(status_code=422, detail={
+            "code": "already_baseline", "message": f"'{field}' is already required for this procedure",
+        })
+    if field not in {f["field"] for f in prf.eligible_fields(procedure_type)}:
+        raise HTTPException(status_code=422, detail={
+            "code": "unknown_field",
+            "message": f"'{field}' is not a field that can be required on this procedure",
+        })
+
+    current = dict(org.procedure_required_fields or {})
+    fields = list(current.get(procedure_type) or [])
+    if field in fields:
+        raise HTTPException(status_code=409, detail={
+            "code": "already_added", "message": f"'{field}' is already required by your organization",
+        })
+    fields.append(field)
+    current[procedure_type] = fields
+    org.procedure_required_fields = current
+    flag_modified(org, "procedure_required_fields")
+    db.commit()
+    db.refresh(org)
+    return {"procedure_type": procedure_type, **_procedure_settings_entry(org, procedure_type)}
+
+
+@router.delete(
+    "/api/organizations/{org_id}/settings/procedure-enforcement/{procedure_type}/required-fields/{field}",
+    response_model=dict,
+    summary="Remove an org required field from a procedure",
+)
+def remove_procedure_required_field(
+    org_id: UUID,
+    procedure_type: str,
+    field: str,
+    auth: AuthContext = Depends(require_permission(Permission.ORG_MANAGE_SETTINGS)),
+    db: Session = Depends(get_db),
+):
+    """Remove a field the organization added. Baseline fields cannot be removed."""
+    from sqlalchemy.orm.attributes import flag_modified
+    from app.services import procedure_required_fields as prf
+
+    _require_supported_procedure(procedure_type)
+    org = _org_for_settings(db, org_id)
+
+    baseline = {f for r in prf.baseline_required_fields(procedure_type) for f in r["fields"]}
+    if field in baseline:
+        raise HTTPException(status_code=422, detail={
+            "code": "baseline_field", "message": "Baseline required fields cannot be removed",
+        })
+    current = dict(org.procedure_required_fields or {})
+    fields = list(current.get(procedure_type) or [])
+    if field not in fields:
+        raise HTTPException(status_code=404, detail={
+            "code": "not_found", "message": f"'{field}' is not an added required field",
+        })
+    current[procedure_type] = [f for f in fields if f != field]
+    org.procedure_required_fields = current
+    flag_modified(org, "procedure_required_fields")
+    db.commit()
+    db.refresh(org)
+    return {"procedure_type": procedure_type, **_procedure_settings_entry(org, procedure_type)}
 
 
 @router.put("/api/organizations/{org_id}/settings/procedure-enforcement", response_model=dict, summary="Update procedure enforcement")
@@ -2013,6 +2204,64 @@ def update_procedure_enforcement(
     db.commit()
 
     return {"status": "ok", "procedure_enforcement": enforcement}
+
+
+# =============================================================================
+# STRICT VOCABULARY VALIDATION SETTINGS
+# =============================================================================
+
+
+@router.get("/api/organizations/{org_id}/settings/vocabulary-validation", response_model=dict, summary="Get vocabulary validation settings")
+def get_vocabulary_validation(
+    org_id: UUID,
+    # Readable by anyone who can view collections: the object editor needs to
+    # know which fields are strict so it can disable "use as entered".
+    auth: AuthContext = Depends(require_permission(Permission.COLLECTIONS_VIEW)),
+    db: Session = Depends(get_db),
+):
+    """List vocabulary-backed object fields and whether each is strict."""
+    from app.models import Organization
+    from app.services.vocabulary_validation import describe_settings
+
+    org = db.query(Organization).filter_by(organization_id=org_id).first()
+    if not org:
+        raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Organization not found"})
+    return {"fields": describe_settings(db, org_id)}
+
+
+@router.put("/api/organizations/{org_id}/settings/vocabulary-validation", response_model=dict, summary="Update vocabulary validation settings")
+def update_vocabulary_validation(
+    org_id: UUID,
+    data: dict,
+    auth: AuthContext = Depends(require_permission(Permission.ORG_MANAGE_SETTINGS)),
+    db: Session = Depends(get_db),
+):
+    """Switch strict validation on or off per field. Body: {field_key: bool}."""
+    from sqlalchemy.orm.attributes import flag_modified
+    from app.models import Organization
+    from app.services.vocabulary_validation import STRICT_VOCABULARY_FIELDS, describe_settings
+
+    org = db.query(Organization).filter_by(organization_id=org_id).first()
+    if not org:
+        raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Organization not found"})
+
+    unknown = [k for k in data if k not in STRICT_VOCABULARY_FIELDS]
+    invalid = [k for k, v in data.items() if not isinstance(v, bool)]
+    if unknown or invalid:
+        raise HTTPException(status_code=422, detail={
+            "code": "validation_error",
+            "message": (
+                f"Unknown field(s): {', '.join(sorted(unknown))}" if unknown
+                else f"Value must be true or false for: {', '.join(sorted(invalid))}"
+            ),
+        })
+
+    settings = dict(org.vocabulary_strict_fields or {})
+    settings.update(data)
+    org.vocabulary_strict_fields = settings
+    flag_modified(org, "vocabulary_strict_fields")
+    db.commit()
+    return {"fields": describe_settings(db, org_id)}
 
 
 # =============================================================================

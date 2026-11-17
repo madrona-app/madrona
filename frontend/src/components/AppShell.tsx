@@ -107,6 +107,15 @@ function AppShellContent({ children }: AppShellContentProps) {
 
   return (
     <div className="app-shell">
+      {/* Skip link: the first focusable element on the page, ahead of the
+          sidebar and top bar, so keyboard users can bypass them. */}
+      <a
+        href="#main-content"
+        className="sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:top-2 focus-visible:left-2 focus-visible:z-[1100] focus-visible:px-4 focus-visible:py-2 focus-visible:bg-parchment focus-visible:text-ink focus-visible:rounded focus-visible:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+      >
+        Skip to main content
+      </a>
+
       {/* Sidebar - hidden on mobile, visible on tablet+ */}
       <AppSidebar orgId={effectiveOrgId} />
 
@@ -122,25 +131,19 @@ function AppShellContent({ children }: AppShellContentProps) {
         <MinimalTopBar />
 
         {/* WebSocket disconnect indicator */}
-        {isAuthenticated && !isConnected && (
-          <div
-            className="bg-semantic-warning/10 text-semantic-warning text-sm px-4 py-2 text-center"
-            role="status"
-          >
-            Connection lost. Reconnecting…
-          </div>
-        )}
-
-        {/* Skip link for keyboard users */}
-        <a
-          href="#main-content"
-          className="sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:top-16 focus-visible:left-2 focus-visible:z-50 focus-visible:px-4 focus-visible:py-2 focus-visible:bg-parchment focus-visible:text-ink focus-visible:rounded focus-visible:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
-        >
-          Skip to main content
-        </a>
+        {/* The status region is always present so the message is announced
+            when it appears; only its content is conditional. */}
+        <div role="status" className="empty:hidden">
+          {isAuthenticated && !isConnected && (
+            <div className="bg-semantic-warning/10 text-semantic-warning text-sm px-4 py-2 text-center">
+              Connection lost. Reconnecting…
+            </div>
+          )}
+        </div>
 
         {/* Main content */}
-        <main id="main-content" className="app-shell-content">
+        {/* tabIndex -1 so the skip link moves focus (not just scroll) here. */}
+        <main id="main-content" tabIndex={-1} className="app-shell-content focus:outline-none">
           <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
             <div className="px-4 py-6 sm:px-0">{children}</div>
           </div>
@@ -191,7 +194,7 @@ function AppShellContent({ children }: AppShellContentProps) {
             aria-label={guideActionReason ? `Ask Guide — ${guideActionReason}` : 'Ask Guide'}
             title={guideActionReason ? `Ask Guide — ${guideActionReason}` : 'Ask Guide'}
           >
-            <Sparkles size={24} />
+            <Sparkles size={24} aria-hidden="true" />
           </button>
         </div>
       )}

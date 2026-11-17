@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Play,
@@ -27,6 +27,7 @@ export function BulkAIReprocessPanel({
   stats,
   canEdit,
 }: BulkAIReprocessPanelProps) {
+  const fid = useId();
   const queryClient = useQueryClient();
 
   // State
@@ -77,9 +78,11 @@ export function BulkAIReprocessPanel({
         <div className="flex flex-wrap items-center gap-4">
           {/* Status Filter */}
           <div className="flex items-center gap-2">
-            <label className="text-sm text-accessible-gray">Process:</label>
-            <div className="flex rounded-lg border border-lichen overflow-hidden">
+            <span id={`${fid}-process`} className="text-sm text-accessible-gray">Process:</span>
+            <div role="group" aria-labelledby={`${fid}-process`} className="flex rounded-lg border border-lichen overflow-hidden">
               <button
+                type="button"
+                aria-pressed={statusFilter === 'pending'}
                 onClick={() => setStatusFilter('pending')}
                 className={`px-3 py-1.5 text-sm ${
                   statusFilter === 'pending'
@@ -87,10 +90,12 @@ export function BulkAIReprocessPanel({
                     : 'bg-parchment text-ink hover:bg-stone/20'
                 }`}
               >
-                <Clock size={12} className="inline mr-1" />
+                <Clock size={12} className="inline mr-1" aria-hidden="true" />
                 Pending ({pendingCount})
               </button>
               <button
+                type="button"
+                aria-pressed={statusFilter === 'failed'}
                 onClick={() => setStatusFilter('failed')}
                 className={`px-3 py-1.5 text-sm border-l border-lichen ${
                   statusFilter === 'failed'
@@ -98,10 +103,12 @@ export function BulkAIReprocessPanel({
                     : 'bg-parchment text-ink hover:bg-stone/20'
                 }`}
               >
-                <AlertCircle size={12} className="inline mr-1" />
+                <AlertCircle size={12} className="inline mr-1" aria-hidden="true" />
                 Failed ({failedCount})
               </button>
               <button
+                type="button"
+                aria-pressed={statusFilter === 'all'}
                 onClick={() => setStatusFilter('all')}
                 className={`px-3 py-1.5 text-sm border-l border-lichen ${
                   statusFilter === 'all'
@@ -116,8 +123,9 @@ export function BulkAIReprocessPanel({
 
           {/* Batch Size */}
           <div className="flex items-center gap-2">
-            <label className="text-sm text-accessible-gray">Batch size:</label>
+            <label htmlFor={`${fid}-batch-size`} className="text-sm text-accessible-gray">Batch size:</label>
             <select
+              id={`${fid}-batch-size`}
               value={batchSize}
               onChange={(e) => setBatchSize(parseInt(e.target.value))}
               className="px-2 py-1.5 text-sm border border-lichen rounded bg-parchment"

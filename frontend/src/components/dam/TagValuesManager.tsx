@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useId, useRef, useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   DndContext,
@@ -44,6 +44,7 @@ interface TagValuesManagerProps {
 }
 
 export function TagValuesManager({ organizationId, definition }: TagValuesManagerProps) {
+  const fid = useId();
   const queryClient = useQueryClient();
   const [includeInactive, setIncludeInactive] = useState(false);
   const [newValue, setNewValue] = useState('');
@@ -154,8 +155,9 @@ export function TagValuesManager({ organizationId, definition }: TagValuesManage
     <div className="pt-3 space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-medium text-ink">Allowed values</h4>
-        <label className="flex items-center gap-2 text-xs text-archive">
+        <label htmlFor={`${fid}-show-deprecated`} className="flex items-center gap-2 text-xs text-archive">
           <Checkbox
+            id={`${fid}-show-deprecated`}
             checked={includeInactive}
             onChange={(e) => setIncludeInactive(e.target.checked)}
           />
@@ -222,10 +224,12 @@ export function TagValuesManager({ organizationId, definition }: TagValuesManage
                 }
               }}
               placeholder="Add a value…"
+              aria-label={`New ${definition.display_name} value`}
               className="flex-1 px-2 py-1.5 border border-lichen rounded text-sm bg-parchment focus:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:border-bark"
             />
             {isTree && values.length > 0 && (
               <select
+                aria-label="Parent value for new value"
                 value={newParentId}
                 onChange={(e) => setNewParentId(e.target.value)}
                 className="px-2 py-1.5 border border-lichen rounded text-sm bg-parchment"
@@ -308,6 +312,12 @@ function SortableValueRow({
   };
   const depth = value.depth ?? 0;
   const inUse = (value.usage_count ?? 0) > 0;
+  const editInputRef = useRef<HTMLInputElement>(null);
+
+  // Move focus into the inline editor when the user chooses Edit
+  useEffect(() => {
+    if (isEditing) editInputRef.current?.focus();
+  }, [isEditing]);
 
   return (
     <div
@@ -335,18 +345,20 @@ function SortableValueRow({
         {isEditing ? (
           <>
             <input
+              ref={editInputRef}
               type="text"
+              aria-label={`Edit value ${value.value}`}
               value={editingValue}
               onChange={(e) => setEditingValue(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') onSaveEdit();
                 if (e.key === 'Escape') onCancelEdit();
               }}
-              autoFocus
               className="flex-1 px-2 py-1 border border-lichen rounded text-sm bg-parchment focus:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:border-bark"
             />
             {isTree && (
               <select
+                aria-label={`Parent of ${value.value}`}
                 value={editingParentId}
                 onChange={(e) => setEditingParentId(e.target.value)}
                 className="px-2 py-1 border border-lichen rounded text-sm bg-parchment"
@@ -392,7 +404,7 @@ function SortableValueRow({
               onClick={onSaveEdit}
               disabled={pending}
               className="p-1 text-semantic-success hover:bg-stone-100 rounded disabled:opacity-50"
-              aria-label="Save"
+              aria-label={`Save ${value.value}`}
               title="Save"
             >
               <Check size={14} />
@@ -401,7 +413,7 @@ function SortableValueRow({
               type="button"
               onClick={onCancelEdit}
               className="p-1 text-archive hover:bg-stone-100 rounded"
-              aria-label="Cancel"
+              aria-label={`Cancel ${value.value}`}
               title="Cancel"
             >
               <X size={14} />
@@ -413,7 +425,7 @@ function SortableValueRow({
               type="button"
               onClick={onStartEdit}
               className="p-1 text-archive hover:text-ink hover:bg-stone-100 rounded"
-              aria-label="Edit"
+              aria-label={`Edit ${value.value}`}
               title="Edit"
             >
               <Pencil size={14} />
@@ -424,7 +436,7 @@ function SortableValueRow({
                 onClick={onDeprecate}
                 disabled={pending}
                 className="p-1 text-archive hover:text-semantic-warning hover:bg-stone-100 rounded disabled:opacity-50"
-                aria-label="Deprecate"
+                aria-label={`Deprecate ${value.value}`}
                 title="Deprecate (hide from picker but keep on existing records)"
               >
                 <Trash2 size={14} />
@@ -436,7 +448,7 @@ function SortableValueRow({
                   onClick={onUndeprecate}
                   disabled={pending}
                   className="p-1 text-archive hover:text-semantic-success hover:bg-stone-100 rounded disabled:opacity-50"
-                  aria-label="Reactivate"
+                  aria-label={`Reactivate ${value.value}`}
                   title="Reactivate"
                 >
                   <RotateCcw size={14} />
@@ -446,7 +458,7 @@ function SortableValueRow({
                   onClick={onHardDelete}
                   disabled={pending}
                   className="p-1 text-archive hover:text-semantic-error hover:bg-stone-100 rounded disabled:opacity-50"
-                  aria-label="Delete permanently"
+                  aria-label={`Delete permanently ${value.value}`}
                   title={
                     inUse
                       ? 'Delete permanently — will also remove from all tagged assets'

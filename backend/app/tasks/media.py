@@ -366,6 +366,10 @@ def process_upload_task(
                 media_id, len(result.get('derivatives', [])), result.get('page_count')
             )
 
+            # The page-image PDF and page text Discover offers instead of the
+            # uploaded original.
+            queue_access_copy(media_id, organization_id)
+
             return {
                 "success": True,
                 "media_id": media_id,
@@ -442,6 +446,9 @@ def process_upload_task(
                 "Processed audio %s: duration=%ss",
                 media_id, result.get("duration_seconds"),
             )
+
+            # The web proxy Discover plays instead of the uploaded original.
+            queue_access_copy(media_id, organization_id)
 
             return {
                 "success": True,
@@ -744,6 +751,10 @@ def upload_from_url_task(
         mime_type = resp.headers.get("Content-Type", "").split(";")[0].strip()
         if not mime_type or mime_type == "application/octet-stream":
             mime_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+            # .brf has no registered type; objects are stored without a ContentType
+            # here, so S3 serves them (and any HTML) as a download.
+            from app.services.uploads import normalize_upload_content_type
+            mime_type = normalize_upload_content_type(mime_type, filename)
 
         media_type = detect_media_type(mime_type)
 
@@ -1134,8 +1145,14 @@ def transcode_video_task(
             logger.error("Media not found: %s", media_id)
             return {"success": False, "error": "Media not found"}
 
-        if media.media_type != "video":
+        from app.services.video_transcoding import is_audio_only_request
+
+        # Audio is transcoded only to its audio-only web proxy.
+        audio_proxy_only = media.media_type == "audio" and is_audio_only_request(derivatives)
+        if media.media_type != "video" and not audio_proxy_only:
             return {"success": False, "error": "Only video media can be transcoded"}
+        if audio_proxy_only:
+            extract_poster = False
 
         # Update status to processing
         media.processing_status = "processing"
@@ -1186,8 +1203,11 @@ def transcode_video_task(
                 build_video_dublin_core,
             )
 
-            logger.info("Extracting video metadata for %s", media_id)
-            video_metadata = extract_video_metadata_from_s3(s3_client, bucket, media.s3_key)
+            # Audio keeps the metadata and checksum its upload recorded.
+            video_metadata = None
+            if not audio_proxy_only:
+                logger.info("Extracting video metadata for %s", media_id)
+                video_metadata = extract_video_metadata_from_s3(s3_client, bucket, media.s3_key)
 
             if video_metadata:
                 media.width = video_metadata.width
@@ -1202,11 +1222,11 @@ def transcode_video_task(
                     video_metadata.duration_seconds or 0,
                     video_metadata.video_codec
                 )
-            else:
+            elif not audio_proxy_only:
                 logger.warning("Could not extract video metadata for %s", media_id)
 
             # Compute checksum (for smaller files only to avoid memory issues)
-            if media.file_size and media.file_size < 500 * 1024 * 1024:  # 500MB limit
+            if not audio_proxy_only and media.file_size and media.file_size < 500 * 1024 * 1024:  # 500MB limit
                 try:
                     from app.services.storage import get_storage_backend
                     storage = get_storage_backend(str(organization_id), current_session())
@@ -1376,9 +1396,12 @@ def _complete_transcode(
                 logger.warning("Failed to find poster file: %s", e)
         else:
             preset = DERIVATIVE_PRESETS.get(group_name)
-            deriv_width = preset.width if preset else 0
-            deriv_height = preset.height if preset else 0
-            deriv_format = "mp4" if "mp4" in group_name else "webm"
+            deriv_width = (preset.width or 0) if preset else 0
+            deriv_height = (preset.height or 0) if preset else 0
+            if preset is not None and preset.container in ("mp4", "webm"):
+                deriv_format = preset.container
+            else:
+                deriv_format = "mp4" if "mp4" in group_name else "webm"
 
             deriv_prefix = f"orgs/{organization_id}/media/{media_id}/derivatives/{group_name}/"
             deriv_s3_key = deriv_prefix
@@ -1387,7 +1410,7 @@ def _complete_transcode(
             try:
                 objects, _ = storage.list_objects_sync(prefix=deriv_prefix, max_keys=10)
                 video_files = [obj for obj in objects
-                              if obj.key.endswith(('.mp4', '.webm'))]
+                              if obj.key.endswith(('.mp4', '.webm', '.m4a'))]
                 if video_files:
                     deriv_s3_key = video_files[0].key
                     deriv_file_size = video_files[0].size
@@ -1612,6 +1635,103 @@ def poll_transcode_jobs() -> dict[str, Any]:
     }
     logger.info("poll_transcode_jobs: %s", result)
     return result
+
+
+# ---------------------------------------------------------------------------
+# Public access copies (audio proxy, page-image PDF, document text)
+# ---------------------------------------------------------------------------
+
+@celery_app.task(
+    base=OrgTask,
+    bind=True,
+    name='app.tasks.media.generate_access_copy',
+    max_retries=0,
+    soft_time_limit=1800,
+    time_limit=1900,
+)
+def generate_access_copy_task(
+    self: Task,
+    media_id: str,
+    organization_id: str,
+) -> dict[str, Any]:
+    """Make the lower-quality copy Discover plays or opens instead of the original.
+
+    Queued when a file is uploaded and, as a backstop, when a public record
+    page finds a published file without one (see
+    ``discover_media.request_access_copy``). Idempotent: an existing copy is
+    left alone. See ``services/public_access_copy.py`` for what each media
+    type gets.
+    """
+    from app.models import Media, MediaProcessingJob
+    from app.services.public_access_copy import ACCESS_COPY_JOB_TYPE, generate_access_copy
+
+    session = current_session()
+    media = session.query(Media).filter_by(
+        media_id=UUID(media_id), organization_id=UUID(organization_id),
+    ).first()
+    if not media or not media.s3_key:
+        return {"success": False, "error": "Media not found"}
+
+    job = session.query(MediaProcessingJob).filter_by(
+        media_id=media.media_id, job_type=ACCESS_COPY_JOB_TYPE,
+    ).first()
+    if not job:
+        job = MediaProcessingJob(
+            media_id=media.media_id,
+            organization_id=media.organization_id,
+            job_type=ACCESS_COPY_JOB_TYPE,
+        )
+        session.add(job)
+    job.status = "processing"
+    job.celery_task_id = self.request.id
+    job.started_at = datetime.now(timezone.utc)
+    job.completed_at = None
+    job.error_message = None
+    job.result = {"steps": []}
+    session.commit()
+
+    try:
+        with _step(job, "generate", "Make public access copy"):
+            summary = generate_access_copy(media, session)
+    except Exception as e:
+        logger.exception("Access copy failed for media %s", media_id)
+        session.rollback()
+        job = session.query(MediaProcessingJob).filter_by(
+            media_id=UUID(media_id), job_type=ACCESS_COPY_JOB_TYPE,
+        ).first()
+        if job:
+            job.status = "failed"
+            job.error_message = str(e)[:1000]
+            job.completed_at = datetime.now(timezone.utc)
+            session.commit()
+        return {"success": False, "media_id": media_id, "error": str(e)}
+
+    job.status = "completed"
+    job.completed_at = datetime.now(timezone.utc)
+    job.result = _preserve_steps(job, summary)
+    session.commit()
+    _invalidate_public_pages(media.organization_id)
+    return {"success": True, "media_id": media_id, **summary}
+
+
+def _invalidate_public_pages(organization_id) -> None:
+    """Drop cached public record pages so a new access copy shows promptly."""
+    try:
+        from app.services.public_cache import invalidate_org_cache_by_id
+
+        invalidate_org_cache_by_id(organization_id)
+    except Exception as e:  # noqa: BLE001 - the cache expires on its own
+        logger.debug("Could not invalidate public cache for %s: %s", organization_id, e)
+
+
+def queue_access_copy(media_id: str, organization_id: str) -> bool:
+    """Queue :func:`generate_access_copy_task`; False if the broker refused."""
+    try:
+        generate_access_copy_task.delay(media_id=str(media_id), organization_id=str(organization_id))
+        return True
+    except Exception as e:  # noqa: BLE001 - a missing copy is shown as unavailable
+        logger.warning("Could not queue access copy for %s: %s", media_id, e)
+        return False
 
 
 @celery_app.task(
@@ -2423,23 +2543,28 @@ def refresh_smart_collections() -> dict[str, Any]:
             # Get new result IDs
             new_ids = set(hit.media_id for hit in result.hits)
 
-            # Add new members
-            to_add = new_ids - current_ids
-            for media_id_str in to_add:
-                item = MediaCollectionItem(
-                    collection_id=collection.collection_id,
-                    media_id=UUID(media_id_str),
-                    sort_order=0,
-                )
-                current_session().add(item)
+            # Membership kept in step with the saved query is machine churn,
+            # not a person's edit: left out of the collection's history.
+            from app.services.entity_audit import suppress_link_audit
 
-            # Remove stale members
-            to_remove = current_ids - new_ids
-            if to_remove:
-                current_session().query(MediaCollectionItem).filter(
-                    MediaCollectionItem.collection_id == collection.collection_id,
-                    MediaCollectionItem.media_id.in_([UUID(mid) for mid in to_remove]),
-                ).delete(synchronize_session=False)
+            with suppress_link_audit(current_session(), "MediaCollectionItem"):
+                # Add new members
+                to_add = new_ids - current_ids
+                for media_id_str in to_add:
+                    item = MediaCollectionItem(
+                        collection_id=collection.collection_id,
+                        media_id=UUID(media_id_str),
+                        sort_order=0,
+                    )
+                    current_session().add(item)
+
+                # Remove stale members
+                to_remove = current_ids - new_ids
+                if to_remove:
+                    current_session().query(MediaCollectionItem).filter(
+                        MediaCollectionItem.collection_id == collection.collection_id,
+                        MediaCollectionItem.media_id.in_([UUID(mid) for mid in to_remove]),
+                    ).delete(synchronize_session=False)
 
             # Update collection
             collection.item_count = len(new_ids)

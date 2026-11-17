@@ -15,6 +15,12 @@ import {
   ReadOnlyBanner,
   PendingApprovalBanner,
 } from '../../../components/workspace';
+import {
+  RequiredFieldsProvider,
+} from '../../../components/workspace/RequiredFieldsContext';
+import {
+  useRevealSection,
+} from '../../../components/workspace/requiredFields';
 import { cn } from '../../../lib/utils';
 import { ProcedureRequirementsCard } from '../../../components/collections/ProcedureRequirementsCard';
 import { StatusAdvancementDialog } from '../../../components/collections/StatusAdvancementDialog';
@@ -49,6 +55,7 @@ import { AgreementSection } from './AgreementSection';
 import { NotesSection } from './NotesSection';
 import { DiscussionSection } from './DiscussionSection';
 import { AuthorizationSection } from '../../../components/collections/AuthorizationSection';
+import { VenueSection } from './VenueSection';
 import { ClosingSection } from './ClosingSection';
 import { MonitoringSection } from './MonitoringSection';
 import { RenewalsSection } from './RenewalsSection';
@@ -66,7 +73,9 @@ import { LoanOutReturnDialog } from './LoanOutReturnDialog';
 export default function LoanOutWorkspacePage() {
   return (
     <SectionOrderProvider>
-      <LoanOutWorkspacePageContent />
+      <RequiredFieldsProvider procedureType="loan_out">
+        <LoanOutWorkspacePageContent />
+      </RequiredFieldsProvider>
     </SectionOrderProvider>
   );
 }
@@ -266,6 +275,9 @@ function LoanOutWorkspacePageContent() {
     ? (existingLoan?.exhibition_title || borrowerContact?.name || undefined)
     : undefined;
 
+  // Lets the required-fields error summary open a collapsed section.
+  useRevealSection(handleNavSectionClick);
+
   // Loading state
   if (!isCreateMode && isLoading) {
     return (
@@ -402,6 +414,17 @@ function LoanOutWorkspacePageContent() {
           onOpenSelector={() => setShowBorrowerSelector(true)}
           onOpenContactPersonSelector={() => setShowBorrowerContactSelector(true)}
           isRestricted={isRestricted}
+        />
+
+        <VenueSection
+          formData={formData}
+          isExpanded={expandedSections.venue}
+          isEditing={isEditing}
+          order={getSectionOrder('venue')}
+          onToggle={() => handleSectionToggle('venue')}
+          onUpdateField={updateField as <K extends keyof FormData>(field: K, value: FormData[K]) => void}
+          onFieldBlur={handleFieldBlur}
+          organizationId={orgId}
         />
 
         <LoanDetailsSection

@@ -23,29 +23,12 @@ logger = logging.getLogger(__name__)
 MAX_REPORT_ROWS = 10_000
 
 
-def resolve_search(
-    context_params: dict[str, Any],
-    org_id: UUID,
-) -> tuple[list[dict[str, Any]], list[dict[str, str]], dict[str, Any]]:
-    """
-    Resolve data from a search context.
-
-    Replays the search query via OpenSearch to get object IDs, then
-    fetches full export data via collections_export.
-
-    Args:
-        context_params: Must contain 'search_request' (CollectionsSearchRequest dict)
-                        and 'record_type' (str)
-        org_id: Organization UUID
-
-    Returns:
-        Tuple of (rows, column_definitions, metadata)
-    """
+def search_object_ids(context_params: dict[str, Any], org_id: UUID) -> list[UUID]:
+    """Replay a saved search and return the matching object IDs (capped)."""
     from app.search.collections.service import get_collections_search_service
     from app.search.collections.schemas import CollectionsSearchRequest
 
-    record_type = context_params.get("record_type", "collection_objects")
-    search_request_data = context_params.get("search_request", {})
+    search_request_data = dict(context_params.get("search_request", {}))
 
     # Disable facets/highlight for export
     search_request_data["include_facets"] = False
@@ -73,7 +56,29 @@ def resolve_search(
         if len(response.hits) < page_size or len(all_ids) >= MAX_REPORT_ROWS or response.total <= offset:
             break
 
-    object_ids = all_ids[:MAX_REPORT_ROWS]
+    return all_ids[:MAX_REPORT_ROWS]
+
+
+def resolve_search(
+    context_params: dict[str, Any],
+    org_id: UUID,
+) -> tuple[list[dict[str, Any]], list[dict[str, str]], dict[str, Any]]:
+    """
+    Resolve data from a search context.
+
+    Replays the search query via OpenSearch to get object IDs, then
+    fetches full export data via collections_export.
+
+    Args:
+        context_params: Must contain 'search_request' (CollectionsSearchRequest dict)
+                        and 'record_type' (str)
+        org_id: Organization UUID
+
+    Returns:
+        Tuple of (rows, column_definitions, metadata)
+    """
+    record_type = context_params.get("record_type", "collection_objects")
+    object_ids = search_object_ids(context_params, org_id)
 
     if not object_ids:
         col_defs = EXPORT_COLUMNS.get(record_type, [])
@@ -82,6 +87,58 @@ def resolve_search(
     # Fetch export data for the matched IDs
     rows, col_defs = _fetch_by_ids(org_id, record_type, object_ids)
     return rows, col_defs, {"total": len(rows), "source": "search"}
+
+
+def workspace_object_ids(
+    context_params: dict[str, Any],
+    org_id: UUID,
+) -> tuple[list[UUID], dict[str, Any]]:
+    """Object IDs in a workspace the triggering user may see.
+
+    Returns (ids, metadata); metadata carries ``error`` when the workspace is
+    missing or not visible to the user, else ``workspace_name``.
+    """
+    from app.models import Workspace, WorkspaceShare
+    from app.services.dynamic_workspace import resolve_dynamic_items
+
+    workspace_id = UUID(context_params["workspace_id"])
+
+    workspace = current_session().query(Workspace).filter_by(
+        workspace_id=workspace_id,
+        organization_id=org_id,
+    ).first()
+
+    if not workspace:
+        return [], {"error": "workspace_not_found"}
+
+    # Enforce workspace visibility (mirrors _can_access_workspace in workspaces.py)
+    user_id_str = context_params.get("_triggered_by_user_id")
+    if user_id_str:
+        user_id = UUID(user_id_str)
+        has_access = (
+            workspace.owner_user_id == user_id
+            or workspace.visibility == "org"
+            or (workspace.visibility == "shared" and current_session().query(WorkspaceShare).filter(
+                WorkspaceShare.workspace_id == workspace.workspace_id,
+                WorkspaceShare.principal_type == "user",
+                WorkspaceShare.principal_id == user_id,
+            ).first() is not None)
+        )
+        if not has_access:
+            return [], {"error": "workspace_access_denied"}
+
+    # Get all items from workspace (pinned + dynamic)
+    result = resolve_dynamic_items(
+        workspace=workspace,
+        org_id=org_id,
+        db_session=current_session(),
+        limit=MAX_REPORT_ROWS,
+        offset=0,
+    )
+
+    items = result.get("items", [])
+    object_ids = [UUID(item["object_id"]) for item in items if item.get("object_id")]
+    return object_ids, {"workspace_name": workspace.name}
 
 
 def resolve_workspace(
@@ -101,49 +158,12 @@ def resolve_workspace(
     Returns:
         Tuple of (rows, column_definitions, metadata)
     """
-    from app.models import Workspace, WorkspaceItem, WorkspaceShare
-    from app.services.dynamic_workspace import resolve_dynamic_items
-
-    workspace_id = UUID(context_params["workspace_id"])
     record_type = context_params.get("record_type", "collection_objects")
+    object_ids, ws_meta = workspace_object_ids(context_params, org_id)
 
-    workspace = current_session().query(Workspace).filter_by(
-        workspace_id=workspace_id,
-        organization_id=org_id,
-    ).first()
-
-    if not workspace:
+    if ws_meta.get("error"):
         col_defs = EXPORT_COLUMNS.get(record_type, [])
-        return [], col_defs, {"total": 0, "error": "workspace_not_found"}
-
-    # Enforce workspace visibility (mirrors _can_access_workspace in workspaces.py)
-    user_id_str = context_params.get("_triggered_by_user_id")
-    if user_id_str:
-        user_id = UUID(user_id_str)
-        has_access = (
-            workspace.owner_user_id == user_id
-            or workspace.visibility == "org"
-            or (workspace.visibility == "shared" and current_session().query(WorkspaceShare).filter(
-                WorkspaceShare.workspace_id == workspace.workspace_id,
-                WorkspaceShare.principal_type == "user",
-                WorkspaceShare.principal_id == user_id,
-            ).first() is not None)
-        )
-        if not has_access:
-            col_defs = EXPORT_COLUMNS.get(record_type, [])
-            return [], col_defs, {"total": 0, "error": "workspace_access_denied"}
-
-    # Get all items from workspace (pinned + dynamic)
-    result = resolve_dynamic_items(
-        workspace=workspace,
-        org_id=org_id,
-        db_session=current_session(),
-        limit=MAX_REPORT_ROWS,
-        offset=0,
-    )
-
-    items = result.get("items", [])
-    object_ids = [UUID(item["object_id"]) for item in items if item.get("object_id")]
+        return [], col_defs, {"total": 0, "error": ws_meta["error"]}
 
     if not object_ids:
         col_defs = EXPORT_COLUMNS.get(record_type, [])
@@ -153,7 +173,7 @@ def resolve_workspace(
     return rows, col_defs, {
         "total": len(rows),
         "source": "workspace",
-        "workspace_name": workspace.name,
+        "workspace_name": ws_meta.get("workspace_name"),
     }
 
 

@@ -165,7 +165,7 @@ describe('MediaLibraryPage', () => {
     renderPage();
     await screen.findByText('Harbour at dusk');
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Delete' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Delete Harbour at dusk' })[0]);
     const dialog = await screen.findByRole('dialog');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
 

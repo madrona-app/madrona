@@ -167,6 +167,30 @@ class TestDiscoverConfig:
         resp2 = client.get(self._url(org))
         assert resp2.status_code == 200
 
+    def test_config_id_returned_and_opens_history(self, auth_setup):
+        """The settings row id is returned so staff UI can open its history."""
+        client, org, _ = auth_setup
+        unset = client.get(self._url(org)).get_json()
+        assert unset["config_id"] is None
+
+        put = client.put(
+            self._url(org),
+            data=json.dumps({"page_title": "Our collection"}),
+            content_type="application/json",
+        )
+        assert put.status_code == 200
+        config_id = put.get_json()["config_id"]
+        assert config_id
+        assert client.get(self._url(org)).get_json()["config_id"] == config_id
+
+        hist = client.get(
+            f"/api/organizations/{org.organization_id}/entity-history/discover_config/{config_id}"
+        )
+        assert hist.status_code == 200
+        body = hist.get_json()
+        assert body["total"] >= 1
+        assert body["items"][0]["change_type"] == "created"
+
 
 class TestAnalyticsConfigInjection:
     """analytics_config is a script-injection sink, not free text.

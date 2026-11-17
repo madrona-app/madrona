@@ -1,6 +1,9 @@
+import { useId } from 'react';
 import { Building2, User, Search, X } from 'lucide-react';
 import { WorkspaceSection, EditableField } from '../../../components/workspace';
 import type { FormData, Contact } from './types';
+import { useRequiredField } from '../../../components/workspace/requiredFields';
+import { RequiredFieldMessage } from '../../../components/workspace/RequiredFieldsContext';
 
 interface BorrowerSectionProps {
   formData: FormData;
@@ -31,6 +34,9 @@ export function BorrowerSection({
   onOpenContactPersonSelector,
   isRestricted,
 }: BorrowerSectionProps) {
+  const uid = useId();
+  const { register: borrowerContactRegister, error: borrowerContactError } = useRequiredField('borrower_contact_id', false, 'borrower', formData.borrower_contact_id);
+  const { register: borrowerRegister, error: borrowerError } = useRequiredField('borrower_id', false, 'borrower', formData.borrower_id);
   return (
     <WorkspaceSection
       id="borrower"
@@ -43,10 +49,10 @@ export function BorrowerSection({
     >
       <div className="space-y-4">
         {/* Borrowing Institution */}
-          <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">
+          <div role="group" aria-labelledby={`${uid}-borrowing-institution`}>
+            <span id={`${uid}-borrowing-institution`} className="block text-sm font-medium text-ink mb-1.5">
               Borrowing Institution <span className="text-semantic-error">*</span>
-            </label>
+            </span>
             {isEditing ? (
               <div className="flex items-center gap-2">
                 {formData.borrower_id && borrowerContact ? (
@@ -60,13 +66,16 @@ export function BorrowerSection({
                       type="button"
                       onClick={() => onUpdateField('borrower_id', '')}
                       className="ml-auto p-1 text-archive hover:text-semantic-error"
+                      aria-label="Clear borrowing institution"
                     >
-                      <X size={14} />
+                      <X size={14} aria-hidden="true" />
                     </button>
                   </div>
                 ) : (
                   <button
                     type="button"
+                    ref={borrowerRegister}
+                    aria-describedby={borrowerError?.id}
                     onClick={onOpenSelector}
                     className="flex-1 flex items-center gap-2 px-3 py-2 border border-dashed border-lichen rounded-lg text-sm text-archive hover:border-bark hover:text-bark transition-colors"
                   >
@@ -77,8 +86,11 @@ export function BorrowerSection({
                 {formData.borrower_id && (
                   <button
                     type="button"
+                    ref={borrowerRegister}
+                    aria-describedby={borrowerError?.id}
                     onClick={onOpenSelector}
                     className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
+                    aria-label="Change borrowing institution"
                   >
                     Change
                   </button>
@@ -98,10 +110,12 @@ export function BorrowerSection({
                 )}
               </div>
             )}
+            {borrowerError && <RequiredFieldMessage error={borrowerError} />}
           </div>
 
           {/* Borrower Status */}
           <EditableField
+            name="borrower_status"
             label="Borrower Status"
             value={formData.borrower_status}
             isEditing={isEditing}
@@ -111,10 +125,10 @@ export function BorrowerSection({
 
           {/* Contact Person at Borrowing Institution */}
           {!isRestricted('borrower_contact') && (
-          <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">
+          <div role="group" aria-labelledby={`${uid}-contact-person`}>
+            <span id={`${uid}-contact-person`} className="block text-sm font-medium text-ink mb-1.5">
               Contact Person
-            </label>
+            </span>
             {isEditing ? (
               <div className="flex items-center gap-2">
                 {formData.borrower_contact_id && borrowerContactPerson ? (
@@ -128,13 +142,16 @@ export function BorrowerSection({
                       type="button"
                       onClick={() => onUpdateField('borrower_contact_id', '')}
                       className="ml-auto p-1 text-archive hover:text-semantic-error"
+                      aria-label="Clear contact person"
                     >
-                      <X size={14} />
+                      <X size={14} aria-hidden="true" />
                     </button>
                   </div>
                 ) : (
                   <button
                     type="button"
+                    ref={borrowerContactRegister}
+                    aria-describedby={borrowerContactError?.id}
                     onClick={onOpenContactPersonSelector}
                     className="flex-1 flex items-center gap-2 px-3 py-2 border border-dashed border-lichen rounded-lg text-sm text-archive hover:border-bark hover:text-bark transition-colors"
                   >
@@ -145,8 +162,11 @@ export function BorrowerSection({
                 {formData.borrower_contact_id && (
                   <button
                     type="button"
+                    ref={borrowerContactRegister}
+                    aria-describedby={borrowerContactError?.id}
                     onClick={onOpenContactPersonSelector}
                     className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
+                    aria-label="Change contact person"
                   >
                     Change
                   </button>
@@ -166,6 +186,7 @@ export function BorrowerSection({
                 )}
               </div>
             )}
+            {borrowerContactError && <RequiredFieldMessage error={borrowerContactError} />}
           </div>
           )}
         </div>

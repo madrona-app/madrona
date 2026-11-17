@@ -110,8 +110,9 @@ export function AdvanceWithExceptionDialog({
               type="button"
               onClick={handleClose}
               className="text-archive hover:text-archive dark:hover:text-stone"
+              aria-label="Close dialog"
             >
-              <X className="h-5 w-5" />
+              <X className="h-5 w-5" aria-hidden="true" />
             </button>
           </div>
 
@@ -195,7 +196,7 @@ export function AdvanceWithExceptionDialog({
               type="button"
               onClick={handleClose}
               disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium text-ink dark:text-stone bg-parchment dark:bg-forest border border-lichen dark:border-lichen rounded-md hover:bg-stone dark:hover:bg-stone0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-ink dark:text-stone bg-parchment dark:bg-forest border border-lichen dark:border-lichen rounded-md hover:bg-stone dark:hover:bg-stone focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 disabled:opacity-50"
             >
               Cancel
             </button>

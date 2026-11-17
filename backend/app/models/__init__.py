@@ -27,6 +27,8 @@ from app.models.departments import *  # noqa: F401,F403
 from app.models.locations import *  # noqa: F401,F403
 from app.models.objects import *  # noqa: F401,F403
 from app.models.contacts import *  # noqa: F401,F403
+from app.models.research_visits import *  # noqa: F401,F403
+from app.models.library import *  # noqa: F401,F403
 from app.models.procedures import *  # noqa: F401,F403
 from app.models.signed_documents import *  # noqa: F401,F403
 from app.models.media import *  # noqa: F401,F403
@@ -36,6 +38,7 @@ from app.models.authorities import *  # noqa: F401,F403
 from app.models.workspaces import *  # noqa: F401,F403
 from app.models.events import *  # noqa: F401,F403
 from app.models.discover import *  # noqa: F401,F403
+from app.models.portal_members import *  # noqa: F401,F403
 from app.models.exhibit import *  # noqa: F401,F403
 from app.models.content import *  # noqa: F401,F403
 from app.models.budget import *  # noqa: F401,F403
@@ -59,6 +62,8 @@ from app.models.reference import *  # noqa: F401,F403
 from app.models.layout_preferences import *  # noqa: F401,F403
 from app.models.guide_document import *  # noqa: F401,F403
 from app.models.sequence import *  # noqa: F401,F403
+from app.models.record_workflow import *  # noqa: F401,F403
+from app.models.custom_fields import *  # noqa: F401,F403
 
 # Orphan: GuideMetric lives under services/ but inherits from Base. Without
 # this import, the alembic-fallback path (Base.metadata.create_all) does not

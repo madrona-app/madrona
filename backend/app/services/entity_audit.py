@@ -16,6 +16,7 @@ Platform admin feature for answering "what happened to this data?"
 
 import logging
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
@@ -40,7 +41,7 @@ TRACKED_ENTITIES: dict[str, dict[str, str]] = {
     # Collections entities
     "CollectionObject": {"display_key": "object_number", "entity_type": "collection_object"},
     "Location": {"display_key": "code", "entity_type": "location"},
-    "Movement": {"display_key": "movement_number", "entity_type": "movement"},
+    "Movement": {"display_key": "movement_reference_number", "entity_type": "movement"},
     "Constituent": {"display_key": "display_name", "entity_type": "constituent"},
     "ConditionReport": {"display_key": "report_number", "entity_type": "condition_report"},
     "ObjectEntry": {"display_key": "entry_number", "entity_type": "object_entry"},
@@ -55,18 +56,118 @@ TRACKED_ENTITIES: dict[str, dict[str, str]] = {
     "IncidentReport": {"display_key": "report_number", "entity_type": "incident_report"},
     "CollectionsReview": {"display_key": "review_number", "entity_type": "collections_review"},
     "AuditCampaign": {"display_key": "campaign_number", "entity_type": "audit_campaign"},
-    "ObjectRight": {"display_key": "rights_reference", "entity_type": "object_right"},
+    "ObjectRight": {"display_key": "agreement_reference", "entity_type": "object_right"},
     "UseRequest": {"display_key": "request_number", "entity_type": "use_request"},
-    "Valuation": {"display_key": "valuation_reference", "entity_type": "valuation"},
+    "Valuation": {"display_key": "documentation_reference", "entity_type": "valuation"},
     "ReproductionRequest": {"display_key": "request_number", "entity_type": "reproduction_request"},
     "Citation": {"display_key": "brief_citation", "entity_type": "citation"},
+    "ResearchVisit": {"display_key": "researcher_name", "entity_type": "research_visit"},
+    # Library catalogue
+    "BibRecord": {"display_key": "title", "entity_type": "bib_record"},
+    # Insurance and indemnity ("insurance" matches the staff workspace route)
+    "InsurancePolicy": {"display_key": "policy_number", "entity_type": "insurance"},
+    "IndemnityArrangement": {"display_key": "reference_number", "entity_type": "indemnity_arrangement"},
+    "InsuranceClaim": {"display_key": "claim_number", "entity_type": "insurance_claim"},
+    # Exhibitions and logistics
+    "Exhibition": {"display_key": "title", "entity_type": "exhibition"},
+    "Crate": {"display_key": "crate_number", "entity_type": "crate"},
+    "Shipment": {"display_key": "shipment_number", "entity_type": "shipment"},
+    "Venue": {"display_key": "name", "entity_type": "venue"},
+    "LabelTemplate": {"display_key": "name", "entity_type": "label_template"},
+    "FrameStyle": {"display_key": "name", "entity_type": "frame_style"},
+    "MountConfig": {"display_key": "name", "entity_type": "mount_config"},
+    "InfoRequestTemplate": {"display_key": "name", "entity_type": "info_request_template"},
+    "ChecklistTemplate": {"display_key": "name", "entity_type": "checklist_template"},
+    # Events
+    "Event": {"display_key": "title", "entity_type": "event"},
+    # Authorities and vocabulary
+    "PlaceAuthority": {"display_key": "preferred_name", "entity_type": "place_authority"},
+    "SubjectAuthority": {"display_key": "preferred_term", "entity_type": "subject_authority"},
+    "StylePeriodAuthority": {"display_key": "preferred_term", "entity_type": "style_period_authority"},
+    "LookupValue": {"display_key": "label", "entity_type": "lookup_value"},
+    "VocabularyTerm": {"display_key": "preferred_term", "entity_type": "vocabulary_term"},
+    "OtherNumberType": {"display_key": "name", "entity_type": "other_number_type"},
+    # Object-related records
+    "CriticalResponse": {"display_key": "comment_summary", "entity_type": "critical_response"},
+    "NagpraAction": {"display_key": "action_number", "entity_type": "nagpra_action"},
+    "ComplianceAction": {"display_key": "title", "entity_type": "compliance_action"},
+    "Task": {"display_key": "title", "entity_type": "task"},
+    # Settings that change how records behave
+    "Department": {"display_key": "name", "entity_type": "department"},
+    "RecordFlagDefinition": {"display_key": "label", "entity_type": "record_flag_definition"},
+    "CompletenessRule": {"display_key": "name", "entity_type": "completeness_rule"},
+    "CustomFieldDefinition": {"display_key": "label", "entity_type": "custom_field_definition"},
+    "PreservationPolicy": {"display_key": "name", "entity_type": "preservation_policy"},
+    "MetadataTemplate": {"display_key": "name", "entity_type": "metadata_template"},
+    # Public portal
+    "Page": {"display_key": "title", "entity_type": "page"},
+    "Menu": {"display_key": "name", "entity_type": "menu"},
+    "Redirect": {"display_key": "source_path", "entity_type": "redirect"},
+    "Category": {"display_key": "name", "entity_type": "content_category"},
+    "DiscoverConfig": {"display_key": "page_title", "entity_type": "discover_config"},
+    "PublishSchedule": {"display_key": "action", "entity_type": "publish_schedule"},
+    "PortalMember": {"display_key": "email", "entity_type": "portal_member"},
+    # Security configuration (shown on the admin Security changes log).
+    # Secrets are never written: SSO client secrets and IdP certificates are
+    # masked, API key hashes and prefixes are left out entirely.
+    "Role": {"display_key": "display_name", "entity_type": "role"},
+    "AppRoleAssignment": {"display_key": "audit_label", "entity_type": "app_role_assignment"},
+    "SSOConfiguration": {
+        "display_key": "provider", "entity_type": "sso_configuration",
+        "mask_fields": "idp_certificate,client_secret_encrypted",
+    },
+    "APIKey": {
+        "display_key": "name", "entity_type": "api_key",
+        "exclude_fields": "key_hash,key_prefix,last_used_at",
+    },
+    # Organization settings (shown on the admin Settings changes log).
+    # Metered usage counters are left out; stored credentials are masked.
+    "Organization": {
+        "display_key": "name", "entity_type": "organization",
+        "exclude_fields": "storage_used_bytes,db_used_bytes,search_used_bytes,storage_metered_at",
+    },
+    "OrganizationBranding": {
+        "display_key": "letterhead_name", "display_label": "Branding", "entity_type": "organization_branding",
+    },
+    "OrganizationCollectionProfile": {
+        "display_label": "Collection profile", "entity_type": "organization_collection_profile",
+    },
+    "OrganizationStorageConfig": {
+        "display_key": "provider", "entity_type": "organization_storage_config",
+        "mask_fields": "config_encrypted,cdn_signing_key_encrypted",
+        "exclude_fields": "migration_task_id",
+    },
+    "MediaAIConfig": {
+        "display_label": "Media AI settings", "entity_type": "media_ai_config",
+        "exclude_fields": "current_month_usage,usage_reset_date",
+    },
+    "MediaAITagMapping": {"display_key": "ai_tag_value", "entity_type": "media_ai_tag_mapping"},
+    "DerivativeSizeConfig": {"display_key": "label", "entity_type": "derivative_size_config"},
+    "MediaFieldInheritanceConfig": {"display_key": "display_label", "entity_type": "media_field_inheritance_config"},
+    "VocabularyMapping": {"display_key": "source_term", "entity_type": "vocabulary_mapping"},
+    "SLAPolicy": {"display_key": "name", "entity_type": "sla_policy"},
+    "ApprovalRule": {"display_key": "description", "display_label": "Approval rule", "entity_type": "approval_rule"},
+    "DocumentTemplate": {"display_key": "name", "entity_type": "document_template"},
+    "OrgScopedDoc": {"display_key": "title", "entity_type": "org_scoped_doc"},
+    # Request workflows (the download link token is never recorded; the
+    # download counter is usage, not a change).
+    "MediaDownloadRequest": {
+        "display_key": "request_number", "entity_type": "media_download_request",
+        "mask_fields": "download_token", "exclude_fields": "download_count",
+    },
     # Media entities
     "Media": {"display_key": "filename", "entity_type": "media"},
-    "MediaCollection": {"display_key": "name", "entity_type": "media_collection"},
+    "MediaCollection": {
+        "display_key": "name", "entity_type": "media_collection",
+        # The public share link token and password hash are secrets; the
+        # item count and refresh time are maintained by the system.
+        "mask_fields": "public_share_token,public_share_password_hash",
+        "exclude_fields": "item_count,last_refreshed_at",
+    },
     "MediaRights": {"display_key": "rights_statement", "entity_type": "media_rights"},
     "MediaConsent": {"display_key": "consent_type", "entity_type": "media_consent"},
     "WatermarkTemplate": {"display_key": "name", "entity_type": "watermark_template"},
-    "MediaTagDefinition": {"display_key": "name", "entity_type": "media_tag_definition"},
+    "MediaTagDefinition": {"display_key": "display_name", "entity_type": "media_tag_definition"},
     "MediaFolder": {"display_key": "name", "entity_type": "media_folder"},
 }
 
@@ -85,6 +186,16 @@ TRACKED_ENTITIES: dict[str, dict[str, str]] = {
 # linked_fk:        (optional) FK column pointing to the "other" entity
 # linked_model:     (optional) class name of the linked entity
 # linked_display:   (optional) field on linked entity used for display name fallback
+# child_type:       (optional) entity type of the child row itself, stored on the
+#                   event as child_entity_type so the row can be identified later
+# child_id_field:   (optional) column holding the child's identity when the
+#                   primary key is composite (defaults to the first PK column)
+# parent_via_model: (optional) for grandchildren: parent_fk points at this model,
+# parent_via_fk:    whose parent_via_fk column holds the real parent id
+#                   (a BibItem's holding -> the holding's bib record)
+# composite:        (optional) "name=part1,part2": report these columns as one
+#                   readable value ("10 cm" rather than value 10, unit cm)
+# exclude_fields:   (optional) comma-separated columns left out of diffs
 TRACKED_LINKS: dict[str, dict[str, str]] = {
     "LoanInObject": {
         "parent_fk": "loan_in_id",
@@ -191,7 +302,7 @@ TRACKED_LINKS: dict[str, dict[str, str]] = {
         "display_field": "role",
         "linked_fk": "place_authority_id",
         "linked_model": "PlaceAuthority",
-        "linked_display": "display_name",
+        "linked_display": "preferred_name",
     },
     "ObjectRelationship": {
         "parent_fk": "source_object_id",
@@ -245,6 +356,759 @@ TRACKED_LINKS: dict[str, dict[str, str]] = {
         "link_label": "object part",
         "display_field": "name",
     },
+    # ---- Object child rows (cataloguing detail) ----
+    "ObjectTitle": {
+        "parent_fk": "object_id",
+        "parent_type": "collection_object",
+        "parent_model": "CollectionObject",
+        "link_label": "title",
+        "display_field": "title",
+        "child_type": "object_title",
+    },
+    "ObjectOtherNumber": {
+        "parent_fk": "object_id",
+        "parent_type": "collection_object",
+        "parent_model": "CollectionObject",
+        "link_label": "other number",
+        "display_field": "number_type",
+        "child_type": "object_other_number",
+    },
+    "ObjectMeasurement": {
+        "parent_fk": "object_id",
+        "parent_type": "collection_object",
+        "parent_model": "CollectionObject",
+        "link_label": "measurement",
+        "display_field": "dimension",
+        "child_type": "object_measurement",
+        "composite": "measurement=value,unit",
+    },
+    "ObjectInscription": {
+        "parent_fk": "object_id",
+        "parent_type": "collection_object",
+        "parent_model": "CollectionObject",
+        "link_label": "inscription",
+        "display_field": "content",
+        "child_type": "object_inscription",
+    },
+    "CollectionObjectMedia": {
+        "parent_fk": "object_id",
+        "parent_type": "collection_object",
+        "parent_model": "CollectionObject",
+        "link_label": "media",
+        "linked_fk": "media_id",
+        "linked_model": "Media",
+        "linked_display": "filename",
+        "child_type": "collection_object_media",
+        "child_id_field": "media_id",
+    },
+    "ObjectFlag": {
+        "parent_fk": "object_id",
+        "parent_type": "collection_object",
+        "parent_model": "CollectionObject",
+        "link_label": "flag",
+        "linked_fk": "flag_id",
+        "linked_model": "RecordFlagDefinition",
+        "linked_display": "label",
+        "child_type": "object_flag",
+        "child_id_field": "flag_id",
+        "exclude_fields": "set_at",
+    },
+    "ObjectClassification": {
+        "parent_fk": "object_id",
+        "parent_type": "collection_object",
+        "parent_model": "CollectionObject",
+        "link_label": "classification",
+        "linked_fk": "value_id",
+        "linked_model": "LookupValue",
+        "linked_display": "label",
+        "child_type": "object_classification",
+    },
+    # ---- Library catalogue ----
+    "BibHolding": {
+        "parent_fk": "bib_record_id",
+        "parent_type": "bib_record",
+        "parent_model": "BibRecord",
+        "link_label": "holding",
+        "display_field": "call_number",
+        "child_type": "bib_holding",
+    },
+    "BibItem": {
+        "parent_fk": "holding_id",
+        "parent_type": "bib_record",
+        "parent_model": "BibRecord",
+        "parent_via_model": "BibHolding",
+        "parent_via_fk": "bib_record_id",
+        "link_label": "item",
+        "display_field": "barcode",
+        "child_type": "bib_item",
+    },
+    # ---- Research visits ----
+    "ResearchVisitObject": {
+        "parent_fk": "visit_id",
+        "parent_type": "research_visit",
+        "parent_model": "ResearchVisit",
+        "link_label": "object",
+        "linked_fk": "object_id",
+        "linked_model": "CollectionObject",
+        "linked_display": "object_number",
+        "child_type": "research_visit_object",
+    },
+    # ---- Insurance and indemnity ----
+    "InsuranceCoverage": {
+        "parent_fk": "policy_id",
+        "parent_type": "insurance",
+        "parent_model": "InsurancePolicy",
+        "link_label": "coverage",
+        "display_field": "covered_entity_type",
+        "child_type": "insurance_coverage",
+    },
+    "IndemnityObject": {
+        "parent_fk": "indemnity_id",
+        "parent_type": "indemnity_arrangement",
+        "parent_model": "IndemnityArrangement",
+        "link_label": "indemnified object",
+        "display_field": "object_number",
+        "linked_fk": "object_id",
+        "linked_model": "CollectionObject",
+        "linked_display": "object_number",
+        "child_type": "indemnity_object",
+    },
+    # ---- Exhibitions ----
+    "ExhibitionObject": {
+        "parent_fk": "exhibition_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "link_label": "object",
+        "linked_fk": "object_id",
+        "linked_model": "CollectionObject",
+        "linked_display": "object_number",
+        "child_type": "exhibition_object",
+    },
+    "ExhibitionVenue": {
+        "parent_fk": "exhibition_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "link_label": "venue",
+        "display_field": "external_venue_name",
+        "linked_fk": "venue_id",
+        "linked_model": "Venue",
+        "linked_display": "name",
+        "child_type": "exhibition_venue",
+        "exclude_fields": "geom",
+    },
+    # ---- Exhibition children ----
+    "ExhibitionLabel": {
+        "parent_fk": "exhibition_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "link_label": "label",
+        "child_type": "exhibition_label",
+        "display_field": "label_type",
+    },
+    "ExhibitionContentBlock": {
+        "parent_fk": "exhibition_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "link_label": "content block",
+        "child_type": "exhibition_content_block",
+        "display_field": "title",
+    },
+    "ExhibitionLoan": {
+        "parent_fk": "exhibition_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "link_label": "loan",
+        "child_type": "exhibition_loan",
+        "display_field": "loan_number",
+    },
+    "ExhibitionLoanObject": {
+        "parent_fk": "link_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "link_label": "loan object",
+        "child_type": "exhibition_loan_object",
+        "display_field": "object_number",
+        "parent_via_model": "ExhibitionLoan",
+        "parent_via_fk": "exhibition_id",
+    },
+    # ---- Shipments ----
+    "ShipmentItem": {
+        "parent_fk": "shipment_id",
+        "parent_type": "shipment",
+        "parent_model": "Shipment",
+        "link_label": "item",
+        "child_type": "shipment_item",
+        "linked_fk": "object_id",
+        "linked_model": "CollectionObject",
+        "linked_display": "object_number",
+    },
+    "ShipmentLeg": {
+        "parent_fk": "shipment_id",
+        "parent_type": "shipment",
+        "parent_model": "Shipment",
+        "link_label": "leg",
+        "child_type": "shipment_leg",
+        "display_field": "carrier_name",
+    },
+    "ShipmentReference": {
+        "parent_fk": "shipment_id",
+        "parent_type": "shipment",
+        "parent_model": "Shipment",
+        "link_label": "linked procedure",
+        "child_type": "shipment_reference",
+        "display_field": "procedure_type",
+    },
+    # ---- Events ----
+    "EventObjectLink": {
+        "parent_fk": "event_id",
+        "parent_type": "event",
+        "parent_model": "Event",
+        "link_label": "object",
+        "child_type": "event_object",
+        "linked_fk": "object_id",
+        "linked_model": "CollectionObject",
+        "linked_display": "object_number",
+    },
+    # ---- Conservation treatment detail ----
+    "TreatmentCost": {
+        "parent_fk": "treatment_id",
+        "parent_type": "conservation_treatment",
+        "parent_model": "ConservationTreatment",
+        "link_label": "cost",
+        "child_type": "treatment_cost",
+        "display_field": "cost_category",
+    },
+    "TreatmentMaterial": {
+        "parent_fk": "treatment_id",
+        "parent_type": "conservation_treatment",
+        "parent_model": "ConservationTreatment",
+        "link_label": "material",
+        "child_type": "treatment_material",
+        "display_field": "material_name",
+    },
+    "TreatmentTechnique": {
+        "parent_fk": "treatment_id",
+        "parent_type": "conservation_treatment",
+        "parent_model": "ConservationTreatment",
+        "link_label": "technique",
+        "child_type": "treatment_technique",
+        "display_field": "technique_name",
+    },
+    # ---- Deaccession committee votes ----
+    "DeaccessionVote": {
+        "parent_fk": "deaccession_id",
+        "parent_type": "deaccession",
+        "parent_model": "Deaccession",
+        "link_label": "vote",
+        "child_type": "deaccession_vote",
+        "display_field": "voter_name",
+    },
+    # ---- Emergency plan detail ----
+    "EmergencyPlanContact": {
+        "parent_fk": "plan_id",
+        "parent_type": "emergency_plan",
+        "parent_model": "EmergencyPlan",
+        "link_label": "contact",
+        "child_type": "emergency_plan_contact",
+        "display_field": "name",
+    },
+    "EmergencyAssemblyPoint": {
+        "parent_fk": "plan_id",
+        "parent_type": "emergency_plan",
+        "parent_model": "EmergencyPlan",
+        "link_label": "assembly point",
+        "child_type": "emergency_assembly_point",
+        "display_field": "name",
+    },
+    "EmergencyEquipment": {
+        "parent_fk": "plan_id",
+        "parent_type": "emergency_plan",
+        "parent_model": "EmergencyPlan",
+        "link_label": "equipment",
+        "child_type": "emergency_equipment",
+        "display_field": "name",
+    },
+    "EmergencyEvacuationRoute": {
+        "parent_fk": "plan_id",
+        "parent_type": "emergency_plan",
+        "parent_model": "EmergencyPlan",
+        "link_label": "evacuation route",
+        "child_type": "emergency_evacuation_route",
+        "display_field": "route_name",
+    },
+    "EmergencyExternalService": {
+        "parent_fk": "plan_id",
+        "parent_type": "emergency_plan",
+        "parent_model": "EmergencyPlan",
+        "link_label": "external service",
+        "child_type": "emergency_external_service",
+        "display_field": "provider_name",
+    },
+    "EmergencyRiskAssessment": {
+        "parent_fk": "plan_id",
+        "parent_type": "emergency_plan",
+        "parent_model": "EmergencyPlan",
+        "link_label": "risk assessment",
+        "child_type": "emergency_risk_assessment",
+        "display_field": "risk_type",
+    },
+    # ---- NAGPRA ----
+    "NagpraConsultationEvent": {
+        "parent_fk": "action_id",
+        "parent_type": "nagpra_action",
+        "parent_model": "NagpraAction",
+        "link_label": "consultation",
+        "child_type": "nagpra_consultation",
+        "display_field": "subject",
+    },
+    # ---- Library catalogue credits and subjects ----
+    "BibRecordConstituent": {
+        "parent_fk": "bib_record_id",
+        "parent_type": "bib_record",
+        "parent_model": "BibRecord",
+        "link_label": "contributor",
+        "child_type": "bib_record_constituent",
+        "linked_fk": "constituent_id",
+        "linked_model": "Constituent",
+        "linked_display": "display_name",
+    },
+    "BibRecordSubject": {
+        "parent_fk": "bib_record_id",
+        "parent_type": "bib_record",
+        "parent_model": "BibRecord",
+        "link_label": "subject",
+        "child_type": "bib_record_subject",
+        "linked_fk": "subject_authority_id",
+        "linked_model": "SubjectAuthority",
+        "linked_display": "preferred_term",
+    },
+    # ---- Media sub-records ----
+    "MediaAlternative": {
+        "parent_fk": "media_id",
+        "parent_type": "media",
+        "parent_model": "Media",
+        "link_label": "alternative",
+        "child_type": "media_alternative",
+        "display_field": "label",
+    },
+    "MediaAnnotation": {
+        "parent_fk": "media_id",
+        "parent_type": "media",
+        "parent_model": "Media",
+        "link_label": "annotation",
+        "child_type": "media_annotation",
+        "display_field": "motivation",
+    },
+    # ---- People ----
+    "ConstituentRelation": {
+        "parent_fk": "from_constituent_id",
+        "parent_type": "constituent",
+        "parent_model": "Constituent",
+        "link_label": "relationship",
+        "child_type": "constituent_relation",
+        "display_field": "relationship_type",
+        "linked_fk": "to_constituent_id",
+        "linked_model": "Constituent",
+        "linked_display": "display_name",
+    },
+    # ---- Security configuration: a role's permissions, field grants, labels ----
+    "RolePermission": {
+        "parent_fk": "role_id",
+        "parent_type": "role",
+        "parent_model": "Role",
+        "link_label": "permission",
+        "linked_fk": "permission_id",
+        "linked_model": "Permission",
+        "linked_display": "permission_key",
+        "child_type": "role_permission",
+        "child_id_field": "permission_id",
+    },
+    "RoleFieldAccess": {
+        "parent_fk": "role_id",
+        "parent_type": "role",
+        "parent_model": "Role",
+        "link_label": "field access",
+        "linked_fk": "policy_id",
+        "linked_model": "FieldAccessPolicy",
+        "linked_display": "field_path",
+        "child_type": "role_field_access",
+        "child_id_field": "policy_id",
+        "exclude_fields": "granted_at",
+    },
+    "OrgRoleLabel": {
+        "parent_fk": "role_id",
+        "parent_type": "role",
+        "parent_model": "Role",
+        "link_label": "role label",
+        "display_field": "label",
+        "child_type": "org_role_label",
+        "child_id_field": "role_id",
+    },
+    # ---- Organization settings: which applications are enabled ----
+    "OrganizationApplication": {
+        "parent_fk": "organization_id",
+        "parent_type": "organization",
+        "parent_model": "Organization",
+        "link_label": "application",
+        "linked_fk": "application_id",
+        "linked_model": "Application",
+        "linked_display": "display_name",
+        "child_type": "organization_application",
+        "child_id_field": "application_id",
+        "exclude_fields": "enabled_at",
+    },
+    # ---- Rows that used to be replaced wholesale on save (now reconciled in
+    # place, so only real changes are recorded). Ordering-only columns are
+    # left out of diffs. ----
+    "VariantTerm": {
+        # Polymorphic: entity_type names the authority (POLYMORPHIC_LINK_PARENTS).
+        "parent_fk": "entity_id",
+        "parent_type_field": "entity_type",
+        "parent_type": "place_authority",
+        "parent_model": "PlaceAuthority",
+        "link_label": "variant name",
+        "display_field": "term",
+        "child_type": "variant_term",
+    },
+    "ContentBlock": {
+        "parent_fk": "page_id",
+        "parent_type": "page",
+        "parent_model": "Page",
+        "link_label": "content block",
+        "display_field": "block_type",
+        "child_type": "content_block",
+        "exclude_fields": "sort_order",
+    },
+    "PageCategory": {
+        "parent_fk": "page_id",
+        "parent_type": "page",
+        "parent_model": "Page",
+        "link_label": "category",
+        "linked_fk": "category_id",
+        "linked_model": "Category",
+        "linked_display": "name",
+        "child_type": "page_category",
+        "child_id_field": "category_id",
+    },
+    "MenuItem": {
+        "parent_fk": "menu_id",
+        "parent_type": "menu",
+        "parent_model": "Menu",
+        "link_label": "menu item",
+        "display_field": "label",
+        "child_type": "menu_item",
+        "exclude_fields": "sort_order",
+    },
+    "MediaTag": {
+        "parent_fk": "media_id",
+        "parent_type": "media",
+        "parent_model": "Media",
+        "link_label": "tag",
+        "display_field": "tag_value",
+        "linked_fk": "definition_id",
+        "linked_model": "MediaTagDefinition",
+        "linked_display": "display_name",
+        "child_type": "media_tag",
+    },
+    "MediaTagValue": {
+        "parent_fk": "definition_id",
+        "parent_type": "media_tag_definition",
+        "parent_model": "MediaTagDefinition",
+        "link_label": "allowed value",
+        "display_field": "value",
+        "child_type": "media_tag_value",
+        "exclude_fields": "sort_order",
+    },
+    "DepartmentMembership": {
+        "parent_fk": "department_id",
+        "parent_type": "department",
+        "parent_model": "Department",
+        "link_label": "member",
+        "linked_fk": "user_id",
+        "linked_model": "User",
+        "linked_display": "email",
+        "child_type": "department_membership",
+    },
+    "ConstituentMedia": {
+        "parent_fk": "constituent_id",
+        "parent_type": "constituent",
+        "parent_model": "Constituent",
+        "link_label": "media",
+        "linked_fk": "media_id",
+        "linked_model": "Media",
+        "linked_display": "filename",
+        "child_type": "constituent_media",
+        "child_id_field": "media_id",
+        "exclude_fields": "sort_order",
+    },
+    "ObjectEntryItemMedia": {
+        "parent_fk": "entry_item_id",
+        "parent_type": "object_entry",
+        "parent_model": "ObjectEntry",
+        "parent_via_model": "ObjectEntryItem",
+        "parent_via_fk": "entry_id",
+        "link_label": "item media",
+        "linked_fk": "media_id",
+        "linked_model": "Media",
+        "linked_display": "filename",
+        "child_type": "object_entry_item_media",
+        "child_id_field": "media_id",
+        "exclude_fields": "sort_order",
+    },
+    "LookupSortOverride": {
+        "parent_fk": "value_id",
+        "parent_type": "lookup_value",
+        "parent_model": "LookupValue",
+        "link_label": "sort position",
+        "child_type": "lookup_sort_override",
+        "child_id_field": "value_id",
+    },
+    # ---- Polymorphic and organization-less rows, attributed to the record
+    # they belong to ----
+    "EntityImage": {
+        # Polymorphic: entity_type names the procedure (POLYMORPHIC_LINK_PARENTS).
+        "parent_fk": "entity_id",
+        "parent_type_field": "entity_type",
+        "parent_type": "incident_report",
+        "parent_model": "IncidentReport",
+        "link_label": "image",
+        "display_field": "image_phase",
+        "linked_fk": "media_id",
+        "linked_model": "Media",
+        "linked_display": "filename",
+        "child_type": "entity_image",
+    },
+    "LoanRenewal": {
+        # Polymorphic: loan_type is loan_in or loan_out.
+        "parent_fk": "loan_id",
+        "parent_type_field": "loan_type",
+        "parent_type": "loan_in",
+        "parent_model": "LoanIn",
+        "link_label": "renewal",
+        "display_field": "renewal_number",
+        "child_type": "loan_renewal",
+    },
+    "ExhibitionChecklist": {
+        "parent_fk": "exhibition_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "link_label": "checklist",
+        "display_field": "name",
+        "child_type": "exhibition_checklist",
+    },
+    "ChecklistItem": {
+        "parent_fk": "checklist_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "parent_via_model": "ExhibitionChecklist",
+        "parent_via_fk": "exhibition_id",
+        "link_label": "checklist item",
+        "display_field": "title",
+        "child_type": "checklist_item",
+        "exclude_fields": "sort_order",
+    },
+    "ChecklistItemLink": {
+        "parent_fk": "item_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "parent_via_model": "ChecklistItem>ExhibitionChecklist",
+        "parent_via_fk": "checklist_id>exhibition_id",
+        "link_label": "checklist item link",
+        "display_field": "linked_entity_type",
+        "child_type": "checklist_item_link",
+    },
+    "ChecklistTemplateVersion": {
+        "parent_fk": "template_id",
+        "parent_type": "checklist_template",
+        "parent_model": "ChecklistTemplate",
+        "link_label": "version",
+        "display_field": "version_number",
+        "child_type": "checklist_template_version",
+    },
+    "ChecklistTemplateItem": {
+        "parent_fk": "version_id",
+        "parent_type": "checklist_template",
+        "parent_model": "ChecklistTemplate",
+        "parent_via_model": "ChecklistTemplateVersion",
+        "parent_via_fk": "template_id",
+        "link_label": "template item",
+        "display_field": "title",
+        "child_type": "checklist_template_item",
+        "exclude_fields": "sort_order",
+    },
+    "InfoRequestTemplateItem": {
+        "parent_fk": "template_id",
+        "parent_type": "info_request_template",
+        "parent_model": "InfoRequestTemplate",
+        "link_label": "template item",
+        "display_field": "title",
+        "child_type": "info_request_template_item",
+        "exclude_fields": "sort_order",
+    },
+    "ExhibitionInfoRequest": {
+        "parent_fk": "exhibition_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "link_label": "information request",
+        "display_field": "title",
+        "child_type": "exhibition_info_request",
+        "exclude_fields": "sort_order",
+    },
+    "InfoRequestDocument": {
+        "parent_fk": "request_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "parent_via_model": "ExhibitionInfoRequest",
+        "parent_via_fk": "exhibition_id",
+        "link_label": "request document",
+        "display_field": "label",
+        "linked_fk": "media_id",
+        "linked_model": "Media",
+        "linked_display": "filename",
+        "child_type": "info_request_document",
+    },
+    "ExhibitionBudgetLine": {
+        "parent_fk": "exhibition_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "link_label": "budget line",
+        "display_field": "description",
+        "child_type": "exhibition_budget_line",
+        "exclude_fields": "sort_order",
+    },
+    "BudgetLineLink": {
+        "parent_fk": "line_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "parent_via_model": "ExhibitionBudgetLine",
+        "parent_via_fk": "exhibition_id",
+        "link_label": "budget line link",
+        "display_field": "label",
+        "child_type": "budget_line_link",
+    },
+    "ShipmentDocument": {
+        "parent_fk": "shipment_id",
+        "parent_type": "shipment",
+        "parent_model": "Shipment",
+        "link_label": "document",
+        "display_field": "label",
+        "linked_fk": "media_id",
+        "linked_model": "Media",
+        "linked_display": "filename",
+        "child_type": "shipment_document",
+    },
+    "AuditResult": {
+        # Generating a check list is recorded once on the campaign (the
+        # generator suppresses per-row events); staff edits to each result
+        # are recorded here.
+        "parent_fk": "campaign_id",
+        "parent_type": "audit_campaign",
+        "parent_model": "AuditCampaign",
+        "link_label": "check result",
+        "linked_fk": "object_id",
+        "linked_model": "CollectionObject",
+        "linked_display": "object_number",
+        "child_type": "audit_result",
+    },
+    "ComplianceIssueItem": {
+        "parent_fk": "result_id",
+        "parent_type": "audit_campaign",
+        "parent_model": "AuditCampaign",
+        "parent_via_model": "AuditResult",
+        "parent_via_fk": "campaign_id",
+        "link_label": "compliance issue",
+        "display_field": "issue_type",
+        "child_type": "compliance_issue_item",
+        "exclude_fields": "display_order",
+    },
+    "Placement": {
+        # Coordinates are left out: the floor-plan designer saves them as an
+        # object is dragged, which would be one event per drag step. Placing,
+        # removing, moving to another wall or plan and every other field are
+        # recorded.
+        "parent_fk": "exhibition_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "link_label": "placement",
+        "display_field": "display_title",
+        "child_type": "placement",
+        "exclude_fields": "position_x,position_y,position_z,rotation_degrees,floor_position_x,floor_position_y",
+    },
+    "ExhibitionFloorPlan": {
+        "parent_fk": "exhibition_id",
+        "parent_type": "exhibition",
+        "parent_model": "Exhibition",
+        "link_label": "floor plan",
+        "linked_fk": "floor_plan_id",
+        "linked_model": "FloorPlan",
+        "linked_display": "name",
+        "child_type": "exhibition_floor_plan",
+        "child_id_field": "floor_plan_id",
+    },
+    "FloorPlan": {
+        "parent_fk": "venue_id",
+        "parent_type": "venue",
+        "parent_model": "Venue",
+        "link_label": "floor plan",
+        "display_field": "name",
+        "child_type": "floor_plan",
+    },
+    "MediaDownloadRequestItem": {
+        "parent_fk": "request_id",
+        "parent_type": "media_download_request",
+        "parent_model": "MediaDownloadRequest",
+        "link_label": "requested item",
+        "linked_fk": "media_id",
+        "linked_model": "Media",
+        "linked_display": "filename",
+        "child_type": "media_download_request_item",
+        "exclude_fields": "downloaded_at",
+    },
+    "CollectionFeedbackRequest": {
+        "parent_fk": "collection_id",
+        "parent_type": "media_collection",
+        "parent_model": "MediaCollection",
+        "link_label": "feedback request",
+        "display_field": "recipient_email",
+        "child_type": "collection_feedback_request",
+        "exclude_fields": "token",
+    },
+    "CollectionFeedbackResponse": {
+        "parent_fk": "request_id",
+        "parent_type": "media_collection",
+        "parent_model": "MediaCollection",
+        "parent_via_model": "CollectionFeedbackRequest",
+        "parent_via_fk": "collection_id",
+        "link_label": "feedback response",
+        "display_field": "respondent_name",
+        "linked_fk": "media_id",
+        "linked_model": "Media",
+        "linked_display": "filename",
+        "child_type": "collection_feedback_response",
+    },
+    "PreservationActionPlan": {
+        "parent_fk": "media_id",
+        "parent_type": "media",
+        "parent_model": "Media",
+        "link_label": "preservation action",
+        "display_field": "action_type",
+        "child_type": "preservation_action",
+    },
+    "MediaCollectionItem": {
+        # Manual adds and removals. Smart-collection membership kept in step
+        # with its saved query by the refresh task is machine churn and is
+        # left out (suppress_link_audit in tasks/media.py).
+        "parent_fk": "collection_id",
+        "parent_type": "media_collection",
+        "parent_model": "MediaCollection",
+        "link_label": "media",
+        "linked_fk": "media_id",
+        "linked_model": "Media",
+        "linked_display": "filename",
+        "child_type": "media_collection_item",
+        "child_id_field": "media_id",
+        "exclude_fields": "sort_order",
+    },
     # ConstituentXref is polymorphic — handled specially via _resolve_constituent_xref_parent
 }
 
@@ -264,6 +1128,105 @@ _CONSTITUENT_XREF_PARENT_TYPES: dict[str, tuple[str, str]] = {
     "exhibition": ("Exhibition", "exhibition"),
     "event": ("Event", "event"),
 }
+
+
+# Child rows whose parent is named by a type column (entity_type/entity_id,
+# loan_type/loan_id). Model name -> {type value: (parent model, parent type)}.
+# The TRACKED_LINKS entry sets "parent_type_field"; rows whose type is not
+# listed here are not recorded.
+_AUTHORITY_PARENTS: dict[str, tuple[str, str]] = {
+    "place_authority": ("PlaceAuthority", "place_authority"),
+    "subject_authority": ("SubjectAuthority", "subject_authority"),
+    "style_period_authority": ("StylePeriodAuthority", "style_period_authority"),
+    "constituent": ("Constituent", "constituent"),
+    "person_authority": ("Constituent", "constituent"),
+}
+POLYMORPHIC_LINK_PARENTS: dict[str, dict[str, tuple[str, str]]] = {
+    "VariantTerm": _AUTHORITY_PARENTS,
+    "EntityImage": {
+        "condition_report": ("ConditionReport", "condition_report"),
+        "incident_report": ("IncidentReport", "incident_report"),
+        "conservation_treatment": ("ConservationTreatment", "conservation_treatment"),
+        "object_entry": ("ObjectEntry", "object_entry"),
+        "object_exit": ("ObjectExit", "object_exit"),
+        "loan_in": ("LoanIn", "loan_in"),
+        "loan_out": ("LoanOut", "loan_out"),
+        "movement": ("Movement", "movement"),
+        "acquisition": ("Acquisition", "acquisition"),
+        "deaccession": ("Deaccession", "deaccession"),
+        "audit_campaign": ("AuditCampaign", "audit_campaign"),
+        "collection_object": ("CollectionObject", "collection_object"),
+    },
+    "LoanRenewal": {
+        "loan_in": ("LoanIn", "loan_in"),
+        "loan_out": ("LoanOut", "loan_out"),
+    },
+}
+
+
+def link_config_for(obj: Any) -> dict[str, str] | None:
+    """The TRACKED_LINKS entry for a child row, with a polymorphic parent resolved.
+
+    Returns None when the model is not tracked, when its type column names a
+    parent that is not tracked, or while the model is suppressed on the
+    session (see ``suppress_link_audit``).
+    """
+    name = obj.__class__.__name__
+    cfg = TRACKED_LINKS.get(name)
+    if not cfg:
+        return None
+    try:
+        from sqlalchemy.orm import object_session
+        sess = object_session(obj)
+    except Exception:
+        sess = None
+    if sess is not None and name in sess.info.get("_audit_suppressed_links", ()):
+        return None
+    type_field = cfg.get("parent_type_field")
+    if not type_field:
+        return cfg
+    target = POLYMORPHIC_LINK_PARENTS.get(name, {}).get(getattr(obj, type_field, None))
+    if not target:
+        return None
+    return {**cfg, "parent_model": target[0], "parent_type": target[1]}
+
+
+class suppress_link_audit:
+    """Leave the named child-row models out of the history inside the block.
+
+    For machine churn that is not a person's edit, e.g. the smart-collection
+    sync that rebuilds a collection's membership from its saved query.
+    """
+
+    def __init__(self, session: Session, *class_names: str):
+        self.session = session
+        self.names = set(class_names)
+        self.previous: set[str] = set()
+
+    def __enter__(self):
+        self.previous = set(self.session.info.get("_audit_suppressed_links", ()))
+        self.session.info["_audit_suppressed_links"] = self.previous | self.names
+        return self
+
+    def __exit__(self, *exc):
+        # Flush inside the block so the suppressed rows are seen while the
+        # suppression is still in force.
+        if exc[0] is None:
+            self.session.flush()
+        self.session.info["_audit_suppressed_links"] = self.previous
+        return False
+
+
+# Record types shown on the admin change logs (GET .../entity-audit-events?category=).
+SECURITY_ENTITY_TYPES: frozenset[str] = frozenset({
+    "role", "app_role_assignment", "sso_configuration", "api_key",
+})
+SETTINGS_ENTITY_TYPES: frozenset[str] = frozenset({
+    "organization", "organization_branding", "organization_collection_profile",
+    "organization_storage_config", "media_ai_config", "media_ai_tag_mapping",
+    "derivative_size_config", "media_field_inheritance_config", "vocabulary_mapping",
+    "sla_policy", "approval_rule", "document_template", "org_scoped_doc",
+})
 
 
 # Fields to exclude from audit logging (metadata fields managed by the system)
@@ -306,13 +1269,97 @@ _TRACKED_FK_COLUMNS: dict[str, tuple[str, str]] = {
     "carrier_id": ("Constituent", "name"),
     "appraiser_id": ("Constituent", "name"),
     "rights_holder_contact_id": ("Constituent", "name"),
+    "rights_holder_agent_contact_id": ("Constituent", "name"),
     "valuator_id": ("Constituent", "name"),
     "handler_id": ("Constituent", "name"),
     "instructor_id": ("Constituent", "name"),
     "home_location_id": ("Location", "code"),
     "current_location_id": ("Location", "code"),
     "normal_location_id": ("Location", "code"),
+    # Who an object was last inventoried by (set by bulk "mark inventoried").
+    "last_inventoried_by": ("User", "display_name|email"),
 }
+
+# Per-model FK columns, for names that mean different things on different
+# models (authorizer_id is a person on most procedures but a staff user on an
+# exhibition; venue_id is a venue on an exhibition but a constituent on a
+# loan out). Checked before _TRACKED_FK_COLUMNS.
+_ENTITY_FK_COLUMNS: dict[str, dict[str, tuple[str, str]]] = {
+    "Exhibition": {
+        "venue_id": ("Venue", "name"),
+        "organizer_id": ("User", "display_name|email"),
+        "authorizer_id": ("User", "display_name|email"),
+        "department_id": ("Department", "name"),
+    },
+    "Crate": {
+        "location_id": ("Location", "code"),
+    },
+    "Shipment": {
+        "ship_from_location_id": ("Location", "code"),
+        "ship_to_location_id": ("Location", "code"),
+        "department_id": ("Department", "name"),
+        "authorized_by": ("User", "display_name|email"),
+    },
+    "Event": {
+        "location_id": ("Location", "code"),
+        "venue_id": ("Venue", "name"),
+        "exhibition_id": ("Exhibition", "title"),
+        "owner_user_id": ("User", "display_name|email"),
+    },
+    "AppRoleAssignment": {
+        "user_id": ("User", "email|display_name"),
+        "role_id": ("Role", "display_name"),
+    },
+    "MediaAITagMapping": {"definition_id": ("MediaTagDefinition", "display_name")},
+    "MenuItem": {"page_id": ("Page", "title")},
+    "LoanRenewal": {"approved_by": ("User", "display_name|email")},
+    "ChecklistItem": {
+        "assigned_user_id": ("User", "display_name|email"),
+        "completed_by": ("User", "display_name|email"),
+    },
+    "ExhibitionInfoRequest": {
+        "received_by": ("User", "display_name|email"),
+        "approved_by": ("User", "display_name|email"),
+    },
+    "AuditResult": {
+        "location_id": ("Location", "code"),
+        "expected_location_id": ("Location", "code"),
+        "actual_location_id": ("Location", "code"),
+        "verified_by": ("User", "display_name|email"),
+    },
+    "Placement": {
+        "floor_plan_id": ("FloorPlan", "name"),
+        "frame_style_id": ("FrameStyle", "name"),
+        "mount_config_id": ("MountConfig", "name"),
+    },
+    "MediaDownloadRequest": {
+        "collection_id": ("MediaCollection", "name"),
+        "requester_id": ("User", "display_name|email"),
+        "reviewed_by_id": ("User", "display_name|email"),
+        "approved_by_id": ("User", "display_name|email"),
+        "fulfilled_by_id": ("User", "display_name|email"),
+    },
+    "PreservationActionPlan": {"policy_id": ("PreservationPolicy", "name")},
+    "MediaTag": {"value_id": ("MediaTagValue", "value")},
+    "VocabularyMapping": {
+        "vocabulary_term_id": ("VocabularyTerm", "preferred_term"),
+        "reviewed_by": ("User", "display_name|email"),
+    },
+    "PlaceAuthority": {"parent_place_id": ("PlaceAuthority", "preferred_name")},
+    "SubjectAuthority": {"broader_subject_id": ("SubjectAuthority", "preferred_term")},
+    "StylePeriodAuthority": {"parent_authority_id": ("StylePeriodAuthority", "preferred_term")},
+    "Department": {"parent_id": ("Department", "name"), "head_user_id": ("User", "display_name|email")},
+    "Task": {"assigned_user_id": ("User", "display_name|email")},
+    "NagpraAction": {
+        "affiliated_party_id": ("Constituent", "name"),
+        "transfer_recipient_id": ("Constituent", "name"),
+        "coordinator_id": ("User", "display_name|email"),
+    },
+}
+
+# Column names whose meaning depends on the model: only tracked where a model
+# lists them in _ENTITY_FK_COLUMNS.
+_AMBIGUOUS_FK_NAMES: set[str] = {"authorizer_id", "venue_id", "organizer_id", "location_id", "department_id"}
 
 
 # ============================================================================
@@ -335,14 +1382,66 @@ def _get_organization_id(obj: Any) -> UUID | None:
     return getattr(obj, "organization_id", None)
 
 
+def _rls_scope(session: Session) -> tuple[bool, str | None]:
+    """(enforced, current org id) for the session's connection, once per flush.
+
+    Enforced is False for roles that bypass row-level security (the owner
+    and admin sessions), which may record any organization's events.
+    """
+    cached = session.info.get("_audit_rls_scope")
+    if cached is not None:
+        return cached
+    scope: tuple[bool, str | None] = (False, None)
+    try:
+        conn = session.connection()
+        if conn.dialect.name == "postgresql":
+            row = conn.exec_driver_sql(
+                "SELECT current_setting('app.current_org_id', true), "
+                "(SELECT rolsuper OR rolbypassrls FROM pg_roles WHERE rolname = current_user)"
+            ).first()
+            if row is not None:
+                scope = (not bool(row[1]), row[0] or None)
+    except Exception:
+        # Fall back to the stashed context (set_rls_context_for_session).
+        config = session.info.get("rls_config") or {}
+        current = config.get("app.current_org_id") or None
+        scope = (current is not None, current)
+    session.info["_audit_rls_scope"] = scope
+    return scope
+
+
+def org_writable(session: Session, organization_id: Any) -> bool:
+    """False when an audit row for this organization cannot be written.
+
+    Two cases, both skipped and logged rather than taking the user's write
+    down with them:
+    - the organization itself is being deleted in this flush (its history
+      goes with it, and the row would violate the foreign key);
+    - under row-level security (the app role is NOBYPASSRLS) the session is
+      scoped to a different organization, e.g. a platform admin creating a
+      new organization from their own. Owner/admin sessions bypass RLS and
+      record such events.
+    """
+    if organization_id is None:
+        return True
+    if str(organization_id) in session.info.get("_audit_deleting_orgs", ()):
+        return False
+    enforced, current = _rls_scope(session)
+    if not enforced or str(organization_id) == current:
+        return True
+    logger.info("Skipping audit event for organization %s outside the session's RLS context", organization_id)
+    return False
+
+
 def _get_display_key(obj: Any, config: dict[str, str]) -> str | None:
     """Get the human-readable display key for an entity."""
     display_key_attr = config.get("display_key")
     if display_key_attr:
         value = getattr(obj, display_key_attr, None)
-        if value is not None:
+        if value is not None and value != "":
             return str(value)[:500]  # Truncate to fit column
-    return None
+    # Fixed name for one-per-organization settings rows ("Media AI settings").
+    return config.get("display_label")
 
 
 def _get_request_context() -> dict[str, str | None]:
@@ -411,11 +1510,21 @@ def _normalize_empty(value: Any) -> Any:
     return value
 
 
-def _resolve_fk_display(session: Session, field_name: str, fk_value: Any) -> str | None:
+def _fk_config(class_name: str | None, field_name: str) -> tuple[str, str] | None:
+    """(model, display field) for a tracked FK column, per model first."""
+    per_model = _ENTITY_FK_COLUMNS.get(class_name or "", {})
+    if field_name in per_model:
+        return per_model[field_name]
+    if class_name in _ENTITY_FK_COLUMNS and field_name in _AMBIGUOUS_FK_NAMES:
+        return None
+    return _TRACKED_FK_COLUMNS.get(field_name)
+
+
+def _resolve_fk_display(session: Session, field_name: str, fk_value: Any, class_name: str | None = None) -> str | None:
     """Resolve a tracked FK UUID to a human-readable display name."""
     if fk_value is None:
         return None
-    fk_config = _TRACKED_FK_COLUMNS.get(field_name)
+    fk_config = _fk_config(class_name, field_name)
     if not fk_config:
         return str(fk_value)
     model_name, display_field = fk_config
@@ -426,10 +1535,55 @@ def _resolve_fk_display(session: Session, field_name: str, fk_value: Any) -> str
         pk_col = inspect(model_class).primary_key[0]
         related = session.get(model_class, fk_value)
         if related:
-            return getattr(related, display_field, None) or str(fk_value)
+            # "a|b": the first of these attributes that has a value.
+            for attr in display_field.split("|"):
+                value = getattr(related, attr, None)
+                if value:
+                    return value
+            return str(fk_value)
     except Exception:
         pass
     return str(fk_value)
+
+
+# Value written in place of a secret (client secrets, certificates, storage
+# credentials, download tokens). The field is still listed as changed, so the
+# history says *that* a secret was replaced without ever storing it.
+MASKED_VALUE = "(hidden)"
+
+
+def _csv(raw: str | None) -> set[str]:
+    return {f.strip() for f in (raw or "").split(",") if f.strip()}
+
+
+def _field_rules(class_name: str | None) -> tuple[set[str], set[str]]:
+    """(excluded, masked) columns for a tracked record or child-row model.
+
+    ``exclude_fields`` are left out of the history altogether (system
+    counters, key hashes, positions); ``mask_fields`` are recorded as changed
+    with their values replaced by MASKED_VALUE.
+    """
+    cfg = TRACKED_ENTITIES.get(class_name or "") or TRACKED_LINKS.get(class_name or "") or {}
+    return _csv(cfg.get("exclude_fields")), _csv(cfg.get("mask_fields"))
+
+
+def _mask(value: Any) -> Any:
+    return None if _normalize_empty(_serialize_value(value)) is None else MASKED_VALUE
+
+
+def apply_field_rules(class_name: str | None, changes: list[tuple[str, Any, Any]]) -> list[tuple[str, Any, Any]]:
+    """Drop excluded fields and mask secret ones in (field, old, new) changes."""
+    excluded, masked = _field_rules(class_name)
+    if not excluded and not masked:
+        return changes
+    out = []
+    for field, old, new in changes:
+        if field in excluded:
+            continue
+        if field in masked:
+            old, new = _mask(old), _mask(new)
+        out.append((field, old, new))
+    return out
 
 
 def _get_field_changes(obj: Any, session: Session | None = None) -> list[tuple[str, Any, Any]]:
@@ -442,6 +1596,7 @@ def _get_field_changes(obj: Any, session: Session | None = None) -> list[tuple[s
     changes = []
     mapper = inspect(obj.__class__)
     state = inspect(obj)
+    class_name = obj.__class__.__name__
 
     for attr in mapper.column_attrs:
         field_name = attr.key
@@ -451,7 +1606,7 @@ def _get_field_changes(obj: Any, session: Session | None = None) -> list[tuple[s
         if col.primary_key:
             continue
         # Skip FKs unless they are in the tracked list
-        if col.foreign_keys and field_name not in _TRACKED_FK_COLUMNS:
+        if col.foreign_keys and _fk_config(class_name, field_name) is None:
             continue
 
         history = state.attrs[field_name].history
@@ -466,18 +1621,19 @@ def _get_field_changes(obj: Any, session: Session | None = None) -> list[tuple[s
             new_ser = _normalize_empty(_serialize_value(new_val))
             if old_ser != new_ser:
                 # For tracked FK columns, resolve UUIDs to display names
-                if field_name in _TRACKED_FK_COLUMNS and session is not None:
-                    old_val = _resolve_fk_display(session, field_name, old_val)
-                    new_val = _resolve_fk_display(session, field_name, new_val)
+                if col.foreign_keys and session is not None:
+                    old_val = _resolve_fk_display(session, field_name, old_val, class_name)
+                    new_val = _resolve_fk_display(session, field_name, new_val, class_name)
                 changes.append((field_name, old_val, new_val))
 
-    return changes
+    return apply_field_rules(class_name, changes)
 
 
 def _get_all_fields(obj: Any, session: Session | None = None) -> list[tuple[str, Any]]:
     """Get all field values for a new entity (for creates)."""
     fields = []
     mapper = inspect(obj.__class__)
+    class_name = obj.__class__.__name__
 
     for attr in mapper.column_attrs:
         field_name = attr.key
@@ -486,17 +1642,18 @@ def _get_all_fields(obj: Any, session: Session | None = None) -> list[tuple[str,
         col = attr.columns[0]
         if col.primary_key:
             continue
-        if col.foreign_keys and field_name not in _TRACKED_FK_COLUMNS:
+        if col.foreign_keys and _fk_config(class_name, field_name) is None:
             continue
 
         value = getattr(obj, field_name, None)
         if value is not None:
             # For tracked FK columns, resolve UUIDs to display names
-            if field_name in _TRACKED_FK_COLUMNS and session is not None:
-                value = _resolve_fk_display(session, field_name, value) or value
+            if col.foreign_keys and session is not None:
+                value = _resolve_fk_display(session, field_name, value, class_name) or value
             fields.append((field_name, value))
 
-    return fields
+    excluded, masked = _field_rules(class_name)
+    return [(f, MASKED_VALUE if f in masked else v) for f, v in fields if f not in excluded]
 
 
 def _generate_summary(change_type: str, entity_type: str, changed_fields: list[str] | None) -> str:
@@ -610,7 +1767,8 @@ def _get_link_fields(obj: Any, excluded: set[str] | None = None) -> list[tuple[s
         value = getattr(obj, field_name, None)
         if value is not None:
             fields.append((field_name, value))
-    return fields
+    rule_excluded, masked = _field_rules(obj.__class__.__name__)
+    return [(f, MASKED_VALUE if f in masked else v) for f, v in fields if f not in rule_excluded]
 
 
 def _resolve_constituent_xref_parent(
@@ -627,6 +1785,155 @@ def _resolve_constituent_xref_parent(
         model_name, parent_type = _CONSTITUENT_XREF_PARENT_TYPES[entity_type]
         return model_name, parent_type, entity_id
     return None, None, None
+
+
+def _xref_constituent_change(session: Session, obj: Any) -> tuple[str, Any, Any] | None:
+    """("constituent", old name, new name) when a ConstituentXref was re-pointed
+    to another person (a merge); constituent_id is an FK, so the generic diff
+    skips it."""
+    try:
+        history = inspect(obj).attrs["constituent_id"].history
+    except Exception:
+        return None
+    if not history.has_changes() or not history.deleted or not history.added:
+        return None
+    old_id, new_id = history.deleted[0], history.added[0]
+    if old_id == new_id:
+        return None
+    cls = _resolve_model_class(session, "Constituent")
+
+    def name(cid):
+        row = session.get(cls, cid) if cls is not None and cid else None
+        return (getattr(row, "display_name", None) or getattr(row, "name", None) or str(cid)) if row else str(cid)
+
+    return ("constituent", name(old_id), name(new_id))
+
+
+def _resolve_link_parent_id(session: Session, obj: Any, link_config: dict[str, str]) -> UUID | None:
+    """Resolve the parent id for a tracked child row, following parent_via_* for grandchildren."""
+    p_fk = link_config.get("parent_fk")
+    p_id = getattr(obj, p_fk, None) if p_fk else None
+    via_model = link_config.get("parent_via_model")
+    if not via_model:
+        return p_id
+    # "A>B" / "fa>fb": follow several hops (checklist item link -> item ->
+    # checklist -> exhibition).
+    for model_name, fk in zip(via_model.split(">"), link_config["parent_via_fk"].split(">")):
+        if not p_id:
+            return None
+        via_class = _resolve_model_class(session, model_name)
+        via_obj = None
+        if via_class is not None:
+            try:
+                via_obj = session.get(via_class, p_id)
+            except Exception:
+                via_obj = None
+        p_id = getattr(via_obj, fk, None) if via_obj is not None else None
+    return p_id
+
+
+def _resolve_link_org(
+    session: Session, obj: Any, link_config: dict[str, str], parent_id: UUID | None
+) -> UUID | None:
+    """organization_id of a child row, falling back to its parent's (some link tables have none)."""
+    org_id = _get_organization_id(obj)
+    if org_id or not parent_id:
+        return org_id
+    parent_class = _resolve_model_class(session, link_config.get("parent_model", ""))
+    if parent_class is None:
+        return None
+    try:
+        parent_obj = session.get(parent_class, parent_id)
+    except Exception:
+        return None
+    return _get_organization_id(parent_obj) if parent_obj is not None else None
+
+
+def _format_composite_part(value: Any) -> str | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, Decimal):
+        text = format(value.normalize(), "f")
+        return text
+    return str(value)
+
+
+def _composite_value(values: list[Any]) -> str | None:
+    parts = [p for p in (_format_composite_part(v) for v in values) if p]
+    return " ".join(parts) or None
+
+
+def _parse_composite(link_config: dict[str, str]) -> tuple[str, list[str]] | None:
+    spec = link_config.get("composite")
+    if not spec:
+        return None
+    name, _, parts = spec.partition("=")
+    return name, [p.strip() for p in parts.split(",") if p.strip()]
+
+
+def _link_excluded(link_config: dict[str, str]) -> set[str]:
+    raw = link_config.get("exclude_fields") or ""
+    return {f.strip() for f in raw.split(",") if f.strip()}
+
+
+def _shape_link_fields(obj: Any, link_config: dict[str, str]) -> list[tuple[str, Any]]:
+    """Fields of a child row for link_added/link_removed diffs, with composites folded in."""
+    excluded = _link_excluded(link_config)
+    fields = [(f, v) for f, v in _get_link_fields(obj) if f not in excluded]
+    composite = _parse_composite(link_config)
+    if composite:
+        name, parts = composite
+        value = _composite_value([getattr(obj, p, None) for p in parts])
+        fields = [(f, v) for f, v in fields if f not in parts]
+        if value is not None:
+            fields.insert(0, (name, value))
+    return fields
+
+
+def _shape_link_changes(
+    obj: Any, link_config: dict[str, str], changes: list[tuple[str, Any, Any]]
+) -> list[tuple[str, Any, Any]]:
+    """Field changes of a child row for link_updated diffs.
+
+    Drops ordering-only columns and folds composite parts into one
+    before/after pair, so "value 10 -> 12" (unit cm) reads "10 cm -> 12 cm".
+    """
+    excluded = _link_excluded(link_config) | {"display_order"}
+    changes = [c for c in changes if c[0] not in excluded]
+    composite = _parse_composite(link_config)
+    if not composite:
+        return changes
+    name, parts = composite
+    changed = {f: (old, new) for f, old, new in changes}
+    if not any(p in changed for p in parts):
+        return changes
+    old_vals = [changed[p][0] if p in changed else getattr(obj, p, None) for p in parts]
+    new_vals = [changed[p][1] if p in changed else getattr(obj, p, None) for p in parts]
+    rest = [c for c in changes if c[0] not in parts]
+    old_c, new_c = _composite_value(old_vals), _composite_value(new_vals)
+    if old_c == new_c:
+        return rest
+    return [(name, old_c, new_c)] + rest
+
+
+def _child_identity(
+    session: Session, obj: Any, link_config: dict[str, str]
+) -> tuple[str | None, UUID | None, str | None]:
+    """(child_entity_type, child_entity_id, child_display_key) for a tracked child row."""
+    child_type = link_config.get("child_type")
+    if not child_type:
+        return None, None, None
+    id_field = link_config.get("child_id_field")
+    child_id = getattr(obj, id_field, None) if id_field else _get_entity_pk(obj)
+    display = None
+    display_field = link_config.get("display_field")
+    if display_field:
+        value = getattr(obj, display_field, None)
+        if value is not None and value != "":
+            display = str(value)[:500]
+    if display is None:
+        display = _resolve_linked_entity_name(session, obj, link_config)
+    return child_type, child_id, display
 
 
 def _create_link_audit_event(
@@ -647,18 +1954,19 @@ def _create_link_audit_event(
     For link_removed: fields as (name, value, None)
     For link_updated: fields as (name, old, new)
     """
-    org_id = organization_id or _get_organization_id(link_obj)
-    if not org_id:
-        return None
-
     # Resolve parent info
     p_type = parent_type or link_config["parent_type"]
     p_model = parent_model_name or link_config["parent_model"]
-    p_fk = link_config.get("parent_fk")
-    p_id = parent_id or (getattr(link_obj, p_fk, None) if p_fk else None)
+    p_id = parent_id or _resolve_link_parent_id(session, link_obj, link_config)
 
     if not p_id:
         return None
+
+    org_id = organization_id or _resolve_link_org(session, link_obj, link_config, p_id)
+    if not org_id or not org_writable(session, org_id):
+        return None
+
+    child_type, child_id, child_display = _child_identity(session, link_obj, link_config)
 
     # Get parent display key
     parent_display_key = None
@@ -723,6 +2031,9 @@ def _create_link_audit_event(
         user_agent=req_context["user_agent"],
         changed_fields=changed_field_names,
         summary=summary[:500],
+        child_entity_type=child_type,
+        child_entity_id=child_id,
+        child_display_key=child_display,
     )
     session.add(audit_event)
 
@@ -757,6 +2068,8 @@ def _create_audit_event(
     organization_id = _get_organization_id(obj)
     if not organization_id:
         logger.debug(f"Skipping audit for {obj.__class__.__name__}: no organization_id")
+        return None
+    if not org_writable(session, organization_id):
         return None
 
     entity_id = _get_entity_pk(obj)
@@ -853,6 +2166,17 @@ def _capture_changes_before_flush(session: Session, flush_context: Any, instance
     """
     # Track entities we've already audited in this flush to avoid duplicates
     audited: set[tuple[str, UUID]] = set()
+    # Per-flush caches for org_writable.
+    session.info.pop("_audit_rls_scope", None)
+    session.info["_audit_deleting_orgs"] = {
+        str(o.organization_id) for o in session.deleted if o.__class__.__name__ == "Organization"
+    }
+    # Audit rows added by the previous after_flush are inserted by this flush.
+    # If the RLS scope changed in between (a session switching organizations
+    # mid-transaction), drop rows that would now be rejected rather than fail.
+    for pending in [o for o in session.new if isinstance(o, (EntityAuditEvent, EntityAuditFieldDiff))]:
+        if pending in session and not org_writable(session, pending.organization_id):
+            session.expunge(pending)  # an event's diffs go with it
 
     # ---- Tracked entity deletes (capture before flush) ----
     pending_deletes = []
@@ -880,7 +2204,7 @@ def _capture_changes_before_flush(session: Session, flush_context: Any, instance
     pending_link_deletes = []
     for obj in session.deleted:
         class_name = obj.__class__.__name__
-        link_config = TRACKED_LINKS.get(class_name)
+        link_config = link_config_for(obj)
 
         # Handle ConstituentXref specially (polymorphic parent)
         if class_name == "ConstituentXref":
@@ -913,15 +2237,15 @@ def _capture_changes_before_flush(session: Session, flush_context: Any, instance
             continue
 
         if link_config:
-            org_id = _get_organization_id(obj)
-            parent_fk = link_config["parent_fk"]
-            parent_id = getattr(obj, parent_fk, None)
+            parent_id = _resolve_link_parent_id(session, obj, link_config)
+            org_id = _resolve_link_org(session, obj, link_config, parent_id)
             if org_id and parent_id:
-                fields = _get_link_fields(obj)
+                fields = _shape_link_fields(obj, link_config)
                 linked_entity_name = _resolve_linked_entity_name(session, obj, link_config)
                 if linked_entity_name:
                     fields.insert(0, (link_config.get("link_label", "linked record"), linked_entity_name))
                 display_name = linked_entity_name or _get_link_display_name(session, obj, link_config)
+                child_type, child_id, child_display = _child_identity(session, obj, link_config)
                 pending_link_deletes.append({
                     "link_config": link_config,
                     "parent_id": parent_id,
@@ -930,6 +2254,9 @@ def _capture_changes_before_flush(session: Session, flush_context: Any, instance
                     "organization_id": org_id,
                     "fields": fields,
                     "display_name": display_name,
+                    "child_type": child_type,
+                    "child_id": child_id,
+                    "child_display": child_display,
                 })
 
     session.info["_audit_pending_link_deletes"] = pending_link_deletes
@@ -958,7 +2285,7 @@ def _capture_changes_before_flush(session: Session, flush_context: Any, instance
             continue
 
         class_name = obj.__class__.__name__
-        link_config = TRACKED_LINKS.get(class_name)
+        link_config = link_config_for(obj)
 
         # Handle ConstituentXref specially (polymorphic parent)
         if class_name == "ConstituentXref":
@@ -966,6 +2293,9 @@ def _capture_changes_before_flush(session: Session, flush_context: Any, instance
             if p_model and p_type and p_id:
                 try:
                     field_changes = _get_field_changes(obj, session)
+                    repointed = _xref_constituent_change(session, obj)
+                    if repointed:
+                        field_changes.insert(0, repointed)
                     if field_changes:
                         link_cfg = {
                             "parent_fk": "entity_id",
@@ -988,7 +2318,7 @@ def _capture_changes_before_flush(session: Session, flush_context: Any, instance
 
         if link_config:
             try:
-                field_changes = _get_field_changes(obj, session)
+                field_changes = _shape_link_changes(obj, link_config, _get_field_changes(obj, session))
                 if field_changes:
                     _create_link_audit_event(
                         session, obj, link_config, "link_updated",
@@ -1018,6 +2348,7 @@ def _capture_creates_after_flush(session: Session, flush_context: Any) -> None:
     Captures creates after flush when PKs are assigned.
     Also processes deletes that were captured before flush.
     """
+    session.info.pop("_audit_rls_scope", None)  # re-read the RLS scope for this pass
     # ---- Process tracked entity creates ----
     pending_creates = session.info.pop("_audit_pending_creates", [])
     for obj in pending_creates:
@@ -1062,10 +2393,10 @@ def _capture_creates_after_flush(session: Session, flush_context: Any) -> None:
                     logger.error(f"Failed to audit link create for ConstituentXref: {e}")
             continue
 
-        link_config = TRACKED_LINKS.get(class_name)
+        link_config = link_config_for(obj)
         if link_config:
             try:
-                fields = _get_link_fields(obj)
+                fields = _shape_link_fields(obj, link_config)
                 diffs = [(f, None, v) for f, v in fields]
                 _create_link_audit_event(
                     session, obj, link_config, "link_added",
@@ -1080,6 +2411,8 @@ def _capture_creates_after_flush(session: Session, flush_context: Any) -> None:
     req_context = _get_request_context()
 
     for delete_info in pending_deletes:
+        if not org_writable(session, delete_info["organization_id"]):
+            continue
         try:
             event = EntityAuditEvent(
                 organization_id=delete_info["organization_id"],
@@ -1125,6 +2458,8 @@ def _capture_creates_after_flush(session: Session, flush_context: Any) -> None:
         req_context = _get_request_context()
 
     for link_del in pending_link_deletes:
+        if not org_writable(session, link_del["organization_id"]):
+            continue
         try:
             link_config = link_del["link_config"]
             link_label = link_config.get("link_label", "linked record")
@@ -1146,7 +2481,7 @@ def _capture_creates_after_flush(session: Session, flush_context: Any) -> None:
                     except Exception:
                         pass
 
-            changed_field_names = [f[0] for f, _ in link_del["fields"]] if link_del["fields"] else None
+            changed_field_names = [f for f, _ in link_del["fields"]] if link_del["fields"] else None
 
             audit_event = EntityAuditEvent(
                 organization_id=link_del["organization_id"],
@@ -1164,6 +2499,9 @@ def _capture_creates_after_flush(session: Session, flush_context: Any) -> None:
                 user_agent=req_context["user_agent"],
                 changed_fields=changed_field_names,
                 summary=summary[:500],
+                child_entity_type=link_del.get("child_type"),
+                child_entity_id=link_del.get("child_id"),
+                child_display_key=link_del.get("child_display"),
             )
             session.add(audit_event)
 

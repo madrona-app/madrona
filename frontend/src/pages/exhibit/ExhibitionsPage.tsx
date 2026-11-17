@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
   Plus,
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '../../lib/apiClient';
 import { usePermissions } from '../../hooks/usePermissions';
+import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { logger } from '../../lib/logger';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
@@ -51,6 +52,7 @@ const statusColors: Record<string, { bg: string; text: string; label: string }> 
 };
 
 export default function ExhibitionsPage() {
+  const fieldId = useId();
   const { orgId } = useParams<{ orgId: string }>();
   const navigate = useNavigate();
   const { hasPermission } = usePermissions();
@@ -61,6 +63,14 @@ export default function ExhibitionsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const { modalRef: createModalRef, titleId: createModalTitleId } = useAccessibleModal({
+    isOpen: showCreateModal,
+    onClose: () => {
+    setShowCreateModal(false);
+    setNewTitle('');
+  },
+    titlePrefix: 'create-exhibition',
+  });
   const [creating, setCreating] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -318,17 +328,20 @@ export default function ExhibitionsPage() {
       {/* Create Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-ink/50 flex items-center justify-center z-50">
-          <div className="bg-parchment rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-            <h2 className="text-lg font-semibold text-ink mb-4">Create New Exhibition</h2>
+          <div
+            ref={createModalRef}
+            {...getModalAriaProps(createModalTitleId)}
+            className="bg-parchment rounded-lg shadow-xl max-w-md w-full mx-4 p-6"
+          >
+            <h2 id={createModalTitleId} className="text-lg font-semibold text-ink mb-4">Create New Exhibition</h2>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-ink mb-1">Title</label>
-              <input
+              <label htmlFor={`${fieldId}-title`} className="block text-sm font-medium text-ink mb-1">Title</label>
+              <input id={`${fieldId}-title`}
                 type="text"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
                 placeholder="Enter exhibition title..."
                 className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-forest"
-                autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && newTitle.trim()) {
                     createExhibition();

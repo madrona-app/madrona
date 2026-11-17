@@ -10,6 +10,7 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
+from sqlalchemy import inspect as sa_inspect
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -25,6 +26,7 @@ from app.models import (
     LoanOut,
     ObjectEntry,
     ObjectExit,
+    ObjectRight,
 )
 from app.models.locations import Location, Movement
 
@@ -218,6 +220,28 @@ EXPORT_COLUMNS: dict[str, list[dict[str, str]]] = {
         {"field": "movement_note", "label": "Notes"},
         {"field": "created_at", "label": "Created"},
     ],
+    "object_rights": [
+        {"field": "object_number", "label": "Object Number"},
+        {"field": "right_type", "label": "Right Type"},
+        {"field": "right_subtype", "label": "Right Subtype"},
+        {"field": "status", "label": "Status"},
+        {"field": "rights_holder_name", "label": "Rights Holder"},
+        {"field": "rights_holder_agent_name", "label": "Agent for Rights Holder"},
+        {"field": "license_type", "label": "License Type"},
+        {"field": "license_reference", "label": "License Reference"},
+        {"field": "license_url", "label": "License URL"},
+        {"field": "start_date", "label": "Start Date"},
+        {"field": "end_date", "label": "End Date"},
+        {"field": "is_perpetual", "label": "Perpetual"},
+        {"field": "territory", "label": "Territory"},
+        {"field": "usage_conditions", "label": "Usage Conditions"},
+        {"field": "restrictions", "label": "Restrictions"},
+        {"field": "is_orphan_work", "label": "Orphan Work"},
+        {"field": "agreement_reference", "label": "Agreement Reference"},
+        {"field": "next_review_date", "label": "Next Review"},
+        {"field": "right_note", "label": "Notes"},
+        {"field": "created_at", "label": "Created"},
+    ],
 }
 
 # Model mapping for each record type
@@ -232,6 +256,7 @@ RECORD_TYPE_MODELS: dict[str, type] = {
     "condition_reports": ConditionReport,
     "locations": Location,
     "movements": Movement,
+    "object_rights": ObjectRight,
 }
 
 # FK fields that need name resolution from Contact table
@@ -247,6 +272,15 @@ _CONTACT_FK_FIELDS = {
     "condition_reports": ("examiner_id", "examiner_name"),
 }
 
+# Record types with more than one contact FK: list of (fk_field, virtual_name).
+# Resolved alongside _CONTACT_FK_FIELDS.
+_EXTRA_CONTACT_FK_FIELDS: dict[str, list[tuple[str, str]]] = {
+    "object_rights": [
+        ("rights_holder_contact_id", "rights_holder_name"),
+        ("rights_holder_agent_contact_id", "rights_holder_agent_name"),
+    ],
+}
+
 # FK fields that need name resolution from User table (not Contact)
 _USER_FK_FIELDS = {
     "movements": ("authorized_by", "authorized_by_name"),
@@ -260,6 +294,7 @@ _LOCATION_FK_FIELDS = {
 # FK field that resolves object number from CollectionObject table
 _OBJECT_FK_FIELDS = {
     "movements": ("object_id", "object_number"),
+    "object_rights": ("object_id", "object_number"),
 }
 
 # Maps export record_type keys to field_access_service entity_type keys
@@ -274,6 +309,7 @@ _RECORD_TYPE_TO_ENTITY: dict[str, str] = {
     "condition_reports": "condition_report",
     "locations": "location",
     "movements": "movement",
+    "object_rights": "object_right",
 }
 
 # Default sort field per record type
@@ -288,6 +324,7 @@ _DEFAULT_SORT = {
     "condition_reports": "report_number",
     "locations": "code",
     "movements": "-movement_date",
+    "object_rights": "-created_at",
 }
 
 
@@ -322,6 +359,7 @@ def fetch_export_data(
     sort: str | None = None,
     limit: int = MAX_EXPORT_ROWS,
     user_id: UUID | None = None,
+    ids: list[UUID] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
     """
     Fetch and format data for export.
@@ -334,6 +372,9 @@ def fetch_export_data(
         sort: Optional sort field (prefix with - for descending)
         limit: Maximum rows to return
         user_id: Requesting user UUID (for field-level access filtering)
+        ids: Optional primary keys to restrict the export to (a selection, a
+            work set, or the result of a search). An empty list exports no
+            rows; None means no restriction.
 
     Returns:
         Tuple of (rows as flat dicts, column definitions)
@@ -364,11 +405,34 @@ def fetch_export_data(
         except Exception:
             logger.warning("field_access check failed for export; proceeding with default columns", exc_info=True)
 
+    # User-defined fields on objects: one column per active field the
+    # requester's role may view (custom.<key>). Requested explicitly, or all
+    # of them when no column subset was given.
+    if model is CollectionObject:
+        try:
+            from app.services import custom_fields as cf
+            sess = current_session()
+            ctx = cf.role_context(sess, org_id, user_id) if user_id else cf.RoleContext("admin", None)
+            visible = [d for d in cf.definitions(sess, org_id) if cf.can_view(d, ctx)]
+            requested = {c.get("field") for c in (columns or [])}
+            for d in visible:
+                key = f"custom.{d.key}"
+                if not columns or key in requested:
+                    col_defs = [*col_defs, {"field": key, "label": d.label}]
+        except Exception:
+            logger.warning("custom field columns skipped for export", exc_info=True)
+
     field_names = [c["field"] for c in col_defs]
 
     # Build query
     session = current_session()
     query = select(model).where(model.organization_id == org_id)
+
+    if ids is not None:
+        if not ids:
+            return [], col_defs
+        pk_col = sa_inspect(model).primary_key[0]
+        query = query.where(pk_col.in_(ids[:MAX_EXPORT_ROWS]))
 
     # Apply simple equality filters (only on allowed columns)
     if filters:
@@ -408,6 +472,8 @@ def fetch_export_data(
     user_fk_field = user_fk[0] if user_fk else None
     location_fks = _LOCATION_FK_FIELDS.get(record_type, [])
     object_fk = _OBJECT_FK_FIELDS.get(record_type)
+    extra_contact_fks = _EXTRA_CONTACT_FK_FIELDS.get(record_type, [])
+    extra_contact_fk_map = {virtual: fk for fk, virtual in extra_contact_fks}
 
     for record in records:
         if hasattr(record, "assigned_to_user_id") and record.assigned_to_user_id:
@@ -418,6 +484,10 @@ def fetch_export_data(
                 user_ids.add(uid)
         if contact_fk_field and hasattr(record, contact_fk_field):
             cid = getattr(record, contact_fk_field)
+            if cid:
+                contact_ids.add(cid)
+        for fk_field, _ in extra_contact_fks:
+            cid = getattr(record, fk_field, None)
             if cid:
                 contact_ids.add(cid)
         for fk_field, _ in location_fks:
@@ -501,12 +571,18 @@ def fetch_export_data(
                 # Also fall back to *_name field on model if contact not found
                 if not row[field] and hasattr(record, field):
                     row[field] = _format_value(getattr(record, field))
+            elif field in extra_contact_fk_map:
+                cid = getattr(record, extra_contact_fk_map[field], None)
+                row[field] = contacts_by_id.get(cid, "") if cid else ""
             elif field in _location_fk_map:
                 lid = getattr(record, _location_fk_map[field], None)
                 row[field] = locations_by_id.get(lid, "") if lid else ""
             elif object_fk and field == object_fk[1]:
                 oid = getattr(record, object_fk[0], None)
                 row[field] = objects_by_id.get(oid, "") if oid else ""
+            elif field.startswith("custom."):
+                value = (getattr(record, "custom_fields", None) or {}).get(field[len("custom."):])
+                row[field] = "; ".join(map(str, value)) if isinstance(value, list) else _format_value(value)
             elif hasattr(record, field):
                 row[field] = _format_value(getattr(record, field))
             else:
@@ -537,4 +613,5 @@ def get_supported_record_types() -> list[dict[str, str]]:
         {"key": "condition_reports", "label": "Condition Reports"},
         {"key": "locations", "label": "Locations"},
         {"key": "movements", "label": "Movements"},
+        {"key": "object_rights", "label": "Object Rights"},
     ]

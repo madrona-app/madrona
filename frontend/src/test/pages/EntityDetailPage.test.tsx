@@ -116,10 +116,10 @@ describe('EntityDetailPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /canonical json/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /canonical json/i })).toBeInTheDocument();
     });
-    expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /relationships/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /history/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /relationships/i })).toBeInTheDocument();
   });
 
   it('shows the canonical JSON tab by default', async () => {
@@ -146,9 +146,9 @@ describe('EntityDetailPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /^history$/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /^history$/i })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByRole('button', { name: /^history$/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /^history$/i }));
     expect(screen.getByTestId('history-tab')).toBeInTheDocument();
   });
 
@@ -162,9 +162,9 @@ describe('EntityDetailPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /relationships/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /relationships/i })).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByRole('button', { name: /relationships/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /relationships/i }));
     expect(screen.getByTestId('relationships-tab')).toBeInTheDocument();
   });
 

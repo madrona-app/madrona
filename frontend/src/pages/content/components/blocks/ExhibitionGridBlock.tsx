@@ -5,6 +5,7 @@
  * Renderer: fetches from public exhibitions API and renders a grid.
  */
 
+import { useId } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Calendar } from 'lucide-react';
@@ -40,6 +41,7 @@ const COLUMN_OPTIONS = [2, 3, 4] as const;
 // =============================================================================
 
 export function ExhibitionGridEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const venueFilter = (content.venue_filter as string) || '';
   const statusFilter = (content.status_filter as StatusFilter) || 'open';
   const limit = (content.limit as number) ?? 6;
@@ -48,10 +50,10 @@ export function ExhibitionGridEditor({ content, onChange }: BlockEditorComponent
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-venue-filter`} className="block text-sm font-medium text-ink mb-1">
           Venue Filter
         </label>
-        <input
+        <input id={`${fieldId}-venue-filter`}
           type="text"
           value={venueFilter}
           onChange={(e) => onChange({ ...content, venue_filter: e.target.value })}
@@ -64,10 +66,10 @@ export function ExhibitionGridEditor({ content, onChange }: BlockEditorComponent
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-status`} className="block text-sm font-medium text-ink mb-1">
           Status
         </label>
-        <select
+        <select id={`${fieldId}-status`}
           value={statusFilter}
           onChange={(e) => onChange({ ...content, status_filter: e.target.value })}
           className="border border-lichen rounded-lg px-3 py-2 text-sm text-ink focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -82,10 +84,10 @@ export function ExhibitionGridEditor({ content, onChange }: BlockEditorComponent
 
       <div className="flex items-end gap-4">
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-max-exhibitions`} className="block text-sm font-medium text-ink mb-1">
             Max Exhibitions
           </label>
-          <input
+          <input id={`${fieldId}-max-exhibitions`}
             type="number"
             min={1}
             max={50}
@@ -98,14 +100,15 @@ export function ExhibitionGridEditor({ content, onChange }: BlockEditorComponent
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <span id={`${fieldId}-columns-group`} className="block text-sm font-medium text-ink mb-1">
             Columns
-          </label>
-          <div className="flex gap-2">
+          </span>
+          <div role="group" aria-labelledby={`${fieldId}-columns-group`} className="flex gap-2">
             {COLUMN_OPTIONS.map((n) => (
               <button
                 key={n}
                 type="button"
+                aria-pressed={columns === n}
                 onClick={() => onChange({ ...content, columns: n })}
                 className={cn(
                   'px-3 py-1.5 text-sm rounded-lg border transition-colors',

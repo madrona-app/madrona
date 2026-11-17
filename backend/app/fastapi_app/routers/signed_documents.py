@@ -8,6 +8,12 @@ Endpoints:
 - POST   /api/organizations/{org}/signed-documents     (multipart upload + metadata)
 - PATCH  /api/organizations/{org}/signed-documents/{id}
 - DELETE /api/organizations/{org}/signed-documents/{id}
+- GET    /api/organizations/{org}/signed-documents/{id}/download  (redirects to a
+  short-lived storage URL for the attached file)
+
+General (unsigned) file attachments on a procedure use the same endpoints with
+``document_type=attachment``: they require a file and a title (``label``) and
+may carry a ``description``.
 
 E-signature integration endpoints (Phase 2, stubbed):
 - POST /api/organizations/{org}/signed-documents/{id}/send-for-signature
@@ -19,7 +25,10 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
+import re
+
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -34,13 +43,19 @@ from app.models.procedures import (
     ObjectEntry,
     ObjectExit,
 )
-from app.models.signed_documents import PROCEDURE_TYPES, SignedDocument
+from app.models.signed_documents import (
+    ATTACHMENT_DOCUMENT_TYPE,
+    PROCEDURE_TYPES,
+    SignedDocument,
+)
 from app.permissions import Permission
 from app.services.uploads import (
     StorageLimitExceeded,
     detect_media_type,
     get_org_media_url,
-    upload_org_media,
+    get_org_media_url_byob,
+    normalize_upload_content_type,
+    upload_org_media_byob,
 )
 from app.services.api_security import sanitize_error_message
 
@@ -108,6 +123,10 @@ def _serialize_signed_document(doc: SignedDocument, db: Session) -> dict[str, An
                 organization_id=str(doc.organization_id),
             )
 
+    media_file_size: int | None = None
+    if doc.media_id and doc.media:
+        media_file_size = doc.media.file_size
+
     return {
         "signed_document_id": str(doc.signed_document_id),
         "organization_id": str(doc.organization_id),
@@ -115,10 +134,20 @@ def _serialize_signed_document(doc: SignedDocument, db: Session) -> dict[str, An
         "procedure_id": str(doc.procedure_id),
         "document_type": doc.document_type,
         "label": doc.label,
+        "description": doc.description,
         "media_id": str(doc.media_id) if doc.media_id else None,
         "media_filename": media_filename,
         "media_mime_type": media_mime_type,
         "media_url": media_url,
+        "media_file_size": media_file_size,
+        # Same-origin, permission-checked download route (cookie auth works in
+        # a plain link); it redirects to a fresh short-lived storage URL.
+        "download_url": (
+            f"/api/organizations/{doc.organization_id}/signed-documents/"
+            f"{doc.signed_document_id}/download"
+            if doc.media_id
+            else None
+        ),
         "reference": doc.reference,
         "esign_provider": doc.esign_provider,
         "esign_envelope_id": doc.esign_envelope_id,
@@ -187,6 +216,7 @@ def create_signed_document(
     procedure_id: UUID = Form(...),
     document_type: str = Form(...),
     label: str | None = Form(None),
+    description: str | None = Form(None),
     reference: str | None = Form(None),
     file: UploadFile | None = File(None),
     auth: AuthContext = Depends(require_permission(Permission.COLLECTIONS_EDIT)),
@@ -203,7 +233,28 @@ def create_signed_document(
     """
     _validate_procedure(db, organization_id, procedure_type, procedure_id)
 
-    if not file and not (reference and reference.strip()):
+    label = label.strip() if label else None
+    description = description.strip() if description else None
+    if label and len(label) > 255:
+        raise HTTPException(status_code=422, detail={
+            "code": "validation_error",
+            "message": "Title must be 255 characters or fewer.",
+        })
+
+    has_file = bool(file and file.filename)
+    if document_type == ATTACHMENT_DOCUMENT_TYPE:
+        # General attachments are always files with a title.
+        if not has_file:
+            raise HTTPException(status_code=422, detail={
+                "code": "validation_error",
+                "message": "Choose a file to attach.",
+            })
+        if not label:
+            raise HTTPException(status_code=422, detail={
+                "code": "validation_error",
+                "message": "Enter a title for the attachment.",
+            })
+    elif not has_file and not (reference and reference.strip()):
         raise HTTPException(status_code=422, detail={
             "code": "validation_error",
             "message": "Either a file upload or a text reference is required.",
@@ -211,7 +262,9 @@ def create_signed_document(
 
     media = None
     if file and file.filename:
-        content_type = file.content_type or "application/octet-stream"
+        # Browsers send no useful type for some extensions (.brf arrives as
+        # application/octet-stream); normalise before checking support.
+        content_type = normalize_upload_content_type(file.content_type, file.filename)
         media_type = detect_media_type(content_type)
         if not media_type:
             raise HTTPException(status_code=400, detail={
@@ -220,7 +273,9 @@ def create_signed_document(
             })
 
         try:
-            s3_key, file_size = upload_org_media(
+            # BYOB-aware: honours the org's configured storage backend
+            # (managed S3, S3-compatible, GCS, Azure).
+            s3_key, file_size = upload_org_media_byob(
                 organization_id=str(organization_id),
                 file_data=file.file,
                 content_type=content_type,
@@ -264,6 +319,7 @@ def create_signed_document(
         procedure_id=procedure_id,
         document_type=document_type,
         label=label,
+        description=description,
         media_id=media.media_id if media else None,
         reference=reference.strip() if reference else None,
         created_by=auth.user_id,
@@ -288,7 +344,7 @@ def update_signed_document(
     auth: AuthContext = Depends(require_permission(Permission.COLLECTIONS_EDIT)),
     db: Session = Depends(get_db),
 ):
-    """Update label, reference, or document_type on an existing row."""
+    """Update label, description, reference, or document_type on an existing row."""
     doc = (
         db.query(SignedDocument)
         .filter(
@@ -303,9 +359,16 @@ def update_signed_document(
             "message": "Signed document not found",
         })
 
-    for field in ("label", "reference", "document_type"):
+    for field in ("label", "description", "reference", "document_type"):
         if field in data:
             setattr(doc, field, data[field])
+
+    if doc.document_type == ATTACHMENT_DOCUMENT_TYPE and not (doc.label or "").strip():
+        db.rollback()
+        raise HTTPException(status_code=422, detail={
+            "code": "validation_error",
+            "message": "Enter a title for the attachment.",
+        })
 
     doc.updated_by = auth.user_id
     doc.updated_at = datetime.now(timezone.utc)
@@ -314,6 +377,59 @@ def update_signed_document(
     db.refresh(doc)
 
     return _serialize_signed_document(doc, db)
+
+
+def _safe_download_filename(filename: str | None) -> str | None:
+    """Filename safe to embed in a quoted Content-Disposition header."""
+    if not filename:
+        return None
+    return re.sub(r'[^A-Za-z0-9._ -]', '_', filename)[:200] or None
+
+
+@router.get(
+    "/api/organizations/{organization_id}/signed-documents/{signed_document_id}/download",
+    summary="Download the file attached to a signed document or attachment",
+)
+def download_signed_document(
+    organization_id: UUID,
+    signed_document_id: UUID,
+    auth: AuthContext = Depends(require_permission(Permission.COLLECTIONS_VIEW)),
+    db: Session = Depends(get_db),
+):
+    """Redirect to a short-lived URL for the attached file.
+
+    Org membership and collections.view are checked here, so a link to this
+    route can live in the app without exposing a long-lived storage URL. The
+    storage URL is generated per request through the org's storage backend
+    (BYOB-aware) and asks the store to serve the file as a download.
+    """
+    doc = (
+        db.query(SignedDocument)
+        .filter(
+            SignedDocument.signed_document_id == signed_document_id,
+            SignedDocument.organization_id == organization_id,
+        )
+        .first()
+    )
+    if not doc or not doc.media_id or not doc.media or not doc.media.s3_key:
+        raise HTTPException(status_code=404, detail={
+            "code": "not_found",
+            "message": "Attached file not found",
+        })
+
+    url = get_org_media_url_byob(
+        doc.media.s3_key,
+        organization_id=str(organization_id),
+        db_session=db,
+        expiry_seconds=300,
+        filename=_safe_download_filename(doc.media.filename),
+    )
+    if not url:
+        raise HTTPException(status_code=502, detail={
+            "code": "storage_unavailable",
+            "message": "The file could not be retrieved from storage.",
+        })
+    return RedirectResponse(url=url, status_code=307)
 
 
 @router.delete(

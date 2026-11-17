@@ -16,6 +16,8 @@ import { getMetadataTemplates, deleteMetadataTemplate, setDefaultMetadataTemplat
 import { MetadataTemplateModal } from '../../components/dam';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import type { MetadataTemplate } from '../../lib/schemas';
+import { useActionMenu } from '../../components/dam/useActionMenu';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 
 /**
  * Metadata Templates management page for Media / DAM.
@@ -30,6 +32,7 @@ export default function MetadataTemplatesPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<MetadataTemplate | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const actionMenu = useActionMenu(openMenuId, () => setOpenMenuId(null));
   const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch templates
@@ -208,11 +211,22 @@ export default function MetadataTemplatesPage() {
                     </p>
                   </div>
                 </div>
-                <div className="relative flex-shrink-0">
+                <div className="relative flex-shrink-0 flex items-center gap-1">
+                  <RecordHistoryButton
+                    organizationId={orgId!}
+                    entityType="metadata_template"
+                    entityId={template.template_id}
+                    recordName={template.name}
+                    showLabel={false}
+                  />
                   <button
+                    ref={openMenuId === template.template_id ? actionMenu.triggerRef : undefined}
+                    type="button"
+                    aria-haspopup="menu"
+                    aria-expanded={openMenuId === template.template_id}
                     onClick={() => setOpenMenuId(openMenuId === template.template_id ? null : template.template_id)}
                     className="p-1 hover:bg-stone rounded"
-                    aria-label="Template options"
+                    aria-label={`Options for ${template.name}`}
                   >
                     <MoreHorizontal className="h-4 w-4" />
                   </button>
@@ -220,12 +234,20 @@ export default function MetadataTemplatesPage() {
                     <>
                       {/* Backdrop */}
                       <div
+                        aria-hidden="true"
                         className="fixed inset-0 z-10"
                         onClick={() => setOpenMenuId(null)}
                       />
                       {/* Menu */}
-                      <div className="absolute right-0 top-8 z-20 bg-parchment border border-lichen rounded-lg shadow-lg py-1 w-44">
-                        <button
+                      <div
+                        ref={actionMenu.menuRef}
+                        role="menu"
+                        tabIndex={-1}
+                        aria-label={`Options for ${template.name}`}
+                        onKeyDown={actionMenu.onMenuKeyDown}
+                        className="absolute right-0 top-8 z-20 bg-parchment border border-lichen rounded-lg shadow-lg py-1 w-44"
+                      >
+                        <button type="button" role="menuitem"
                           onClick={() => handleEdit(template)}
                           className="w-full px-3 py-2 text-left text-sm hover:bg-stone flex items-center gap-2 text-ink"
                         >
@@ -233,7 +255,7 @@ export default function MetadataTemplatesPage() {
                           Edit
                         </button>
                         {!template.is_default && (
-                          <button
+                          <button type="button" role="menuitem"
                             onClick={() => handleSetDefault(template)}
                             className="w-full px-3 py-2 text-left text-sm hover:bg-stone flex items-center gap-2 text-ink"
                             disabled={setDefaultMutation.isPending}
@@ -242,7 +264,7 @@ export default function MetadataTemplatesPage() {
                             Set as Default
                           </button>
                         )}
-                        <button
+                        <button type="button" role="menuitem"
                           onClick={() => handleDelete(template)}
                           className="w-full px-3 py-2 text-left text-sm hover:bg-stone flex items-center gap-2 text-semantic-error"
                         >

@@ -2467,7 +2467,24 @@ def update_sso_config(
         if "client_id" in data:
             sso_config.client_id = data["client_id"]
         if "client_secret" in data:
-            sso_config.client_secret = data["client_secret"]
+            # The model has no plain client_secret column: assigning one was
+            # silently dropped. Store it Fernet-encrypted (as BYOB storage
+            # credentials are); an empty value clears it.
+            secret = data["client_secret"]
+            if not secret:
+                sso_config.client_secret_encrypted = None
+            else:
+                from app.services.storage.factory import StorageError, _get_encryption_key
+                from cryptography.fernet import Fernet
+
+                try:
+                    key = _get_encryption_key()
+                except StorageError:
+                    raise HTTPException(status_code=400, detail={
+                        "code": "bad_request",
+                        "message": "Cannot store an OIDC client secret: STORAGE_CREDENTIALS_ENCRYPTION_KEY is not configured.",
+                    })
+                sso_config.client_secret_encrypted = Fernet(key).encrypt(secret.encode())
         if "discovery_url" in data:
             sso_config.discovery_url = data["discovery_url"]
         if "auto_provision_users" in data:

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
+import { useStableCallback } from './useStableCallback';
 
 interface SectionSlideOverProps {
   isOpen: boolean;
@@ -22,9 +23,10 @@ export function SectionSlideOver({
   icon,
   children,
 }: SectionSlideOverProps) {
+  const stableOnClose = useStableCallback(onClose);
   const { modalRef, titleId } = useAccessibleModal({
     isOpen,
-    onClose,
+    onClose: stableOnClose,
     titlePrefix: 'section-slide-over',
   });
 
@@ -32,8 +34,9 @@ export function SectionSlideOver({
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
-      {/* Backdrop */}
+      {/* Backdrop: mouse dismiss only; Escape closes the panel */}
       <div
+        aria-hidden="true"
         className="absolute inset-0 bg-ink/20 transition-opacity"
         onClick={onClose}
       />
@@ -47,21 +50,22 @@ export function SectionSlideOver({
             'animate-in slide-in-from-right duration-200'
           )}
           {...getModalAriaProps(titleId)}
-          onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-lichen flex-shrink-0">
             <div className="flex items-center gap-3">
-              {icon && <span className="text-bark">{icon}</span>}
+              {icon && <span className="text-bark" aria-hidden="true">{icon}</span>}
               <h2 id={titleId} className="text-lg font-serif font-medium text-forest">
                 {title}
               </h2>
             </div>
             <button
+              type="button"
               onClick={onClose}
-              className="p-1.5 text-archive hover:text-ink rounded-lg transition-colors"
+              aria-label={`Close ${title}`}
+              className="p-1.5 text-archive hover:text-ink rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             >
-              <X size={20} />
+              <X size={20} aria-hidden="true" />
             </button>
           </div>
 

@@ -8,6 +8,7 @@ from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import (
+    BigInteger,
     DateTime,
     Boolean,
     CheckConstraint,
@@ -121,17 +122,12 @@ class DocumentationPlan(Base):
         Index("ix_doc_plans_org_number", "organization_id", "plan_number", unique=True),
         Index("ix_doc_plans_org_status", "organization_id", "status"),
         Index("ix_doc_plans_org_type", "organization_id", "plan_type"),
-        CheckConstraint(
-            "plan_type IN ('collection_wide', 'project', 'thematic', 'emergency', 'accreditation')",
-            name="check_doc_plan_type",
-        ),
+        # plan_type and review_frequency are lookup-backed
+        # (documentation_plan_type, review_frequency) and checked against the
+        # organization's lookup values by the API, not by a fixed CHECK list.
         CheckConstraint(
             "status IN ('draft', 'approved', 'in_progress', 'completed', 'superseded', 'cancelled')",
             name="check_doc_plan_status",
-        ),
-        CheckConstraint(
-            "review_frequency IS NULL OR review_frequency IN ('monthly', 'quarterly', 'biannual', 'annual')",
-            name="check_doc_plan_review_freq",
         ),
         {"schema": "collections"},
     )
@@ -413,18 +409,12 @@ class IncidentReport(Base):
         Index("ix_incidents_org_status", "organization_id", "status"),
         Index("ix_incidents_org_type", "organization_id", "incident_type"),
         Index("ix_incidents_org_date", "organization_id", "incident_date"),
-        CheckConstraint(
-            "incident_type IN ('damage', 'loss', 'theft', 'vandalism', 'environmental', 'fire', 'water', 'pest', 'other')",
-            name="check_incident_type",
-        ),
+        # incident_type: lookup-backed (app/services/lookup_fields.py), no CHECK.
         CheckConstraint(
             "status IN ('draft', 'submitted', 'under_investigation', 'resolved', 'closed')",
             name="check_incident_status",
         ),
-        CheckConstraint(
-            "insurance_claim_status IS NULL OR insurance_claim_status IN ('pending', 'approved', 'denied', 'settled', 'withdrawn')",
-            name="check_insurance_claim_status",
-        ),
+        # insurance_claim_status: lookup-backed (app/services/lookup_fields.py), no CHECK.
         {"schema": "collections"},
     )
 
@@ -592,10 +582,7 @@ class CollectionsReview(Base):
         Index("ix_reviews_org_number", "organization_id", "review_number", unique=True),
         Index("ix_reviews_org_status", "organization_id", "status"),
         Index("ix_reviews_org_type", "organization_id", "review_type"),
-        CheckConstraint(
-            "review_type IN ('significance', 'relevance', 'care', 'deaccession', 'rationalization', 'thematic', 'condition', 'documentation', 'comprehensive')",
-            name="check_review_type",
-        ),
+        # review_type: lookup-backed (app/services/lookup_fields.py), no CHECK.
         CheckConstraint(
             "status IN ('draft', 'approved', 'in_progress', 'completed', 'cancelled')",
             name="check_review_status",
@@ -724,6 +711,16 @@ class AuditCampaign(Base):
     sample_percentage: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
     sampling_criteria: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Generated check list. The seed plus the parameters recorded in
+    # check_list_params (method, size, scope, population count) reproduce the
+    # exact list, so an auditor can show how the sample was drawn.
+    check_list_seed: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    check_list_generated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    check_list_generated_by_id: Mapped[UUID | None] = mapped_column(
+        "check_list_generated_by", ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
+    )
+    check_list_params: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+
     # Methodology
     methodology: Mapped[str | None] = mapped_column(Text, nullable=True)
     verification_procedures: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -799,18 +796,12 @@ class AuditCampaign(Base):
         Index("ix_audits_org_number", "organization_id", "campaign_number", unique=True),
         Index("ix_audits_org_status", "organization_id", "status"),
         Index("ix_audits_org_type", "organization_id", "audit_type"),
-        CheckConstraint(
-            "audit_type IN ('location', 'condition', 'documentation', 'security', 'comprehensive', 'spot_check', 'annual')",
-            name="check_audit_type",
-        ),
+        # audit_type: lookup-backed (app/services/lookup_fields.py), no CHECK.
         CheckConstraint(
             "status IN ('draft', 'approved', 'in_progress', 'completed', 'cancelled')",
             name="check_audit_status",
         ),
-        CheckConstraint(
-            "sample_method IS NULL OR sample_method IN ('complete', 'random', 'stratified', 'systematic', 'targeted')",
-            name="check_sample_method",
-        ),
+        # sample_method: lookup-backed (app/services/lookup_fields.py), no CHECK.
         {"schema": "collections"},
     )
 
@@ -881,6 +872,10 @@ class AuditResult(Base):
 
     # Notes
     result_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Position in a generated check list (1-based); NULL for results recorded
+    # ad hoc rather than from a generated list.
+    check_sequence: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # Relationships
     campaign: Mapped["AuditCampaign"] = relationship(

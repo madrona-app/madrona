@@ -173,10 +173,7 @@ class Event(Base):
         Index("ix_events_org_type", "organization_id", "event_type"),
         Index("ix_events_org_start", "organization_id", "start_at"),
         Index("ix_events_owner", "owner_user_id"),
-        CheckConstraint(
-            "event_type IN ('teaching_session', 'program', 'opening_reception', 'donor_development', 'internal')",
-            name="check_event_type",
-        ),
+        # event_type: lookup-backed (app/services/lookup_fields.py), no CHECK.
         CheckConstraint(
             "status IN ('draft', 'scheduled', 'completed', 'cancelled')",
             name="check_event_status",
@@ -185,10 +182,7 @@ class Event(Base):
             "session_format IS NULL OR session_format IN ('gallery', 'study_room', 'handling_session')",
             name="check_event_session_format",
         ),
-        CheckConstraint(
-            "audience IS NULL OR audience IN ('public', 'members', 'internal')",
-            name="check_event_audience",
-        ),
+        # audience: lookup-backed (app/services/lookup_fields.py), no CHECK.
         {"schema": "collections"},
     )
 

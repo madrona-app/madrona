@@ -1226,6 +1226,7 @@ def list_claims(
     loss_type: str = Query(None),
     coverage_id: str = Query(None),
     indemnity_id: str = Query(None),
+    policy_id: UUID | None = Query(None, description="Claims on any of this policy's coverages"),
     auth: AuthContext = Depends(require_permission(Permission.INSURANCE_VIEW)),
     db: Session = Depends(get_db),
 ):
@@ -1233,6 +1234,11 @@ def list_claims(
     query = db.query(InsuranceClaim).filter(
         InsuranceClaim.organization_id == org_id
     )
+    if policy_id:
+        query = query.join(InsuranceCoverage, InsuranceClaim.coverage_id == InsuranceCoverage.coverage_id).filter(
+            InsuranceCoverage.policy_id == policy_id,
+            InsuranceCoverage.organization_id == org_id,
+        )
     if status and status in ClaimStatus.ALL:
         query = query.filter(InsuranceClaim.status == status)
     if loss_type and loss_type in LossType.ALL:

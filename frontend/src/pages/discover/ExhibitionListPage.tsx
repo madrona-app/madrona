@@ -24,6 +24,7 @@ import type { PublicExhibition } from '../../types/discover';
 import { CollectionSiteShell } from './components/CollectionSiteShell';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
 import { formatDateShort } from '@/lib/formatters';
+import { handleTabListKeyDown } from '../shared/tabKeyboard';
 
 // =============================================================================
 // Constants
@@ -124,14 +125,21 @@ function TabBar({
   onTabChange: (tab: string) => void;
 }) {
   return (
-    <div className="flex border-b border-lichen" role="tablist">
+    <div className="flex border-b border-lichen" role="tablist" aria-label="Exhibitions">
       {TABS.map((tab) => (
         <button
           key={tab.key}
+          id={`exhibitions-tab-${tab.key}`}
+          type="button"
           role="tab"
           aria-selected={activeTab === tab.key}
+          aria-controls="exhibitions-tabpanel"
+          tabIndex={activeTab === tab.key ? 0 : -1}
           onClick={() => onTabChange(tab.key)}
-          className={`px-5 py-3 text-sm font-medium transition-colors relative ${
+          onKeyDown={(e) =>
+            handleTabListKeyDown(e, TABS.map((t) => t.key), activeTab, onTabChange, (k) => `exhibitions-tab-${k}`)
+          }
+          className={`px-5 py-3 text-sm font-medium transition-colors relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bark/30 ${
             activeTab === tab.key
               ? 'text-bark'
               : 'text-archive hover:text-ink'
@@ -139,7 +147,7 @@ function TabBar({
         >
           {tab.label}
           {activeTab === tab.key && (
-            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-bark" />
+            <span aria-hidden="true" className="absolute bottom-0 left-0 right-0 h-0.5 bg-bark" />
           )}
         </button>
       ))}
@@ -396,6 +404,7 @@ export default function ExhibitionListPage() {
           />
         </div>
 
+        <div id="exhibitions-tabpanel" role="tabpanel" aria-labelledby={`exhibitions-tab-${activeTabKey}`}>
         {/* Loading state */}
         {isLoading && (
           <div className="flex items-center justify-center py-20">
@@ -406,7 +415,7 @@ export default function ExhibitionListPage() {
         {/* Empty state */}
         {!isLoading && exhibitions.length === 0 && (
           <div className="py-16 text-center">
-            <Image className="w-12 h-12 text-archive/30 mx-auto mb-4" />
+            <Image className="w-12 h-12 text-archive/30 mx-auto mb-4" aria-hidden="true" />
             <h2 className="text-xl font-medium text-ink mb-2">No exhibitions found</h2>
             <p className="text-archive">
               {activeVenue
@@ -452,6 +461,7 @@ export default function ExhibitionListPage() {
             )}
           </>
         )}
+        </div>
       </div>
     </CollectionSiteShell>
   );

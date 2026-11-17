@@ -25,6 +25,7 @@ import {
   getNagpraConsultationEvents,
   autocompleteCollections,
   deleteCollectionObject,
+  getCollectionObjects,
   deleteLocation,
   deleteMovement,
   deleteOtherNumberType,
@@ -131,6 +132,23 @@ describe('api/collections (passthrough endpoints)', () => {
         '/organizations/org-1/collections/movements/mv-1',
         { method: 'DELETE' },
       );
+    });
+  });
+
+  describe('getCollectionObjects (object pickers)', () => {
+    it('includes deaccessioned objects so procedure linkers can still find them', async () => {
+      vi.mocked(apiClient.apiFetch).mockResolvedValueOnce({ items: [], total: 0 });
+      await getCollectionObjects('org-1', { search: 'slate' }).catch(() => undefined);
+      const url = vi.mocked(apiClient.apiFetch).mock.calls.at(-1)![0] as string;
+      expect(url).toContain('include_deaccessioned=true');
+      expect(url).toContain('search=slate');
+    });
+
+    it('lets a caller opt out', async () => {
+      vi.mocked(apiClient.apiFetch).mockResolvedValueOnce({ items: [], total: 0 });
+      await getCollectionObjects('org-1', { include_deaccessioned: false }).catch(() => undefined);
+      const url = vi.mocked(apiClient.apiFetch).mock.calls.at(-1)![0] as string;
+      expect(url).toContain('include_deaccessioned=false');
     });
   });
 

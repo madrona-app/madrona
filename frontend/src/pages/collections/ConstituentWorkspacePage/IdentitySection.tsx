@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { User, Plus, X } from 'lucide-react';
 import {
   WorkspaceSection,
@@ -22,6 +22,7 @@ export function IdentitySection({
   isEmpty,
   sectionSummaries,
 }: BaseSectionProps) {
+  const uid = useId();
   const { getLookup } = useLookupValues({ context: 'authorities' });
   const [variantNameInput, setVariantNameInput] = useState('');
 
@@ -132,11 +133,12 @@ export function IdentitySection({
         {/* Variant Names */}
         {isEditing ? (
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-ink mb-1.5">
+            <label htmlFor={`${uid}-variant-names`} className="block text-sm font-medium text-ink mb-1.5">
               Variant Names
             </label>
             <div className="flex gap-2 mb-2">
               <input
+                id={`${uid}-variant-names`}
                 type="text"
                 value={variantNameInput}
                 onChange={(e) => setVariantNameInput(e.target.value)}
@@ -152,9 +154,10 @@ export function IdentitySection({
               <button
                 type="button"
                 onClick={handleAddVariantName}
+                aria-label="Add variant name"
                 className="px-3 py-2 border border-lichen rounded-lg text-ink hover:bg-stone transition-colors"
               >
-                <Plus size={16} />
+                <Plus size={16} aria-hidden="true" />
               </button>
             </div>
             {formData.variant_names.length > 0 && (
@@ -168,9 +171,10 @@ export function IdentitySection({
                     <button
                       type="button"
                       onClick={() => handleRemoveVariantName(name)}
+                      aria-label={`Remove variant name ${name}`}
                       className="text-archive hover:text-ink"
                     >
-                      <X size={12} />
+                      <X size={12} aria-hidden="true" />
                     </button>
                   </span>
                 ))}
@@ -179,9 +183,9 @@ export function IdentitySection({
           </div>
         ) : formData.variant_names.length > 0 ? (
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-archive mb-1.5">
+            <span className="block text-sm font-medium text-archive mb-1.5">
               Variant Names
-            </label>
+            </span>
             <div className="flex flex-wrap gap-2">
               {formData.variant_names.map((name, i) => (
                 <span
@@ -222,16 +226,17 @@ export function IdentitySection({
 
         {/* Life Roles - toggleable chips */}
         {isEditing ? (
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-ink mb-1.5">
+          <div role="group" aria-labelledby={`${uid}-life-roles`} className="md:col-span-2">
+            <span id={`${uid}-life-roles`} className="block text-sm font-medium text-ink mb-1.5">
               Life Roles
-            </label>
+            </span>
             <div className="flex flex-wrap gap-2">
               {getLookup('life_role').map((option) => (
                 <button
                   key={option.value}
                   type="button"
                   onClick={() => handleToggleLifeRole(option.value)}
+                  aria-pressed={formData.life_roles.includes(option.value)}
                   className={cn(
                     'px-2 py-1 text-sm rounded-full cursor-pointer transition-colors',
                     formData.life_roles.includes(option.value)
@@ -246,9 +251,9 @@ export function IdentitySection({
           </div>
         ) : formData.life_roles.length > 0 ? (
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-archive mb-1.5">
+            <span className="block text-sm font-medium text-archive mb-1.5">
               Life Roles
-            </label>
+            </span>
             <div className="flex flex-wrap gap-2">
               {formData.life_roles.map((role, i) => (
                 <span

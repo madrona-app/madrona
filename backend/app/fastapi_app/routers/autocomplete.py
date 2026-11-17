@@ -357,6 +357,37 @@ def search_nomenclature_external(query: str, limit: int = 5) -> list:
         return []
 
 
+def search_lcsh(query: str, limit: int = 5) -> list:
+    """Search Library of Congress Subject Headings (id.loc.gov suggest2)."""
+    from app.services.external_lookups import LCSHLookupError, lookup_lcsh
+
+    try:
+        hits = lookup_lcsh(query, limit=limit)
+    except LCSHLookupError:
+        return []
+    return [_lcsh_suggestion(h, query) for h in hits]
+
+
+def _lcsh_suggestion(hit: dict, query: str) -> dict:
+    description = "Library of Congress Subject Heading"
+    if hit.get("matched_variant"):
+        description = f"{description}; matched “{hit['matched_variant']}”"
+    return {
+        "id": f"lcsh-{hit['id']}",
+        "label": hit["label"],
+        "description": description,
+        "source": "loc",
+        "score": 0.88,
+        "reference": {
+            "uri": hit["uri"],
+            "source": "LCSH",
+            "label": hit["label"],
+            "match_confidence": "exact" if query.lower() == hit["label"].lower() else "probable",
+        },
+        "metadata": None,
+    }
+
+
 def search_wikidata(query: str, limit: int = 5) -> list:
     """Search Wikidata for entities."""
     try:
@@ -412,7 +443,7 @@ FIELD_TYPE_SOURCES = {
     "material": ["AAT", "Wikidata"],
     "technique": ["AAT", "Wikidata"],
     "place": ["TGN", "Wikidata"],
-    "subject": ["AAT", "Iconclass", "Wikidata"],
+    "subject": ["AAT", "LCSH", "Iconclass", "Wikidata"],
     "classification": ["AAT", "Nomenclature"],
     "organization": ["VIAF", "Wikidata"],
 }
@@ -431,7 +462,7 @@ def search_external(query: str, field_type: str, limit: int) -> list:
 
     results = []
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         futures = []
 
         if "ULAN" in sources:
@@ -440,6 +471,8 @@ def search_external(query: str, field_type: str, limit: int) -> list:
             futures.append(("AAT", executor.submit(search_getty_aat, query, limit, field_type)))
         if "TGN" in sources:
             futures.append(("TGN", executor.submit(search_getty_tgn, query, limit)))
+        if "LCSH" in sources:
+            futures.append(("LCSH", executor.submit(search_lcsh, query, limit)))
         if "Iconclass" in sources:
             futures.append(("Iconclass", executor.submit(search_iconclass, query, limit)))
         if "Nomenclature" in sources:
@@ -461,9 +494,12 @@ def search_external(query: str, field_type: str, limit: int) -> list:
     seen_labels = set()
     unique_results = []
     for r in results:
-        label_lower = r["label"].lower()
-        if label_lower not in seen_labels:
-            seen_labels.add(label_lower)
+        # The same label from two authorities (an AAT term and its LCSH
+        # heading) is two distinct choices; dedupe within a source only.
+        ref = r.get("reference") if isinstance(r.get("reference"), dict) else {}
+        key = (r["label"].lower(), ref.get("source") or r.get("source"))
+        if key not in seen_labels:
+            seen_labels.add(key)
             unique_results.append(r)
 
     if unique_results:
@@ -506,6 +542,14 @@ def search_local_person_authorities(db: Session, org_id: UUID, query: str, limit
     return suggestions
 
 
+# VocabularyTerm.vocabulary -> reference source name the frontend expects
+_VOCABULARY_SOURCE_NAMES = {
+    "aat": "AAT", "ulan": "ULAN", "tgn": "TGN", "lcsh": "LCSH", "lcnaf": "LCNAF",
+    "iconclass": "Iconclass", "wikidata": "Wikidata", "nomenclature": "Nomenclature",
+    "viaf": "VIAF",
+}
+
+
 def search_local_vocabulary(db: Session, org_id: UUID, query: str, field_type: str, limit: int) -> list:
     """Search local vocabulary terms."""
     from sqlalchemy import or_
@@ -514,16 +558,19 @@ def search_local_vocabulary(db: Session, org_id: UUID, query: str, field_type: s
     if field_type == "creator":
         return search_local_person_authorities(db, org_id, query, limit)
 
+    # The org's own ("local") terms are offered alongside cached authority
+    # terms: with strict vocabulary validation they are the only typed-in
+    # values a field accepts, so they must be findable here.
     vocab_map = {
-        "material": "aat",
-        "technique": "aat",
-        "place": "tgn",
-        "subject": "aat",
-        "classification": "aat",
+        "material": ("aat", "local"),
+        "technique": ("aat", "local"),
+        "place": ("tgn", "local"),
+        "subject": ("aat", "lcsh", "iconclass", "local"),
+        "classification": ("aat", "local"),
     }
 
-    vocab = vocab_map.get(field_type)
-    if not vocab:
+    vocabs = vocab_map.get(field_type)
+    if not vocabs:
         return []
 
     terms = db.query(VocabularyTerm).filter(
@@ -531,7 +578,7 @@ def search_local_vocabulary(db: Session, org_id: UUID, query: str, field_type: s
             VocabularyTerm.organization_id == org_id,
             VocabularyTerm.organization_id.is_(None),
         ),
-        VocabularyTerm.vocabulary == vocab,
+        VocabularyTerm.vocabulary.in_(vocabs),
         VocabularyTerm.preferred_term.ilike(f"%{escape_ilike(query)}%", escape="\\"),
         VocabularyTerm.status == "active",
     ).order_by(
@@ -544,7 +591,7 @@ def search_local_vocabulary(db: Session, org_id: UUID, query: str, field_type: s
         if term.external_uri:
             ref = {
                 "uri": term.external_uri,
-                "source": term.vocabulary.upper(),
+                "source": _VOCABULARY_SOURCE_NAMES.get(term.vocabulary, term.vocabulary.upper()),
                 "label": term.preferred_term,
             }
 
@@ -699,7 +746,7 @@ def search_autocomplete(
         "sources_for_field": FIELD_TYPE_SOURCES.get(field_type, []),
         "query_length": len(query),
         "local_count": len([s for s in all_suggestions if s.get("source") in ("recent", "organization", "vocabulary")]),
-        "external_count": len([s for s in all_suggestions if s.get("source") in ("getty", "wikidata")]),
+        "external_count": len([s for s in all_suggestions if s.get("source") in ("getty", "wikidata", "loc", "iconclass", "nomenclature")]),
     }
 
     return {
@@ -712,7 +759,60 @@ def search_autocomplete(
     }
 
 
-@router.get("/api/autocomplete/recent", response_model=list[AutocompleteSuggestionOut], summary="Get recent")
+@router.get("/api/autocomplete/lcsh", response_model=AutocompleteSearchResponse, summary="Search Library of Congress Subject Headings")
+def search_lcsh_headings(
+    q: str = Query("", max_length=200),
+    limit: int = Query(10, ge=1, le=50),
+    auth: AuthContext = Depends(require_auth),
+):
+    """
+    Keyword search of Library of Congress Subject Headings (id.loc.gov).
+
+    Suggestions carry the LCSH URI as their reference, in the same shape as
+    POST /api/autocomplete/search, so a chosen heading is stored as the
+    value's authority link. Results are cached for 15 minutes. When
+    id.loc.gov is unreachable the response is empty with a warning rather
+    than an error, so typing is never blocked.
+    """
+    from app.services.external_lookups import LCSHLookupError, lookup_lcsh
+
+    start_time = time.time()
+    query = q.strip()
+    if len(query) < 2:
+        raise HTTPException(status_code=400, detail={
+            "code": "QUERY_TOO_SHORT",
+            "message": "Query must be at least 2 characters",
+        })
+
+    warnings = None
+    cache_key = f"lcsh:{query.lower()}:{limit}"
+    suggestions = _get_cached(cache_key)
+    if suggestions is None:
+        try:
+            suggestions = [_lcsh_suggestion(h, query) for h in lookup_lcsh(query, limit=limit)]
+            _set_cached(cache_key, suggestions)
+        except LCSHLookupError:
+            suggestions = []
+            warnings = ["Library of Congress Subject Headings is unavailable right now"]
+
+    return {
+        "query": query,
+        "suggestions": suggestions[:limit],
+        "external_searched": warnings is None,
+        "warnings": warnings,
+        "search_time_ms": int((time.time() - start_time) * 1000),
+        "debug": {
+            "field_type": "subject",
+            "sources_requested": ["external"],
+            "sources_for_field": ["LCSH"],
+            "query_length": len(query),
+            "local_count": 0,
+            "external_count": len(suggestions),
+        },
+    }
+
+
+@router.get("/api/autocomplete/recent",response_model=list[AutocompleteSuggestionOut], summary="Get recent")
 def get_recent(
     field_type: str = Query(...),
     limit: int = Query(5, ge=1, le=20),

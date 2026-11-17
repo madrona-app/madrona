@@ -25,6 +25,8 @@ import {
 } from '../../lib/api/content';
 import type { ContentCategory } from '../../types/content';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
+import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
 
 // =============================================================================
 // Helpers
@@ -190,6 +192,22 @@ export default function CategoriesPage() {
 
   const isMutating = createMutation.isPending || updateMutation.isPending;
 
+
+  const { modalRef: editModalRef, titleId: editModalTitleId } = useAccessibleModal({
+    isOpen: isModalOpen,
+    onClose: closeModal,
+    titlePrefix: 'category-edit',
+  });
+  const {
+    modalRef: deleteModalRef,
+    titleId: deleteModalTitleId,
+    descriptionId: deleteModalDescId,
+  } = useAccessibleModal({
+    isOpen: !!deleteTarget,
+    onClose: () => setDeleteTarget(null),
+    titlePrefix: 'category-delete',
+  });
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
@@ -267,6 +285,12 @@ export default function CategoriesPage() {
               </span>
 
               <div className="shrink-0 flex items-center gap-1">
+                <RecordHistoryButton
+                  organizationId={orgId || ''}
+                  entityType="content_category"
+                  entityId={cat.category_id}
+                  recordName={cat.name}
+                />
                 <button
                   onClick={() => openEdit(cat)}
                   className="p-1.5 text-archive hover:text-ink rounded transition-colors"
@@ -292,17 +316,23 @@ export default function CategoriesPage() {
       {/* ================================================================= */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40">
-          <div className="bg-parchment rounded-lg shadow-xl w-full max-w-md mx-4">
+          <div
+            ref={editModalRef}
+            {...getModalAriaProps(editModalTitleId)}
+            className="bg-parchment rounded-lg shadow-xl w-full max-w-md mx-4"
+          >
             {/* Modal header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-lichen">
-              <h2 className="text-lg font-semibold text-ink">
+              <h2 id={editModalTitleId} className="text-lg font-semibold text-ink">
                 {editingId ? 'Edit Category' : 'Add Category'}
               </h2>
               <button
+                type="button"
                 onClick={closeModal}
+                aria-label="Close"
                 className="p-1 text-archive hover:text-ink rounded transition-colors"
               >
-                <X size={18} />
+                <X size={18} aria-hidden="true" />
               </button>
             </div>
 
@@ -323,7 +353,6 @@ export default function CategoriesPage() {
                   onChange={(e) => handleNameChange(e.target.value)}
                   placeholder="e.g. Exhibitions"
                   className="w-full border border-lichen rounded-lg px-3 py-2 text-sm text-ink placeholder:text-archive/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
-                  autoFocus
                 />
               </div>
 
@@ -426,12 +455,17 @@ export default function CategoriesPage() {
       {/* ================================================================= */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40">
-          <div className="bg-parchment rounded-lg shadow-xl w-full max-w-sm mx-4">
+          <div
+            ref={deleteModalRef}
+            {...getModalAriaProps(deleteModalTitleId, deleteModalDescId)}
+            role="alertdialog"
+            className="bg-parchment rounded-lg shadow-xl w-full max-w-sm mx-4"
+          >
             <div className="px-5 py-4">
-              <h2 className="text-lg font-semibold text-ink mb-2">
+              <h2 id={deleteModalTitleId} className="text-lg font-semibold text-ink mb-2">
                 Delete Category
               </h2>
-              <p className="text-sm text-ink">
+              <p id={deleteModalDescId} className="text-sm text-ink">
                 Are you sure you want to delete{' '}
                 <span className="font-medium">{deleteTarget.name}</span>? Posts
                 assigned to this category will be unlinked.
@@ -456,7 +490,7 @@ export default function CategoriesPage() {
                 className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-semantic-error text-parchment rounded-lg hover:bg-semantic-error/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {deleteMutation.isPending && (
-                  <Loader2 size={14} className="animate-spin" />
+                  <Loader2 size={14} className="animate-spin" aria-hidden="true" />
                 )}
                 Delete
               </button>

@@ -107,19 +107,87 @@ class DiscoverMeasurementOut(BaseModel):
     part: str | None = None
 
 
+class DiscoverCaptionTrackOut(BaseModel):
+    """A WebVTT caption track, served same-origin by the Discover API."""
+    url: str
+    label: str
+    srclang: str
+    kind: str = "captions"
+    default: bool | None = None
+
+
+class DiscoverTextAlternativeOut(BaseModel):
+    """A plain-text equivalent (transcript or OCR text) of a media file."""
+    url: str
+    label: str
+    kind: str
+    file_size: int | None = None
+
+
+class DiscoverDownloadOut(BaseModel):
+    """A download the file's public download level allows.
+
+    ``url`` is the Discover download endpoint, which re-checks the level.
+    """
+    variant: str
+    url: str
+    label: str
+    format: str | None = None
+    mime_type: str | None = None
+    file_size: int | None = None
+    width: int | None = None
+    height: int | None = None
+
+
 class DiscoverMediaOut(BaseModel):
-    """Media item in object detail."""
+    """Media item in object detail.
+
+    ``url`` is what the page displays or plays: an image rendition, or an
+    audio/video/PDF access copy. The original is served only when the file's
+    public download level is 'originals' (``playback_source`` says which).
+    ``url`` is None when neither may be served; ``playback_status`` is then
+    'preparing' (an access copy is being made), 'unavailable', or, for a
+    non-PDF document, 'text_only' (its text at ``text_url`` is the access copy).
+    """
     media_id: str
     url: str | None = None
     srcset: Any | None = None
     media_type: str | None = None
     mime_type: str | None = None
+    name: str | None = None
+    description: str | None = None
     width: int | None = None
     height: int | None = None
+    duration_seconds: int | None = None
+    page_count: int | None = None
+    file_size: int | None = None
     alt_text: str | None = None
     credit: str | None = None
+    preferred_citation: str | None = None
     is_primary: bool | None = None
     caption: str | None = None
+    playback_mime_type: str | None = None
+    playback_source: str | None = None
+    playback_status: str | None = None
+    poster_url: str | None = None
+    captions: list[DiscoverCaptionTrackOut] = []
+    transcript: str | None = None
+    transcript_machine_generated: bool = False
+    text_alternatives: list[DiscoverTextAlternativeOut] = []
+    text_url: str | None = None
+    downloads: list[DiscoverDownloadOut] = []
+
+
+class DiscoverDocumentTextPageOut(BaseModel):
+    """One page of a document's text (``page`` None for non-paged documents)."""
+    page: int | None = None
+    text: str
+
+
+class DiscoverDocumentTextOut(BaseModel):
+    """The text of a public document, for the record page's text view."""
+    pages: list[DiscoverDocumentTextPageOut]
+    truncated: bool = False
 
 
 class DiscoverObjectDetailOut(BaseModel):
@@ -129,8 +197,11 @@ class DiscoverObjectDetailOut(BaseModel):
     canonical_url: str | None = None
     title: str | None = None
     titles: list[DiscoverTitleOut] | None = None
+    object_name: str | None = None
     brief_description: str | None = None
     full_description: str | None = None
+    physical_description: str | None = None
+    subjects: list[str] | None = None
     object_type: str | None = None
     classification: str | None = None
     classifications: list[dict[str, Any]] | None = None
@@ -143,9 +214,12 @@ class DiscoverObjectDetailOut(BaseModel):
     techniques: Any | None = None
     measurements: list[DiscoverMeasurementOut] | None = None
     inscriptions: list[str] | None = None
+    edition: str | None = None
     style_period: str | None = None
     provenance: str | None = None
     credit_line: str | None = None
+    external_links: list[dict[str, str]] = []
+    additional_fields: list[dict[str, str]] = []
     media: list[DiscoverMediaOut] | None = None
     has_image: bool = False
 
@@ -343,6 +417,7 @@ class DiscoverExhibitionDetailOut(BaseModel):
     thumbnail_url: str | None = None
     tags: Any | None = None
     related_objects: list[DiscoverRelatedObjectOut] | None = None
+    public_object_count: int = 0
 
 
 # ---- Gallery ----

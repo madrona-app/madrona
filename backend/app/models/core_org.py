@@ -75,6 +75,29 @@ class Organization(Base):
         comment="Per-procedure enforcement toggles. Key = procedure_type, value = boolean."
     )
 
+    # Extra required fields an org admin adds on top of a procedure's fixed
+    # baseline. Shape: {"loan_out": ["venue_name", ...], ...}
+    # Enforced with the baseline (see services/procedure_required_fields.py).
+    procedure_required_fields: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONType,
+        nullable=True,
+        default=dict,
+        server_default="{}",
+        comment="Org-added required fields per procedure. Key = procedure_type, value = list of field names."
+    )
+
+    # Strict vocabulary validation — per object field.
+    # Shape: {"materials": true, "subjects": false, ...}
+    # Missing key = lenient (default), so migrated free-text data is never blocked.
+    # Field keys are defined in app/services/vocabulary_validation.py.
+    vocabulary_strict_fields: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONType,
+        nullable=True,
+        default=dict,
+        server_default="{}",
+        comment="Per-field strict vocabulary validation toggles. Key = object field, value = boolean."
+    )
+
     # Media-rights download enforcement.
     # When False (default): the /media/{id}/download endpoint serves any media
     # the user can MEDIA_VIEW, no rights check, no unpublished-perm check,
@@ -89,6 +112,14 @@ class Organization(Base):
     # would rather not have a permission-swapping affordance available in
     # production can turn it off here.
     role_testing_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+
+    # Keep deaccessioned objects out of general search: staff search and
+    # object lists leave them out unless asked (include_deaccessioned or a
+    # status filter), and the public portal never shows them. On by default.
+    # See app/services/deaccession_visibility.py.
+    hide_deaccessioned_in_search: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
     )
 
@@ -108,6 +139,18 @@ class Organization(Base):
         default=dict,
         server_default="{}",
         comment="Per-org media AI settings. Keys: visual_search_threshold (0.0-1.0)."
+    )
+
+    # Which PDF report exports are offered (see services/report_formats.py).
+    # 'all' (default) keeps existing behaviour; 'tagged_only' hides PDFs that
+    # are not tagged for access technology; 'none' offers accessible formats
+    # only (HTML, Word, plain text, CSV, Excel).
+    report_pdf_mode: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="all",
+        server_default="all",
+        comment="PDF report exports offered: all | tagged_only | none.",
     )
 
     # Storage configuration — 10 TB (10,240 GB) unified quota covers S3 media,
@@ -230,6 +273,13 @@ class Organization(Base):
     )
     storage_config: Mapped["OrganizationStorageConfig | None"] = relationship(
         back_populates="organization", uselist=False, cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "report_pdf_mode IN ('all', 'tagged_only', 'none')",
+            name="check_org_report_pdf_mode",
+        ),
     )
 
 

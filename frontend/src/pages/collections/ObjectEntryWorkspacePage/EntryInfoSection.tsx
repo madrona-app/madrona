@@ -47,6 +47,7 @@ export function EntryInfoSection({
     >
       <div className="grid grid-cols-2 gap-6">
         <EditableField
+          name="entry_date"
           value={formData.entry_date || ''}
           label="Entry Date"
           isEditing={isEditing}
@@ -55,6 +56,7 @@ export function EntryInfoSection({
           required
         />
         <EditableSelect
+          name="entry_reason"
           value={formData.reason || ''}
           label="Reason for Entry"
           isEditing={isEditing}
@@ -63,6 +65,7 @@ export function EntryInfoSection({
           required
         />
         <EditableField
+          name="receipt_reference"
           value={formData.receipt_reference || ''}
           label="Receipt Reference"
           isEditing={isEditing}
@@ -70,6 +73,7 @@ export function EntryInfoSection({
           placeholder="Receipt or reference number"
         />
         <EditableSelect
+          name="entry_method"
           value={(formData.entry_method as string) || ''}
           label="Entry Method"
           isEditing={isEditing}

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useId, useState, useMemo } from 'react';
 import Checkbox from '../../components/Checkbox';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -6,6 +6,8 @@ import { Layers, Plus, Trash2, Star, MoreHorizontal, Lock } from 'lucide-react';
 import { getDerivativeSizes, createDerivativeSize, deleteDerivativeSize } from '../../lib/api/media-dam';
 import type { DerivativeSizeConfig } from '../../lib/api/media-dam';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { useActionMenu } from '../../components/dam/useActionMenu';
+import { handleTabListKeyDown } from '../../components/dam/tabListKeyboard';
 
 const FORMAT_OPTIONS = [
   { value: 'jpeg', label: 'JPEG' },
@@ -31,6 +33,7 @@ const MEDIA_TYPE_LABELS: Record<string, string> = {
 
 function CreateDerivativeSizeForm({ orgId, onClose }: { orgId: string; onClose: () => void }) {
   const queryClient = useQueryClient();
+  const fid = useId();
   const [form, setForm] = useState({
     name: '',
     label: '',
@@ -56,8 +59,9 @@ function CreateDerivativeSizeForm({ orgId, onClose }: { orgId: string; onClose: 
       <h3 className="text-lg font-semibold mb-4">New Derivative Size</h3>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-medium text-archive mb-1">Name (internal)</label>
+          <label htmlFor={`${fid}-name`} className="block text-xs font-medium text-archive mb-1">Name (internal)</label>
           <input
+            id={`${fid}-name`}
             type="text"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -66,8 +70,9 @@ function CreateDerivativeSizeForm({ orgId, onClose }: { orgId: string; onClose: 
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-archive mb-1">Label (display)</label>
+          <label htmlFor={`${fid}-label`} className="block text-xs font-medium text-archive mb-1">Label (display)</label>
           <input
+            id={`${fid}-label`}
             type="text"
             value={form.label}
             onChange={(e) => setForm({ ...form, label: e.target.value })}
@@ -76,8 +81,9 @@ function CreateDerivativeSizeForm({ orgId, onClose }: { orgId: string; onClose: 
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-archive mb-1">Media Type</label>
+          <label htmlFor={`${fid}-media-type`} className="block text-xs font-medium text-archive mb-1">Media Type</label>
           <select
+            id={`${fid}-media-type`}
             value={form.media_type}
             onChange={(e) => setForm({ ...form, media_type: e.target.value })}
             className="input w-full"
@@ -88,8 +94,9 @@ function CreateDerivativeSizeForm({ orgId, onClose }: { orgId: string; onClose: 
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-archive mb-1">Format</label>
+          <label htmlFor={`${fid}-format`} className="block text-xs font-medium text-archive mb-1">Format</label>
           <select
+            id={`${fid}-format`}
             value={form.format}
             onChange={(e) => setForm({ ...form, format: e.target.value })}
             className="input w-full"
@@ -100,8 +107,9 @@ function CreateDerivativeSizeForm({ orgId, onClose }: { orgId: string; onClose: 
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-archive mb-1">Max Width (px)</label>
+          <label htmlFor={`${fid}-max-width`} className="block text-xs font-medium text-archive mb-1">Max Width (px)</label>
           <input
+            id={`${fid}-max-width`}
             type="number"
             min={1}
             value={form.max_width}
@@ -110,8 +118,9 @@ function CreateDerivativeSizeForm({ orgId, onClose }: { orgId: string; onClose: 
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-archive mb-1">Max Height (px)</label>
+          <label htmlFor={`${fid}-max-height`} className="block text-xs font-medium text-archive mb-1">Max Height (px)</label>
           <input
+            id={`${fid}-max-height`}
             type="number"
             min={1}
             value={form.max_height}
@@ -120,8 +129,9 @@ function CreateDerivativeSizeForm({ orgId, onClose }: { orgId: string; onClose: 
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-archive mb-1">Quality ({form.quality}%)</label>
+          <label htmlFor={`${fid}-quality`} className="block text-xs font-medium text-archive mb-1">Quality ({form.quality}%)</label>
           <input
+            id={`${fid}-quality`}
             type="range"
             min={1}
             max={100}
@@ -131,8 +141,9 @@ function CreateDerivativeSizeForm({ orgId, onClose }: { orgId: string; onClose: 
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-archive mb-1">Sort Order</label>
+          <label htmlFor={`${fid}-sort-order`} className="block text-xs font-medium text-archive mb-1">Sort Order</label>
           <input
+            id={`${fid}-sort-order`}
             type="number"
             min={0}
             value={form.sort_order}
@@ -141,8 +152,9 @@ function CreateDerivativeSizeForm({ orgId, onClose }: { orgId: string; onClose: 
           />
         </div>
         <div className="flex items-end">
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label htmlFor={`${fid}-is-default`} className="flex items-center gap-2 cursor-pointer">
             <Checkbox
+              id={`${fid}-is-default`}
               checked={form.is_default}
               onChange={(e) => setForm({ ...form, is_default: e.target.checked })}
             />
@@ -177,6 +189,7 @@ function DerivativeCard({
   onDelete: (c: DerivativeSizeConfig) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const actionMenu = useActionMenu(menuOpen, () => setMenuOpen(false));
   const isSystem = config.is_system;
 
   return (
@@ -190,10 +203,10 @@ function DerivativeCard({
             <div className="flex items-center gap-2">
               <h3 className="font-medium">{config.label}</h3>
               {config.is_default && (
-                <Star className="h-4 w-4 text-copper fill-copper" />
+                <><Star className="h-4 w-4 text-copper fill-copper" aria-hidden="true" /><span className="sr-only">Default size</span></>
               )}
               {isSystem && (
-                <span title="System default"><Lock className="h-3.5 w-3.5 text-archive" /></span>
+                <span title="System default"><Lock className="h-3.5 w-3.5 text-archive" aria-hidden="true" /><span className="sr-only">System default</span></span>
               )}
             </div>
             <p className="text-sm text-archive font-mono">{config.name}</p>
@@ -202,6 +215,11 @@ function DerivativeCard({
         {!isSystem && (
           <div className="relative">
             <button
+              ref={actionMenu.triggerRef}
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              aria-label={`Actions for ${config.label}`}
               onClick={() => setMenuOpen(!menuOpen)}
               className="p-1 hover:bg-stone/30 rounded"
             >
@@ -209,9 +227,18 @@ function DerivativeCard({
             </button>
             {menuOpen && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                <div className="absolute right-0 top-8 z-20 bg-parchment border rounded-lg shadow-lg py-1 w-40">
+                <div aria-hidden="true" className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+                <div
+                  ref={actionMenu.menuRef}
+                  role="menu"
+                  tabIndex={-1}
+                  aria-label={`Actions for ${config.label}`}
+                  onKeyDown={actionMenu.onMenuKeyDown}
+                  className="absolute right-0 top-8 z-20 bg-parchment border rounded-lg shadow-lg py-1 w-40"
+                >
                   <button
+                    type="button"
+                    role="menuitem"
                     onClick={() => { onDelete(config); setMenuOpen(false); }}
                     className="w-full px-3 py-2 text-left text-sm hover:bg-stone/30 flex items-center gap-2 text-semantic-error"
                   >
@@ -255,6 +282,7 @@ export default function MediaDerivativeSettingsPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [configToDelete, setConfigToDelete] = useState<DerivativeSizeConfig | null>(null);
   const [activeTab, setActiveTab] = useState<string | null>(null);
+  const tabsId = useId();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['derivative-sizes', orgId],
@@ -344,11 +372,18 @@ export default function MediaDerivativeSettingsPage() {
       )}
 
       {/* Media type tabs */}
-      <div className="flex gap-1 mb-6 border-b border-lichen">
+      <div role="tablist" aria-label="Media types" className="flex gap-1 mb-6 border-b border-lichen">
         {mediaTypes.map((mt) => (
           <button
             key={mt}
+            type="button"
+            role="tab"
+            id={`${tabsId}-tab-${mt}`}
+            aria-selected={visibleType === mt}
+            aria-controls={`${tabsId}-panel`}
+            tabIndex={visibleType === mt ? 0 : -1}
             onClick={() => setActiveTab(mt)}
+            onKeyDown={(e) => handleTabListKeyDown(e, mediaTypes, visibleType, setActiveTab)}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
               visibleType === mt
                 ? 'border-bark text-bark'
@@ -362,6 +397,7 @@ export default function MediaDerivativeSettingsPage() {
       </div>
 
       {/* Configs grid */}
+      <div role="tabpanel" id={`${tabsId}-panel`} aria-labelledby={`${tabsId}-tab-${visibleType}`}>
       {visibleConfigs.length === 0 ? (
         <div className="card p-12 text-center">
           <Layers className="h-12 w-12 text-archive mx-auto mb-4" />
@@ -384,6 +420,7 @@ export default function MediaDerivativeSettingsPage() {
           ))}
         </div>
       )}
+      </div>
 
       {/* Delete Confirmation */}
       <ConfirmDialog

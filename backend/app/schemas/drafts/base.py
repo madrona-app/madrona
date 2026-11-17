@@ -1,8 +1,13 @@
 """Shared draft schema primitives."""
 
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
+
+# A value key from an organization-extendable lookup category. The allowed
+# set is per organization, so it is checked against the database when a draft
+# is proposed or edited (app/services/lookup_fields.check_draft_lookup_values).
+LookupKey = Annotated[str, StringConstraints(min_length=1, max_length=100)]
 
 CitationKind = Literal["tool_result", "corpus_chunk", "entity_link"]
 

@@ -2,10 +2,12 @@
 Document Report Definitions.
 
 Registers formatted document reports for individual records.
-These produce branded PDF documents from single record data.
+These produce documents from single record data: accessible HTML, Word
+(DOCX) and branded PDF.
 """
 from app.services.report_registry import ReportDefinition, get_registry
 from app.services.report_resolvers import resolve_record
+from app.services.report_export import FORMAT_INFO
 from app.services.report_document_renderer import (
     render_object_record_sheet,
     render_object_record_sheet_html,
@@ -39,13 +41,18 @@ def _make_document_renderer(render_fn):
     return renderer
 
 
+# Accessible formats first: the order is the order the export menu offers them.
+DOCUMENT_FORMATS = ["html", "docx", "txt", "pdf"]
+
+
 def _make_html_renderer(render_fn):
-    """Wrapper for HTML-based renderers that support pdf and docx."""
+    """Wrapper for template-based record renderers (HTML, DOCX, PDF)."""
     def renderer(data, export_format, columns=None, report_name="Report", metadata=None, **kwargs):
+        if export_format not in FORMAT_INFO:
+            raise ValueError(f"Unsupported export format: {export_format}")
         content = render_fn(data, metadata or {}, export_format=export_format)
-        if export_format == "docx":
-            return content, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx"
-        return content, "application/pdf", "pdf"
+        extension, content_type = FORMAT_INFO[export_format]
+        return content, content_type, extension
     return renderer
 
 
@@ -60,7 +67,8 @@ registry.register(ReportDefinition(
     style="document",
     context_types=["record"],
     record_types=["collection_objects"],
-    supported_formats=["pdf", "docx"],
+    supported_formats=DOCUMENT_FORMATS,
+    pdf_tagged=True,  # WeasyPrint pdf/ua-1
     resolver=_record_resolver,
     renderer=_make_html_renderer(render_object_record_sheet_html),
     default_format="pdf",
@@ -75,7 +83,8 @@ registry.register(ReportDefinition(
     style="document",
     context_types=["record"],
     record_types=["condition_reports"],
-    supported_formats=["pdf", "docx"],
+    supported_formats=DOCUMENT_FORMATS,
+    pdf_tagged=True,  # WeasyPrint pdf/ua-1
     resolver=_record_resolver,
     renderer=_make_html_renderer(render_condition_report_html),
     default_format="pdf",
@@ -90,7 +99,8 @@ registry.register(ReportDefinition(
     style="document",
     context_types=["record"],
     record_types=["loans_in"],
-    supported_formats=["pdf", "docx"],
+    supported_formats=DOCUMENT_FORMATS,
+    pdf_tagged=True,  # WeasyPrint pdf/ua-1
     resolver=_record_resolver,
     renderer=_make_html_renderer(render_loan_agreement_html),
     default_format="pdf",
@@ -105,7 +115,8 @@ registry.register(ReportDefinition(
     style="document",
     context_types=["record"],
     record_types=["loans_out"],
-    supported_formats=["pdf", "docx"],
+    supported_formats=DOCUMENT_FORMATS,
+    pdf_tagged=True,  # WeasyPrint pdf/ua-1
     resolver=_record_resolver,
     renderer=_make_html_renderer(render_loan_agreement_html),
     default_format="pdf",
@@ -120,7 +131,8 @@ registry.register(ReportDefinition(
     style="document",
     context_types=["record"],
     record_types=["object_entries"],
-    supported_formats=["pdf", "docx"],
+    supported_formats=DOCUMENT_FORMATS,
+    pdf_tagged=True,  # WeasyPrint pdf/ua-1
     resolver=_record_resolver,
     renderer=_make_html_renderer(render_object_entry_report_html),
     default_format="pdf",
@@ -135,7 +147,8 @@ registry.register(ReportDefinition(
     style="document",
     context_types=["record"],
     record_types=["object_exits"],
-    supported_formats=["pdf", "docx"],
+    supported_formats=DOCUMENT_FORMATS,
+    pdf_tagged=True,  # WeasyPrint pdf/ua-1
     resolver=_record_resolver,
     renderer=_make_html_renderer(render_object_exit_report_html),
     default_format="pdf",
@@ -150,7 +163,8 @@ registry.register(ReportDefinition(
     style="document",
     context_types=["record"],
     record_types=["conservation_treatments"],
-    supported_formats=["pdf", "docx"],
+    supported_formats=DOCUMENT_FORMATS,
+    pdf_tagged=True,  # WeasyPrint pdf/ua-1
     resolver=_record_resolver,
     renderer=_make_html_renderer(render_conservation_treatment_report_html),
     default_format="pdf",
@@ -165,7 +179,8 @@ registry.register(ReportDefinition(
     style="document",
     context_types=["record"],
     record_types=["acquisitions"],
-    supported_formats=["pdf", "docx"],
+    supported_formats=DOCUMENT_FORMATS,
+    pdf_tagged=True,  # WeasyPrint pdf/ua-1
     resolver=_record_resolver,
     renderer=_make_html_renderer(render_acquisition_report_html),
     default_format="pdf",

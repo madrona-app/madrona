@@ -6,7 +6,6 @@ import {
   Plus,
   ChevronLeft,
   Search,
-  MoreVertical,
   Copy,
   Trash2,
   CheckCircle,
@@ -17,6 +16,8 @@ import { usePermissions } from '../../hooks/usePermissions';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { LabelTemplateEditor } from '../../components/exhibit/LabelTemplateEditor';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
+import { RowActionMenu } from '../../components/exhibit/RowActionMenu';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 
 const LABEL_TYPE_LABELS: Record<string, string> = {
   tombstone: 'Tombstone',
@@ -39,7 +40,6 @@ export default function LabelTemplatesPage() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [labelTypeFilter, setLabelTypeFilter] = useState<string>('');
-  const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [showEditor, setShowEditor] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<LabelTemplate | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<LabelTemplate | null>(null);
@@ -76,19 +76,16 @@ export default function LabelTemplatesPage() {
   const handleEdit = (template: LabelTemplate) => {
     setEditingTemplate(template);
     setShowEditor(true);
-    setMenuOpen(null);
   };
 
   const handleDelete = (template: LabelTemplate) => {
     setShowDeleteConfirm(template);
-    setMenuOpen(null);
   };
 
   const handleDuplicate = async (template: LabelTemplate) => {
     // For now, open editor with template data but no ID (create new)
     setEditingTemplate({ ...template, template_id: '', name: `${template.name} (Copy)` } as LabelTemplate);
     setShowEditor(true);
-    setMenuOpen(null);
   };
 
   if (isLoading) {
@@ -226,50 +223,30 @@ export default function LabelTemplatesPage() {
                   </div>
                 </div>
 
+                <div className="flex items-center gap-1">
+                <RecordHistoryButton
+                  organizationId={orgId || ''}
+                  entityType="label_template"
+                  entityId={template.template_id}
+                  recordName={template.name}
+                />
                 {canEdit && (
-                  <div className="relative">
-                    <button
-                      onClick={() => setMenuOpen(menuOpen === template.template_id ? null : template.template_id)}
-                      className="p-1 text-archive hover:text-ink rounded"
-                    >
-                      <MoreVertical size={16} />
-                    </button>
-
-                    {menuOpen === template.template_id && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-10"
-                          onClick={() => setMenuOpen(null)}
-                        />
-                        <div className="absolute right-0 top-8 w-40 bg-parchment border border-lichen rounded-lg shadow-lg z-20">
-                          <button
-                            onClick={() => handleEdit(template)}
-                            className="w-full px-3 py-2 text-left text-sm hover:bg-stone/50 flex items-center gap-2"
-                          >
-                            <FileText size={14} />
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDuplicate(template)}
-                            className="w-full px-3 py-2 text-left text-sm hover:bg-stone/50 flex items-center gap-2"
-                          >
-                            <Copy size={14} />
-                            Duplicate
-                          </button>
-                          {!(template as LabelTemplate & { is_system?: boolean }).is_system && (
-                            <button
-                              onClick={() => handleDelete(template)}
-                              className="w-full px-3 py-2 text-left text-sm hover:bg-stone/50 flex items-center gap-2 text-semantic-error"
-                            >
-                              <Trash2 size={14} />
-                              Delete
-                            </button>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  <RowActionMenu
+                    label={`Actions for ${template.name}`}
+                    items={[
+                      { label: 'Edit', icon: <FileText size={14} aria-hidden="true" />, onSelect: () => handleEdit(template) },
+                      { label: 'Duplicate', icon: <Copy size={14} aria-hidden="true" />, onSelect: () => handleDuplicate(template) },
+                      {
+                        label: 'Delete',
+                        icon: <Trash2 size={14} aria-hidden="true" />,
+                        onSelect: () => handleDelete(template),
+                        destructive: true,
+                        hidden: !!(template as LabelTemplate & { is_system?: boolean }).is_system,
+                      },
+                    ]}
+                  />
                 )}
+                </div>
               </div>
 
               {/* Template preview */}

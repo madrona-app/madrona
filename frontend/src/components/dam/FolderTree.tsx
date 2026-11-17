@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { listMediaFolders } from '../../lib/api';
 import type { MediaFolder } from '../../lib/schemas';
+import { RecordHistoryButton } from '../audit/RecordHistoryButton';
 
 // Helper to get all ancestor folder IDs for a given folder
 function getAncestorIds(folderId: string, folders: MediaFolder[]): string[] {
@@ -38,6 +39,7 @@ interface FolderTreeProps {
 }
 
 interface FolderNodeProps {
+  organizationId: string;
   folder: MediaFolder;
   folders: MediaFolder[];
   selectedFolderId: string | null;
@@ -51,6 +53,7 @@ interface FolderNodeProps {
 }
 
 function FolderNode({
+  organizationId,
   folder,
   folders,
   selectedFolderId,
@@ -89,9 +92,9 @@ function FolderNode({
   };
 
   return (
-    <div>
+    <li>
       <div
-        className={`flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer group transition-colors ${
+        className={`relative flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer group transition-colors ${
           isDragOver
             ? 'bg-forest/20 ring-2 ring-forest ring-inset'
             : isSelected
@@ -101,20 +104,15 @@ function FolderNode({
                 : 'hover:bg-stone/30 text-ink'
         }`}
         style={{ paddingLeft: `${(folder.depth * 16) + 8}px` }}
-        onClick={() => onSelectFolder(folder.folder_id)}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          onContextMenu?.(folder, e);
-        }}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
       >
         {/* Expand/collapse toggle */}
         <button
-          className="p-0.5 hover:bg-stone/30 rounded"
+          type="button"
+          className="relative z-10 p-0.5 hover:bg-stone/30 rounded"
           aria-label={hasChildren ? (isExpanded ? `Collapse ${folder.name}` : `Expand ${folder.name}`) : undefined}
           aria-expanded={hasChildren ? isExpanded : undefined}
+          aria-hidden={hasChildren ? undefined : true}
+          tabIndex={hasChildren ? undefined : -1}
           onClick={(e) => {
             e.stopPropagation();
             if (hasChildren) {
@@ -124,21 +122,35 @@ function FolderNode({
         >
           {hasChildren ? (
             isExpanded ? (
-              <ChevronDown size={14} className="text-archive" />
+              <ChevronDown size={14} className="text-archive" aria-hidden="true" />
             ) : (
-              <ChevronRight size={14} className="text-archive" />
+              <ChevronRight size={14} className="text-archive" aria-hidden="true" />
             )
           ) : (
             <span className="w-3.5" />
           )}
         </button>
 
+        {/* Select folder: its ::after stretches over the whole row so a click anywhere selects */}
+        <button
+          type="button"
+          aria-current={isSelected ? 'true' : undefined}
+          onClick={() => onSelectFolder(folder.folder_id)}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            onContextMenu?.(folder, e);
+          }}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className="flex flex-1 min-w-0 items-center gap-1 text-left bg-transparent p-0 border-0 cursor-pointer after:absolute after:inset-0 after:rounded-md focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-bark/30 focus-visible:after:ring-offset-2"
+        >
         {/* Folder icon */}
-        <div className="relative">
+        <span className="relative">
           {isExpanded && hasChildren ? (
-            <FolderOpen size={16} className={isDragOver ? 'text-forest' : isSelected ? 'text-forest' : 'text-archive'} />
+            <FolderOpen size={16} className={isDragOver ? 'text-forest' : isSelected ? 'text-forest' : 'text-archive'} aria-hidden="true" />
           ) : (
-            <Folder size={16} className={isDragOver ? 'text-forest' : isSelected ? 'text-forest' : 'text-archive'} />
+            <Folder size={16} className={isDragOver ? 'text-forest' : isSelected ? 'text-forest' : 'text-archive'} aria-hidden="true" />
           )}
           {/* Drop indicator badge */}
           {isDragOver && draggingCount && draggingCount > 0 && (
@@ -146,37 +158,56 @@ function FolderNode({
               {draggingCount}
             </span>
           )}
-        </div>
+        </span>
 
         {/* Folder name */}
         <span className="flex-1 text-sm truncate">{folder.name}</span>
 
         {/* Media count */}
         {(folder.media_count ?? 0) > 0 && (
-          <span className="text-xs text-archive">{folder.media_count}</span>
+          <span className="text-xs text-archive">
+            <span className="sr-only">, </span>
+            {folder.media_count}
+            <span className="sr-only"> items</span>
+          </span>
+        )}
+        </button>
+
+        {/* History of the selected folder (one control, not one per row) */}
+        {isSelected && (
+          <RecordHistoryButton
+            organizationId={organizationId}
+            entityType="media_folder"
+            entityId={folder.folder_id}
+            recordName={folder.name}
+            showLabel={false}
+            className="relative z-10"
+          />
         )}
 
         {/* Context menu trigger */}
         <button
-          className="p-0.5 opacity-0 group-hover:opacity-100 hover:bg-stone/30 rounded"
+          type="button"
+          className="relative z-10 p-0.5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-stone/30 rounded"
           aria-label={`More options for ${folder.name}`}
           onClick={(e) => {
             e.stopPropagation();
             onContextMenu?.(folder, e);
           }}
         >
-          <MoreHorizontal size={14} className="text-archive" />
+          <MoreHorizontal size={14} className="text-archive" aria-hidden="true" />
         </button>
       </div>
 
       {/* Children */}
       {isExpanded && hasChildren && (
-        <div className="animate-fade-in">
+        <ul className="animate-fade-in">
           {children
             .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
             .map((child) => (
               <FolderNode
                 key={child.folder_id}
+                organizationId={organizationId}
                 folder={child}
                 folders={folders}
                 selectedFolderId={selectedFolderId}
@@ -189,9 +220,9 @@ function FolderNode({
                 draggingCount={draggingCount}
               />
             ))}
-        </div>
+        </ul>
       )}
-    </div>
+    </li>
   );
 }
 
@@ -238,8 +269,8 @@ function DroppableRow({
   };
 
   return (
-    <div
-      className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer transition-colors ${
+    <li
+      className={`relative flex items-center gap-2 px-3 py-1.5 cursor-pointer transition-colors ${
         isDragOver
           ? 'bg-forest/20 ring-2 ring-forest ring-inset'
           : isSelected
@@ -248,20 +279,26 @@ function DroppableRow({
               ? 'hover:bg-forest/10 text-ink'
               : 'hover:bg-stone/30 text-ink'
       }`}
-      onClick={onSelect}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
       title={title}
     >
-      {children}
+      <button
+        type="button"
+        aria-current={isSelected ? 'true' : undefined}
+        onClick={onSelect}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className="flex flex-1 min-w-0 items-center gap-2 text-left bg-transparent p-0 border-0 cursor-pointer after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-bark/30 focus-visible:after:ring-offset-2"
+      >
+        {children}
+      </button>
       {/* Drop indicator badge */}
       {isDragOver && draggingCount && draggingCount > 0 && (
         <span className="bg-forest text-parchment text-[10px] font-medium min-w-[14px] h-[14px] rounded-full flex items-center justify-center flex-shrink-0">
           {draggingCount}
         </span>
       )}
-    </div>
+    </li>
   );
 }
 
@@ -340,7 +377,7 @@ export function FolderTree({
   }
 
   return (
-    <div className="py-2" role="tree" aria-label="Media folders">
+    <nav className="py-2" aria-label="Media folders">
       {/* Header with add button */}
       <div className="px-3 mb-2 flex items-center justify-between">
         <span className="text-xs font-medium text-archive uppercase tracking-wider">
@@ -353,23 +390,28 @@ export function FolderTree({
             title="Create folder"
             aria-label="Create folder"
           >
-            <Plus size={14} className="text-archive" />
+            <Plus size={14} className="text-archive" aria-hidden="true" />
           </button>
         )}
       </div>
 
+      <ul>
       {/* All Media (root) */}
-      <div
-        className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer ${
-          selectedFolderId === null
-            ? 'bg-forest/10 text-forest'
-            : 'hover:bg-stone/30 text-ink'
-        }`}
-        onClick={() => onSelectFolder(null)}
-      >
-        <Folder size={16} className={selectedFolderId === null ? 'text-forest' : 'text-archive'} />
-        <span className="flex-1 text-sm">All Media</span>
-      </div>
+      <li>
+        <button
+          type="button"
+          aria-current={selectedFolderId === null ? 'true' : undefined}
+          className={`w-full text-left flex items-center gap-2 px-3 py-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 ${
+            selectedFolderId === null
+              ? 'bg-forest/10 text-forest'
+              : 'hover:bg-stone/30 text-ink'
+          }`}
+          onClick={() => onSelectFolder(null)}
+        >
+          <Folder size={16} className={selectedFolderId === null ? 'text-forest' : 'text-archive'} aria-hidden="true" />
+          <span className="flex-1 text-sm">All Media</span>
+        </button>
+      </li>
 
       {/* Unfiled - items not yet organized (droppable) */}
       <DroppableRow
@@ -381,23 +423,29 @@ export function FolderTree({
         draggingCount={draggingCount}
         title="Items not yet organized"
       >
-        <FileQuestion size={16} className={selectedFolderId === 'unfiled' ? 'text-forest' : 'text-archive'} />
-        <div className="flex-1 min-w-0">
+        <FileQuestion size={16} className={selectedFolderId === 'unfiled' ? 'text-forest' : 'text-archive'} aria-hidden="true" />
+        <span className="flex-1 min-w-0">
           <span className="text-sm block">Unfiled</span>
           <span className="text-xs text-archive block">Items not yet organized</span>
-        </div>
+        </span>
         {unfiledCount > 0 && (
-          <span className="text-xs text-archive flex-shrink-0">{unfiledCount}</span>
+          <span className="text-xs text-archive flex-shrink-0">
+            <span className="sr-only">, </span>
+            {unfiledCount}
+            <span className="sr-only"> items</span>
+          </span>
         )}
       </DroppableRow>
+      </ul>
 
       {/* Folder tree */}
-      <div className="mt-1">
+      <ul className="mt-1">
         {rootFolders
           .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
           .map((folder) => (
             <FolderNode
               key={folder.folder_id}
+              organizationId={organizationId}
               folder={folder}
               folders={folders}
               selectedFolderId={selectedFolderId}
@@ -410,7 +458,7 @@ export function FolderTree({
               draggingCount={draggingCount}
             />
           ))}
-      </div>
+      </ul>
 
       {/* Empty state */}
       {rootFolders.length === 0 && (
@@ -426,6 +474,6 @@ export function FolderTree({
           )}
         </div>
       )}
-    </div>
+    </nav>
   );
 }

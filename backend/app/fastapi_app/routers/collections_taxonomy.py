@@ -13,6 +13,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, object_session
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import (
@@ -102,31 +103,44 @@ def _fetch_variants_for(instance, entity_type: str, entity_id) -> list[str] | No
 
 
 def _replace_variant_terms(db, organization_id, entity_type: str, entity_id, variants: list | None) -> None:
-    """Replace an authority's variant terms wholesale (update semantics: the
-    submitted list is the new complete set; None/[] clears them). Accepts
-    dicts keyed by "name" or "term" (matching the create payload shapes) or
-    plain strings."""
+    """Set an authority's variant terms (update semantics: the submitted list
+    is the new complete set; None/[] clears them). Accepts dicts keyed by
+    "name" or "term" (matching the create payload shapes) or plain strings.
+
+    Rows are reconciled in place, so the authority's history records the
+    terms actually added, removed or changed, and an unchanged save records
+    nothing.
+    """
     from app.models import VariantTerm
-    db.query(VariantTerm).filter(
-        VariantTerm.organization_id == organization_id,
-        VariantTerm.entity_type == entity_type,
-        VariantTerm.entity_id == entity_id,
-    ).delete()
-    for idx, vt in enumerate(variants or []):
+    from app.services.child_rows import reconcile_rows
+
+    desired = []
+    for vt in variants or []:
         if isinstance(vt, dict):
             term = vt.get("name") or vt.get("term") or ""
-            term_type = vt.get("type")
-            language = vt.get("language")
+            item = {"term": term, "term_type": vt.get("type"), "language": vt.get("language")}
         else:
-            term, term_type, language = str(vt), None, None
-        if not term:
-            continue
-        db.add(VariantTerm(
-            organization_id=organization_id,
-            entity_type=entity_type, entity_id=entity_id,
-            term=term, term_type=term_type, language=language,
-            display_order=idx,
-        ))
+            item = {"term": str(vt), "term_type": None, "language": None}
+        if item["term"]:
+            desired.append(item)
+    existing = (
+        db.query(VariantTerm)
+        .filter(
+            VariantTerm.organization_id == organization_id,
+            VariantTerm.entity_type == entity_type,
+            VariantTerm.entity_id == entity_id,
+        )
+        .order_by(VariantTerm.display_order, VariantTerm.created_at)
+        .all()
+    )
+    reconcile_rows(
+        db, existing, desired, ("term", "term_type", "language"),
+        lambda i, item: VariantTerm(
+            organization_id=organization_id, entity_type=entity_type, entity_id=entity_id,
+            display_order=i, **item,
+        ),
+        key_fields=("term",),
+    )
 
 
 # ============================================================================
@@ -265,6 +279,7 @@ def _serialize_subject_authority(
         "aat_id": sa.aat_id,
         "iconclass_id": sa.iconclass_id,
         "wikidata_id": sa.wikidata_id,
+        "lcsh_id": sa.lcsh_id,
         "broader_subject_id": str(sa.broader_subject_id) if sa.broader_subject_id else None,
         "description": sa.description,
         "notes": sa.notes,
@@ -424,7 +439,7 @@ def create_place_authority(
             ).scalar_one_or_none()
         if existing:
             return _serialize_place_authority(existing)
-        raise HTTPException(status_code=409, detail="A similar place authority may already exist")
+        raise integrity_http_error(e, "A similar place authority may already exist") from None
 
     from app.models import VariantTerm
     for idx, vn in enumerate(body.variant_names or []):
@@ -614,9 +629,9 @@ def link_object_place_authority(
     try:
         db.add(link)
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Link may already exist or invalid reference")
+        raise integrity_http_error(exc, "Link may already exist or invalid reference") from None
 
     return _serialize_object_place_authority(link)
 
@@ -753,9 +768,9 @@ def create_style_period_authority(
     try:
         db.add(spa)
         db.flush()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="A similar authority may already exist")
+        raise integrity_http_error(exc, "A similar authority may already exist") from None
 
     from app.models import VariantTerm
     for idx, vt in enumerate(body.variant_terms or []):
@@ -916,9 +931,9 @@ def link_object_style_period(
     try:
         db.add(link)
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Link may already exist or invalid reference")
+        raise integrity_http_error(exc, "Link may already exist or invalid reference") from None
 
     return _serialize_object_style_period(link)
 
@@ -1037,6 +1052,7 @@ def create_subject_authority(
         aat_id=body.aat_id,
         iconclass_id=body.iconclass_id,
         wikidata_id=body.wikidata_id,
+        lcsh_id=body.lcsh_id,
         broader_subject_id=body.broader_subject_id,
         description=body.description,
         notes=body.notes,
@@ -1048,9 +1064,9 @@ def create_subject_authority(
     try:
         db.add(sa)
         db.flush()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="A similar authority may already exist")
+        raise integrity_http_error(exc, "A similar authority may already exist") from None
 
     from app.models import VariantTerm
     for idx, vt in enumerate(body.variant_terms or []):
@@ -1211,9 +1227,9 @@ def link_object_subject(
     try:
         db.add(link)
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Link may already exist or invalid reference")
+        raise integrity_http_error(exc, "Link may already exist or invalid reference") from None
 
     return _serialize_object_subject(link)
 

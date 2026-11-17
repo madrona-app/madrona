@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -10,7 +10,6 @@ import {
   Loader2,
   Frame,
   Box,
-  MoreVertical,
   Lock,
 } from 'lucide-react';
 import {
@@ -29,6 +28,8 @@ import { usePermissions } from '../../hooks/usePermissions';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import SlideOver from '../../components/ui/SlideOver';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
+import { RowActionMenu } from '../../components/exhibit/RowActionMenu';
 
 const PROFILE_TYPES = [
   { value: 'flat', label: 'Flat' },
@@ -58,13 +59,11 @@ export default function ExhibitSettingsPage() {
   const [showFrameEditor, setShowFrameEditor] = useState(false);
   const [editingFrame, setEditingFrame] = useState<FrameStyle | null>(null);
   const [deleteFrame, setDeleteFrame] = useState<FrameStyle | null>(null);
-  const [frameMenuOpen, setFrameMenuOpen] = useState<string | null>(null);
 
   // Mount Configs state
   const [showMountEditor, setShowMountEditor] = useState(false);
   const [editingMount, setEditingMount] = useState<MountConfig | null>(null);
   const [deleteMount, setDeleteMount] = useState<MountConfig | null>(null);
-  const [mountMenuOpen, setMountMenuOpen] = useState<string | null>(null);
 
   // Fetch data
   const { data: frameData, isLoading: framesLoading } = useQuery({
@@ -125,8 +124,26 @@ export default function ExhibitSettingsPage() {
 
       {/* Tabs */}
       <div className="border-b border-lichen">
-        <nav className="flex gap-6">
+        <div
+          className="flex gap-6"
+          role="tablist"
+          aria-label="Exhibit settings"
+        >
           <button
+            type="button"
+            role="tab"
+            onKeyDown={(e) => {
+              if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+              e.preventDefault();
+              const next =
+                e.key === 'Home' ? 'frames' : e.key === 'End' ? 'mounts' : activeTab === 'frames' ? 'mounts' : 'frames';
+              setActiveTab(next);
+              document.getElementById(`exhibit-settings-tab-${next}`)?.focus();
+            }}
+            id="exhibit-settings-tab-frames"
+            aria-selected={activeTab === 'frames'}
+            aria-controls="exhibit-settings-panel-frames"
+            tabIndex={activeTab === 'frames' ? 0 : -1}
             onClick={() => setActiveTab('frames')}
             className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'frames'
@@ -134,10 +151,24 @@ export default function ExhibitSettingsPage() {
                 : 'border-transparent text-archive hover:text-ink'
             }`}
           >
-            <Frame className="w-4 h-4 inline-block mr-2" />
+            <Frame className="w-4 h-4 inline-block mr-2" aria-hidden="true" />
             Frame Styles
           </button>
           <button
+            type="button"
+            role="tab"
+            onKeyDown={(e) => {
+              if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+              e.preventDefault();
+              const next =
+                e.key === 'Home' ? 'frames' : e.key === 'End' ? 'mounts' : activeTab === 'frames' ? 'mounts' : 'frames';
+              setActiveTab(next);
+              document.getElementById(`exhibit-settings-tab-${next}`)?.focus();
+            }}
+            id="exhibit-settings-tab-mounts"
+            aria-selected={activeTab === 'mounts'}
+            aria-controls="exhibit-settings-panel-mounts"
+            tabIndex={activeTab === 'mounts' ? 0 : -1}
             onClick={() => setActiveTab('mounts')}
             className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'mounts'
@@ -145,15 +176,20 @@ export default function ExhibitSettingsPage() {
                 : 'border-transparent text-archive hover:text-ink'
             }`}
           >
-            <Box className="w-4 h-4 inline-block mr-2" />
+            <Box className="w-4 h-4 inline-block mr-2" aria-hidden="true" />
             Mount Configurations
           </button>
-        </nav>
+        </div>
       </div>
 
       {/* Frame Styles Tab */}
       {activeTab === 'frames' && (
-        <div className="space-y-4">
+        <div
+          id="exhibit-settings-panel-frames"
+          role="tabpanel"
+          aria-labelledby="exhibit-settings-tab-frames"
+          className="space-y-4"
+        >
           <div className="flex items-center justify-between">
             <p className="text-sm text-archive">
               Define frame profiles for artworks in exhibitions
@@ -179,7 +215,7 @@ export default function ExhibitSettingsPage() {
           ) : frames.length === 0 ? (
             <div className="text-center py-12 border border-dashed border-lichen rounded-lg">
               <Frame className="w-12 h-12 text-archive mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-ink mb-2">No frame styles</h3>
+              <h2 className="text-lg font-medium text-ink mb-2">No frame styles</h2>
               <p className="text-archive">Create custom frame styles for your exhibitions</p>
             </div>
           ) : (
@@ -192,7 +228,7 @@ export default function ExhibitSettingsPage() {
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="font-medium text-ink">{frame.name}</h3>
+                        <h2 className="font-medium text-ink">{frame.name}</h2>
                         {frame.is_system && (
                           <span title="System default"><Lock size={12} className="text-archive" /></span>
                         )}
@@ -202,44 +238,38 @@ export default function ExhibitSettingsPage() {
                       </p>
                     </div>
 
-                    {canEdit && !frame.is_system && (
-                      <div className="relative">
-                        <button
-                          onClick={() => setFrameMenuOpen(frameMenuOpen === frame.frame_style_id ? null : frame.frame_style_id)}
-                          className="p-1 text-archive hover:text-ink rounded"
-                        >
-                          <MoreVertical size={16} />
-                        </button>
-
-                        {frameMenuOpen === frame.frame_style_id && (
-                          <>
-                            <div className="fixed inset-0 z-10" onClick={() => setFrameMenuOpen(null)} />
-                            <div className="absolute right-0 top-8 w-32 bg-parchment border border-lichen rounded-lg shadow-lg z-20">
-                              <button
-                                onClick={() => {
-                                  setEditingFrame(frame);
-                                  setShowFrameEditor(true);
-                                  setFrameMenuOpen(null);
-                                }}
-                                className="w-full px-3 py-2 text-left text-sm hover:bg-stone/50 flex items-center gap-2"
-                              >
-                                <Edit size={14} />
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setDeleteFrame(frame);
-                                  setFrameMenuOpen(null);
-                                }}
-                                className="w-full px-3 py-2 text-left text-sm hover:bg-stone/50 flex items-center gap-2 text-semantic-error"
-                              >
-                                <Trash2 size={14} />
-                                Delete
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </div>
+                    {/* System defaults have no organization, so no history is recorded for them. */}
+                    {!frame.is_system && (
+                    <div className="flex items-center gap-1">
+                    <RecordHistoryButton
+                      organizationId={orgId || ''}
+                      entityType="frame_style"
+                      entityId={frame.frame_style_id}
+                      recordName={frame.name}
+                    />
+                    {canEdit && (
+                      <RowActionMenu
+                        label={`Actions for ${frame.name}`}
+                        widthClassName="w-32"
+                        items={[
+                          {
+                            label: 'Edit',
+                            icon: <Edit size={14} aria-hidden="true" />,
+                            onSelect: () => {
+                              setEditingFrame(frame);
+                              setShowFrameEditor(true);
+                            },
+                          },
+                          {
+                            label: 'Delete',
+                            icon: <Trash2 size={14} aria-hidden="true" />,
+                            onSelect: () => setDeleteFrame(frame),
+                            destructive: true,
+                          },
+                        ]}
+                      />
+                    )}
+                    </div>
                     )}
                   </div>
 
@@ -275,7 +305,12 @@ export default function ExhibitSettingsPage() {
 
       {/* Mount Configurations Tab */}
       {activeTab === 'mounts' && (
-        <div className="space-y-4">
+        <div
+          id="exhibit-settings-panel-mounts"
+          role="tabpanel"
+          aria-labelledby="exhibit-settings-tab-mounts"
+          className="space-y-4"
+        >
           <div className="flex items-center justify-between">
             <p className="text-sm text-archive">
               Define mount configurations for different object types
@@ -301,7 +336,7 @@ export default function ExhibitSettingsPage() {
           ) : mounts.length === 0 ? (
             <div className="text-center py-12 border border-dashed border-lichen rounded-lg">
               <Box className="w-12 h-12 text-archive mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-ink mb-2">No mount configurations</h3>
+              <h2 className="text-lg font-medium text-ink mb-2">No mount configurations</h2>
               <p className="text-archive">Create custom mount configurations for exhibitions</p>
             </div>
           ) : (
@@ -314,7 +349,7 @@ export default function ExhibitSettingsPage() {
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="font-medium text-ink">{mount.name}</h3>
+                        <h2 className="font-medium text-ink">{mount.name}</h2>
                         {mount.is_system && (
                           <span title="System default"><Lock size={12} className="text-archive" /></span>
                         )}
@@ -324,44 +359,38 @@ export default function ExhibitSettingsPage() {
                       </p>
                     </div>
 
-                    {canEdit && !mount.is_system && (
-                      <div className="relative">
-                        <button
-                          onClick={() => setMountMenuOpen(mountMenuOpen === mount.mount_config_id ? null : mount.mount_config_id)}
-                          className="p-1 text-archive hover:text-ink rounded"
-                        >
-                          <MoreVertical size={16} />
-                        </button>
-
-                        {mountMenuOpen === mount.mount_config_id && (
-                          <>
-                            <div className="fixed inset-0 z-10" onClick={() => setMountMenuOpen(null)} />
-                            <div className="absolute right-0 top-8 w-32 bg-parchment border border-lichen rounded-lg shadow-lg z-20">
-                              <button
-                                onClick={() => {
-                                  setEditingMount(mount);
-                                  setShowMountEditor(true);
-                                  setMountMenuOpen(null);
-                                }}
-                                className="w-full px-3 py-2 text-left text-sm hover:bg-stone/50 flex items-center gap-2"
-                              >
-                                <Edit size={14} />
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setDeleteMount(mount);
-                                  setMountMenuOpen(null);
-                                }}
-                                className="w-full px-3 py-2 text-left text-sm hover:bg-stone/50 flex items-center gap-2 text-semantic-error"
-                              >
-                                <Trash2 size={14} />
-                                Delete
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </div>
+                    {/* System defaults have no organization, so no history is recorded for them. */}
+                    {!mount.is_system && (
+                    <div className="flex items-center gap-1">
+                    <RecordHistoryButton
+                      organizationId={orgId || ''}
+                      entityType="mount_config"
+                      entityId={mount.mount_config_id}
+                      recordName={mount.name}
+                    />
+                    {canEdit && (
+                      <RowActionMenu
+                        label={`Actions for ${mount.name}`}
+                        widthClassName="w-32"
+                        items={[
+                          {
+                            label: 'Edit',
+                            icon: <Edit size={14} aria-hidden="true" />,
+                            onSelect: () => {
+                              setEditingMount(mount);
+                              setShowMountEditor(true);
+                            },
+                          },
+                          {
+                            label: 'Delete',
+                            icon: <Trash2 size={14} aria-hidden="true" />,
+                            onSelect: () => setDeleteMount(mount),
+                            destructive: true,
+                          },
+                        ]}
+                      />
+                    )}
+                    </div>
                     )}
                   </div>
 
@@ -455,6 +484,7 @@ function FrameStyleEditor({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const fieldId = useId();
   const queryClient = useQueryClient();
   const isEditMode = !!frame;
 
@@ -549,10 +579,10 @@ function FrameStyleEditor({
         )}
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fieldId}-name`} className="block text-sm font-medium text-ink mb-1.5">
             Name <span className="text-semantic-error">*</span>
           </label>
-          <input
+          <input id={`${fieldId}-name`}
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -562,8 +592,8 @@ function FrameStyleEditor({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">Description</label>
-          <textarea
+          <label htmlFor={`${fieldId}-description`} className="block text-sm font-medium text-ink mb-1.5">Description</label>
+          <textarea id={`${fieldId}-description`}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
@@ -572,8 +602,8 @@ function FrameStyleEditor({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">Profile Type</label>
-          <select
+          <label htmlFor={`${fieldId}-profile-type`} className="block text-sm font-medium text-ink mb-1.5">Profile Type</label>
+          <select id={`${fieldId}-profile-type`}
             value={profileType}
             onChange={(e) => setProfileType(e.target.value as "flat" | "stepped" | "ornate" | "float" | "shadowbox")}
             className="w-full px-3 py-2 border border-lichen rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -586,8 +616,8 @@ function FrameStyleEditor({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">Width (cm)</label>
-            <input
+            <label htmlFor={`${fieldId}-width-cm`} className="block text-sm font-medium text-ink mb-1.5">Width (cm)</label>
+            <input id={`${fieldId}-width-cm`}
               type="number"
               value={widthCm}
               onChange={(e) => setWidthCm(e.target.value)}
@@ -597,8 +627,8 @@ function FrameStyleEditor({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">Depth (cm)</label>
-            <input
+            <label htmlFor={`${fieldId}-depth-cm`} className="block text-sm font-medium text-ink mb-1.5">Depth (cm)</label>
+            <input id={`${fieldId}-depth-cm`}
               type="number"
               value={depthCm}
               onChange={(e) => setDepthCm(e.target.value)}
@@ -611,8 +641,8 @@ function FrameStyleEditor({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">Color</label>
-            <input
+            <label htmlFor={`${fieldId}-color`} className="block text-sm font-medium text-ink mb-1.5">Color</label>
+            <input id={`${fieldId}-color`}
               type="text"
               value={color}
               onChange={(e) => setColor(e.target.value)}
@@ -621,8 +651,8 @@ function FrameStyleEditor({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">Material</label>
-            <input
+            <label htmlFor={`${fieldId}-material`} className="block text-sm font-medium text-ink mb-1.5">Material</label>
+            <input id={`${fieldId}-material`}
               type="text"
               value={material}
               onChange={(e) => setMaterial(e.target.value)}
@@ -650,6 +680,7 @@ function MountConfigEditor({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const fieldId = useId();
   const queryClient = useQueryClient();
   const isEditMode = !!mount;
 
@@ -748,10 +779,10 @@ function MountConfigEditor({
         )}
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fieldId}-name`} className="block text-sm font-medium text-ink mb-1.5">
             Name <span className="text-semantic-error">*</span>
           </label>
-          <input
+          <input id={`${fieldId}-name`}
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -761,8 +792,8 @@ function MountConfigEditor({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">Mount Type</label>
-          <select
+          <label htmlFor={`${fieldId}-mount-type`} className="block text-sm font-medium text-ink mb-1.5">Mount Type</label>
+          <select id={`${fieldId}-mount-type`}
             value={mountType}
             onChange={(e) => setMountType(e.target.value as "hanging" | "floor" | "wall" | "plinth" | "vitrine")}
             className="w-full px-3 py-2 border border-lichen rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -774,10 +805,10 @@ function MountConfigEditor({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fieldId}-configuration-json`} className="block text-sm font-medium text-ink mb-1.5">
             Configuration (JSON)
           </label>
-          <textarea
+          <textarea id={`${fieldId}-configuration-json`}
             value={configJson}
             onChange={(e) => setConfigJson(e.target.value)}
             rows={8}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import Checkbox from '../Checkbox';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, X, Plus, Trash2 } from 'lucide-react';
@@ -41,6 +41,7 @@ export function MetadataTemplateModal({
   onClose,
 }: MetadataTemplateModalProps) {
   const queryClient = useQueryClient();
+  const fid = useId();
   const { modalRef, titleId, descriptionId } = useAccessibleModal({
     isOpen: true,
     onClose,
@@ -175,14 +176,13 @@ export function MetadataTemplateModal({
 
   return (
     <ModalPortal>
-    <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50">
+      <div aria-hidden="true" className="absolute inset-0" onClick={onClose} />
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation only: keeps dialog clicks from bubbling to React ancestors through the portal */}
       <div
         ref={modalRef}
         {...getModalAriaProps(titleId, descriptionId)}
-        className="bg-parchment rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="relative bg-parchment rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-6 py-4 border-b border-lichen flex items-center justify-between">
@@ -194,7 +194,7 @@ export function MetadataTemplateModal({
             className="p-1 hover:bg-stone rounded text-archive"
             aria-label="Close"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 
@@ -208,10 +208,11 @@ export function MetadataTemplateModal({
             <h3 className="text-sm font-semibold text-ink mb-3 uppercase tracking-wide">Basic Info</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">
+                <label htmlFor={`${fid}-name`} className="block text-sm font-medium text-ink mb-1">
                   Template Name <span className="text-semantic-error">*</span>
                 </label>
                 <input
+                  id={`${fid}-name`}
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -221,8 +222,9 @@ export function MetadataTemplateModal({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Description</label>
+                <label htmlFor={`${fid}-template-description`} className="block text-sm font-medium text-ink mb-1">Description</label>
                 <textarea
+                  id={`${fid}-template-description`}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 resize-none"
@@ -239,8 +241,9 @@ export function MetadataTemplateModal({
             <p className="text-xs text-archive mb-3">Add a prefix or suffix to existing asset titles</p>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Title Prefix</label>
+                <label htmlFor={`${fid}-title-prefix`} className="block text-sm font-medium text-ink mb-1">Title Prefix</label>
                 <input
+                  id={`${fid}-title-prefix`}
                   type="text"
                   value={titlePrefix}
                   onChange={(e) => setTitlePrefix(e.target.value)}
@@ -249,8 +252,9 @@ export function MetadataTemplateModal({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Title Suffix</label>
+                <label htmlFor={`${fid}-title-suffix`} className="block text-sm font-medium text-ink mb-1">Title Suffix</label>
                 <input
+                  id={`${fid}-title-suffix`}
                   type="text"
                   value={titleSuffix}
                   onChange={(e) => setTitleSuffix(e.target.value)}
@@ -266,8 +270,9 @@ export function MetadataTemplateModal({
             <h3 className="text-sm font-semibold text-ink mb-3 uppercase tracking-wide">Descriptive Metadata</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Description</label>
+                <label htmlFor={`${fid}-description`} className="block text-sm font-medium text-ink mb-1">Description</label>
                 <textarea
+                  id={`${fid}-description`}
                   value={fieldDescription}
                   onChange={(e) => setFieldDescription(e.target.value)}
                   className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 resize-none"
@@ -276,8 +281,9 @@ export function MetadataTemplateModal({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Alt Text</label>
+                <label htmlFor={`${fid}-alt-text`} className="block text-sm font-medium text-ink mb-1">Alt Text</label>
                 <input
+                  id={`${fid}-alt-text`}
                   type="text"
                   value={altText}
                   onChange={(e) => setAltText(e.target.value)}
@@ -293,8 +299,9 @@ export function MetadataTemplateModal({
             <h3 className="text-sm font-semibold text-ink mb-3 uppercase tracking-wide">Attribution</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Creator</label>
+                <label htmlFor={`${fid}-creator`} className="block text-sm font-medium text-ink mb-1">Creator</label>
                 <input
+                  id={`${fid}-creator`}
                   type="text"
                   value={creator}
                   onChange={(e) => setCreator(e.target.value)}
@@ -303,8 +310,9 @@ export function MetadataTemplateModal({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Credit</label>
+                <label htmlFor={`${fid}-credit`} className="block text-sm font-medium text-ink mb-1">Credit</label>
                 <input
+                  id={`${fid}-credit`}
                   type="text"
                   value={credit}
                   onChange={(e) => setCredit(e.target.value)}
@@ -313,8 +321,9 @@ export function MetadataTemplateModal({
                 />
               </div>
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-ink mb-1">Source</label>
+                <label htmlFor={`${fid}-source`} className="block text-sm font-medium text-ink mb-1">Source</label>
                 <input
+                  id={`${fid}-source`}
                   type="text"
                   value={source}
                   onChange={(e) => setSource(e.target.value)}
@@ -331,8 +340,9 @@ export function MetadataTemplateModal({
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">Copyright Status</label>
+                  <label htmlFor={`${fid}-copyright-status`} className="block text-sm font-medium text-ink mb-1">Copyright Status</label>
                   <select
+                    id={`${fid}-copyright-status`}
                     value={copyrightStatus}
                     onChange={(e) => setCopyrightStatus(e.target.value)}
                     className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -345,8 +355,9 @@ export function MetadataTemplateModal({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">License</label>
+                  <label htmlFor={`${fid}-license`} className="block text-sm font-medium text-ink mb-1">License</label>
                   <select
+                    id={`${fid}-license`}
                     value={license}
                     onChange={(e) => setLicense(e.target.value)}
                     className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -360,8 +371,9 @@ export function MetadataTemplateModal({
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Rights Statement</label>
+                <label htmlFor={`${fid}-rights-statement`} className="block text-sm font-medium text-ink mb-1">Rights Statement</label>
                 <textarea
+                  id={`${fid}-rights-statement`}
                   value={rightsStatement}
                   onChange={(e) => setRightsStatement(e.target.value)}
                   className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 resize-none"
@@ -385,6 +397,7 @@ export function MetadataTemplateModal({
                     onChange={(e) => updateMetadataField(index, 'key', e.target.value)}
                     className="w-1/3 px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                     placeholder="Key"
+                    aria-label={`Custom field ${index + 1} key`}
                   />
                   <input
                     type="text"
@@ -392,13 +405,15 @@ export function MetadataTemplateModal({
                     onChange={(e) => updateMetadataField(index, 'value', e.target.value)}
                     className="flex-1 px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                     placeholder="Value"
+                    aria-label={`Custom field ${index + 1} value`}
                   />
                   <button
                     type="button"
                     onClick={() => removeMetadataField(index)}
+                    aria-label={`Remove custom field ${index + 1}`}
                     className="p-2 text-archive hover:text-semantic-error"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
               ))}
@@ -407,7 +422,7 @@ export function MetadataTemplateModal({
                 onClick={addMetadataField}
                 className="flex items-center gap-1 text-sm text-bark hover:text-copper-dark"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-4 w-4" aria-hidden="true" />
                 Add custom field
               </button>
             </div>

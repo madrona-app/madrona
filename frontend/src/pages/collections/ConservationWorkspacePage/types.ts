@@ -33,6 +33,10 @@ export interface ConservationFormData {
   recommendations: string;
   restrictions: string;
   treatment_note: string;
+  insurance_value: string;
+  future_care_instructions: string;
+  treatment_rationale: string;
+  treatment_place: string;
 }
 
 export const defaultFormData: ConservationFormData = {
@@ -56,6 +60,10 @@ export const defaultFormData: ConservationFormData = {
   recommendations: '',
   restrictions: '',
   treatment_note: '',
+  insurance_value: '',
+  future_care_instructions: '',
+  treatment_rationale: '',
+  treatment_place: '',
 };
 
 export const STATUS_CONFIG: Record<string, { label: string; color: string; icon: LucideIcon }> = {

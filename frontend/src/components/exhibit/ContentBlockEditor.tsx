@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import Checkbox from '../Checkbox';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
@@ -45,6 +45,7 @@ export function ContentBlockEditor({
   onClose,
   onSuccess,
 }: ContentBlockEditorProps) {
+  const fieldId = useId();
   const queryClient = useQueryClient();
   const isEditMode = !!block;
 
@@ -183,10 +184,10 @@ export function ContentBlockEditor({
 
         {/* Block type */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fieldId}-block-type`} className="block text-sm font-medium text-ink mb-1.5">
             Block Type
           </label>
-          <select
+          <select id={`${fieldId}-block-type`}
             value={blockType}
             onChange={(e) => setBlockType(e.target.value as ContentBlockType)}
             className="w-full px-3 py-2 border border-lichen rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -202,10 +203,10 @@ export function ContentBlockEditor({
         {/* Section and Title */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">
+            <label htmlFor={`${fieldId}-section`} className="block text-sm font-medium text-ink mb-1.5">
               Section
             </label>
-            <input
+            <input id={`${fieldId}-section`}
               type="text"
               value={section}
               onChange={(e) => setSection(e.target.value)}
@@ -214,10 +215,10 @@ export function ContentBlockEditor({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">
+            <label htmlFor={`${fieldId}-title`} className="block text-sm font-medium text-ink mb-1.5">
               Title
             </label>
-            <input
+            <input id={`${fieldId}-title`}
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -230,10 +231,10 @@ export function ContentBlockEditor({
         {/* Content */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-sm font-medium text-ink">
+            <label htmlFor={`${fieldId}-content`} className="block text-sm font-medium text-ink">
               Content <span className="text-semantic-error">*</span>
             </label>
-            <select
+            <select id={`${fieldId}-content`}
               value={contentFormat}
               onChange={(e) => setContentFormat(e.target.value as 'markdown' | 'html' | 'plain')}
               className="px-2 py-1 text-xs border border-lichen rounded focus-visible:outline-none"
@@ -264,10 +265,10 @@ export function ContentBlockEditor({
         {/* Status and Public */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">
+            <label htmlFor={`${fieldId}-status`} className="block text-sm font-medium text-ink mb-1.5">
               Status
             </label>
-            <select
+            <select id={`${fieldId}-status`}
               value={status}
               onChange={(e) => setStatus(e.target.value as 'draft' | 'review' | 'published')}
               className="w-full px-3 py-2 border border-lichen rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -280,8 +281,8 @@ export function ContentBlockEditor({
             </select>
           </div>
           <div className="flex items-center">
-            <label className="flex items-center gap-2 text-sm text-ink cursor-pointer">
-              <Checkbox
+            <label htmlFor={`${fieldId}-include-in-public-gallery`} className="flex items-center gap-2 text-sm text-ink cursor-pointer">
+              <Checkbox id={`${fieldId}-include-in-public-gallery`}
                 checked={isPublic}
                 onChange={(e) => setIsPublic(e.target.checked)}
               />

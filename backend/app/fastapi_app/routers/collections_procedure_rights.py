@@ -24,6 +24,7 @@ from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import (
@@ -34,6 +35,8 @@ from app.models import (
 )
 from app.permissions import Permission
 from app.services.api_security import escape_ilike
+from app.services.contact_links import contact_display_name as _contact_name
+from app.services.contact_links import validate_org_contact_id as _validate_contact_id
 from app.services.entity_notifications import notify_approval, notify_status_change
 from app.services.validation_utils import parse_uuid_or_raise
 from app.fastapi_app.schemas.collections_procedure_rights import (
@@ -63,6 +66,13 @@ def _serialize_object_right(r: ObjectRight) -> dict:
         "right_type": r.right_type,
         "right_subtype": r.right_subtype,
         "rights_holder_contact_id": str(r.rights_holder_contact_id) if r.rights_holder_contact_id else None,
+        "rights_holder_contact_name": _contact_name(r.rights_holder_contact) if r.rights_holder_contact_id else None,
+        "rights_holder_agent_contact_id": (
+            str(r.rights_holder_agent_contact_id) if r.rights_holder_agent_contact_id else None
+        ),
+        "rights_holder_agent_contact_name": (
+            _contact_name(r.rights_holder_agent_contact) if r.rights_holder_agent_contact_id else None
+        ),
         "status": r.status,
         "start_date": r.start_date.isoformat() if r.start_date else None,
         "end_date": r.end_date.isoformat() if r.end_date else None,
@@ -277,6 +287,9 @@ def create_object_right(
     if not body.get("right_type"):
         raise HTTPException(status_code=400, detail="Missing: right_type")
 
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, ObjectRight, body)
+
     obj = db.query(CollectionObject).filter(
         CollectionObject.object_id == object_id,
         CollectionObject.organization_id == org_id,
@@ -288,6 +301,9 @@ def create_object_right(
     # 500 from the create path (parity with prior behavior).
     if body.get("rights_holder_contact_id"):
         parse_uuid_or_raise(body["rights_holder_contact_id"])
+    _validate_contact_id(
+        db, org_id, body.get("rights_holder_agent_contact_id"), "rights_holder_agent_contact_id"
+    )
 
     # Create via the shared service — the same code the draft applier runs. The
     # API route carries object_id in the path; fold it into the payload (the
@@ -300,9 +316,9 @@ def create_object_right(
     try:
         right = _create_object_right(db, org_id, payload, auth.user_id, open_approval=True)
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="This right may already exist")
+        raise integrity_http_error(exc, "This right may already exist") from None
 
     db.refresh(right)
     return _serialize_object_right(right)
@@ -324,12 +340,20 @@ def update_object_right(
     if not right:
         raise HTTPException(status_code=404, detail="Right not found")
 
-    protected = {"right_id", "organization_id", "object_id", "created_at", "created_by_id", "created_by", "updated_by_id"}
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, ObjectRight, body, current=right)
+
+    protected = {
+        "right_id", "organization_id", "object_id", "created_at", "created_by_id", "created_by", "updated_by_id",
+        "rights_holder_contact", "rights_holder_agent_contact", "object",
+    }
     for key, value in body.items():
         if key in protected:
             continue
         if key == "rights_holder_contact_id" and value is not None:
             value = UUID(value) if isinstance(value, str) else value
+        if key == "rights_holder_agent_contact_id":
+            value = _validate_contact_id(db, org_id, value, key)
         if key == "fee_amount" and value is not None:
             value = Decimal(str(value))
         if hasattr(right, key):
@@ -438,6 +462,9 @@ def create_use_request(
     """Create use request."""
     if not body.get("use_type"):
         raise HTTPException(status_code=400, detail="Missing: use_type")
+
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, UseRequest, body)
     if not body.get("requester_name"):
         raise HTTPException(status_code=400, detail="Missing: requester_name")
     if not body.get("use_purpose"):
@@ -456,9 +483,9 @@ def create_use_request(
     try:
         req = _create_use_request(db, org_id, body, auth.user_id, open_approval=True)
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="A request with this number may already exist")
+        raise integrity_http_error(exc, "A request with this number may already exist") from None
 
     db.refresh(req)
     return _serialize_use_request(req)
@@ -499,6 +526,9 @@ def update_use_request(
     ).first()
     if not req:
         raise HTTPException(status_code=404, detail="Use request not found")
+
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, UseRequest, body, current=req)
 
     # Attribution is server-set and never accepted from the body.
     #
@@ -572,9 +602,9 @@ def add_use_request_object(
     db.add(link)
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="This object is already linked to this request")
+        raise integrity_http_error(exc, "This object is already linked to this request") from None
 
     db.refresh(link)
     return _serialize_use_request_object(link)

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useId } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -19,10 +19,12 @@ const ThemeToggle: React.FC = () => {
 
   return (
     <div className="px-4 py-2">
-      <div className="flex gap-1 bg-stone rounded-md p-1">
+      <div className="flex gap-1 bg-stone rounded-md p-1" role="group" aria-label="Theme">
         {options.map((option) => (
           <button
             key={option.value}
+            type="button"
+            aria-pressed={theme === option.value}
             onClick={() => setTheme(option.value)}
             className={`flex-1 px-3 py-1.5 text-xs font-medium rounded transition-colors ${
               theme === option.value
@@ -45,6 +47,8 @@ export function SidebarUserMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelId = useId();
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -65,6 +69,7 @@ export function SidebarUserMenu() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
         setIsOpen(false);
+        triggerRef.current?.focus();
       }
     };
 
@@ -101,7 +106,7 @@ export function SidebarUserMenu() {
   if (auth.isLoading || !auth.user) {
     return (
       <div className="sidebar-user-menu-trigger">
-        <User size={18} className="sidebar-nav-item-icon" />
+        <User size={18} className="sidebar-nav-item-icon" aria-hidden="true" />
         <span className="sidebar-nav-item-label">Loading...</span>
       </div>
     );
@@ -114,7 +119,7 @@ export function SidebarUserMenu() {
   if (!activeOrg) {
     return (
       <div className="sidebar-user-menu-trigger">
-        <User size={18} className="sidebar-nav-item-icon" />
+        <User size={18} className="sidebar-nav-item-icon" aria-hidden="true" />
         <span className="sidebar-nav-item-label">No organization</span>
       </div>
     );
@@ -140,23 +145,27 @@ export function SidebarUserMenu() {
   return (
     <div className="sidebar-user-menu" ref={menuRef}>
       {/* Trigger button */}
+      {/* Disclosure, not an ARIA menu: the panel mixes links, a theme toggle
+          group and org buttons, all reachable with Tab. */}
       <button
+        ref={triggerRef}
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         disabled={isSwitching}
         className={`sidebar-user-menu-trigger ${isOpen ? 'sidebar-user-menu-trigger--active' : ''}`}
         aria-expanded={isOpen}
-        aria-haspopup="true"
-        aria-label="User menu"
+        aria-controls={isOpen ? panelId : undefined}
+        aria-label={`User menu: ${auth.user.name}, ${activeOrg.name}`}
       >
         <div className="sidebar-user-avatar">
           {auth.user.avatar_url ? (
             <img
               src={auth.user.avatar_url}
-              alt={auth.user.name}
+              alt=""
               className="w-full h-full object-cover rounded-full"
             />
           ) : (
-            <User size={16} />
+            <User size={16} aria-hidden="true" />
           )}
         </div>
         <div className="sidebar-user-info">
@@ -165,10 +174,11 @@ export function SidebarUserMenu() {
         </div>
         <ChevronUp
           size={14}
+          aria-hidden="true"
           className={`sidebar-user-chevron ${isOpen ? 'sidebar-user-chevron--open' : ''}`}
         />
         {isCollapsed && (
-          <span className="sidebar-tooltip" role="tooltip">
+          <span className="sidebar-tooltip" aria-hidden="true">
             {auth.user.name}
           </span>
         )}
@@ -176,7 +186,7 @@ export function SidebarUserMenu() {
 
       {/* Dropdown menu - opens upward */}
       {isOpen && (
-        <div className="sidebar-user-dropdown">
+        <div id={panelId} className="sidebar-user-dropdown">
           {/* User Info Section */}
           <div className="px-4 py-3 border-b border-lichen">
             <div className="flex items-center gap-3">
@@ -184,11 +194,11 @@ export function SidebarUserMenu() {
                 {auth.user.avatar_url ? (
                   <img
                     src={auth.user.avatar_url}
-                    alt={auth.user.name}
+                    alt=""
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <User size={20} className="text-forest" />
+                  <User size={20} className="text-forest" aria-hidden="true" />
                 )}
               </div>
               <div className="flex-1 min-w-0">
@@ -205,7 +215,7 @@ export function SidebarUserMenu() {
           {/* Current Organization Section */}
           <div className="px-4 py-3 border-b border-lichen">
             <div className="flex items-start gap-2 mb-1">
-              <Building2 size={14} className="text-archive mt-0.5" />
+              <Building2 size={14} className="text-archive mt-0.5" aria-hidden="true" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-archive uppercase tracking-wide mb-1">
                   Organization
@@ -224,17 +234,19 @@ export function SidebarUserMenu() {
           {hasMultipleOrgs && (
             <div className="py-1 border-b border-lichen">
               <div className="px-4 py-2">
-                <p className="text-xs font-semibold text-archive uppercase tracking-wide mb-2">
+                <p id={`${panelId}-orgs`} className="text-xs font-semibold text-archive uppercase tracking-wide mb-2">
                   Switch Organization
                 </p>
               </div>
-              <div className="max-h-48 overflow-y-auto">
+              <div className="max-h-48 overflow-y-auto" role="group" aria-labelledby={`${panelId}-orgs`}>
                 {auth.memberships.map((org: Organization) => {
                   const isActive = org.organization_id === auth.activeOrganizationId;
 
                   return (
                     <button
                       key={org.organization_id}
+                      type="button"
+                      aria-current={isActive ? 'true' : undefined}
                       onClick={() => handleSwitchOrg(org.organization_id)}
                       disabled={isSwitching || isActive}
                       className={`w-full flex items-center justify-between px-4 py-2 text-sm hover:bg-stone transition-colors disabled:opacity-50 ${
@@ -254,7 +266,8 @@ export function SidebarUserMenu() {
                           {org.slug}
                         </span>
                       </div>
-                      {isActive && <Check size={14} className="text-bark flex-shrink-0 ml-2" />}
+                      {isActive && <Check size={14} className="text-bark flex-shrink-0 ml-2" aria-hidden="true" />}
+                      {isActive && <span className="sr-only">(current organization)</span>}
                     </button>
                   );
                 })}
@@ -275,6 +288,7 @@ export function SidebarUserMenu() {
           {/* Settings & Logout Section */}
           <div className="py-1">
             <button
+              type="button"
               onClick={() => {
                 setIsOpen(false);
                 if (auth.activeOrganizationId) {
@@ -285,24 +299,26 @@ export function SidebarUserMenu() {
               }}
               className="w-full flex items-center gap-2 px-4 py-2 text-sm text-ink hover:bg-stone transition-colors"
             >
-              <Settings size={16} />
+              <Settings size={16} aria-hidden="true" />
               <span>Settings</span>
             </button>
             <button
+              type="button"
               onClick={() => {
                 setIsOpen(false);
                 navigate('/account/security');
               }}
               className="w-full flex items-center gap-2 px-4 py-2 text-sm text-ink hover:bg-stone transition-colors"
             >
-              <ShieldCheck size={16} />
+              <ShieldCheck size={16} aria-hidden="true" />
               <span>Security</span>
             </button>
             <button
+              type="button"
               onClick={handleLogout}
               className="w-full flex items-center gap-2 px-4 py-2 text-sm text-semantic-error hover:bg-semantic-error/10 transition-colors"
             >
-              <LogOut size={16} />
+              <LogOut size={16} aria-hidden="true" />
               <span>Sign out</span>
             </button>
           </div>

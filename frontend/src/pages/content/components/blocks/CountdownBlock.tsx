@@ -2,7 +2,7 @@
  * Countdown Block — Countdown timer to a target date with optional CTA.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useId } from 'react';
 
 // =============================================================================
 // Shared Types
@@ -22,6 +22,7 @@ interface BlockRendererComponentProps {
 // =============================================================================
 
 export function CountdownEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const targetDate = (content.target_date as string) || '';
   const heading = (content.heading as string) || '';
   const ctaText = (content.cta_text as string) || '';
@@ -30,10 +31,10 @@ export function CountdownEditor({ content, onChange }: BlockEditorComponentProps
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-target-date`} className="block text-sm font-medium text-ink mb-1">
           Target Date <span className="text-semantic-error">*</span>
         </label>
-        <input
+        <input id={`${fieldId}-target-date`}
           type="date"
           value={targetDate}
           onChange={(e) => onChange({ ...content, target_date: e.target.value })}
@@ -42,10 +43,10 @@ export function CountdownEditor({ content, onChange }: BlockEditorComponentProps
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-heading`} className="block text-sm font-medium text-ink mb-1">
           Heading
         </label>
-        <input
+        <input id={`${fieldId}-heading`}
           type="text"
           value={heading}
           onChange={(e) => onChange({ ...content, heading: e.target.value })}
@@ -56,10 +57,10 @@ export function CountdownEditor({ content, onChange }: BlockEditorComponentProps
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-cta-text`} className="block text-sm font-medium text-ink mb-1">
             CTA Text
           </label>
-          <input
+          <input id={`${fieldId}-cta-text`}
             type="text"
             value={ctaText}
             onChange={(e) => onChange({ ...content, cta_text: e.target.value })}
@@ -68,10 +69,10 @@ export function CountdownEditor({ content, onChange }: BlockEditorComponentProps
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-cta-url`} className="block text-sm font-medium text-ink mb-1">
             CTA URL
           </label>
-          <input
+          <input id={`${fieldId}-cta-url`}
             type="text"
             value={ctaUrl}
             onChange={(e) => onChange({ ...content, cta_url: e.target.value })}

@@ -7,8 +7,7 @@ import {
   Calendar,
   DollarSign,
   StickyNote,
-  History,
-} from 'lucide-react';
+  History, FileWarning } from 'lucide-react';
 import {
   WorkspaceHeader,
   WorkspaceErrorBoundary,
@@ -27,6 +26,7 @@ import { useProcedureRequirements } from '../../../hooks/useProcedureRequirement
 import { ProcedureRequirementsCard } from '../../../components/collections/ProcedureRequirementsCard';
 import { getIndemnityArrangement } from '../../../lib/api';
 import Checkbox from '../../../components/Checkbox';
+import { InsuranceClaimsList } from '../../../components/collections/InsuranceClaimsList';
 import ConfirmDialog from '../../../components/ConfirmDialog';
 
 import { useFormState, useSectionState, useSectionSummaries, useHasContent } from './hooks';
@@ -431,6 +431,27 @@ function IndemnityArrangementWorkspacePageContent() {
             isEmpty={!hasContent.objects}
             summary={sectionSummaries.objects || ''}
           />
+        )}
+
+        {/* Claims under this arrangement, each with its change history */}
+        {!isCreateMode && orgId && indemnityId && (
+          <WorkspaceSection
+            id="claims"
+            title="Claims"
+            icon={<FileWarning size={18} />}
+            isExpanded={expandedSections.claims}
+            onToggle={() => toggleSection('claims')}
+            isEditing={isEditing}
+            order={getSectionOrder('claims')}
+            isEmpty={!hasContent.claims}
+            summary={sectionSummaries.claims}
+          >
+            <InsuranceClaimsList
+              organizationId={orgId}
+              indemnityId={indemnityId}
+              canViewHistory={hasPermission('org.view_audit_logs')}
+            />
+          </WorkspaceSection>
         )}
 
         {/* === ADMIN GROUP === */}

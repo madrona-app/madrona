@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useWorkspacePage } from '../../../hooks/useWorkspacePage';
@@ -17,6 +18,7 @@ import {
   Truck,
   Theater,
   History,
+  FileWarning,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -40,6 +42,7 @@ import {
   getInsuranceCoverages,
 } from '../../../lib/api';
 import ConfirmDialog from '../../../components/ConfirmDialog';
+import { InsuranceClaimsList } from '../../../components/collections/InsuranceClaimsList';
 
 import { useFormState, useSectionState, useSectionSummaries, useHasContent } from './hooks';
 import {
@@ -89,6 +92,7 @@ export default function InsuranceWorkspacePage() {
 }
 
 function InsuranceWorkspacePageContent() {
+  const uid = useId();
   const { orgId, policyId } = useParams<{ orgId: string; policyId?: string }>();
   const isCreateMode = !policyId;
   const { requirementGroups } = useProcedureRequirements('insurance_policy', orgId);
@@ -571,8 +575,9 @@ function InsuranceWorkspacePageContent() {
                     <h4 className="font-medium text-ink">Link Item to Policy</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-archive mb-1">Entity Type</label>
+                        <label htmlFor={`${uid}-entity-type`} className="block text-sm font-medium text-archive mb-1">Entity Type</label>
                         <select
+                          id={`${uid}-entity-type`}
                           value={newCoverage.covered_entity_type}
                           onChange={(e) => setNewCoverage(prev => ({ ...prev, covered_entity_type: e.target.value }))}
                           className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -583,8 +588,9 @@ function InsuranceWorkspacePageContent() {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-archive mb-1">Entity ID</label>
+                        <label htmlFor={`${uid}-entity-id`} className="block text-sm font-medium text-archive mb-1">Entity ID</label>
                         <input
+                          id={`${uid}-entity-id`}
                           type="text"
                           value={newCoverage.covered_entity_id}
                           onChange={(e) => setNewCoverage(prev => ({ ...prev, covered_entity_id: e.target.value }))}
@@ -593,8 +599,9 @@ function InsuranceWorkspacePageContent() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-archive mb-1">Declared Value</label>
+                        <label htmlFor={`${uid}-declared-value`} className="block text-sm font-medium text-archive mb-1">Declared Value</label>
                         <input
+                          id={`${uid}-declared-value`}
                           type="number"
                           value={newCoverage.declared_value}
                           onChange={(e) => setNewCoverage(prev => ({ ...prev, declared_value: e.target.value }))}
@@ -603,8 +610,9 @@ function InsuranceWorkspacePageContent() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-archive mb-1">Currency</label>
+                        <label htmlFor={`${uid}-currency`} className="block text-sm font-medium text-archive mb-1">Currency</label>
                         <select
+                          id={`${uid}-currency`}
                           value={newCoverage.value_currency}
                           onChange={(e) => setNewCoverage(prev => ({ ...prev, value_currency: e.target.value }))}
                           className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -642,6 +650,27 @@ function InsuranceWorkspacePageContent() {
                 )}
               </div>
             )}
+          </WorkspaceSection>
+        )}
+
+        {/* Claims against this policy's coverages, each with its change history */}
+        {!isCreateMode && orgId && policyId && (
+          <WorkspaceSection
+            id="claims"
+            title="Claims"
+            icon={<FileWarning size={18} />}
+            isExpanded={expandedSections.claims}
+            onToggle={() => toggleSection('claims')}
+            isEditing={isEditing}
+            order={getSectionOrder('claims')}
+            isEmpty={!hasContent.claims}
+            summary={sectionSummaries.claims}
+          >
+            <InsuranceClaimsList
+              organizationId={orgId}
+              policyId={policyId}
+              canViewHistory={hasPermission('org.view_audit_logs')}
+            />
           </WorkspaceSection>
         )}
 

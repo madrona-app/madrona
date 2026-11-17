@@ -611,6 +611,13 @@ export const AuditCampaignOutSchema = z.object({
   sample_method: z.string().nullable().optional(),
   sample_size: z.number().nullable().optional(),
   sample_percentage: z.number().nullable().optional(),
+  sampling_criteria: z.string().nullable().optional(),
+  target_locations: z.any().optional(),
+  target_object_types: z.any().optional(),
+  check_list_seed: z.number().nullable().optional(),
+  check_list_generated_at: z.string().nullable().optional(),
+  check_list_generated_by: z.string().nullable().optional(),
+  check_list_params: z.any().optional(),
   start_date: z.string().nullable().optional(),
   end_date: z.string().nullable().optional(),
   items_total: z.number().nullable().optional(),
@@ -618,6 +625,8 @@ export const AuditCampaignOutSchema = z.object({
   discrepancies_found: z.number().nullable().optional(),
   accuracy_rate: z.number().nullable().optional(),
   findings_summary: z.string().nullable().optional(),
+  verification_procedures: z.string().nullable().optional(),
+  recommendations: z.string().nullable().optional(),
   remedial_actions: z.any().optional(),
   status: z.string().nullable().optional(),
   lead_auditor: z.string().nullable().optional(),
@@ -648,6 +657,9 @@ export const AuditEventOutSchema = z.object({
   changed_fields: z.array(z.string()).nullable().optional(),
   summary: z.string().nullable().optional(),
   request_method: z.string().nullable().optional(),
+  child_entity_type: z.string().nullable().optional(),
+  child_entity_id: z.string().nullable().optional(),
+  child_display_key: z.string().nullable().optional(),
   field_diffs: z.array(z.any()).nullable().optional(),
 }).passthrough();
 
@@ -703,6 +715,8 @@ export const AuditResultOutSchema = z.object({
   resolution_notes: z.string().nullable().optional(),
   resolved_at: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
+  result_status: z.string().nullable().optional(),
+  check_sequence: z.number().nullable().optional(),
 }).passthrough();
 
 export type AuditResultOut = z.infer<typeof AuditResultOutSchema>;
@@ -1070,6 +1084,261 @@ export const BboxSearchResponseSchema = z.object({
 
 export type BboxSearchResponse = z.infer<typeof BboxSearchResponseSchema>;
 
+export const _HoldingFieldsSchema = z.object({
+  location_id: z.string().nullable().optional(),
+  call_number: z.string().nullable().optional(),
+  holdings_statement: z.string().nullable().optional(),
+  shelving_notes: z.string().nullable().optional(),
+  public_note: z.string().nullable().optional(),
+  staff_note: z.string().nullable().optional(),
+}).passthrough();
+
+export type _HoldingFields = z.infer<typeof _HoldingFieldsSchema>;
+
+export const BibHoldingCreateSchema = z.object({
+  location_id: z.string().nullable().optional(),
+  call_number: z.string().nullable().optional(),
+  holdings_statement: z.string().nullable().optional(),
+  shelving_notes: z.string().nullable().optional(),
+  public_note: z.string().nullable().optional(),
+  staff_note: z.string().nullable().optional(),
+}).passthrough();
+
+export type BibHoldingCreate = z.infer<typeof BibHoldingCreateSchema>;
+
+export const BibItemOutSchema = z.object({
+  item_id: z.string(),
+  holding_id: z.string(),
+  barcode: z.string().nullable().optional(),
+  copy_number: z.string().nullable().optional(),
+  enumeration: z.string().nullable().optional(),
+  chronology: z.string().nullable().optional(),
+  status: z.string(),
+  condition_note: z.string().nullable().optional(),
+  collection_object_id: z.string().nullable().optional(),
+  collection_object_number: z.string().nullable().optional(),
+  created_at: z.string().nullable().optional(),
+  updated_at: z.string().nullable().optional(),
+}).passthrough();
+
+export type BibItemOut = z.infer<typeof BibItemOutSchema>;
+
+export const BibHoldingOutSchema = z.object({
+  holding_id: z.string(),
+  bib_record_id: z.string(),
+  location_id: z.string().nullable().optional(),
+  location_name: z.string().nullable().optional(),
+  call_number: z.string().nullable().optional(),
+  holdings_statement: z.string().nullable().optional(),
+  shelving_notes: z.string().nullable().optional(),
+  public_note: z.string().nullable().optional(),
+  staff_note: z.string().nullable().optional(),
+  items: z.array(BibItemOutSchema).optional(),
+  created_at: z.string().nullable().optional(),
+  updated_at: z.string().nullable().optional(),
+}).passthrough();
+
+export type BibHoldingOut = z.infer<typeof BibHoldingOutSchema>;
+
+export const BibHoldingUpdateSchema = z.object({
+  location_id: z.string().nullable().optional(),
+  call_number: z.string().nullable().optional(),
+  holdings_statement: z.string().nullable().optional(),
+  shelving_notes: z.string().nullable().optional(),
+  public_note: z.string().nullable().optional(),
+  staff_note: z.string().nullable().optional(),
+}).passthrough();
+
+export type BibHoldingUpdate = z.infer<typeof BibHoldingUpdateSchema>;
+
+export const _ItemFieldsSchema = z.object({
+  barcode: z.string().nullable().optional(),
+  copy_number: z.string().nullable().optional(),
+  enumeration: z.string().nullable().optional(),
+  chronology: z.string().nullable().optional(),
+  status: z.enum(['available', 'on_loan', 'missing', 'withdrawn', 'in_processing']).nullable().optional(),
+  condition_note: z.string().nullable().optional(),
+  collection_object_id: z.string().nullable().optional(),
+}).passthrough();
+
+export type _ItemFields = z.infer<typeof _ItemFieldsSchema>;
+
+export const BibItemCreateSchema = z.object({
+  barcode: z.string().nullable().optional(),
+  copy_number: z.string().nullable().optional(),
+  enumeration: z.string().nullable().optional(),
+  chronology: z.string().nullable().optional(),
+  status: z.enum(['available', 'on_loan', 'missing', 'withdrawn', 'in_processing']).optional(),
+  condition_note: z.string().nullable().optional(),
+  collection_object_id: z.string().nullable().optional(),
+}).passthrough();
+
+export type BibItemCreate = z.infer<typeof BibItemCreateSchema>;
+
+export const BibItemUpdateSchema = z.object({
+  barcode: z.string().nullable().optional(),
+  copy_number: z.string().nullable().optional(),
+  enumeration: z.string().nullable().optional(),
+  chronology: z.string().nullable().optional(),
+  status: z.enum(['available', 'on_loan', 'missing', 'withdrawn', 'in_processing']).nullable().optional(),
+  condition_note: z.string().nullable().optional(),
+  collection_object_id: z.string().nullable().optional(),
+}).passthrough();
+
+export type BibItemUpdate = z.infer<typeof BibItemUpdateSchema>;
+
+export const BibNameAddSchema = z.object({
+  constituent_id: z.string(),
+  role: z.enum(['author', 'editor', 'translator', 'illustrator', 'narrator', 'transcriber', 'compiler', 'contributor', 'publisher', 'other']).optional(),
+}).passthrough();
+
+export type BibNameAdd = z.infer<typeof BibNameAddSchema>;
+
+export const BibNameOutSchema = z.object({
+  link_id: z.string(),
+  constituent_id: z.string(),
+  name: z.string().nullable().optional(),
+  role: z.string(),
+  display_order: z.number().optional(),
+}).passthrough();
+
+export type BibNameOut = z.infer<typeof BibNameOutSchema>;
+
+export const _RecordFieldsSchema = z.object({
+  record_type: z.enum(['book', 'serial', 'pamphlet', 'braille', 'large_print', 'audio', 'video', 'manuscript', 'other']).nullable().optional(),
+  title: z.string().nullable().optional(),
+  subtitle: z.string().nullable().optional(),
+  statement_of_responsibility: z.string().nullable().optional(),
+  edition: z.string().nullable().optional(),
+  place: z.string().nullable().optional(),
+  publisher: z.string().nullable().optional(),
+  date_display: z.string().nullable().optional(),
+  date_earliest: z.number().nullable().optional(),
+  date_latest: z.number().nullable().optional(),
+  extent: z.string().nullable().optional(),
+  series_statement: z.string().nullable().optional(),
+  language: z.string().nullable().optional(),
+  isbn: z.string().nullable().optional(),
+  issn: z.string().nullable().optional(),
+  lccn: z.string().nullable().optional(),
+  oclc_number: z.string().nullable().optional(),
+  call_number: z.string().nullable().optional(),
+  format_notes: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+}).passthrough();
+
+export type _RecordFields = z.infer<typeof _RecordFieldsSchema>;
+
+export const BibRecordCreateSchema = z.object({
+  record_type: z.enum(['book', 'serial', 'pamphlet', 'braille', 'large_print', 'audio', 'video', 'manuscript', 'other']).optional(),
+  title: z.string(),
+  subtitle: z.string().nullable().optional(),
+  statement_of_responsibility: z.string().nullable().optional(),
+  edition: z.string().nullable().optional(),
+  place: z.string().nullable().optional(),
+  publisher: z.string().nullable().optional(),
+  date_display: z.string().nullable().optional(),
+  date_earliest: z.number().nullable().optional(),
+  date_latest: z.number().nullable().optional(),
+  extent: z.string().nullable().optional(),
+  series_statement: z.string().nullable().optional(),
+  language: z.string().nullable().optional(),
+  isbn: z.string().nullable().optional(),
+  issn: z.string().nullable().optional(),
+  lccn: z.string().nullable().optional(),
+  oclc_number: z.string().nullable().optional(),
+  call_number: z.string().nullable().optional(),
+  format_notes: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+}).passthrough();
+
+export type BibRecordCreate = z.infer<typeof BibRecordCreateSchema>;
+
+export const BibSubjectOutSchema = z.object({
+  link_id: z.string(),
+  subject_authority_id: z.string(),
+  preferred_term: z.string().nullable().optional(),
+  lcsh_id: z.string().nullable().optional(),
+  display_order: z.number().optional(),
+}).passthrough();
+
+export type BibSubjectOut = z.infer<typeof BibSubjectOutSchema>;
+
+export const BibRecordOutSchema = z.object({
+  bib_record_id: z.string(),
+  organization_id: z.string(),
+  record_type: z.string().nullable().optional(),
+  title: z.string().nullable().optional(),
+  subtitle: z.string().nullable().optional(),
+  statement_of_responsibility: z.string().nullable().optional(),
+  edition: z.string().nullable().optional(),
+  place: z.string().nullable().optional(),
+  publisher: z.string().nullable().optional(),
+  date_display: z.string().nullable().optional(),
+  date_earliest: z.number().nullable().optional(),
+  date_latest: z.number().nullable().optional(),
+  extent: z.string().nullable().optional(),
+  series_statement: z.string().nullable().optional(),
+  language: z.string().nullable().optional(),
+  isbn: z.string().nullable().optional(),
+  issn: z.string().nullable().optional(),
+  lccn: z.string().nullable().optional(),
+  oclc_number: z.string().nullable().optional(),
+  call_number: z.string().nullable().optional(),
+  format_notes: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  holding_count: z.number().optional(),
+  item_count: z.number().optional(),
+  holdings: z.array(BibHoldingOutSchema).nullable().optional(),
+  subjects: z.array(BibSubjectOutSchema).nullable().optional(),
+  names: z.array(BibNameOutSchema).nullable().optional(),
+  created_at: z.string().nullable().optional(),
+  updated_at: z.string().nullable().optional(),
+  restricted_fields: z.array(z.string()).optional(),
+}).passthrough();
+
+export type BibRecordOut = z.infer<typeof BibRecordOutSchema>;
+
+export const BibRecordListResponseSchema = z.object({
+  items: z.array(BibRecordOutSchema),
+  total: z.number(),
+  limit: z.number(),
+  offset: z.number(),
+}).passthrough();
+
+export type BibRecordListResponse = z.infer<typeof BibRecordListResponseSchema>;
+
+export const BibRecordUpdateSchema = z.object({
+  record_type: z.enum(['book', 'serial', 'pamphlet', 'braille', 'large_print', 'audio', 'video', 'manuscript', 'other']).nullable().optional(),
+  title: z.string().nullable().optional(),
+  subtitle: z.string().nullable().optional(),
+  statement_of_responsibility: z.string().nullable().optional(),
+  edition: z.string().nullable().optional(),
+  place: z.string().nullable().optional(),
+  publisher: z.string().nullable().optional(),
+  date_display: z.string().nullable().optional(),
+  date_earliest: z.number().nullable().optional(),
+  date_latest: z.number().nullable().optional(),
+  extent: z.string().nullable().optional(),
+  series_statement: z.string().nullable().optional(),
+  language: z.string().nullable().optional(),
+  isbn: z.string().nullable().optional(),
+  issn: z.string().nullable().optional(),
+  lccn: z.string().nullable().optional(),
+  oclc_number: z.string().nullable().optional(),
+  call_number: z.string().nullable().optional(),
+  format_notes: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+}).passthrough();
+
+export type BibRecordUpdate = z.infer<typeof BibRecordUpdateSchema>;
+
+export const BibSubjectAddSchema = z.object({
+  subject_authority_id: z.string(),
+}).passthrough();
+
+export type BibSubjectAdd = z.infer<typeof BibSubjectAddSchema>;
+
 export const BrandingOutSchema = z.object({
   branding_id: z.string().nullable().optional(),
   organization_id: z.string(),
@@ -1384,6 +1653,36 @@ export const BulkReprocessResponseSchema = z.object({
 
 export type BulkReprocessResponse = z.infer<typeof BulkReprocessResponseSchema>;
 
+export const BulkUpdateRowOutSchema = z.object({
+  result_id: z.string(),
+  object_id: z.string().nullable().optional(),
+  object_number: z.string().nullable().optional(),
+  title: z.string().nullable().optional(),
+  outcome: z.string().nullable().optional(),
+  current_location_name: z.string().nullable().optional(),
+  found_location_name: z.string().nullable().optional(),
+  changes: z.array(z.string()).optional(),
+  skipped: z.array(z.string()).optional(),
+  status: z.string().nullable().optional(),
+  message: z.string().nullable().optional(),
+  movement_reference: z.string().nullable().optional(),
+}).passthrough();
+
+export type BulkUpdateRowOut = z.infer<typeof BulkUpdateRowOutSchema>;
+
+export const BulkUpdateResponseSchema = z.object({
+  audit_id: z.string(),
+  update_location: z.boolean(),
+  mark_inventoried: z.boolean(),
+  rows: z.array(BulkUpdateRowOutSchema),
+  location_update_count: z.number(),
+  inventoried_count: z.number(),
+  skipped_count: z.number(),
+  executed: z.boolean(),
+}).passthrough();
+
+export type BulkUpdateResponse = z.infer<typeof BulkUpdateResponseSchema>;
+
 export const BySourceItemSchema = z.object({
   source: z.string(),
   count: z.number(),
@@ -1553,6 +1852,45 @@ export const ChangePasswordMFABodySchema = z.object({
 }).passthrough();
 
 export type ChangePasswordMFABody = z.infer<typeof ChangePasswordMFABodySchema>;
+
+export const CheckListItemOutSchema = z.object({
+  result_id: z.string(),
+  check_sequence: z.number().nullable().optional(),
+  object_id: z.string().nullable().optional(),
+  object_number: z.string().nullable().optional(),
+  title: z.string().nullable().optional(),
+  expected_location_id: z.string().nullable().optional(),
+  expected_location_name: z.string().nullable().optional(),
+  expected_location_path: z.string().nullable().optional(),
+  actual_location_id: z.string().nullable().optional(),
+  actual_location_name: z.string().nullable().optional(),
+  actual_location_path: z.string().nullable().optional(),
+  current_location_id: z.string().nullable().optional(),
+  outcome: z.string(),
+  result_status: z.string(),
+  checked_at: z.string().nullable().optional(),
+  checked_by: z.string().nullable().optional(),
+  note: z.string().nullable().optional(),
+  follow_up_action: z.string().nullable().optional(),
+}).passthrough();
+
+export type CheckListItemOut = z.infer<typeof CheckListItemOutSchema>;
+
+export const CheckListResponseSchema = z.object({
+  audit_id: z.string(),
+  generated_at: z.string().nullable().optional(),
+  generated_by: z.string().nullable().optional(),
+  seed: z.number().nullable().optional(),
+  params: z.any().optional(),
+  total: z.number(),
+  checked: z.number(),
+  counts: z.record(z.string(), z.number()),
+  items: z.array(CheckListItemOutSchema),
+  limit: z.number(),
+  offset: z.number(),
+}).passthrough();
+
+export type CheckListResponse = z.infer<typeof CheckListResponseSchema>;
 
 export const ChecklistEnumsResponseSchema = z.object({
   phases: z.array(EnumValueLabelSchema),
@@ -2924,6 +3262,7 @@ export const CreateSubjectAuthorityRequestSchema = z.object({
   aat_id: z.string().nullable().optional(),
   iconclass_id: z.string().nullable().optional(),
   wikidata_id: z.string().nullable().optional(),
+  lcsh_id: z.string().nullable().optional(),
   broader_subject_id: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
@@ -3460,7 +3799,18 @@ export const DisableAppResponseSchema = z.object({
 
 export type DisableAppResponse = z.infer<typeof DisableAppResponseSchema>;
 
+export const DiscoverCaptionTrackOutSchema = z.object({
+  url: z.string(),
+  label: z.string(),
+  srclang: z.string(),
+  kind: z.string().optional(),
+  default: z.boolean().nullable().optional(),
+}).passthrough();
+
+export type DiscoverCaptionTrackOut = z.infer<typeof DiscoverCaptionTrackOutSchema>;
+
 export const DiscoverConfigOutSchema = z.object({
+  config_id: z.string().nullable().optional(),
   hero_media_id: z.string().nullable().optional(),
   page_title: z.string().nullable().optional(),
   page_subtitle: z.string().nullable().optional(),
@@ -3495,6 +3845,33 @@ export const DiscoverConfigOutSchema = z.object({
 }).passthrough();
 
 export type DiscoverConfigOut = z.infer<typeof DiscoverConfigOutSchema>;
+
+export const DiscoverDocumentTextPageOutSchema = z.object({
+  page: z.number().nullable().optional(),
+  text: z.string(),
+}).passthrough();
+
+export type DiscoverDocumentTextPageOut = z.infer<typeof DiscoverDocumentTextPageOutSchema>;
+
+export const DiscoverDocumentTextOutSchema = z.object({
+  pages: z.array(DiscoverDocumentTextPageOutSchema),
+  truncated: z.boolean().optional(),
+}).passthrough();
+
+export type DiscoverDocumentTextOut = z.infer<typeof DiscoverDocumentTextOutSchema>;
+
+export const DiscoverDownloadOutSchema = z.object({
+  variant: z.string(),
+  url: z.string(),
+  label: z.string(),
+  format: z.string().nullable().optional(),
+  mime_type: z.string().nullable().optional(),
+  file_size: z.number().nullable().optional(),
+  width: z.number().nullable().optional(),
+  height: z.number().nullable().optional(),
+}).passthrough();
+
+export type DiscoverDownloadOut = z.infer<typeof DiscoverDownloadOutSchema>;
 
 export const DiscoverEventOutSchema = z.object({
   event_id: z.string(),
@@ -3592,6 +3969,7 @@ export const DiscoverExhibitionDetailOutSchema = z.object({
   thumbnail_url: z.string().nullable().optional(),
   tags: z.any().nullable().optional(),
   related_objects: z.array(DiscoverRelatedObjectOutSchema).nullable().optional(),
+  public_object_count: z.number().optional(),
 }).passthrough();
 
 export type DiscoverExhibitionDetailOut = z.infer<typeof DiscoverExhibitionDetailOutSchema>;
@@ -3701,18 +4079,43 @@ export const DiscoverMeasurementOutSchema = z.object({
 
 export type DiscoverMeasurementOut = z.infer<typeof DiscoverMeasurementOutSchema>;
 
+export const DiscoverTextAlternativeOutSchema = z.object({
+  url: z.string(),
+  label: z.string(),
+  kind: z.string(),
+  file_size: z.number().nullable().optional(),
+}).passthrough();
+
+export type DiscoverTextAlternativeOut = z.infer<typeof DiscoverTextAlternativeOutSchema>;
+
 export const DiscoverMediaOutSchema = z.object({
   media_id: z.string(),
   url: z.string().nullable().optional(),
   srcset: z.any().nullable().optional(),
   media_type: z.string().nullable().optional(),
   mime_type: z.string().nullable().optional(),
+  name: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
   width: z.number().nullable().optional(),
   height: z.number().nullable().optional(),
+  duration_seconds: z.number().nullable().optional(),
+  page_count: z.number().nullable().optional(),
+  file_size: z.number().nullable().optional(),
   alt_text: z.string().nullable().optional(),
   credit: z.string().nullable().optional(),
+  preferred_citation: z.string().nullable().optional(),
   is_primary: z.boolean().nullable().optional(),
   caption: z.string().nullable().optional(),
+  playback_mime_type: z.string().nullable().optional(),
+  playback_source: z.string().nullable().optional(),
+  playback_status: z.string().nullable().optional(),
+  poster_url: z.string().nullable().optional(),
+  captions: z.array(DiscoverCaptionTrackOutSchema).optional(),
+  transcript: z.string().nullable().optional(),
+  transcript_machine_generated: z.boolean().optional(),
+  text_alternatives: z.array(DiscoverTextAlternativeOutSchema).optional(),
+  text_url: z.string().nullable().optional(),
+  downloads: z.array(DiscoverDownloadOutSchema).optional(),
 }).passthrough();
 
 export type DiscoverMediaOut = z.infer<typeof DiscoverMediaOutSchema>;
@@ -3732,8 +4135,11 @@ export const DiscoverObjectDetailOutSchema = z.object({
   canonical_url: z.string().nullable().optional(),
   title: z.string().nullable().optional(),
   titles: z.array(DiscoverTitleOutSchema).nullable().optional(),
+  object_name: z.string().nullable().optional(),
   brief_description: z.string().nullable().optional(),
   full_description: z.string().nullable().optional(),
+  physical_description: z.string().nullable().optional(),
+  subjects: z.array(z.string()).nullable().optional(),
   object_type: z.string().nullable().optional(),
   classification: z.string().nullable().optional(),
   classifications: z.array(z.record(z.string(), z.any())).nullable().optional(),
@@ -3746,9 +4152,12 @@ export const DiscoverObjectDetailOutSchema = z.object({
   techniques: z.any().nullable().optional(),
   measurements: z.array(DiscoverMeasurementOutSchema).nullable().optional(),
   inscriptions: z.array(z.string()).nullable().optional(),
+  edition: z.string().nullable().optional(),
   style_period: z.string().nullable().optional(),
   provenance: z.string().nullable().optional(),
   credit_line: z.string().nullable().optional(),
+  external_links: z.array(z.record(z.string(), z.string())).optional(),
+  additional_fields: z.array(z.record(z.string(), z.string())).optional(),
   media: z.array(DiscoverMediaOutSchema).nullable().optional(),
   has_image: z.boolean().optional(),
 }).passthrough();
@@ -4343,6 +4752,8 @@ export const EntityAuditEventOutSchema = z.object({
   changed_by_email: z.string().nullable().optional(),
   changed_fields: z.any().nullable().optional(),
   summary: z.string().nullable().optional(),
+  child_entity_type: z.string().nullable().optional(),
+  child_display_key: z.string().nullable().optional(),
 }).passthrough();
 
 export type EntityAuditEventOut = z.infer<typeof EntityAuditEventOutSchema>;
@@ -4369,6 +4780,8 @@ export const EntityAuditEventDetailOutSchema = z.object({
   changed_by_email: z.string().nullable().optional(),
   changed_fields: z.any().nullable().optional(),
   summary: z.string().nullable().optional(),
+  child_entity_type: z.string().nullable().optional(),
+  child_display_key: z.string().nullable().optional(),
   field_diffs: z.array(EntityAuditFieldDiffOutSchema),
 }).passthrough();
 
@@ -6789,6 +7202,7 @@ export type MFASetupStartBody = z.infer<typeof MFASetupStartBodySchema>;
 export const MFASetupStartResponseSchema = z.object({
   secret: z.string(),
   otpauthUrl: z.string(),
+  qrSvg: z.string().nullable().optional(),
   session: z.string(),
 }).passthrough();
 
@@ -6973,6 +7387,7 @@ export const MediaOutSchema = z.object({
   caption: z.string().nullable().optional(),
   copyright_notice: z.string().nullable().optional(),
   credit: z.string().nullable().optional(),
+  preferred_citation: z.string().nullable().optional(),
   creator: z.string().nullable().optional(),
   source: z.string().nullable().optional(),
   date_created: z.string().nullable().optional(),
@@ -6993,6 +7408,7 @@ export const MediaOutSchema = z.object({
   published_at: z.string().nullable().optional(),
   published_url: z.string().nullable().optional(),
   published_by: z.string().nullable().optional(),
+  public_download_level: z.string().nullable().optional(),
   metadata_reviewed: z.boolean().optional(),
   metadata_reviewed_at: z.string().nullable().optional(),
   metadata_reviewed_by: z.string().nullable().optional(),
@@ -7062,6 +7478,9 @@ export const MediaRightsOutSchema = z.object({
   rights_type: z.string().nullable().optional(),
   rights_status: z.string().nullable().optional(),
   rights_holder: z.string().nullable().optional(),
+  rights_holder_agent: z.string().nullable().optional(),
+  rights_holder_agent_contact_id: z.string().nullable().optional(),
+  rights_holder_agent_contact_name: z.string().nullable().optional(),
   license_type: z.string().nullable().optional(),
   license_url: z.string().nullable().optional(),
   rights_statement: z.string().nullable().optional(),
@@ -7968,6 +8387,24 @@ export const ObjectRelationshipsResponseSchema = z.object({
 
 export type ObjectRelationshipsResponse = z.infer<typeof ObjectRelationshipsResponseSchema>;
 
+export const ObjectResearchVisitOutSchema = z.object({
+  visit_id: z.string(),
+  visit_date: z.string(),
+  researcher_name: z.string(),
+  researcher_affiliation: z.string().nullable().optional(),
+  research_topic: z.string().nullable().optional(),
+  handling_note: z.string().nullable().optional(),
+  condition_on_return: z.string().nullable().optional(),
+}).passthrough();
+
+export type ObjectResearchVisitOut = z.infer<typeof ObjectResearchVisitOutSchema>;
+
+export const ObjectResearchVisitsResponseSchema = z.object({
+  items: z.array(ObjectResearchVisitOutSchema),
+}).passthrough();
+
+export type ObjectResearchVisitsResponse = z.infer<typeof ObjectResearchVisitsResponseSchema>;
+
 export const ObjectRightOutSchema = z.object({
   right_id: z.string(),
   organization_id: z.string(),
@@ -7975,6 +8412,9 @@ export const ObjectRightOutSchema = z.object({
   right_type: z.string().nullable().optional(),
   right_subtype: z.string().nullable().optional(),
   rights_holder_contact_id: z.string().nullable().optional(),
+  rights_holder_contact_name: z.string().nullable().optional(),
+  rights_holder_agent_contact_id: z.string().nullable().optional(),
+  rights_holder_agent_contact_name: z.string().nullable().optional(),
   status: z.string().nullable().optional(),
   start_date: z.string().nullable().optional(),
   end_date: z.string().nullable().optional(),
@@ -8072,6 +8512,7 @@ export const SubjectAuthorityOutSchema = z.object({
   aat_id: z.string().nullable().optional(),
   iconclass_id: z.string().nullable().optional(),
   wikidata_id: z.string().nullable().optional(),
+  lcsh_id: z.string().nullable().optional(),
   broader_subject_id: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
@@ -9467,6 +9908,123 @@ export const ReproductionRequestListResponseSchema = z.object({
 }).passthrough();
 
 export type ReproductionRequestListResponse = z.infer<typeof ReproductionRequestListResponseSchema>;
+
+export const _VisitFieldsSchema = z.object({
+  researcher_constituent_id: z.string().nullable().optional(),
+  researcher_name: z.string().nullable().optional(),
+  researcher_affiliation: z.string().nullable().optional(),
+  visit_date: z.string().nullable().optional(),
+  arrival_time: z.string().nullable().optional(),
+  departure_time: z.string().nullable().optional(),
+  location: z.string().nullable().optional(),
+  research_topic: z.string().nullable().optional(),
+  purpose: z.string().nullable().optional(),
+  supervised_by_user_id: z.string().nullable().optional(),
+  supervised_by_name: z.string().nullable().optional(),
+  use_request_id: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+}).passthrough();
+
+export type _VisitFields = z.infer<typeof _VisitFieldsSchema>;
+
+export const ResearchVisitCreateSchema = z.object({
+  researcher_constituent_id: z.string().nullable().optional(),
+  researcher_name: z.string(),
+  researcher_affiliation: z.string().nullable().optional(),
+  visit_date: z.string(),
+  arrival_time: z.string().nullable().optional(),
+  departure_time: z.string().nullable().optional(),
+  location: z.string().nullable().optional(),
+  research_topic: z.string().nullable().optional(),
+  purpose: z.string().nullable().optional(),
+  supervised_by_user_id: z.string().nullable().optional(),
+  supervised_by_name: z.string().nullable().optional(),
+  use_request_id: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+}).passthrough();
+
+export type ResearchVisitCreate = z.infer<typeof ResearchVisitCreateSchema>;
+
+export const ResearchVisitObjectOutSchema = z.object({
+  visit_object_id: z.string(),
+  visit_id: z.string(),
+  object_id: z.string(),
+  object_number: z.string().nullable().optional(),
+  object_name: z.string().nullable().optional(),
+  handling_note: z.string().nullable().optional(),
+  condition_on_return: z.string().nullable().optional(),
+  created_at: z.string().nullable().optional(),
+}).passthrough();
+
+export type ResearchVisitObjectOut = z.infer<typeof ResearchVisitObjectOutSchema>;
+
+export const ResearchVisitOutSchema = z.object({
+  visit_id: z.string(),
+  organization_id: z.string(),
+  researcher_constituent_id: z.string().nullable().optional(),
+  researcher_constituent_name: z.string().nullable().optional(),
+  researcher_name: z.string(),
+  researcher_affiliation: z.string().nullable().optional(),
+  visit_date: z.string(),
+  arrival_time: z.string().nullable().optional(),
+  departure_time: z.string().nullable().optional(),
+  location: z.string().nullable().optional(),
+  research_topic: z.string().nullable().optional(),
+  purpose: z.string().nullable().optional(),
+  supervised_by_user_id: z.string().nullable().optional(),
+  supervised_by_name: z.string().nullable().optional(),
+  use_request_id: z.string().nullable().optional(),
+  use_request_number: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  object_count: z.number().optional(),
+  objects: z.array(ResearchVisitObjectOutSchema).nullable().optional(),
+  created_at: z.string().nullable().optional(),
+  updated_at: z.string().nullable().optional(),
+}).passthrough();
+
+export type ResearchVisitOut = z.infer<typeof ResearchVisitOutSchema>;
+
+export const ResearchVisitListResponseSchema = z.object({
+  items: z.array(ResearchVisitOutSchema),
+  total: z.number(),
+  limit: z.number(),
+  offset: z.number(),
+}).passthrough();
+
+export type ResearchVisitListResponse = z.infer<typeof ResearchVisitListResponseSchema>;
+
+export const ResearchVisitObjectAddSchema = z.object({
+  object_id: z.string(),
+  handling_note: z.string().nullable().optional(),
+  condition_on_return: z.string().nullable().optional(),
+}).passthrough();
+
+export type ResearchVisitObjectAdd = z.infer<typeof ResearchVisitObjectAddSchema>;
+
+export const ResearchVisitObjectUpdateSchema = z.object({
+  handling_note: z.string().nullable().optional(),
+  condition_on_return: z.string().nullable().optional(),
+}).passthrough();
+
+export type ResearchVisitObjectUpdate = z.infer<typeof ResearchVisitObjectUpdateSchema>;
+
+export const ResearchVisitUpdateSchema = z.object({
+  researcher_constituent_id: z.string().nullable().optional(),
+  researcher_name: z.string().nullable().optional(),
+  researcher_affiliation: z.string().nullable().optional(),
+  visit_date: z.string().nullable().optional(),
+  arrival_time: z.string().nullable().optional(),
+  departure_time: z.string().nullable().optional(),
+  location: z.string().nullable().optional(),
+  research_topic: z.string().nullable().optional(),
+  purpose: z.string().nullable().optional(),
+  supervised_by_user_id: z.string().nullable().optional(),
+  supervised_by_name: z.string().nullable().optional(),
+  use_request_id: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+}).passthrough();
+
+export type ResearchVisitUpdate = z.infer<typeof ResearchVisitUpdateSchema>;
 
 export const ResendInviteResponseSchema = z.object({
   message: z.string(),
@@ -11062,6 +11620,7 @@ export const UpdateSubjectAuthorityRequestSchema = z.object({
   aat_id: z.string().nullable().optional(),
   iconclass_id: z.string().nullable().optional(),
   wikidata_id: z.string().nullable().optional(),
+  lcsh_id: z.string().nullable().optional(),
   broader_subject_id: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),

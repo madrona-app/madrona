@@ -44,6 +44,7 @@ import {
   STATUS_STYLES,
 } from './types';
 import { MadronaLoader } from '../../../components/ui/MadronaLoader';
+import { ComplianceActionsHistoryList } from '../../../components/collections/ComplianceActionsHistoryList';
 
 /**
  * Outer wrapper that provides section order context.
@@ -675,6 +676,13 @@ function IncidentReportWorkspacePageContent() {
               className="md:col-span-2"
             />
           </div>
+          {orgId && (
+            <ComplianceActionsHistoryList
+              organizationId={orgId}
+              actions={report?.preventive_actions}
+              title="Preventive action history"
+            />
+          )}
         </WorkspaceSection>
 
         {/* === ADMIN GROUP === */}

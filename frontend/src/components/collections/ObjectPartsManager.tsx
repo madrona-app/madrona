@@ -11,7 +11,7 @@
  * - Location selector per part
  */
 
-import React, { useState } from 'react';
+import React, { useState, useId } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
@@ -21,7 +21,6 @@ import {
   Trash2,
   Loader2,
   AlertCircle,
-  MoreVertical,
   Barcode,
   ChevronDown,
   ChevronRight,
@@ -39,6 +38,7 @@ import {
 import type { ObjectPart } from '../../lib/schemas';
 import SlideOver from '../ui/SlideOver';
 import { LocationPickerButton } from './LocationPickerModal';
+import { RowActionsMenu } from './RowActionsMenu';
 import { MOVEMENT_REASON_LABELS } from './ObjectFieldComponents';
 import ConfirmDialog from '../ConfirmDialog';
 
@@ -81,11 +81,11 @@ export function ObjectPartsManager({
   objectNumber,
   readOnly = false,
 }: ObjectPartsManagerProps) {
+  const fid = useId();
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingPart, setEditingPart] = useState<ObjectPart | null>(null);
   const [formData, setFormData] = useState<PartFormData>(emptyFormData);
-  const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [expandedMovements, setExpandedMovements] = useState<Record<string, boolean>>({});
   const [expandedMovementsFull, setExpandedMovementsFull] = useState<Record<string, boolean>>({});
   const [confirmState, setConfirmState] = useState<{action: () => void; title: string; message: string} | null>(null);
@@ -173,7 +173,6 @@ export function ObjectPartsManager({
       barcode: part.barcode || '',
     });
     setEditingPart(part);
-    setActiveMenu(null);
   };
 
   const handleDelete = (part: ObjectPart) => {
@@ -183,7 +182,6 @@ export function ObjectPartsManager({
       title: 'Remove Part',
       message: `Remove ${partLabel}? This cannot be undone.`,
     });
-    setActiveMenu(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -263,10 +261,11 @@ export function ObjectPartsManager({
     <form onSubmit={handleSubmit} className="space-y-4 p-6">
       {/* Name */}
       <div>
-        <label className="block text-sm font-medium text-forest mb-1">
+        <label htmlFor={`${fid}-name`} className="block text-sm font-medium text-forest mb-1">
           Name
         </label>
         <input
+          id={`${fid}-name`}
           type="text"
           value={formData.name}
           onChange={e => setFormData({ ...formData, name: e.target.value })}
@@ -280,10 +279,11 @@ export function ObjectPartsManager({
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-forest mb-1">
+        <label htmlFor={`${fid}-description`} className="block text-sm font-medium text-forest mb-1">
           Description
         </label>
         <textarea
+          id={`${fid}-description`}
           value={formData.description}
           onChange={e => setFormData({ ...formData, description: e.target.value })}
           rows={2}
@@ -294,10 +294,12 @@ export function ObjectPartsManager({
 
       {/* Current Location */}
       <div>
-        <label className="block text-sm font-medium text-forest mb-1">
+        <label id={`${fid}-current-location-label`} htmlFor={`${fid}-current-location`} className="block text-sm font-medium text-forest mb-1">
           Current Location
         </label>
         <LocationPickerButton
+          id={`${fid}-current-location`}
+          labelId={`${fid}-current-location-label`}
           organizationId={organizationId}
           value={formData.current_location_id || null}
           onChange={(locationId) => setFormData({ ...formData, current_location_id: locationId || '' })}
@@ -307,10 +309,11 @@ export function ObjectPartsManager({
 
       {/* Location Fitness */}
       <div>
-        <label className="block text-sm font-medium text-forest mb-1">
+        <label htmlFor={`${fid}-location-fitness`} className="block text-sm font-medium text-forest mb-1">
           Location Fitness
         </label>
         <select
+          id={`${fid}-location-fitness`}
           value={formData.current_location_fitness}
           onChange={e => setFormData({ ...formData, current_location_fitness: e.target.value })}
           className="input"
@@ -326,10 +329,11 @@ export function ObjectPartsManager({
 
       {/* Location Note */}
       <div>
-        <label className="block text-sm font-medium text-forest mb-1">
+        <label htmlFor={`${fid}-location-note`} className="block text-sm font-medium text-forest mb-1">
           Location Note
         </label>
         <input
+          id={`${fid}-location-note`}
           type="text"
           value={formData.current_location_note}
           onChange={e => setFormData({ ...formData, current_location_note: e.target.value })}
@@ -340,10 +344,12 @@ export function ObjectPartsManager({
 
       {/* Home Location */}
       <div>
-        <label className="block text-sm font-medium text-forest mb-1">
+        <label id={`${fid}-home-location-label`} htmlFor={`${fid}-home-location`} className="block text-sm font-medium text-forest mb-1">
           Home Location
         </label>
         <LocationPickerButton
+          id={`${fid}-home-location`}
+          labelId={`${fid}-home-location-label`}
           organizationId={organizationId}
           value={formData.home_location_id || null}
           onChange={(locationId) => setFormData({ ...formData, home_location_id: locationId || '' })}
@@ -356,10 +362,11 @@ export function ObjectPartsManager({
 
       {/* Barcode */}
       <div>
-        <label className="block text-sm font-medium text-forest mb-1">
+        <label htmlFor={`${fid}-barcode`} className="block text-sm font-medium text-forest mb-1">
           Barcode
         </label>
         <input
+          id={`${fid}-barcode`}
           type="text"
           value={formData.barcode}
           onChange={e => setFormData({ ...formData, barcode: e.target.value })}
@@ -513,39 +520,13 @@ export function ObjectPartsManager({
                     )}
 
                     {!readOnly && (
-                      <div className="relative">
-                        <button
-                          onClick={() => setActiveMenu(activeMenu === part.part_id ? null : part.part_id)}
-                          className="p-1.5 text-archive hover:text-forest rounded hover:bg-stone/50"
-                        >
-                          <MoreVertical size={16} />
-                        </button>
-
-                        {activeMenu === part.part_id && (
-                          <>
-                            <div
-                              className="fixed inset-0 z-10"
-                              onClick={() => setActiveMenu(null)}
-                            />
-                            <div className="absolute right-0 top-full mt-1 z-20 bg-parchment border border-lichen rounded-lg shadow-lg py-1 min-w-[140px]">
-                              <button
-                                onClick={() => handleEditClick(part)}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-forest hover:bg-stone/30"
-                              >
-                                <Edit2 size={14} />
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleDelete(part)}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-semantic-error hover:bg-semantic-error/10"
-                              >
-                                <Trash2 size={14} />
-                                Remove
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </div>
+                      <RowActionsMenu
+                        targetLabel={part.name || `Part ${part.part_number || ''}`.trim()}
+                        actions={[
+                          { label: 'Edit', icon: Edit2, onSelect: () => handleEditClick(part) },
+                          { label: 'Remove', icon: Trash2, onSelect: () => handleDelete(part), destructive: true },
+                        ]}
+                      />
                     )}
                   </div>
                 </div>

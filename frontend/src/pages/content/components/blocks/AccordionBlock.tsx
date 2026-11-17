@@ -2,7 +2,7 @@
  * Accordion Block — Expandable FAQ / info sections.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useId } from 'react';
 import { ChevronDown, Plus, Trash2, GripVertical } from 'lucide-react';
 import { cn } from '../../../../lib/utils';
 
@@ -29,6 +29,7 @@ interface AccordionItem {
 // =============================================================================
 
 export function AccordionEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const items = (content.items as AccordionItem[]) || [];
 
   const updateItem = useCallback(
@@ -64,10 +65,10 @@ export function AccordionEditor({ content, onChange }: BlockEditorComponentProps
   );
 
   return (
-    <div className="space-y-3">
-      <label className="block text-sm font-medium text-ink">
+    <div role="group" aria-labelledby={`${fieldId}-accordion-items-group`} className="space-y-3">
+      <span id={`${fieldId}-accordion-items-group`} className="block text-sm font-medium text-ink">
         Accordion Items
-      </label>
+      </span>
 
       {items.length === 0 && (
         <p className="text-sm text-archive italic">

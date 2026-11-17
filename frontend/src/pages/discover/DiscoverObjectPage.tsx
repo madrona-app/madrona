@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useParams, Link, useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useParams, Link, useSearchParams, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -17,8 +17,16 @@ import type { DiscoverMediaItem } from '../../types/discover';
 import { CollectionSiteShell } from './components/CollectionSiteShell';
 import { RelatedObjects } from './components/RelatedObjects';
 import { ShareToolbar } from './components/ShareToolbar';
+import { Breadcrumbs } from './components/Breadcrumbs';
+import type { BreadcrumbItem } from './components/Breadcrumbs';
+import type { DiscoverObjectLinkState } from './components/ObjectCard';
+import { describeSearch, hasSearchCriteria, parseSearchParams } from './searchUrl';
 import { ResponsiveImage } from '../../components/ui/ResponsiveImage';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
+import { useAccessibleModal } from '../../hooks/useAccessibleModal';
+import { SaveToCollection } from './members/SaveToCollection';
+import { MediaDownloads, PublicMediaList } from './components/PublicMediaList';
+import { isImageMedia } from './components/publicMedia';
 
 // ============================================================================
 // Lightbox
@@ -38,11 +46,12 @@ function Lightbox({
   onNext: () => void;
 }) {
   const item = media[currentIndex];
+  // Focus trap, Escape to close and focus restoration to the opening button.
+  const { modalRef, titleId } = useAccessibleModal({ isOpen: true, onClose, titlePrefix: 'object-lightbox' });
 
-  // Keyboard navigation
+  // Arrow keys step through images (Escape is handled by the modal hook)
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
       if (e.key === 'ArrowLeft') onPrev();
       if (e.key === 'ArrowRight') onNext();
     };
@@ -61,33 +70,48 @@ function Lightbox({
   if (!item) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-ink/95 flex items-center justify-center">
+    <div
+      ref={modalRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      className="fixed inset-0 z-50 bg-ink/95 flex items-center justify-center"
+    >
+      <h2 id={titleId} className="sr-only">
+        {media.length > 1 ? `Image ${currentIndex + 1} of ${media.length}` : 'Image viewer'}
+      </h2>
       <button
+        type="button"
         onClick={onClose}
-        className="absolute top-4 right-4 text-parchment/70 hover:text-parchment z-10 p-2"
+        aria-label="Close image viewer"
+        className="absolute top-4 right-4 text-parchment/70 hover:text-parchment z-10 p-2 min-w-[44px] min-h-[44px] rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-parchment/60"
       >
-        <X size={28} />
+        <X size={28} aria-hidden="true" />
       </button>
 
       {media.length > 1 && (
         <>
           <button
+            type="button"
             onClick={onPrev}
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-parchment/70 hover:text-parchment p-2"
+            aria-label="Previous image"
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-parchment/70 hover:text-parchment p-2 min-w-[44px] min-h-[44px] rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-parchment/60"
           >
-            <ChevronLeft size={36} />
+            <ChevronLeft size={36} aria-hidden="true" />
           </button>
           <button
+            type="button"
             onClick={onNext}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-parchment/70 hover:text-parchment p-2"
+            aria-label="Next image"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-parchment/70 hover:text-parchment p-2 min-w-[44px] min-h-[44px] rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-parchment/60"
           >
-            <ChevronRight size={36} />
+            <ChevronRight size={36} aria-hidden="true" />
           </button>
         </>
       )}
 
       <ResponsiveImage
-        src={item.url}
+        src={item.url ?? ''}
         srcset={item.srcset}
         alt={item.alt_text || 'Object image'}
         sizes="90vw"
@@ -96,7 +120,7 @@ function Lightbox({
       />
 
       {media.length > 1 && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-parchment/60 text-sm">
+        <div aria-hidden="true" className="absolute bottom-6 left-1/2 -translate-x-1/2 text-parchment/80 text-sm">
           {currentIndex + 1} / {media.length}
         </div>
       )}
@@ -116,6 +140,24 @@ function MetadataRow({ label, children }: { label: string; children: React.React
       <dd className="text-sm text-ink">{children}</dd>
     </div>
   );
+}
+
+/**
+ * Home > Search results for “q” (the exact results URL) > object title.
+ * Without a results context (a shared or bookmarked record): Home > title.
+ */
+function objectCrumbs(orgSlug: string, fromResults: string | undefined, title: string): BreadcrumbItem[] {
+  const home = `/c/${orgSlug}`;
+  const items: BreadcrumbItem[] = [{ label: 'Home', to: home }];
+  if (fromResults !== undefined) {
+    const params = parseSearchParams(new URLSearchParams(fromResults));
+    items.push({
+      label: hasSearchCriteria(params) ? describeSearch(params) : 'Search results',
+      to: `${home}${fromResults}`,
+    });
+  }
+  items.push({ label: title });
+  return items;
 }
 
 // ============================================================================
@@ -142,6 +184,7 @@ function buildObjectJsonLd(
 
   // Resolve primary + additional image URLs from the media array.
   const imageUrls: string[] = (obj.media || [])
+    .filter((m: { media_type?: string | null }) => !m.media_type || m.media_type === 'image')
     .map((m: { url?: string; full_url?: string; thumbnail_url?: string }) =>
       m.url || m.full_url || m.thumbnail_url,
     )
@@ -244,18 +287,24 @@ export function DiscoverObjectPage() {
     sessionStorage.setItem('madrona-visitor-chat-open', '1');
   }, [searchParams, orgSlug, objectId]);
 
-  // Build "back to results" link preserving search state
-  const backLink = `/c/${orgSlug}${searchParams.toString() ? '?' + searchParams.toString() : ''}`;
+  // The results this record was opened from, if any. Carried as router
+  // state (not in the record URL, which stays a clean permalink); history
+  // state survives a reload of the same tab.
+  const location = useLocation();
+  const fromResults = (location.state as DiscoverObjectLinkState | null)?.discoverResults;
+
+  // Images feed the hero, thumbnail strip and lightbox; audio, video and
+  // documents are listed with their players, transcripts and links.
+  const images = useMemo(() => (obj?.media || []).filter(isImageMedia), [obj]);
+  const otherMedia = useMemo(() => (obj?.media || []).filter((m) => !isImageMedia(m)), [obj]);
 
   const handleLightboxPrev = useCallback(() => {
-    if (!obj) return;
-    setLightboxIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : obj.media.length - 1));
-  }, [obj]);
+    setLightboxIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : images.length - 1));
+  }, [images]);
 
   const handleLightboxNext = useCallback(() => {
-    if (!obj) return;
-    setLightboxIndex((prev) => (prev !== null && prev < obj.media.length - 1 ? prev + 1 : 0));
-  }, [obj]);
+    setLightboxIndex((prev) => (prev !== null && prev < images.length - 1 ? prev + 1 : 0));
+  }, [images]);
 
   if (isLoading) {
     return (
@@ -298,7 +347,7 @@ export function DiscoverObjectPage() {
     );
   }
 
-  const currentMedia = obj.media[selectedImageIndex] || obj.media[0];
+  const currentMedia = images[selectedImageIndex] || images[0];
 
   // Format display strings
   const materialsDisplay = obj.materials
@@ -315,10 +364,13 @@ export function DiscoverObjectPage() {
     ?.map((m: { type?: string; value: number; unit?: string }) => `${m.type || ''}: ${m.value} ${m.unit || ''}`.trim())
     .join('; ');
 
+  // The API sends inscription text as strings; older payloads sent objects.
   const inscriptionsDisplay = obj.inscriptions
-    ?.map((i: { content?: string; text?: string }) => i.content || i.text)
+    ?.map((i: string | { content?: string; text?: string }) => (typeof i === 'string' ? i : i.content || i.text))
     .filter(Boolean)
     .join('; ');
+
+  const subjectsDisplay = obj.subjects?.filter(Boolean).join(', ');
 
   return (
     <CollectionSiteShell info={info} orgSlug={orgSlug!} contextEntityType="collection_object" contextEntityId={objectId}>
@@ -348,31 +400,28 @@ export function DiscoverObjectPage() {
         </script>
       </Helmet>
 
-      {/* Back + share bar */}
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-        <Link
-          to={backLink}
-          className="text-archive hover:text-bark text-sm flex items-center gap-1 transition-colors"
-        >
-          <ArrowLeft size={16} />
-          Back to results
-        </Link>
+      {/* Breadcrumb + share bar */}
+      <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+        <Breadcrumbs items={objectCrumbs(orgSlug!, fromResults, obj.title || 'Untitled')} />
         <ShareToolbar
           url={obj.canonical_url}
           title={obj.title || 'Untitled'}
         />
       </div>
 
-      {/* Image hero */}
+      {/* Image hero (omitted when the record has only audio, video or documents) */}
+      {(images.length > 0 || otherMedia.length === 0) && (
       <div className="bg-stone/20">
         <div className="max-w-7xl mx-auto flex items-center justify-center py-8 px-4">
           {currentMedia ? (
             <button
+              type="button"
               onClick={() => setLightboxIndex(selectedImageIndex)}
-              className="relative group cursor-zoom-in"
+              aria-label={`Enlarge image: ${currentMedia.alt_text || obj.title || 'Object'}`}
+              className="relative group cursor-zoom-in rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             >
               <ResponsiveImage
-                src={currentMedia.url}
+                src={currentMedia.url ?? ''}
                 srcset={currentMedia.srcset}
                 alt={currentMedia.alt_text || obj.title || 'Object'}
                 sizes="(max-width: 768px) 100vw, 60vw"
@@ -390,11 +439,26 @@ export function DiscoverObjectPage() {
           )}
         </div>
 
+        {currentMedia?.preferred_citation && (
+          <div className="max-w-7xl mx-auto px-4 pb-4">
+            <p className="text-sm text-ink">
+              <span className="font-medium">Preferred citation: </span>
+              {currentMedia.preferred_citation}
+            </p>
+          </div>
+        )}
+
+        {currentMedia && (currentMedia.downloads?.length ?? 0) > 0 && (
+          <div className="max-w-7xl mx-auto px-4 pb-4">
+            <MediaDownloads item={currentMedia} className="" />
+          </div>
+        )}
+
         {/* Thumbnail strip */}
-        {obj.media.length > 1 && (
+        {images.length > 1 && (
           <div className="max-w-7xl mx-auto px-4 pb-6">
             <div className="flex gap-2 overflow-x-auto pb-2 justify-center">
-              {obj.media.map((m, i) => (
+              {images.map((m, i) => (
                 <button
                   key={m.media_id}
                   onClick={() => setSelectedImageIndex(i)}
@@ -405,7 +469,7 @@ export function DiscoverObjectPage() {
                   }`}
                 >
                   <ResponsiveImage
-                    src={m.url}
+                    src={m.url ?? ''}
                     srcset={m.srcset}
                     alt={m.alt_text || `Image ${i + 1}`}
                     sizes="64px"
@@ -417,6 +481,7 @@ export function DiscoverObjectPage() {
           </div>
         )}
       </div>
+      )}
 
       {/* Metadata */}
       <div className="max-w-7xl mx-auto px-4 py-10">
@@ -441,6 +506,8 @@ export function DiscoverObjectPage() {
               <p className="text-sm text-archive mb-6">{obj.creation_date_display}</p>
             )}
 
+            <SaveToCollection orgSlug={orgSlug!} objectId={obj.object_id} objectTitle={obj.title || 'Untitled'} />
+
             {obj.brief_description && (
               <div className="mb-6">
                 <h2 className="text-xs font-medium text-archive uppercase tracking-wide mb-2">
@@ -455,6 +522,8 @@ export function DiscoverObjectPage() {
                 <p className="text-sm text-ink leading-relaxed">{obj.full_description}</p>
               </div>
             )}
+
+            <PublicMediaList items={otherMedia} />
 
             {obj.provenance && (
               <div className="mb-6">
@@ -471,15 +540,38 @@ export function DiscoverObjectPage() {
           {/* Right column: structured metadata */}
           <div className="lg:col-span-2">
             <dl className="space-y-0">
+              <MetadataRow label="Object Name">{obj.object_name}</MetadataRow>
               <MetadataRow label="Object Type">{obj.object_type}</MetadataRow>
               <MetadataRow label="Classification">{obj.classification}</MetadataRow>
               <MetadataRow label="Medium">{materialsDisplay}</MetadataRow>
               <MetadataRow label="Technique">{techniquesDisplay}</MetadataRow>
               <MetadataRow label="Dimensions">{measurementsDisplay}</MetadataRow>
+              <MetadataRow label="Physical Description">{obj.physical_description}</MetadataRow>
+              <MetadataRow label="Edition">{obj.edition}</MetadataRow>
               <MetadataRow label="Creation Place">{obj.creation_place}</MetadataRow>
               <MetadataRow label="Style / Period">{obj.style_period}</MetadataRow>
               <MetadataRow label="Inscriptions">{inscriptionsDisplay}</MetadataRow>
+              <MetadataRow label="Subjects">{subjectsDisplay}</MetadataRow>
               <MetadataRow label="Credit Line">{obj.credit_line}</MetadataRow>
+              <MetadataRow label="External Links">
+                {obj.external_links && obj.external_links.length > 0 ? (
+                  <ul className="space-y-1">
+                    {obj.external_links.map((link, i) => (
+                      <li key={`${link.url}-${i}`}>
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-bark hover:text-copper-dark underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 rounded"
+                        >
+                          {link.label || link.url}
+                          <span className="sr-only">, opens in a new tab</span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </MetadataRow>
             </dl>
 
             {/* Attribution */}
@@ -496,7 +588,7 @@ export function DiscoverObjectPage() {
       {/* Lightbox */}
       {lightboxIndex !== null && (
         <Lightbox
-          media={obj.media}
+          media={images}
           currentIndex={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
           onPrev={handleLightboxPrev}

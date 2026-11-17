@@ -1,22 +1,22 @@
 """Typed payload for an `object_exit` draft (Object Exit, Proc. 5).
 
 The proposable subset of the live ObjectExit create shape
-(`app/models/objects.py::ObjectExit`). `exit_reason` is a `Literal` mirroring
-the live CHECK. `extra='forbid'` rejects anything else. Like acquisition,
+(`app/models/objects.py::ObjectExit`). `exit_reason` is a lookup key checked against
+the organization's lookup values. `extra='forbid'` rejects anything else. Like acquisition,
 object_exit is approval-gated — the draft carries the approval.
 """
 
 from decimal import Decimal
-from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-ExitReason = Literal[
-    "loan_return", "loan_out", "transfer", "disposal", "deaccession",
-    "conservation", "photography", "enquiry_return", "repatriation",
-    "destruction", "theft_loss", "other",
-]
+from app.schemas.drafts.base import LookupKey
+
+# Lookup-backed (organizations add values): checked against the org's
+# active lookup values when the draft is proposed or edited
+# (app/services/lookup_fields.check_draft_lookup_values), not a fixed list.
+ExitReason = LookupKey
 
 
 class ObjectExitDraftPayload(BaseModel):

@@ -141,18 +141,73 @@ export interface DiscoverSearchResponse {
   next_offset: number | null;
 }
 
+/** A WebVTT caption track, served same-origin by the Discover API. */
+export interface DiscoverCaptionTrack {
+  url: string;
+  label: string;
+  srclang: string;
+  kind: string;
+  default?: boolean | null;
+}
+
+/** A plain-text equivalent (transcript or OCR text) of a media file. */
+export interface DiscoverTextAlternative {
+  url: string;
+  label: string;
+  kind: 'transcript' | 'ocr' | string;
+  file_size?: number | null;
+}
+
+/** A download the file's public download level allows (URL re-checks it). */
+export interface DiscoverMediaDownload {
+  variant: 'access' | 'original' | string;
+  url: string;
+  label: string;
+  format?: string | null;
+  mime_type?: string | null;
+  file_size?: number | null;
+  width?: number | null;
+  height?: number | null;
+}
+
 export interface DiscoverMediaItem {
   media_id: string;
-  url: string;
+  /**
+   * What the page displays or plays: a rendition or access copy, or the
+   * original only when the file's download level allows it. Null when
+   * nothing may be served yet (see playback_status).
+   */
+  url: string | null;
+  /** 'access_copy' or 'original' when url is set. */
+  playback_source?: 'access_copy' | 'original' | string | null;
+  /** 'ready', 'preparing', 'unavailable', or 'text_only' (non-PDF documents). */
+  playback_status?: 'ready' | 'preparing' | 'unavailable' | 'text_only' | string | null;
+  /** Public API path of a document's text, when it has any. */
+  text_url?: string | null;
   media_type: string | null;
   mime_type: string | null;
+  /** Human name for the file: its title, else its filename. */
+  name?: string | null;
+  description?: string | null;
   width: number | null;
   height: number | null;
+  duration_seconds?: number | null;
+  page_count?: number | null;
+  file_size?: number | null;
   alt_text: string | null;
   attribution: string | null;
+  credit?: string | null;
+  preferred_citation?: string | null;
   is_primary: boolean;
   caption: string | null;
   srcset: SrcSetData | null;
+  playback_mime_type?: string | null;
+  poster_url?: string | null;
+  captions?: DiscoverCaptionTrack[];
+  transcript?: string | null;
+  transcript_machine_generated?: boolean;
+  text_alternatives?: DiscoverTextAlternative[];
+  downloads?: DiscoverMediaDownload[];
 }
 
 export interface DiscoverRelatedHit {
@@ -172,8 +227,13 @@ export interface DiscoverObjectDetail {
   canonical_url: string;
   title: string | null;
   titles: Array<{ title: string; title_type?: string; is_preferred?: boolean }> | null;
+  /** Fields below are blank when the organization has not made them public. */
+  object_name?: string | null;
   brief_description: string | null;
   full_description: string | null;
+  physical_description?: string | null;
+  subjects?: string[] | null;
+  edition?: string | null;
   object_type: string | null;
   classification: string | null;
   classifications: Array<{ term: string }> | null;
@@ -185,15 +245,18 @@ export interface DiscoverObjectDetail {
   materials: Array<{ name?: string; value?: string }> | null;
   techniques: Array<{ name?: string; value?: string }> | null;
   measurements: Array<{ type: string; value: number; unit: string }> | null;
-  inscriptions: Array<{ content?: string; text?: string }> | null;
+  inscriptions: Array<string | { content?: string; text?: string }> | null;
   style_period: string | null;
   provenance: string | null;
   credit_line: string | null;
+  external_links?: { url: string; label: string }[];
   media: DiscoverMediaItem[];
   has_image: boolean;
 }
 
 export interface DiscoverConfig {
+  /** Id of the saved settings row (absent until the settings are first saved). */
+  config_id?: string | null;
   hero_media_id: string | null;
   page_title: string | null;
   page_subtitle: string | null;
@@ -313,6 +376,8 @@ export interface PublicExhibition {
   thumbnail_url: string | null;
   hero_image_url?: string | null;
   tags: string[] | null;
+  /** Number of public (discoverable) objects in the exhibition — the exportable group. */
+  public_object_count?: number;
 }
 
 // =============================================================================

@@ -27,6 +27,8 @@ class MediaRightsDraftPayload(BaseModel):
     # URIs are the recommended values for rights_statement below.
     rights_status: str | None = Field(default=None, max_length=50)
     rights_holder: str | None = Field(default=None, max_length=255)
+    rights_holder_agent: str | None = Field(default=None, max_length=255)
+    rights_holder_agent_contact_id: UUID | None = None
     license_type: str | None = Field(default=None, max_length=50)  # CC-BY, CC0, ARR…
     license_url: str | None = Field(default=None, max_length=500)
     rights_statement: str | None = None  # prefer a rightsstatements.org URI

@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Download, AlertCircle, Image as ImageIcon } from 'lucide-react';
 import { createDownloadRequest } from '../../lib/api';
 import { useToast } from '../../contexts/ToastContext';
+import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
 
 interface RequestDownloadModalProps {
   organizationId: string;
@@ -67,6 +68,13 @@ export function RequestDownloadModal({
     },
   });
 
+  const fid = useId();
+  const { modalRef, titleId } = useAccessibleModal({
+    isOpen: true,
+    onClose,
+    titlePrefix: 'request-download-modal',
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!intendedUse.trim()) return;
@@ -76,18 +84,24 @@ export function RequestDownloadModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-ink/50" onClick={onClose} />
+      <div aria-hidden="true" className="absolute inset-0 bg-ink/50" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative bg-parchment rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden border border-lichen">
+      <div
+        ref={modalRef}
+        {...getModalAriaProps(titleId)}
+        className="relative bg-parchment rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden border border-lichen"
+      >
         {/* Header */}
         <div className="px-6 py-4 border-b border-lichen flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Download size={20} className="text-forest" />
-            <h2 className="text-lg font-semibold text-ink">Request Download</h2>
+            <h2 id={titleId} className="text-lg font-semibold text-ink">Request Download</h2>
           </div>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close"
             className="p-1 text-archive hover:text-ink hover:bg-stone/50 rounded transition-colors"
           >
             <X size={20} />
@@ -120,14 +134,15 @@ export function RequestDownloadModal({
             </div>
 
             {/* Purpose */}
-            <div>
-              <label className="block text-sm font-medium text-ink mb-2">
+            <fieldset>
+              <legend className="block text-sm font-medium text-ink mb-2">
                 Purpose of Request <span className="text-semantic-error">*</span>
-              </label>
+              </legend>
               <div className="grid grid-cols-2 gap-2">
                 {PURPOSE_OPTIONS.map((opt) => (
                   <label
                     key={opt.value}
+                    htmlFor={`${fid}-purpose-${opt.value}`}
                     className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
                       purpose === opt.value
                         ? 'border-forest bg-forest/5'
@@ -135,6 +150,7 @@ export function RequestDownloadModal({
                     }`}
                   >
                     <input
+                      id={`${fid}-purpose-${opt.value}`}
                       type="radio"
                       name="purpose"
                       value={opt.value}
@@ -142,21 +158,22 @@ export function RequestDownloadModal({
                       onChange={(e) => setPurpose(e.target.value)}
                       className="mt-0.5"
                     />
-                    <div>
-                      <div className="text-sm font-medium text-ink">{opt.label}</div>
-                      <div className="text-xs text-archive">{opt.description}</div>
-                    </div>
+                    <span className="block text-sm font-medium text-ink">
+                      {opt.label}
+                      <span className="block text-xs font-normal text-archive">{opt.description}</span>
+                    </span>
                   </label>
                 ))}
               </div>
-            </div>
+            </fieldset>
 
             {/* Intended Use */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-2">
+              <label htmlFor={`${fid}-intended-use`} className="block text-sm font-medium text-ink mb-2">
                 Describe Intended Use <span className="text-semantic-error">*</span>
               </label>
               <textarea
+                id={`${fid}-intended-use`}
                 value={intendedUse}
                 onChange={(e) => setIntendedUse(e.target.value)}
                 placeholder="How will you use these images? Please be specific..."
@@ -168,10 +185,11 @@ export function RequestDownloadModal({
 
             {/* Institution */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-2">
+              <label htmlFor={`${fid}-institution`} className="block text-sm font-medium text-ink mb-2">
                 Institution / Affiliation
               </label>
               <input
+                id={`${fid}-institution`}
                 type="text"
                 value={institution}
                 onChange={(e) => setInstitution(e.target.value)}
@@ -182,10 +200,11 @@ export function RequestDownloadModal({
 
             {/* Project Description */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-2">
+              <label htmlFor={`${fid}-project-description`} className="block text-sm font-medium text-ink mb-2">
                 Project Description
               </label>
               <textarea
+                id={`${fid}-project-description`}
                 value={projectDescription}
                 onChange={(e) => setProjectDescription(e.target.value)}
                 placeholder="Additional context about your project (optional)..."
@@ -196,10 +215,11 @@ export function RequestDownloadModal({
 
             {/* Derivative Type */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-2">
+              <label htmlFor={`${fid}-derivative-type`} className="block text-sm font-medium text-ink mb-2">
                 File Type Requested
               </label>
               <select
+                id={`${fid}-derivative-type`}
                 value={derivativeType}
                 onChange={(e) => setDerivativeType(e.target.value)}
                 className="w-full px-3 py-2 border border-lichen rounded-lg text-sm focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"

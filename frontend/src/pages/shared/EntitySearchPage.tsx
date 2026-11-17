@@ -14,7 +14,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, useMemo, lazy, Suspense } from 'react';
 import Checkbox from '../../components/Checkbox';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { Search, Filter, ChevronDown, ChevronRight, Loader2, Map as MapIcon, List, X, MapPin } from 'lucide-react';
 import { getDatasets } from '../../lib/api';
 import type { SearchHit, Facet, SearchFilters } from '../../lib/api';
@@ -36,7 +36,6 @@ export default function EntitySearchPage() {
   const { orgId } = useParams<{ orgId: string }>();
   const { activeOrganizationId } = useOrganization();
   const organizationId = orgId || activeOrganizationId;
-  const navigate = useNavigate();
 
   const [showFilters, setShowFilters] = useState(true);
   const [relationshipFilterKeys, setRelationshipFilterKeys] = useState<string[] | null>(null);
@@ -313,19 +312,15 @@ export default function EntitySearchPage() {
           <div className="p-4 border-b border-lichen">
             <h2 className="font-semibold text-ink">Objects in Selected Area</h2>
           </div>
-          <div className="divide-y divide-lichen max-h-[400px] overflow-y-auto">
+          <ul aria-label="Objects in selected area" className="divide-y divide-lichen max-h-[400px] overflow-y-auto">
             {mapSearchResults.objects.map((obj) => (
-              <div
-                key={obj.object_id}
-                onClick={() =>
-                  navigate(
-                    `/organizations/${organizationId}/collections/objects/${obj.object_id}`
-                  )
-                }
-                className="p-4 hover:bg-stone cursor-pointer transition-colors"
+              <li key={obj.object_id}>
+              <Link
+                to={`/organizations/${organizationId}/collections/objects/${obj.object_id}`}
+                className="block p-4 hover:bg-stone cursor-pointer transition-colors no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bark/30"
               >
                 <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-archive flex-shrink-0 mt-0.5" />
+                  <MapPin className="w-5 h-5 text-archive flex-shrink-0 mt-0.5" aria-hidden="true" />
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-ink">{obj.title || 'Untitled'}</div>
                     <div className="text-sm text-archive">{obj.object_number}</div>
@@ -334,9 +329,10 @@ export default function EntitySearchPage() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </Link>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       )}
 
@@ -408,13 +404,9 @@ export default function EntitySearchPage() {
                       key={hit.entity_key}
                       hit={hit}
                       datasetName={getDatasetName(hit.dataset_id)}
-                      onClick={() =>
-                        navigate(
-                          `/organizations/${organizationId}/bridge/entities/${encodeURIComponent(
-                            hit.entity_key
-                          )}`
-                        )
-                      }
+                      href={`/organizations/${organizationId}/bridge/entities/${encodeURIComponent(
+                        hit.entity_key
+                      )}`}
                     />
                   ))}
                 </div>
@@ -566,11 +558,11 @@ function FacetSection({
 function SearchResultCard({
   hit,
   datasetName,
-  onClick,
+  href,
 }: {
   hit: SearchHit;
   datasetName: string | null;
-  onClick: () => void;
+  href: string;
 }) {
   const highlightedTitle = hit.highlights?.title?.[0]
     ? sanitizeHighlight(hit.highlights.title[0])
@@ -580,9 +572,10 @@ function SearchResultCard({
     : null;
 
   return (
+    // The title link is stretched over the card (after:absolute inset-0) so the
+    // whole card stays clickable while assistive tech gets one named link.
     <div
-      onClick={onClick}
-      className="bg-parchment rounded-lg border border-lichen p-4 hover:border-stone-400 cursor-pointer transition-colors"
+      className="relative bg-parchment rounded-lg border border-lichen p-4 hover:border-stone-400 cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-bark/30 focus-within:ring-offset-2"
     >
       <div className="flex gap-4">
         {/* Thumbnail */}
@@ -597,16 +590,15 @@ function SearchResultCard({
         {/* Content */}
         <div className="flex-1 min-w-0">
           {/* Title with highlight */}
-          {highlightedTitle ? (
-            <h3
-              className="font-medium text-ink mb-1 line-clamp-1"
-              ref={(el) => { if (el) el.innerHTML = highlightedTitle; }}
-            />
-          ) : (
-            <h3 className="font-medium text-ink mb-1 line-clamp-1">
-              {hit.title || 'Untitled'}
-            </h3>
-          )}
+          <h3 className="font-medium text-ink mb-1 line-clamp-1">
+            <Link to={href} className="text-ink no-underline after:absolute after:inset-0 focus-visible:outline-none">
+              {highlightedTitle ? (
+                <span ref={(el) => { if (el) el.innerHTML = highlightedTitle; }} />
+              ) : (
+                hit.title || 'Untitled'
+              )}
+            </Link>
+          </h3>
 
           {/* Object number */}
           {hit.object_number && (

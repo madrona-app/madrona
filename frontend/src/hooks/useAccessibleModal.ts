@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 
 /**
  * Hook for making modals and drawers accessible according to Section 508 / WCAG 2.1.
@@ -45,6 +45,11 @@ interface UseAccessibleModalOptions {
   onClose: () => void;
   /** Prefix for generating unique IDs (e.g., 'confirm-dialog') */
   titlePrefix: string;
+  /**
+   * Element to focus when the modal opens (e.g. the first form field).
+   * Defaults to the first focusable element, or the container if none.
+   */
+  initialFocusRef?: React.RefObject<HTMLElement | null>;
 }
 
 interface UseAccessibleModalReturn {
@@ -66,89 +71,90 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(', ');
 
+// Open modals, innermost last. Only the top one handles Escape and Tab, so a
+// dialog opened from inside another closes on its own Escape and leaves the
+// outer one open.
+const openModals: symbol[] = [];
+
 export function useAccessibleModal({
   isOpen,
   onClose,
   titlePrefix,
+  initialFocusRef,
 }: UseAccessibleModalOptions): UseAccessibleModalReturn {
   const modalRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
+  // Read through refs so a parent passing an inline onClose (or ref) does not
+  // re-run the effect, which would restore and re-take focus on every render.
+  const onCloseRef = useRef(onClose);
+  const initialFocusRefRef = useRef(initialFocusRef);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+    initialFocusRefRef.current = initialFocusRef;
+  });
 
   // Generate unique IDs
   const titleId = `${titlePrefix}-title`;
   const descriptionId = `${titlePrefix}-description`;
 
-  // Handle ESC key
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        onClose();
-        return;
-      }
-
-      // Handle Tab key for focus trap
-      if (event.key === 'Tab' && modalRef.current) {
-        const focusableElements = modalRef.current.querySelectorAll(FOCUSABLE_SELECTOR);
-        const firstElement = focusableElements[0] as HTMLElement | undefined;
-        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement | undefined;
-
-        if (!firstElement || !lastElement) return;
-
-        if (event.shiftKey) {
-          // Shift+Tab: if on first element, go to last
-          if (document.activeElement === firstElement) {
-            event.preventDefault();
-            lastElement.focus();
-          }
-        } else {
-          // Tab: if on last element, go to first
-          if (document.activeElement === lastElement) {
-            event.preventDefault();
-            firstElement.focus();
-          }
-        }
-      }
-    },
-    [onClose]
-  );
-
-  // Set up focus trap and keyboard handling
   useEffect(() => {
     if (!isOpen) return;
+    const token = Symbol(titlePrefix);
+    openModals.push(token);
 
     // Store the currently focused element to restore later
     previousActiveElement.current = document.activeElement as HTMLElement;
 
-    // Add keyboard event listener
-    document.addEventListener('keydown', handleKeyDown);
-
-    // Focus the first focusable element in the modal
-    const timeoutId = setTimeout(() => {
-      if (modalRef.current) {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (openModals[openModals.length - 1] !== token) return;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        onCloseRef.current();
+        return;
+      }
+      // Focus trap
+      if (event.key === 'Tab' && modalRef.current) {
         const focusableElements = modalRef.current.querySelectorAll(FOCUSABLE_SELECTOR);
         const firstElement = focusableElements[0] as HTMLElement | undefined;
-        if (firstElement) {
+        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement | undefined;
+        if (!firstElement || !lastElement) return;
+        if (event.shiftKey) {
+          if (document.activeElement === firstElement) {
+            event.preventDefault();
+            lastElement.focus();
+          }
+        } else if (document.activeElement === lastElement) {
+          event.preventDefault();
           firstElement.focus();
-        } else {
-          // If no focusable element, focus the modal itself
-          modalRef.current.focus();
         }
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+
+    const timeoutId = setTimeout(() => {
+      const preferred = initialFocusRefRef.current?.current;
+      if (preferred) {
+        preferred.focus();
+        return;
+      }
+      if (modalRef.current) {
+        const firstElement = modalRef.current.querySelector(FOCUSABLE_SELECTOR) as HTMLElement | null;
+        (firstElement ?? modalRef.current).focus();
       }
     }, 0);
 
-    // Cleanup
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       clearTimeout(timeoutId);
-
+      const i = openModals.indexOf(token);
+      if (i >= 0) openModals.splice(i, 1);
       // Restore focus to the previously focused element
       if (previousActiveElement.current && typeof previousActiveElement.current.focus === 'function') {
         previousActiveElement.current.focus();
       }
     };
-  }, [isOpen, handleKeyDown]);
+  }, [isOpen, titlePrefix]);
 
   return {
     modalRef,

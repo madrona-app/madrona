@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import Checkbox from '../../Checkbox';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { ChecklistItem, ChecklistItemStatus, ChecklistPhase } from './types';
@@ -27,6 +28,7 @@ export function PhaseGroup({
   onToggleSelect,
   canEdit,
 }: PhaseGroupProps) {
+  const panelId = useId();
   const config = PHASE_CONFIG[phase];
   const doneCount = items.filter((i) => i.status === 'done' || i.status === 'not_applicable').length;
   const progress = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
@@ -49,16 +51,19 @@ export function PhaseGroup({
 
   return (
     <div className="border border-lichen rounded-lg overflow-hidden">
-      {/* Sticky header */}
-      <div
-        className={`sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-parchment border-b border-lichen cursor-pointer hover:bg-stone/30`}
+      {/* Sticky header (disclosure toggle for the phase) */}
+      <button
+        type="button"
         onClick={onToggle}
+        aria-expanded={isExpanded}
+        aria-controls={panelId}
+        className={`sticky top-0 z-10 flex w-full items-center justify-between px-4 py-3 bg-parchment border-b border-lichen cursor-pointer text-left hover:bg-stone/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2`}
       >
-        <div className="flex items-center gap-3">
+        <span className="flex items-center gap-3">
           {isExpanded ? (
-            <ChevronDown className="w-5 h-5 text-archive" />
+            <ChevronDown className="w-5 h-5 text-archive" aria-hidden="true" />
           ) : (
-            <ChevronRight className="w-5 h-5 text-archive" />
+            <ChevronRight className="w-5 h-5 text-archive" aria-hidden="true" />
           )}
           <span className={`px-2.5 py-1 text-sm font-medium rounded-full ${config.color}`}>
             {config.label}
@@ -66,25 +71,27 @@ export function PhaseGroup({
           <span className="text-sm text-archive">
             {doneCount} of {items.length} complete
           </span>
-        </div>
-        {/* Progress bar */}
-        <div className="flex items-center gap-3">
-          <div className="w-24 h-2 bg-lichen rounded-full overflow-hidden">
-            <div
-              className="h-full bg-semantic-success/100 transition-all duration-300"
+        </span>
+        {/* Progress bar (decorative; the percentage text carries the value) */}
+        <span className="flex items-center gap-3">
+          <span className="block w-24 h-2 bg-lichen rounded-full overflow-hidden" aria-hidden="true">
+            <span
+              className="block h-full bg-semantic-success/100 transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
-          </div>
+          </span>
           <span className="text-sm font-medium text-ink w-10 text-right">{progress}%</span>
-        </div>
-      </div>
+        </span>
+      </button>
 
+      <div id={panelId}>
       {/* Items table */}
       {isExpanded && items.length > 0 && (
         <table className="w-full">
+          <caption className="sr-only">{config.label} checklist items</caption>
           <thead className="bg-stone/50 text-xs text-archive uppercase tracking-wide">
             <tr>
-              <th className="w-10 px-2 py-2">
+              <th scope="col" className="w-10 px-2 py-2">
                 <Checkbox
                   checked={allSelected}
                   ref={(el) => {
@@ -92,14 +99,14 @@ export function PhaseGroup({
                   }}
                   onChange={handleSelectAll}
                   className="w-4 h-4 rounded border-lichen text-bark focus-visible:ring-bark/30 focus-visible:ring-offset-2"
-                  aria-label="Select all items in phase"
+                  aria-label={`Select all items in ${config.label} phase`}
                 />
               </th>
-              <th className="w-32 px-2 py-2 text-left">Status</th>
-              <th className="px-2 py-2 text-left">Task</th>
-              <th className="w-40 px-2 py-2 text-left">Assignee</th>
-              <th className="w-28 px-2 py-2 text-left">Due</th>
-              <th className="w-20 px-2 py-2"></th>
+              <th scope="col" className="w-32 px-2 py-2 text-left">Status</th>
+              <th scope="col" className="px-2 py-2 text-left">Task</th>
+              <th scope="col" className="w-40 px-2 py-2 text-left">Assignee</th>
+              <th scope="col" className="w-28 px-2 py-2 text-left">Due</th>
+              <th scope="col" className="w-20 px-2 py-2"><span className="sr-only">Indicators</span></th>
             </tr>
           </thead>
           <tbody>
@@ -123,6 +130,7 @@ export function PhaseGroup({
           No items in this phase
         </div>
       )}
+      </div>
     </div>
   );
 }

@@ -38,6 +38,9 @@ export default function RunNowDrawer({
   const [currentRun, setCurrentRun] = useState<Run | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showFullResyncConfirm, setShowFullResyncConfirm] = useState(false);
+  const fullResyncTriggerRef = useRef<HTMLButtonElement>(null);
+  const fullResyncCancelRef = useRef<HTMLButtonElement>(null);
+  const fullResyncConfirmRef = useRef<HTMLButtonElement>(null);
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const onRunCompleteRef = useRef(onRunComplete);
   onRunCompleteRef.current = onRunComplete;
@@ -124,7 +127,34 @@ export default function RunNowDrawer({
 
   const handleFullResyncCancel = () => {
     setShowFullResyncConfirm(false);
+    fullResyncTriggerRef.current?.focus();
   };
+
+  // The confirmation sits outside the drawer's focus trap, so move focus into
+  // it when it opens (Cancel is the safe default).
+  // Escape cancels only this confirmation, and Tab stays on its two buttons.
+  // Capture phase so this runs before the drawer's own document listener.
+  useEffect(() => {
+    if (!showFullResyncConfirm) return;
+    fullResyncCancelRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        setShowFullResyncConfirm(false);
+        fullResyncTriggerRef.current?.focus();
+      } else if (e.key === 'Tab') {
+        const buttons = [fullResyncCancelRef.current, fullResyncConfirmRef.current];
+        const idx = buttons.indexOf(document.activeElement as HTMLButtonElement);
+        e.preventDefault();
+        e.stopPropagation();
+        const next = e.shiftKey ? (idx <= 0 ? 1 : idx - 1) : (idx + 1) % 2;
+        buttons[next]?.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [showFullResyncConfirm]);
 
   const displayRun = currentRun || latestRun;
   const counts = displayRun?.counts;
@@ -137,6 +167,7 @@ export default function RunNowDrawer({
       <div
         className="drawer-backdrop"
         onClick={onClose}
+        aria-hidden="true"
         style={{
           position: 'fixed',
           top: 0,
@@ -469,6 +500,7 @@ export default function RunNowDrawer({
               alwaysShow={canForceFullSync}
             >
               <button
+                ref={fullResyncTriggerRef}
                 onClick={handleFullResyncClick}
                 disabled={isRunning || !canForceFullSync}
                 style={{
@@ -535,8 +567,13 @@ export default function RunNowDrawer({
               justifyContent: 'center',
             }}
             onClick={handleFullResyncCancel}
+            aria-hidden="true"
           />
           <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="run-now-full-resync-title"
+            aria-describedby="run-now-full-resync-description"
             style={{
               position: 'fixed',
               top: '50%',
@@ -552,18 +589,20 @@ export default function RunNowDrawer({
             }}
           >
             <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-              <AlertCircle size={24} style={{ color: 'rgb(var(--color-warning))', flexShrink: 0 }} />
+              <AlertCircle size={24} aria-hidden="true" style={{ color: 'rgb(var(--color-warning))', flexShrink: 0 }} />
               <div>
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                <h3 id="run-now-full-resync-title" style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 600, color: '#111827' }}>
                   Confirm Full Run
                 </h3>
-                <p style={{ margin: 0, fontSize: '14px', color: 'rgb(var(--color-archive))', lineHeight: '1.5' }}>
+                <p id="run-now-full-resync-description" style={{ margin: 0, fontSize: '14px', color: 'rgb(var(--color-archive))', lineHeight: '1.5' }}>
                   This will re-import all records and may take several hours. Use only if you suspect data drift. Continue?
                 </p>
               </div>
             </div>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px' }}>
               <button
+                ref={fullResyncCancelRef}
+                type="button"
                 onClick={handleFullResyncCancel}
                 style={{
                   padding: '8px 16px',
@@ -582,6 +621,8 @@ export default function RunNowDrawer({
                 Cancel
               </button>
               <button
+                ref={fullResyncConfirmRef}
+                type="button"
                 onClick={handleFullResyncConfirm}
                 style={{
                   padding: '8px 16px',

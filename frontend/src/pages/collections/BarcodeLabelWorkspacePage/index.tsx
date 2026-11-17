@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useId } from 'react';
 import Checkbox from '../../../components/Checkbox';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -103,6 +103,7 @@ export default function BarcodeLabelWorkspacePage() {
 // =============================================================================
 
 function BarcodeLabelWorkspacePageContent() {
+  const uid = useId();
   const { orgId, labelId } = useParams<{ orgId: string; labelId?: string }>();
   const [searchParams] = useSearchParams();
   const isCreate = !labelId;
@@ -252,8 +253,9 @@ function BarcodeLabelWorkspacePageContent() {
               <div className="space-y-4">
                 {/* Entity Type */}
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">Entity Type</label>
+                  <label htmlFor={`${uid}-entity-type`} className="block text-sm font-medium text-ink mb-1">Entity Type</label>
                   <select
+                    id={`${uid}-entity-type`}
                     value={formData.entity_type}
                     onChange={(e) => updateField('entity_type', e.target.value)}
                     className="w-full border border-lichen rounded-lg px-3 py-2 text-sm bg-parchment text-ink"
@@ -326,11 +328,11 @@ function BarcodeLabelWorkspacePageContent() {
             >
               <div className="space-y-4">
                 {/* Barcode Value */}
-                <div>
-                  <label className="block text-sm font-medium text-ink mb-1">Barcode Value</label>
+                <div role="group" aria-labelledby={`${uid}-barcode-value`}>
+                  <span id={`${uid}-barcode-value`} className="block text-sm font-medium text-ink mb-1">Barcode Value</span>
                   <div className="flex items-center gap-3 mb-2">
-                    <label className="flex items-center gap-2 text-sm text-ink">
-                      <Checkbox
+                    <label htmlFor={`${uid}-updatefield-auto-generate-e-target-check`} className="flex items-center gap-2 text-sm text-ink">
+                      <Checkbox id={`${uid}-updatefield-auto-generate-e-target-check`}
                         checked={formData.auto_generate}
                         onChange={(e) => updateField('auto_generate', e.target.checked)}
                       />
@@ -342,6 +344,7 @@ function BarcodeLabelWorkspacePageContent() {
                       type="text"
                       value={formData.barcode_value}
                       onChange={(e) => updateField('barcode_value', e.target.value)}
+                      aria-label="Custom barcode value"
                       placeholder="Enter custom barcode value"
                       className="w-full border border-lichen rounded-lg px-3 py-2 text-sm font-mono bg-parchment text-ink"
                     />
@@ -350,8 +353,9 @@ function BarcodeLabelWorkspacePageContent() {
 
                 {/* Format */}
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">Format</label>
+                  <label htmlFor={`${uid}-format`} className="block text-sm font-medium text-ink mb-1">Format</label>
                   <select
+                    id={`${uid}-format`}
                     value={formData.label_format}
                     onChange={(e) => updateField('label_format', e.target.value)}
                     className="w-full border border-lichen rounded-lg px-3 py-2 text-sm bg-parchment text-ink"
@@ -372,8 +376,9 @@ function BarcodeLabelWorkspacePageContent() {
 
                 {/* Note */}
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">Note (optional)</label>
+                  <label htmlFor={`${uid}-note-optional`} className="block text-sm font-medium text-ink mb-1">Note (optional)</label>
                   <textarea
+                    id={`${uid}-note-optional`}
                     value={formData.note}
                     onChange={(e) => updateField('note', e.target.value)}
                     rows={2}

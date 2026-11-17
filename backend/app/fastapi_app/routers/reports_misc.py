@@ -22,6 +22,7 @@ from sqlalchemy import and_, case, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import (
@@ -102,28 +103,32 @@ def list_available_reports(
             detail="context_type must be search, workspace, record, or global",
         )
 
+    from app.services.report_formats import default_format_for, formats_for, org_pdf_mode
+
     registry = get_registry()
     definitions = registry.list_for_context(
         context_type=context_type,
         record_type=record_type,
         organization_id=str(org_id),
     )
+    pdf_mode = org_pdf_mode(org_id, db)
 
-    return {
-        "reports": [
-            {
-                "report_key": d.report_key,
-                "name": d.name,
-                "description": d.description,
-                "category": d.category,
-                "style": d.style,
-                "supported_formats": d.supported_formats,
-                "default_format": d.default_format,
-            }
-            for d in definitions
-        ],
-        "total": len(definitions),
-    }
+    reports = []
+    for d in definitions:
+        formats = formats_for(d, pdf_mode)
+        if not formats:
+            continue
+        reports.append({
+            "report_key": d.report_key,
+            "name": d.name,
+            "description": d.description,
+            "category": d.category,
+            "style": d.style,
+            "supported_formats": formats,
+            "default_format": default_format_for(d, formats),
+        })
+
+    return {"reports": reports, "total": len(reports)}
 
 
 @router.post("/api/organizations/{org_id}/on-demand-reports/generate", response_model=GenerateReportResponse, status_code=202, summary="Generate report")
@@ -186,14 +191,19 @@ def generate_report(
                 detail=f"context_params.{field} must be a valid UUID",
             )
 
-    if export_format and export_format not in definition.supported_formats:
+    from app.services.report_formats import default_format_for, formats_for, org_pdf_mode
+
+    offered = formats_for(definition, org_pdf_mode(org_id, db))
+    if export_format and export_format not in offered:
         raise HTTPException(
             status_code=400,
-            detail=f"Unsupported format. Choose from: {definition.supported_formats}",
+            detail=f"Unsupported format. Choose from: {offered}",
         )
 
     if not export_format:
-        export_format = definition.default_format
+        export_format = default_format_for(definition, offered)
+    if not export_format:
+        raise HTTPException(status_code=400, detail="No export format is available for this report")
 
     run = ReportRun(
         organization_id=org_id,
@@ -888,12 +898,9 @@ def create_doc(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(
-            status_code=409,
-            detail=f"Documentation already exists for page_key '{page_key}' in this organization",
-        )
+        raise integrity_http_error(exc, f"Documentation already exists for page_key '{page_key}' in this organization") from None
 
     return {"doc": _serialize_doc(doc)}
 

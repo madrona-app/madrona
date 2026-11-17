@@ -368,9 +368,6 @@ export default function BarcodeScannerPage() {
         <label htmlFor="barcode-manual-entry" className="sr-only">
           Barcode or object number
         </label>
-        {/* eslint-disable-next-line jsx-a11y/control-has-associated-label --
-            the sr-only <label htmlFor> above IS the association; this rule does
-            not follow htmlFor/id across siblings. */}
         <input
           id="barcode-manual-entry"
           type="text"

@@ -2,6 +2,7 @@
  * Call To Action Block — Prominent CTA card with heading, text, and button.
  */
 
+import { useId } from 'react';
 import { cn } from '../../../../lib/utils';
 
 // =============================================================================
@@ -29,6 +30,7 @@ const STYLE_OPTIONS: { value: CTAStyle; label: string }[] = [
 // =============================================================================
 
 export function CallToActionEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const heading = (content.heading as string) || '';
   const text = (content.text as string) || '';
   const buttonText = (content.button_text as string) || '';
@@ -38,10 +40,10 @@ export function CallToActionEditor({ content, onChange }: BlockEditorComponentPr
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-heading`} className="block text-sm font-medium text-ink mb-1">
           Heading <span className="text-semantic-error">*</span>
         </label>
-        <input
+        <input id={`${fieldId}-heading`}
           type="text"
           value={heading}
           onChange={(e) => onChange({ ...content, heading: e.target.value })}
@@ -51,10 +53,10 @@ export function CallToActionEditor({ content, onChange }: BlockEditorComponentPr
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-text`} className="block text-sm font-medium text-ink mb-1">
           Text
         </label>
-        <textarea
+        <textarea id={`${fieldId}-text`}
           value={text}
           onChange={(e) => onChange({ ...content, text: e.target.value })}
           placeholder="Supporting description text"
@@ -65,10 +67,10 @@ export function CallToActionEditor({ content, onChange }: BlockEditorComponentPr
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-button-text`} className="block text-sm font-medium text-ink mb-1">
             Button Text <span className="text-semantic-error">*</span>
           </label>
-          <input
+          <input id={`${fieldId}-button-text`}
             type="text"
             value={buttonText}
             onChange={(e) => onChange({ ...content, button_text: e.target.value })}
@@ -77,10 +79,10 @@ export function CallToActionEditor({ content, onChange }: BlockEditorComponentPr
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-button-url`} className="block text-sm font-medium text-ink mb-1">
             Button URL <span className="text-semantic-error">*</span>
           </label>
-          <input
+          <input id={`${fieldId}-button-url`}
             type="text"
             value={buttonUrl}
             onChange={(e) => onChange({ ...content, button_url: e.target.value })}
@@ -91,14 +93,15 @@ export function CallToActionEditor({ content, onChange }: BlockEditorComponentPr
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <span id={`${fieldId}-style-group`} className="block text-sm font-medium text-ink mb-1">
           Style
-        </label>
-        <div className="flex gap-2">
+        </span>
+        <div role="group" aria-labelledby={`${fieldId}-style-group`} className="flex gap-2">
           {STYLE_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               type="button"
+              aria-pressed={style === opt.value}
               onClick={() => onChange({ ...content, style: opt.value })}
               className={cn(
                 'px-3 py-1.5 text-sm rounded-lg border transition-colors',

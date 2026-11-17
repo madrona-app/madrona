@@ -146,7 +146,7 @@ export default function DataOnboardingModal({
 
   return (
     <ModalPortal>
-    { }
+    {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- backdrop click-to-dismiss; Escape closes via useAccessibleModal */}
     <div
       className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
       onClick={(e) => {
@@ -253,10 +253,11 @@ export default function DataOnboardingModal({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">
+                <label htmlFor="data-onboarding-target-profile" className="block text-sm font-medium text-ink mb-1">
                   Target Profile
                 </label>
                 <select
+                  id="data-onboarding-target-profile"
                   value={targetProfile}
                   onChange={(e) => setTargetProfile(e.target.value)}
                   className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -343,15 +344,17 @@ export default function DataOnboardingModal({
               </div>
 
               <div className="flex items-center gap-4">
-                <label className="flex items-center">
+                <label htmlFor="data-onboarding-auto-enrich" className="flex items-center">
                   <Checkbox
+                    id="data-onboarding-auto-enrich"
                     checked={autoEnrich}
                     onChange={(e) => setAutoEnrich(e.target.checked)}
                   />
                   <span className="ml-2 text-sm text-ink">Enable AI enrichment for missing fields</span>
                 </label>
-                <label className="flex items-center">
+                <label htmlFor="data-onboarding-skip-invalid" className="flex items-center">
                   <Checkbox
+                    id="data-onboarding-skip-invalid"
                     checked={skipInvalid}
                     onChange={(e) => setSkipInvalid(e.target.checked)}
                   />

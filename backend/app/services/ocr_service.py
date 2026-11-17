@@ -153,7 +153,10 @@ def process_media_ocr(
         return {"success": True, "media_id": str(media_id), "text_length": 0}
 
     # Store in extra_metadata
-    extra = media.extra_metadata or {}
+    # A copy: mutating the loaded dict in place and reassigning the same
+    # object is not seen as a change on a plain JSONB column, so the text
+    # was silently dropped whenever the media already had metadata.
+    extra = dict(media.extra_metadata or {})
     extra["ocr_text"] = text
     media.extra_metadata = extra
     current_session().commit()

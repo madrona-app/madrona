@@ -5,7 +5,7 @@
  * storage location, and media.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useId } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Package,
@@ -143,6 +143,7 @@ export function ObjectsSection({
     >
       <div className="space-y-6">
         <EditableField
+          name="objects_description"
           value={formData.objects_description || ''}
           label="Summary Description"
           isEditing={isEditing}
@@ -316,6 +317,7 @@ function ItemDetailPanel({
   canEdit: boolean;
   onSaved: () => void;
 }) {
+  const uid = useId();
   const [showConditionReportSlideOver, setShowConditionReportSlideOver] = useState(false);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [formState, setFormState] = useState({
@@ -349,8 +351,9 @@ function ItemDetailPanel({
     <>
     <div className="px-4 py-3 border-t border-lichen bg-parchment space-y-3">
       <div>
-        <label className="block text-xs font-medium text-archive mb-1">Brief Description</label>
+        <label htmlFor={`${uid}-brief-description`} className="block text-xs font-medium text-archive mb-1">Brief Description</label>
         <input
+          id={`${uid}-brief-description`}
           type="text"
           value={formState.brief_description}
           onChange={(e) => handleChange('brief_description', e.target.value)}
@@ -362,8 +365,9 @@ function ItemDetailPanel({
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-archive mb-1">Detailed Description</label>
+        <label htmlFor={`${uid}-detailed-description`} className="block text-xs font-medium text-archive mb-1">Detailed Description</label>
         <textarea
+          id={`${uid}-detailed-description`}
           value={formState.detailed_description}
           onChange={(e) => handleChange('detailed_description', e.target.value)}
           onBlur={(e) => saveField('detailed_description', e.target.value || null)}
@@ -376,8 +380,9 @@ function ItemDetailPanel({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-archive mb-1">Depositor's Object Number</label>
+          <label htmlFor={`${uid}-depositor-s-object-number`} className="block text-xs font-medium text-archive mb-1">Depositor's Object Number</label>
           <input
+            id={`${uid}-depositor-s-object-number`}
             type="text"
             value={formState.lender_object_number}
             onChange={(e) => handleChange('lender_object_number', e.target.value)}
@@ -388,9 +393,10 @@ function ItemDetailPanel({
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-archive mb-1">Declared Value</label>
+          <label htmlFor={`${uid}-declared-value`} className="block text-xs font-medium text-archive mb-1">Declared Value</label>
           <div className="flex items-center gap-2">
             <input
+              id={`${uid}-declared-value`}
               type="number"
               step="0.01"
               value={formState.declared_value}
@@ -420,8 +426,9 @@ function ItemDetailPanel({
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-archive mb-1">Condition on Receipt</label>
+        <label htmlFor={`${uid}-condition-on-receipt`} className="block text-xs font-medium text-archive mb-1">Condition on Receipt</label>
         <textarea
+          id={`${uid}-condition-on-receipt`}
           value={formState.condition_note}
           onChange={(e) => handleChange('condition_note', e.target.value)}
           onBlur={(e) => saveField('condition_note', e.target.value || null)}
@@ -433,7 +440,7 @@ function ItemDetailPanel({
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-archive mb-1">Condition Report</label>
+        <span className="block text-xs font-medium text-archive mb-1">Condition Report</span>
         {item.condition_report_id ? (
           <div className="flex items-center gap-2">
             <Link
@@ -472,7 +479,7 @@ function ItemDetailPanel({
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-archive mb-1">Storage Location</label>
+        <span className="block text-xs font-medium text-archive mb-1">Storage Location</span>
         {item.location_id ? (
           <div className="flex items-center gap-2">
             <span className="text-sm text-ink flex items-center gap-1">
@@ -517,8 +524,9 @@ function ItemDetailPanel({
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-archive mb-1">Outcome Note</label>
+        <label htmlFor={`${uid}-outcome-note`} className="block text-xs font-medium text-archive mb-1">Outcome Note</label>
         <textarea
+          id={`${uid}-outcome-note`}
           value={formState.item_outcome_note}
           onChange={(e) => handleChange('item_outcome_note', e.target.value)}
           onBlur={(e) => saveField('item_outcome_note', e.target.value || null)}
@@ -592,6 +600,7 @@ function CreateConditionReportSlideOver({
   itemBriefDescription?: string | null;
   onCreated: (reportId: string) => void;
 }) {
+  const uid = useId();
   const [reportType, setReportType] = useState('intake');
   const [overallCondition, setOverallCondition] = useState('');
   const [conditionSummary, setConditionSummary] = useState('');
@@ -673,10 +682,11 @@ function CreateConditionReportSlideOver({
         )}
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">
+          <label htmlFor={`${uid}-report-type`} className="text-sm font-medium text-ink block mb-1.5">
             Report Type <span className="text-semantic-error">*</span>
           </label>
           <select
+            id={`${uid}-report-type`}
             value={reportType}
             onChange={(e) => setReportType(e.target.value)}
             className={inputClass}
@@ -690,8 +700,9 @@ function CreateConditionReportSlideOver({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">Overall Condition</label>
+          <label htmlFor={`${uid}-overall-condition`} className="text-sm font-medium text-ink block mb-1.5">Overall Condition</label>
           <select
+            id={`${uid}-overall-condition`}
             value={overallCondition}
             onChange={(e) => setOverallCondition(e.target.value)}
             className={inputClass}
@@ -706,8 +717,9 @@ function CreateConditionReportSlideOver({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">Condition Summary</label>
+          <label htmlFor={`${uid}-condition-summary`} className="text-sm font-medium text-ink block mb-1.5">Condition Summary</label>
           <textarea
+            id={`${uid}-condition-summary`}
             value={conditionSummary}
             onChange={(e) => setConditionSummary(e.target.value)}
             rows={3}
@@ -717,8 +729,9 @@ function CreateConditionReportSlideOver({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">Recommendations</label>
+          <label htmlFor={`${uid}-recommendations`} className="text-sm font-medium text-ink block mb-1.5">Recommendations</label>
           <textarea
+            id={`${uid}-recommendations`}
             value={recommendations}
             onChange={(e) => setRecommendations(e.target.value)}
             rows={2}
@@ -752,6 +765,7 @@ function AddItemSlideOver({
   entryId: string;
   onSuccess: () => void;
 }) {
+  const uid = useId();
   const [briefDescription, setBriefDescription] = useState('');
   const [detailedDescription, setDetailedDescription] = useState('');
   const [lenderObjectNumber, setLenderObjectNumber] = useState('');
@@ -841,22 +855,23 @@ function AddItemSlideOver({
         )}
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">
+          <label htmlFor={`${uid}-brief-description`} className="text-sm font-medium text-ink block mb-1.5">
             Brief Description <span className="text-semantic-error">*</span>
           </label>
           <input
+            id={`${uid}-brief-description`}
             type="text"
             value={briefDescription}
             onChange={(e) => setBriefDescription(e.target.value)}
             placeholder="Short identifying description"
             className={inputClass}
-            autoFocus
           />
         </div>
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">Detailed Description</label>
+          <label htmlFor={`${uid}-detailed-description`} className="text-sm font-medium text-ink block mb-1.5">Detailed Description</label>
           <textarea
+            id={`${uid}-detailed-description`}
             value={detailedDescription}
             onChange={(e) => setDetailedDescription(e.target.value)}
             rows={3}
@@ -866,8 +881,9 @@ function AddItemSlideOver({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">Depositor's Object Number</label>
+          <label htmlFor={`${uid}-depositor-s-object-number`} className="text-sm font-medium text-ink block mb-1.5">Depositor's Object Number</label>
           <input
+            id={`${uid}-depositor-s-object-number`}
             type="text"
             value={lenderObjectNumber}
             onChange={(e) => setLenderObjectNumber(e.target.value)}
@@ -877,9 +893,10 @@ function AddItemSlideOver({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">Declared Value</label>
+          <label htmlFor={`${uid}-declared-value`} className="text-sm font-medium text-ink block mb-1.5">Declared Value</label>
           <div className="flex items-center gap-2">
             <input
+              id={`${uid}-declared-value`}
               type="number"
               step="0.01"
               value={declaredValue}
@@ -902,8 +919,9 @@ function AddItemSlideOver({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-ink block mb-1.5">Condition on Receipt</label>
+          <label htmlFor={`${uid}-condition-on-receipt`} className="text-sm font-medium text-ink block mb-1.5">Condition on Receipt</label>
           <textarea
+            id={`${uid}-condition-on-receipt`}
             value={conditionNote}
             onChange={(e) => setConditionNote(e.target.value)}
             rows={3}

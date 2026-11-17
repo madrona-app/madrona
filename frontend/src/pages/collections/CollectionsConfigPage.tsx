@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Outlet, useNavigate, useLocation, useParams } from 'react-router-dom';
-import { MapPin, Settings, List, Palette, Globe, FileText, Shield, Library } from 'lucide-react';
+import { MapPin, Settings, List, ListChecks, Palette, Globe, FileText, Shield, Library, Flag, ListPlus, Eye } from 'lucide-react';
 import { useOrganization } from '../../contexts/useOrganization';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -63,6 +63,24 @@ export default function CollectionsConfigPage() {
           path: `/organizations/${organizationId}/collections/config/lookup-values`,
           icon: List,
         },
+        {
+          id: 'custom-fields',
+          label: 'Additional Fields',
+          path: `/organizations/${organizationId}/collections/config/custom-fields`,
+          icon: ListPlus,
+        },
+        {
+          id: 'record-rules',
+          label: 'Flags & Completeness',
+          path: `/organizations/${organizationId}/collections/config/record-rules`,
+          icon: Flag,
+        },
+        {
+          id: 'vocabulary-validation',
+          label: 'Vocabulary Validation',
+          path: `/organizations/${organizationId}/collections/config/vocabulary-validation`,
+          icon: ListChecks,
+        },
       ],
     },
     {
@@ -102,6 +120,12 @@ export default function CollectionsConfigPage() {
           label: 'Discover',
           path: `/organizations/${organizationId}/collections/config/discover`,
           icon: Globe,
+        },
+        {
+          id: 'public-fields',
+          label: 'Public Fields',
+          path: `/organizations/${organizationId}/collections/config/public-fields`,
+          icon: Eye,
         },
       ],
     }] : []),

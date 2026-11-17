@@ -55,6 +55,7 @@ from app.models import (
 )
 from app.permissions import Permission
 from app.services.nagpra_restrictions import display_restricted_ids
+from app.services.bulk_movement_service import FieldWriteRestricted
 from app.services.api_security import escape_ilike, sanitize_error_message
 from app.services.uploads import get_org_media_url
 
@@ -1551,7 +1552,7 @@ SUPPORTED_BULK_ACTIONS = {
         "label": "Flag for Conservation",
         "description": "Mark objects as needing conservation attention",
         "permission": Permission.CONSERVATION_CREATE,
-        "required_params": ["urgency", "concern_type"],
+        "required_params": ["urgency", "treatment_type"],
         "optional_params": ["concern_description", "assigned_to_user_id"],
         "category": "condition",
     },
@@ -1571,6 +1572,14 @@ SUPPORTED_BULK_ACTIONS = {
         "optional_params": ["incident_location_id"],
         "category": "incidents",
     },
+    "set_last_inventoried": {
+        "label": "Mark Inventoried",
+        "description": "Record that objects were seen in an inventory (last inventoried date and by)",
+        "permission": Permission.COLLECTIONS_EDIT,
+        "required_params": [],
+        "optional_params": ["inventoried_date"],
+        "category": "location",
+    },
     "set_discoverable": {
         "label": "Set Discoverable",
         "description": "Publish or unpublish objects on the public collection page",
@@ -1580,6 +1589,45 @@ SUPPORTED_BULK_ACTIONS = {
         "category": "discovery",
     },
 }
+
+
+def _normalize_bulk_params(action: str, action_params: dict) -> dict:
+    """Accept the pre-lookup ``concern_type`` name for the treatment type."""
+    if (
+        action == "flag_for_conservation"
+        and "treatment_type" not in action_params
+        and "concern_type" in action_params
+    ):
+        action_params = {**action_params, "treatment_type": action_params["concern_type"]}
+    return action_params
+
+
+def _check_bulk_lookups(db, org_id, action: str, action_params: dict) -> None:
+    """Lookup-backed bulk parameters must be the org's lookup values (400 naming
+    the field), as on the single-record forms; the closed condition scale gets
+    the CHECK-derived 422."""
+    from app.models import ConditionReport, ConservationTreatment, IncidentReport
+    from app.services.collections.field_enums import validate_enum_fields
+    from app.services.lookup_fields import check_lookup_values, is_active_lookup_value
+
+    if action == "create_condition_report":
+        validate_enum_fields(
+            ConditionReport, {"overall_condition": action_params.get("overall_condition") or None}
+        )
+        check_lookup_values(db, org_id, ConditionReport, action_params)
+    elif action == "report_incident":
+        check_lookup_values(db, org_id, IncidentReport, action_params)
+    elif action == "flag_for_conservation":
+        check_lookup_values(
+            db, org_id, ConservationTreatment, {"treatment_type": action_params.get("treatment_type")}
+        )
+        urgency = action_params.get("urgency")
+        if not isinstance(urgency, str) or not is_active_lookup_value(db, org_id, "priority", urgency):
+            raise HTTPException(status_code=400, detail={
+                "code": "invalid_lookup_value",
+                "message": f"Unknown urgency: {urgency}",
+                "field": "urgency",
+            })
 
 
 @router.get("/api/organizations/{org_id}/workspaces/{workspace_id}/actions", response_model=BulkActionListResponse, summary="List bulk actions")
@@ -1745,9 +1793,11 @@ async def validate_bulk_action(
     object_ids = data.get("object_ids")
 
     # Validate required params
+    action_params = _normalize_bulk_params(action, action_params)
     missing = [p for p in action_config["required_params"] if p not in action_params]
     if missing:
         raise HTTPException(status_code=400, detail=f"Missing required parameters: {', '.join(missing)}")
+    _check_bulk_lookups(db, org_id, action, action_params)
 
     # Action-specific param validation
     if action == "record_movement":
@@ -1844,9 +1894,11 @@ async def execute_bulk_action(
     object_ids = data.get("object_ids")
     skip_blocked = data.get("skip_blocked", False)
 
+    action_params = _normalize_bulk_params(action, action_params)
     missing = [p for p in action_config["required_params"] if p not in action_params]
     if missing:
         raise HTTPException(status_code=400, detail=f"Missing required parameters: {', '.join(missing)}")
+    _check_bulk_lookups(db, org_id, action, action_params)
 
     query = db.query(WorkspaceItem, CollectionObject).join(
         CollectionObject,
@@ -1869,6 +1921,7 @@ async def execute_bulk_action(
 
     try:
         if action == "record_movement":
+            from app.services.bulk_movement_service import record_bulk_movement
             to_location = db.query(Location).filter(
                 Location.location_id == UUID(action_params["to_location_id"]),
                 Location.organization_id == org_id,
@@ -1876,61 +1929,10 @@ async def execute_bulk_action(
             if not to_location:
                 raise HTTPException(status_code=404, detail="Destination location not found")
 
-            base_count = db.query(func.count(Movement.movement_id)).filter(
-                Movement.organization_id == org_id
-            ).scalar()
-
-            for idx, (item, obj) in enumerate(items):
-                result = {"object_id": str(obj.object_id), "accession_number": obj.object_number}
-
-                if obj.current_location_id == to_location.location_id:
-                    if skip_blocked:
-                        result["status"] = "skipped"
-                        result["message"] = "Already at destination"
-                    else:
-                        result["status"] = "error"
-                        result["message"] = "Already at destination"
-                        error_count += 1
-                    results.append(result)
-                    continue
-
-                ref_number = f"M.{datetime.now(timezone.utc).year}.{base_count + idx + 1:04d}"
-                mov = Movement(
-                    organization_id=org_id,
-                    movement_reference_number=ref_number,
-                    object_id=obj.object_id,
-                    from_location_id=obj.current_location_id,
-                    to_location_id=to_location.location_id,
-                    movement_date=datetime.now(timezone.utc),
-                    reason=action_params["reason"],
-                    movement_note=action_params.get("movement_note"),
-                    location_fitness=action_params.get("location_fitness"),
-                    movement_method=action_params.get("movement_method"),
-                    authorized_by=user_id,
-                    authorization_date=datetime.now(timezone.utc).date(),
-                    moved_by=user_id,
-                    created_by=user_id,
-                    status="completed",
-                )
-
-                old_location_id = obj.current_location_id
-                obj.current_location_id = to_location.location_id
-                obj.current_location_date = datetime.now(timezone.utc)
-                obj.current_location_fitness = action_params.get("location_fitness")
-                obj.updated_by = user_id
-
-                if old_location_id:
-                    old_loc = db.query(Location).filter(Location.location_id == old_location_id).first()
-                    if old_loc and old_loc.current_count > 0:
-                        old_loc.current_count -= 1
-                to_location.current_count += 1
-
-                db.add(mov)
-                result["status"] = "success"
-                result["record_id"] = str(mov.movement_id)
-                result["reference_number"] = ref_number
-                results.append(result)
-                success_count += 1
+            results, success_count, error_count, _ = record_bulk_movement(
+                db, org_id, user_id, [obj for _, obj in items], to_location, action_params,
+                skip_blocked=skip_blocked,
+            )
 
         elif action == "create_condition_report":
             base_count = db.query(func.count(ConditionReport.report_id)).filter(
@@ -2001,16 +2003,43 @@ async def execute_bulk_action(
                 success_count += 1
 
         elif action == "set_cataloging_status":
+            from app.services import record_workflow as _wf
             status = action_params["cataloging_status"]
             notes = action_params.get("cataloging_notes")
+            assignee = action_params.get("assigned_to_user_id")
+            if status not in _wf.CATALOGING_STATUSES:
+                raise HTTPException(status_code=422, detail=f"Unknown cataloging status: {status}")
+            reviewer_uuid = None
+            if status == "pending_review":
+                # Putting records in review assigns and notifies a reviewer and
+                # documents the review, exactly as Submit for review does.
+                try:
+                    reviewer_uuid = UUID(str(assignee))
+                except (TypeError, ValueError):
+                    raise HTTPException(status_code=422, detail="Choose a reviewer (assigned_to_user_id) to put records in review")
             for item, obj in items:
                 result = {"object_id": str(obj.object_id), "accession_number": obj.object_number}
-                obj_metadata = obj.extra_metadata or {}
-                obj_metadata["cataloging_status"] = status
+                if status == "pending_review":
+                    try:
+                        _wf.submit_for_review(db, org_id, obj, user_id, reviewer_uuid, notes)
+                    except _wf.WorkflowError as e:
+                        result["status"] = "skipped"
+                        result["message"] = str(e)
+                        results.append(result)
+                        continue
+                else:
+                    if obj.cataloging_status == "pending_review" and _wf.pending_review(db, obj.object_id):
+                        result["status"] = "skipped"
+                        result["message"] = "In review: the reviewer decides, or the review is cancelled first."
+                        results.append(result)
+                        continue
+                    obj.cataloging_status = status
+                obj_metadata = dict(obj.extra_metadata or {})
+                obj_metadata.pop("cataloging_status", None)
                 if notes:
                     obj_metadata["cataloging_notes"] = notes
-                if action_params.get("assigned_to_user_id"):
-                    obj_metadata["cataloging_assigned_to"] = action_params["assigned_to_user_id"]
+                if assignee:
+                    obj_metadata["cataloging_assigned_to"] = assignee
                 if action_params.get("due_date"):
                     obj_metadata["cataloging_due_date"] = action_params["due_date"]
                 obj.extra_metadata = obj_metadata
@@ -2026,7 +2055,7 @@ async def execute_bulk_action(
                 result = {"object_id": str(obj.object_id), "accession_number": obj.object_number}
                 obj.object_status = status
                 if status_notes:
-                    obj_metadata = obj.extra_metadata or {}
+                    obj_metadata = dict(obj.extra_metadata or {})  # a copy: in-place edits are not saved
                     obj_metadata["status_change_notes"] = status_notes
                     obj_metadata["status_change_date"] = action_params.get("status_date") or datetime.now(timezone.utc).isoformat()
                     obj.extra_metadata = obj_metadata
@@ -2067,7 +2096,7 @@ async def execute_bulk_action(
                     object_id=obj.object_id,
                 )
                 if action_params.get("loan_notes"):
-                    obj_metadata = obj.extra_metadata or {}
+                    obj_metadata = dict(obj.extra_metadata or {})  # a copy: in-place edits are not saved
                     obj_metadata["loan_notes"] = action_params["loan_notes"]
                     obj.extra_metadata = obj_metadata
                 db.add(loan_obj)
@@ -2080,7 +2109,7 @@ async def execute_bulk_action(
             availability = action_params["loan_availability"]
             for item, obj in items:
                 result = {"object_id": str(obj.object_id), "accession_number": obj.object_number}
-                obj_metadata = obj.extra_metadata or {}
+                obj_metadata = dict(obj.extra_metadata or {})  # a copy: in-place edits are not saved
                 obj_metadata["loan_availability"] = availability
                 if action_params.get("availability_reason"):
                     obj_metadata["loan_availability_reason"] = action_params["availability_reason"]
@@ -2120,33 +2149,36 @@ async def execute_bulk_action(
                 success_count += 1
 
         elif action == "flag_for_conservation":
-            urgency = action_params["urgency"]
-            concern_type = action_params["concern_type"]
-            description = action_params.get("concern_description", "")
+            # Created through the same service as the conservation form. This
+            # branch used to pass treatment_status/treatment_reason/priority,
+            # none of which are columns, so every flag raised before saving.
+            from app.services.collections.creation.conservation_treatment import (
+                create_conservation_treatment,
+            )
+            from app.services.lookup_fields import lookup_label
 
-            base_count = db.query(func.count(ConservationTreatment.treatment_id)).filter(
-                ConservationTreatment.organization_id == org_id
-            ).scalar()
+            urgency_label = lookup_label(db, org_id, "priority", action_params["urgency"])
+            description = action_params.get("concern_description") or None
+            assignee = action_params.get("assigned_to_user_id")
 
-            for idx, (item, obj) in enumerate(items):
+            for item, obj in items:
                 result = {"object_id": str(obj.object_id), "accession_number": obj.object_number}
-                treatment_number = f"CON{datetime.now(timezone.utc).year}.{base_count + idx + 1:04d}"
-                treatment = ConservationTreatment(
-                    organization_id=org_id,
-                    treatment_number=treatment_number,
-                    object_id=obj.object_id,
-                    treatment_status="proposed",
-                    treatment_type=concern_type,
-                    treatment_reason=description,
-                    priority=urgency,
-                    conservator_id=UUID(action_params["assigned_to_user_id"]) if action_params.get("assigned_to_user_id") else None,
-                    created_by=user_id,
-                    updated_by=user_id,
+                treatment = create_conservation_treatment(
+                    db,
+                    org_id,
+                    {
+                        "object_id": obj.object_id,
+                        "treatment_type": action_params["treatment_type"],
+                        "proposal_summary": description,
+                        "treatment_note": f"Flagged for conservation. Urgency: {urgency_label}.",
+                    },
+                    user_id,
                 )
-                db.add(treatment)
+                if assignee:
+                    treatment.assigned_to_user_id = UUID(assignee)
                 result["status"] = "success"
                 result["record_id"] = str(treatment.treatment_id)
-                result["reference_number"] = treatment_number
+                result["reference_number"] = treatment.treatment_number
                 results.append(result)
                 success_count += 1
 
@@ -2160,13 +2192,20 @@ async def execute_bulk_action(
                 else:
                     obj.handling_requirements = requirements
                 if notes:
-                    obj_metadata = obj.extra_metadata or {}
+                    obj_metadata = dict(obj.extra_metadata or {})  # a copy: in-place edits are not saved
                     obj_metadata["handling_notes"] = notes
                     obj.extra_metadata = obj_metadata
                 obj.updated_by = user_id
                 result["status"] = "success"
                 results.append(result)
                 success_count += 1
+
+        elif action == "set_last_inventoried":
+            from app.services.bulk_movement_service import mark_inventoried
+            results, success_count, error_count = mark_inventoried(
+                db, org_id, user_id, [(obj, None, None) for _, obj in items],
+                inventoried_date=action_params.get("inventoried_date"),
+            )
 
         elif action == "set_discoverable":
             is_discoverable = bool(action_params["is_discoverable"])
@@ -2180,10 +2219,13 @@ async def execute_bulk_action(
             # Restricted objects are reported per-row rather than failing the
             # whole batch, so the rest of the selection still applies.
             restricted_ids: set = set()
+            incomplete_ids: set = set()
             if is_discoverable:
                 restricted_ids = display_restricted_ids(
                     db, org_id, [obj.object_id for _, obj in items]
                 )
+                from app.services.record_workflow import incomplete_for_publication_ids
+                incomplete_ids = incomplete_for_publication_ids(db, org_id, [obj.object_id for _, obj in items])
 
             for item, obj in items:
                 result = {"object_id": str(obj.object_id), "accession_number": obj.object_number}
@@ -2193,6 +2235,11 @@ async def execute_bulk_action(
                         "NAGPRA action without granted display consent; "
                         "cannot be made publicly discoverable."
                     )
+                    results.append(result)
+                    continue
+                if is_discoverable and obj.object_id in incomplete_ids:
+                    result["status"] = "skipped"
+                    result["message"] = "Does not meet the completeness rules required for publication."
                     results.append(result)
                     continue
                 if obj.is_discoverable == is_discoverable:
@@ -2237,6 +2284,12 @@ async def execute_bulk_action(
 
     except HTTPException:
         raise
+    except FieldWriteRestricted as e:
+        db.rollback()
+        raise HTTPException(status_code=403, detail={
+            "code": "field_restricted",
+            "message": f"You don't have permission to change: {e}",
+        })
     except Exception as e:
         db.rollback()
         logger.error(f"Bulk action execution error: {e}", exc_info=True)

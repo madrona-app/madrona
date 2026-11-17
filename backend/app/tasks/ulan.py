@@ -21,6 +21,45 @@ from app.tasks.base import SystemTask
 
 logger = logging.getLogger(__name__)
 
+
+def _sync_ulan_variants(session, authority, variant_names, *, with_types: bool) -> None:
+    """Reconcile a person's ULAN-sourced variant terms with ULAN's list.
+
+    Edited in place (not deleted and re-inserted) so the person's history
+    records only real additions, removals and changes. Terms staff entered
+    themselves (any other source) are not touched.
+    """
+    from app.models import VariantTerm
+    from app.services.child_rows import reconcile_rows
+
+    desired = []
+    for vn in variant_names:
+        name = vn.get("name", vn) if isinstance(vn, dict) else vn
+        item = {"term": name, "term_type": None, "language": None}
+        if with_types and isinstance(vn, dict):
+            item["term_type"] = vn.get("type")
+            item["language"] = vn.get("language")
+        desired.append(item)
+    existing = (
+        session.query(VariantTerm)
+        .filter(
+            VariantTerm.entity_type == 'constituent',
+            VariantTerm.entity_id == authority.constituent_id,
+            VariantTerm.source == 'ulan',
+        )
+        .order_by(VariantTerm.display_order)
+        .all()
+    )
+    reconcile_rows(
+        session, existing, desired, ("term", "term_type", "language"),
+        lambda i, item: VariantTerm(
+            organization_id=authority.organization_id,
+            entity_type='constituent', entity_id=authority.constituent_id,
+            source='ulan', display_order=i, **item,
+        ),
+        key_fields=("term",),
+    )
+
 # How old a record must be before it's considered stale (30 days)
 STALE_THRESHOLD_DAYS = 30
 
@@ -128,23 +167,9 @@ def sync_ulan_authority_task(
                 authority.display_name = ulan_record.display_name
 
             if ulan_record.variant_names:
-                from app.models import VariantTerm
-                # Replace existing variant terms from ULAN
-                session.query(VariantTerm).filter(
-                    VariantTerm.entity_type == 'constituent',
-                    VariantTerm.entity_id == authority.constituent_id,
-                    VariantTerm.source == 'ulan',
-                ).delete()
-                for idx, vn in enumerate(ulan_record.variant_names):
-                    name = vn.get("name", vn) if isinstance(vn, dict) else vn
-                    session.add(VariantTerm(
-                        organization_id=authority.organization_id,
-                        entity_type='constituent', entity_id=authority.constituent_id,
-                        term=name,
-                        term_type=vn.get("type") if isinstance(vn, dict) else None,
-                        language=vn.get("language") if isinstance(vn, dict) else None,
-                        source='ulan', display_order=idx,
-                    ))
+                # Bring the ULAN-sourced variant terms in line in place, so the
+                # person's history records only the names ULAN actually changed.
+                _sync_ulan_variants(session, authority, ulan_record.variant_names, with_types=True)
                 changes.append("variant_names")
 
             if ulan_record.nationality and ulan_record.nationality != authority.nationality:
@@ -320,19 +345,7 @@ def refresh_stale_ulan_authorities_task(
                     if ulan_record.display_name:
                         authority.display_name = ulan_record.display_name
                     if ulan_record.variant_names:
-                        from app.models import VariantTerm
-                        session.query(VariantTerm).filter(
-                            VariantTerm.entity_type == 'constituent',
-                            VariantTerm.entity_id == authority.constituent_id,
-                            VariantTerm.source == 'ulan',
-                        ).delete()
-                        for idx, vn in enumerate(ulan_record.variant_names):
-                            name = vn.get("name", vn) if isinstance(vn, dict) else vn
-                            session.add(VariantTerm(
-                                organization_id=authority.organization_id,
-                                entity_type='constituent', entity_id=authority.constituent_id,
-                                term=name, source='ulan', display_order=idx,
-                            ))
+                        _sync_ulan_variants(session, authority, ulan_record.variant_names, with_types=False)
                     if ulan_record.nationality:
                         authority.nationality = ulan_record.nationality
                     if ulan_record.nationalities:

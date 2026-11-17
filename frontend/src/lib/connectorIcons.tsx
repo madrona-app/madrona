@@ -11,7 +11,13 @@ import { FaDatabase, FaPlug, FaCloud } from 'react-icons/fa';
 import { MdApi } from 'react-icons/md';
 import { DiMsqlServer } from 'react-icons/di';
 
-type IconComponent = React.ComponentType<{ size?: number; className?: string }>;
+type IconComponent = React.ComponentType<{
+  size?: number;
+  className?: string;
+  'aria-hidden'?: boolean;
+  'aria-label'?: string;
+  role?: string;
+}>;
 
 /**
  * Get the appropriate icon component for a connector based on its key or category.
@@ -55,6 +61,8 @@ interface ConnectorIconProps {
   size?: number;
   /** Additional CSS class */
   className?: string;
+  /** Accessible name; omit when the connector's name is shown next to the icon. */
+  label?: string;
 }
 
 /**
@@ -65,7 +73,13 @@ export function ConnectorIcon({
   category,
   size = 24,
   className = '',
+  label,
 }: ConnectorIconProps) {
   const Icon = getConnectorIcon(connectorKey, category);
-  return <Icon size={size} className={className} />;
+  // Decorative by default: the connector's name is always shown as text next
+  // to it. The brand icons carry role="img", which without a name is an axe
+  // violation, so either name it (label) or hide it.
+  return label
+    ? <Icon size={size} className={className} role="img" aria-label={label} />
+    : <Icon size={size} className={className} aria-hidden />;
 }

@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import PageEditorPage from '../../../pages/content/PageEditorPage';
 import * as contentApi from '../../../lib/api/content';
 import * as useAuthHook from '../../../hooks/useAuth';
+import * as api from '../../../lib/api';
+import { checkA11y, formatViolations } from '../../a11y';
 
 vi.mock('../../../lib/api/content', () => ({
   getPage: vi.fn(),
@@ -18,6 +20,11 @@ vi.mock('../../../lib/api/content', () => ({
   listCategories: vi.fn(),
   getPreviewToken: vi.fn(),
 }));
+
+vi.mock('../../../lib/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../lib/api')>();
+  return { ...actual, getRecordAuditHistory: vi.fn() };
+});
 
 vi.mock('../../../hooks/useAuth', () => ({
   useAuth: vi.fn(),
@@ -161,6 +168,28 @@ describe('PageEditorPage', () => {
       } as never);
     });
 
+    it('shows the page change history, including block edits', async () => {
+      vi.mocked(api.getRecordAuditHistory).mockResolvedValue({
+        entity_type: 'page', entity_id: 'p-1', total: 1, limit: 20, offset: 0,
+        items: [{
+          event_id: 'e1', change_type: 'link_updated', changed_at: '2026-11-14T10:00:00+00:00',
+          changed_by: 'u1', changed_by_name: 'Pat Registrar', changed_by_email: 'pat@example.org',
+          changed_fields: ['content'], summary: 'Updated content block: rich_text', request_method: 'PUT',
+          child_entity_type: 'content_block', child_entity_id: 'b-1', child_display_key: 'rich_text',
+          field_diffs: [{ field_name: 'content', old_value: { html: '<p>Open</p>' }, new_value: { html: '<p>Open daily</p>' } }],
+        }],
+      } as Awaited<ReturnType<typeof api.getRecordAuditHistory>>);
+      const { container } = renderEditor(
+        '/organizations/org-1/content/pages/p-1',
+        '/organizations/:orgId/content/pages/:pageId',
+      );
+      expect(await screen.findByText(/Changed content block rich_text/)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 2, name: 'Change History' })).toBeInTheDocument();
+      expect(api.getRecordAuditHistory).toHaveBeenCalledWith('org-1', 'page', 'p-1', expect.anything());
+      const results = await checkA11y(container);
+      expect(results.violations, formatViolations(results)).toEqual([]);
+    });
+
     it('shows loading state, then populates form', async () => {
       renderEditor(
         '/organizations/org-1/content/pages/p-1',
@@ -223,6 +252,19 @@ describe('PageEditorPage', () => {
       await waitFor(() => {
         expect(mockPublishPage).toHaveBeenCalledWith('org-1', 'p-1');
       });
+    });
+  });
+
+  describe('accessibility', () => {
+    it('has no axe violations in create mode', async () => {
+      const { container } = renderEditor(
+        '/organizations/org-1/content/pages/create',
+        '/organizations/:orgId/content/pages/create',
+      );
+      expect(screen.getByRole('group', { name: 'Featured Image' })).toBeInTheDocument();
+      expect(screen.getByRole('group', { name: 'OG Image' })).toBeInTheDocument();
+      const results = await checkA11y(container);
+      expect(results.violations, formatViolations(results)).toEqual([]);
     });
   });
 });

@@ -5,6 +5,7 @@
  * Renderer: fetches from public events API and renders a list.
  */
 
+import { useId } from 'react';
 import Checkbox from '../../../../components/Checkbox';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -63,6 +64,7 @@ function formatEventTime(dateStr: string | null): string {
 // =============================================================================
 
 export function EventListEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const limit = (content.limit as number) ?? 5;
   const eventTypes = (content.event_types as string[]) || [];
   const showPast = (content.show_past as boolean) ?? false;
@@ -81,10 +83,10 @@ export function EventListEditor({ content, onChange }: BlockEditorComponentProps
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-max-events`} className="block text-sm font-medium text-ink mb-1">
           Max Events
         </label>
-        <input
+        <input id={`${fieldId}-max-events`}
           type="number"
           min={1}
           max={50}
@@ -97,14 +99,15 @@ export function EventListEditor({ content, onChange }: BlockEditorComponentProps
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <span id={`${fieldId}-event-types-group`} className="block text-sm font-medium text-ink mb-1">
           Event Types
-        </label>
-        <div className="flex flex-wrap gap-2">
+        </span>
+        <div role="group" aria-labelledby={`${fieldId}-event-types-group`} className="flex flex-wrap gap-2">
           {EVENT_TYPES.map((type) => (
             <button
               key={type.value}
               type="button"
+              aria-pressed={(type.value === '' && eventTypes.length === 0) || eventTypes.includes(type.value)}
               onClick={() => toggleEventType(type.value)}
               className={cn(
                 'px-3 py-1.5 text-sm rounded-lg border transition-colors',
@@ -120,8 +123,8 @@ export function EventListEditor({ content, onChange }: BlockEditorComponentProps
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-ink cursor-pointer">
-        <Checkbox
+      <label htmlFor={`${fieldId}-include-past-events`} className="flex items-center gap-2 text-sm text-ink cursor-pointer">
+        <Checkbox id={`${fieldId}-include-past-events`}
           checked={showPast}
           onChange={(e) => onChange({ ...content, show_past: e.target.checked })}
         />

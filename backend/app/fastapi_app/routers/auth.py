@@ -1428,7 +1428,12 @@ def mfa_setup_start(body: MFASetupStartBody, request: Request, db: Session = Dep
             ip_address=client_ip,
         )
 
-        return {"secret": secret_code, "otpauthUrl": otpauth_url, "session": session_token}
+        # The QR code is drawn here, never by a third-party service: the
+        # otpauth URL contains the TOTP secret, so sending it anywhere else
+        # would hand that service the user's second factor.
+        import segno
+        qr_svg = segno.make(otpauth_url, error="m").svg_data_uri(scale=5, border=2)
+        return {"secret": secret_code, "otpauthUrl": otpauth_url, "qrSvg": qr_svg, "session": session_token}
 
     except InvalidCredentialsError:
         raise HTTPException(status_code=401, detail={"code": "unauthorized", "message": "Invalid or expired session"})

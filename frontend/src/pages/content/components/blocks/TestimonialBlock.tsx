@@ -2,7 +2,7 @@
  * Testimonial Block — Quotes/testimonials with attribution and optional logos.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useId } from 'react';
 import { Plus, Trash2, ChevronDown, GripVertical, Quote } from 'lucide-react';
 
 // =============================================================================
@@ -30,6 +30,7 @@ interface TestimonialItem {
 // =============================================================================
 
 export function TestimonialEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const items = (content.items as TestimonialItem[]) || [];
 
   const updateItem = useCallback(
@@ -68,10 +69,10 @@ export function TestimonialEditor({ content, onChange }: BlockEditorComponentPro
   );
 
   return (
-    <div className="space-y-3">
-      <label className="block text-sm font-medium text-ink">
+    <div role="group" aria-labelledby={`${fieldId}-testimonials-group`} className="space-y-3">
+      <span id={`${fieldId}-testimonials-group`} className="block text-sm font-medium text-ink">
         Testimonials
-      </label>
+      </span>
 
       {items.length === 0 && (
         <p className="text-sm text-archive italic">

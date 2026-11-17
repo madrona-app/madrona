@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useWorkspacePage } from '../../../hooks/useWorkspacePage';
@@ -20,6 +20,7 @@ import {
   getContact,
 } from '../../../lib/api';
 import { ContactSelectorSlideOver } from '../../../components/collections/ConstituentSelectorSlideOver';
+import { ContactLinkField } from '../../../components/collections/ContactLinkField';
 import {
   WorkspaceHeader,
   WorkspaceErrorBoundary,
@@ -56,6 +57,7 @@ export default function RightWorkspacePage() {
 }
 
 function RightWorkspacePageContent() {
+  const uid = useId();
   const { orgId, rightId, objectId: urlObjectId } = useParams<{
     orgId: string;
     rightId?: string;
@@ -153,6 +155,7 @@ function RightWorkspacePageContent() {
     },
     holder: {
       rights_holder_contact_id: formData.rights_holder_contact_id,
+      rights_holder_agent_contact_id: formData.rights_holder_agent_contact_id,
     },
     duration: {
       start_date: formData.start_date,
@@ -346,10 +349,10 @@ function RightWorkspacePageContent() {
           isEmpty={!hasContent.holder}
           summary={sectionSummaries.holder}
         >
-          <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">
+          <div role="group" aria-labelledby={`${uid}-rights-holder-contact`}>
+            <span id={`${uid}-rights-holder-contact`} className="block text-sm font-medium text-ink mb-1.5">
               Rights Holder Contact
-            </label>
+            </span>
             {formData.rights_holder_contact_id && rightsHolderContact ? (
               <div className="flex items-center justify-between p-3 bg-stone/30 rounded-lg">
                 <div>
@@ -366,8 +369,9 @@ function RightWorkspacePageContent() {
                     type="button"
                     onClick={() => updateField('rights_holder_contact_id', '')}
                     className="text-archive hover:text-ink"
+                    aria-label="Clear rights holder contact"
                   >
-                    <X size={18} />
+                    <X size={18} aria-hidden="true" />
                   </button>
                 )}
               </div>
@@ -382,6 +386,18 @@ function RightWorkspacePageContent() {
             ) : (
               <p className="text-archive">No rights holder assigned</p>
             )}
+          </div>
+          <div className="mt-4">
+            <ContactLinkField
+              organizationId={orgId!}
+              contactId={formData.rights_holder_agent_contact_id}
+              onChange={(id) => updateField('rights_holder_agent_contact_id', id)}
+              label="Agent for rights holder"
+              isEditing={isEditing}
+              emptyText="No agent assigned"
+              fallbackName={(rightRecord?.rights_holder_agent_contact_name as string | undefined) ?? null}
+              hint="The person or organisation that handles permissions on the rights holder's behalf."
+            />
           </div>
         </WorkspaceSection>
 

@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Tag, Globe } from 'lucide-react';
 import {
@@ -20,6 +21,7 @@ interface SubjectSearchItem {
   // Local fields
   aat_id?: string | null;
   iconclass_id?: string | null;
+  lcsh_id?: string | null;
   wikidata_id?: string | null;
   description?: string | null;
   status?: string;
@@ -64,6 +66,7 @@ export function SubjectLinker({
   embedded = false,
   onCountChange,
 }: SubjectLinkerProps) {
+  const fid = useId();
   const { data: subjects, isLoading } = useQuery({
     queryKey: ['object-subjects', organizationId, objectId],
     queryFn: () => getObjectSubjects(organizationId, objectId),
@@ -82,6 +85,7 @@ export function SubjectLinker({
       linkedItems={items}
       isLoading={isLoading}
       getItemId={(link) => link.link_id}
+      getItemLabel={(link) => link.subject_authority?.preferred_term || 'Unknown'}
       getLinkedEntityId={(link) => link.subject_authority_id}
       renderItem={(link) => (
         <>
@@ -118,6 +122,7 @@ export function SubjectLinker({
             aat_id: ext.source === 'AAT' ? subject.authority_id.replace('aat-', '') : undefined,
             iconclass_id: ext.source === 'Iconclass' ? subject.authority_id.replace('ic-', '') : undefined,
             wikidata_id: ext.source === 'Wikidata' ? subject.authority_id.replace('wd-', '') : undefined,
+            lcsh_id: ext.source === 'LCSH' ? subject.authority_id.replace('lcsh-', '') : undefined,
           });
           authorityId = newSubject.authority_id;
         }
@@ -157,10 +162,11 @@ export function SubjectLinker({
                 New Subject
               </h4>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">
+                <label htmlFor={`${fid}-term`} className="block text-sm font-medium text-ink mb-1">
                   Term <span className="text-semantic-error">*</span>
                 </label>
                 <input
+                  id={`${fid}-term`}
                   type="text"
                   value={formData.term ?? searchTerm}
                   onChange={(e) =>
@@ -168,12 +174,12 @@ export function SubjectLinker({
                   }
                   className="w-full px-3 py-2 border border-lichen rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
                   placeholder="e.g., Madonna and Child"
-                  autoFocus
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Type</label>
+                <label htmlFor={`${fid}-type`} className="block text-sm font-medium text-ink mb-1">Type</label>
                 <select
+                  id={`${fid}-type`}
                   value={formData.subject_type || 'iconographic'}
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, subject_type: e.target.value }))
@@ -191,10 +197,11 @@ export function SubjectLinker({
             <div className="border-t border-lichen pt-4 space-y-4">
               <h4 className="text-sm font-medium text-ink">Link Details</h4>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">
+                <label htmlFor={`${fid}-subject-extent`} className="block text-sm font-medium text-ink mb-1.5">
                   Subject Extent
                 </label>
                 <input
+                  id={`${fid}-subject-extent`}
                   type="text"
                   value={formData.subject_extent ?? metadata.subject_extent ?? ''}
                   onChange={(e) =>
@@ -208,10 +215,11 @@ export function SubjectLinker({
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">
+                <label htmlFor={`${fid}-interpretation-note`} className="block text-sm font-medium text-ink mb-1.5">
                   Interpretation Note
                 </label>
                 <textarea
+                  id={`${fid}-interpretation-note`}
                   value={
                     formData.interpretation_note ?? metadata.interpretation_note ?? ''
                   }
@@ -270,6 +278,7 @@ export function SubjectLinker({
             subject_type: sa.subject_type,
             aat_id: sa.aat_id,
             iconclass_id: sa.iconclass_id,
+            lcsh_id: sa.lcsh_id,
             wikidata_id: sa.wikidata_id,
             description: sa.description,
             status: sa.status,
@@ -296,6 +305,7 @@ export function SubjectLinker({
           localItems.forEach((item) => {
             if (item.aat_id) localExternalIds.add(`aat-${item.aat_id}`);
             if (item.iconclass_id) localExternalIds.add(`ic-${item.iconclass_id}`);
+            if (item.lcsh_id) localExternalIds.add(`lcsh-${item.lcsh_id}`);
             if (item.wikidata_id) localExternalIds.add(`wd-${item.wikidata_id}`);
           });
 

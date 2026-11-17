@@ -7,13 +7,24 @@ interface ObjectCardProps {
   hit: DiscoverHit;
   orgSlug: string;
   viewMode: 'grid' | 'list';
+  /** Canonical results query; passed as router state so the record URL stays a clean permalink. */
+  resultsSearch?: string;
 }
 
-export function ObjectCard({ hit, orgSlug, viewMode }: ObjectCardProps) {
+/** Router state an object page reads to build its "Search results" breadcrumb. */
+export interface DiscoverObjectLinkState {
+  discoverResults?: string;
+}
+
+export function ObjectCard({ hit, orgSlug, viewMode, resultsSearch }: ObjectCardProps) {
+  const linkState: DiscoverObjectLinkState | undefined =
+    resultsSearch !== undefined ? { discoverResults: resultsSearch } : undefined;
+
   if (viewMode === 'list') {
     return (
       <Link
         to={`/c/${orgSlug}/objects/${encodeURIComponent(hit.object_number || hit.object_id)}`}
+        state={linkState}
         className="flex gap-4 p-4 bg-parchment rounded-lg border border-lichen hover:border-bark/30 hover:shadow-sm transition-all group"
       >
         <div className="w-24 h-24 flex-shrink-0 bg-stone/30 rounded overflow-hidden">
@@ -53,6 +64,7 @@ export function ObjectCard({ hit, orgSlug, viewMode }: ObjectCardProps) {
   return (
     <Link
       to={`/c/${orgSlug}/objects/${encodeURIComponent(hit.object_number || hit.object_id)}`}
+      state={linkState}
       className="group block"
     >
       <div className="aspect-[3/4] bg-stone/30 rounded-lg overflow-hidden mb-3">

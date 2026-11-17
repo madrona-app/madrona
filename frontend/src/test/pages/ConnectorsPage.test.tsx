@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ConnectorsPage from '../../pages/bridge/ConnectorsPage';
 import * as api from '../../lib/api';
 import * as useOrganizationHook from '../../contexts/useOrganization';
+import { checkA11y, formatViolations } from '../a11y';
 
 vi.mock('../../lib/api', async () => {
   const actual = await vi.importActual<typeof api>('../../lib/api');
@@ -193,6 +194,29 @@ describe('ConnectorsPage', () => {
     });
   });
 
+  describe('spreadsheet file source', () => {
+    it('offers an upload button for file sources that opens the upload dialog', async () => {
+      mockGetConnectorDefinitions.mockResolvedValue([
+        ...mockDefinitions,
+        {
+          connector_definition_id: 'def-3',
+          key: 'file-upload',
+          display_name: 'Spreadsheet file (CSV or Excel)',
+          direction: 'source',
+          category: 'file',
+          config_schema: { type: 'object' },
+        },
+      ] as never);
+      mockGetConnectorInstances.mockResolvedValue([] as never);
+      renderPage();
+      const button = await screen.findByRole('button', { name: 'Upload a spreadsheet' });
+      expect(screen.getByText(/^Files$/)).toBeInTheDocument();
+      fireEvent.click(button);
+      expect(await screen.findByRole('dialog', { name: 'Upload a spreadsheet' })).toBeInTheDocument();
+      expect(screen.getByLabelText('Spreadsheet file')).toHaveAttribute('type', 'file');
+    });
+  });
+
   describe('configured instances', () => {
     it('shows empty state when no instances', async () => {
       mockGetConnectorDefinitions.mockResolvedValue(mockDefinitions as never);
@@ -231,7 +255,7 @@ describe('ConnectorsPage', () => {
       renderPage();
       await waitFor(() => {
         expect(
-          screen.getByRole('button', { name: /^delete$/i })
+          screen.getByRole('button', { name: /^delete production db$/i })
         ).toBeInTheDocument();
       });
     });
@@ -295,6 +319,42 @@ describe('ConnectorsPage', () => {
       expect(
         screen.queryByRole('heading', { name: 'New Connector Instance' })
       ).not.toBeInTheDocument();
+    });
+  });
+
+  describe('accessibility', () => {
+    beforeEach(() => {
+      mockGetConnectorDefinitions.mockResolvedValue(mockDefinitions as never);
+      mockGetConnectorInstances.mockResolvedValue(mockInstances as never);
+    });
+
+    it('has no axe violations with a configured system listed', async () => {
+      const { container } = renderPage();
+      await waitFor(() => expect(screen.getByText('Production DB')).toBeInTheDocument());
+      const results = await checkA11y(container);
+      expect(results.violations, formatViolations(results)).toEqual([]);
+    });
+
+    it('instance card is not a link wrapping other controls', async () => {
+      renderPage();
+      const link = await screen.findByRole('link', { name: 'Production DB' });
+      expect(link).toHaveAttribute('href', '/organizations/org-123/bridge/setup/connectors/inst-1');
+      // The disclosure and Delete button are siblings of the link, not inside it.
+      expect(link.querySelector('button, summary')).toBeNull();
+      expect(screen.getByRole('button', { name: 'Delete Production DB' }).closest('a')).toBeNull();
+      expect(screen.getByText('View config').closest('a')).toBeNull();
+    });
+
+    it('has no axe violations with the create form open, and marks the chosen definition', async () => {
+      const { container } = renderPage();
+      fireEvent.click(await screen.findByRole('button', { name: /create instance/i }));
+      const group = await screen.findByRole('group', { name: 'Connector Definition' });
+      const pg = within(group).getByRole('button', { name: /PostgreSQL/ });
+      expect(pg).toHaveAttribute('aria-pressed', 'false');
+      fireEvent.click(pg);
+      expect(pg).toHaveAttribute('aria-pressed', 'true');
+      const results = await checkA11y(container);
+      expect(results.violations, formatViolations(results)).toEqual([]);
     });
   });
 });

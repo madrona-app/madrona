@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Hash, Plus, Pencil, Trash2, GripVertical, Loader2, X } from 'lucide-react';
 import Checkbox from '../Checkbox';
@@ -11,6 +11,8 @@ import {
 } from '../../lib/api';
 import type { OtherNumberType } from '../../lib/schemas';
 import { useToast } from '../../contexts/ToastContext';
+import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
+import { RecordHistoryButton } from '../audit/RecordHistoryButton';
 import { ModalPortal } from '../ModalPortal';
 
 interface OtherNumberTypesManagerProps {
@@ -26,9 +28,16 @@ interface EditingType {
 }
 
 export function OtherNumberTypesManager({ organizationId }: OtherNumberTypesManagerProps) {
+  const fid = useId();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [showForm, setShowForm] = useState(false);
+  // Dialog semantics, focus trap, Escape and focus return for the edit form
+  const { modalRef, titleId: modalTitleId } = useAccessibleModal({
+    isOpen: showForm,
+    onClose: () => setShowForm(false),
+    titlePrefix: 'other-number-type-form',
+  });
   const [editing, setEditing] = useState<EditingType | null>(null);
   const [includeInactive, setIncludeInactive] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<OtherNumberType | null>(null);
@@ -123,8 +132,9 @@ export function OtherNumberTypesManager({ organizationId }: OtherNumberTypesMana
           <h3 className="text-lg font-medium text-ink">Other Number Types</h3>
         </div>
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2 text-sm text-accessible-gray">
+          <label htmlFor={`${fid}-show-inactive`} className="flex items-center gap-2 text-sm text-accessible-gray">
             <Checkbox
+              id={`${fid}-show-inactive`}
               checked={includeInactive}
               onChange={(e) => setIncludeInactive(e.target.checked)}
             />
@@ -146,19 +156,24 @@ export function OtherNumberTypesManager({ organizationId }: OtherNumberTypesMana
       {showForm && editing && (
         <ModalPortal>
         <div className="fixed inset-0 bg-ink/50 flex items-center justify-center z-50">
-          <div className="bg-parchment rounded-lg shadow-xl w-full max-w-md">
+          <div
+            ref={modalRef}
+            {...getModalAriaProps(modalTitleId)}
+            className="bg-parchment rounded-lg shadow-xl w-full max-w-md"
+          >
             <div className="px-4 py-3 border-b border-lichen flex items-center justify-between">
-              <h4 className="font-medium text-ink">
+              <h4 id={modalTitleId} className="font-medium text-ink">
                 {editing.type_id ? 'Edit Number Type' : 'New Number Type'}
               </h4>
-              <button onClick={() => setShowForm(false)} className="text-accessible-gray hover:text-ink">
-                <X size={20} />
+              <button type="button" onClick={() => setShowForm(false)} aria-label="Close" className="text-accessible-gray hover:text-ink rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2">
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
             <form onSubmit={handleSubmit} className="p-4 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Name</label>
+                <label htmlFor={`${fid}-name`} className="block text-sm font-medium text-ink mb-1">Name</label>
                 <input
+                  id={`${fid}-name`}
                   type="text"
                   value={editing.name}
                   onChange={(e) => setEditing({ ...editing, name: e.target.value })}
@@ -168,8 +183,9 @@ export function OtherNumberTypesManager({ organizationId }: OtherNumberTypesMana
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Code</label>
+                <label htmlFor={`${fid}-code`} className="block text-sm font-medium text-ink mb-1">Code</label>
                 <input
+                  id={`${fid}-code`}
                   type="text"
                   value={editing.code}
                   onChange={(e) => setEditing({ ...editing, code: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') })}
@@ -185,8 +201,9 @@ export function OtherNumberTypesManager({ organizationId }: OtherNumberTypesMana
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Description (optional)</label>
+                <label htmlFor={`${fid}-description-optional`} className="block text-sm font-medium text-ink mb-1">Description (optional)</label>
                 <textarea
+                  id={`${fid}-description-optional`}
                   value={editing.description}
                   onChange={(e) => setEditing({ ...editing, description: e.target.value })}
                   placeholder="Help text for users"
@@ -255,30 +272,40 @@ export function OtherNumberTypesManager({ organizationId }: OtherNumberTypesMana
                 )}
               </div>
               <div className="flex items-center gap-1">
+                <RecordHistoryButton
+                  organizationId={organizationId}
+                  entityType="other_number_type"
+                  entityId={type.type_id}
+                  recordName={type.name}
+                  showLabel={false}
+                />
                 {!type.is_active ? (
                   <button
                     onClick={() => handleReactivate(type)}
-                    className="p-2 text-accessible-gray hover:text-ink rounded"
+                    className="p-2 text-accessible-gray hover:text-ink rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                     title="Reactivate"
+                    aria-label={`Reactivate ${type.name}`}
                   >
-                    <Plus size={16} />
+                    <Plus size={16} aria-hidden="true" />
                   </button>
                 ) : (
                   <>
                     <button
                       onClick={() => handleEdit(type)}
-                      className="p-2 text-accessible-gray hover:text-ink rounded"
+                      className="p-2 text-accessible-gray hover:text-ink rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                       title="Edit"
+                      aria-label={`Edit ${type.name}`}
                     >
-                      <Pencil size={16} />
+                      <Pencil size={16} aria-hidden="true" />
                     </button>
                     {!type.is_system && (
                       <button
                         onClick={() => handleDelete(type)}
-                        className="p-2 text-accessible-gray hover:text-semantic-error rounded"
+                        className="p-2 text-accessible-gray hover:text-semantic-error rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                         title="Delete"
+                        aria-label={`Delete ${type.name}`}
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={16} aria-hidden="true" />
                       </button>
                     )}
                   </>

@@ -15,6 +15,7 @@ import { useOrganization } from '../../contexts/useOrganization';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import DatabaseConnectionWizard from '../../components/DatabaseConnectionWizard';
 import ApiConnectionWizard from '../../components/ApiConnectionWizard';
+import FileSourceWizard from '../../components/FileSourceWizard';
 import { ConnectorIcon } from '../../lib/connectorIcons';
 import { Plug } from 'lucide-react';
 
@@ -38,6 +39,7 @@ export default function ConnectorsPage() {
   // Wizard state
   const [wizardDefinition, setWizardDefinition] = useState<ConnectorDefinition | null>(null);
   const [apiWizardDefinition, setApiWizardDefinition] = useState<ConnectorDefinition | null>(null);
+  const [fileWizardDefinition, setFileWizardDefinition] = useState<ConnectorDefinition | null>(null);
 
   const { data: definitions } = useQuery({
     queryKey: ['connector-definitions'],
@@ -65,8 +67,9 @@ export default function ConnectorsPage() {
   const categoryLabels: Record<string, string> = {
     database: 'Databases',
     api: 'APIs',
-    file: 'File Systems',
+    file: 'Files',
     cloud: 'Cloud Services',
+    madrona: 'Madrona',
   };
 
   // Group definitions by category
@@ -162,6 +165,15 @@ export default function ConnectorsPage() {
   // Check if a definition is an API connector
   const isApiConnector = (def: ConnectorDefinition) => def.category === 'api';
 
+  // File (spreadsheet upload) source connectors
+  const isFileConnector = (def: ConnectorDefinition) => def.category === 'file' && def.direction === 'source';
+
+  const handleFileWizardComplete = (instanceId: string) => {
+    setFileWizardDefinition(null);
+    queryClient.invalidateQueries({ queryKey: ['connector-instances'] });
+    navigate(`/organizations/${organizationId}/bridge/setup/connectors/${instanceId}`);
+  };
+
   // Launch wizard for API connectors
   const handleLaunchApiWizard = (def: ConnectorDefinition) => {
     setApiWizardDefinition(def);
@@ -204,7 +216,7 @@ export default function ConnectorsPage() {
                   <div key={def.connector_definition_id} className="border border-lichen rounded-lg p-4 hover:border-stone transition-colors">
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0 p-2 bg-lichen rounded-lg">
-                        <ConnectorIcon connectorKey={def.key} category={def.category ?? undefined} size={28} className="text-archive" />
+                        <span aria-hidden="true" className="contents"><ConnectorIcon connectorKey={def.key} category={def.category ?? undefined} size={28} className="text-archive" /></span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2 mb-1">
@@ -240,6 +252,17 @@ export default function ConnectorsPage() {
                             className="w-full mt-2 px-3 py-1.5 bg-bark text-parchment text-sm rounded hover:bg-copper-dark hover:text-parchment transition-colors"
                           >
                             Connect
+                          </button>
+                        )}
+
+                        {/* Upload button for spreadsheet file sources */}
+                        {isFileConnector(def) && organizationId && (
+                          <button
+                            type="button"
+                            onClick={() => setFileWizardDefinition(def)}
+                            className="w-full mt-2 px-3 py-1.5 bg-bark text-parchment text-sm rounded hover:bg-copper-dark hover:text-parchment transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+                          >
+                            Upload a spreadsheet
                           </button>
                         )}
 
@@ -299,22 +322,23 @@ export default function ConnectorsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-ink mb-2">
+                <span id="connector-definition-label" className="block text-sm font-medium text-ink mb-2">
                   Connector Definition
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                </span>
+                <div role="group" aria-labelledby="connector-definition-label" className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {definitions?.map((def) => (
                     <button
                       key={def.connector_definition_id}
                       type="button"
                       onClick={() => setFormData({ ...formData, connector_definition_id: def.connector_definition_id })}
+                      aria-pressed={formData.connector_definition_id === def.connector_definition_id}
                       className={`flex items-center gap-2 p-2 border rounded-lg text-left transition-all ${
                         formData.connector_definition_id === def.connector_definition_id
                           ? 'border-bark bg-bark/10 ring-1 ring-bark/20'
                           : 'border-lichen hover:border-stone hover:bg-lichen'
                       }`}
                     >
-                      <ConnectorIcon connectorKey={def.key} category={def.category ?? undefined} size={20} className="flex-shrink-0 text-archive" />
+                      <span aria-hidden="true" className="contents"><ConnectorIcon connectorKey={def.key} category={def.category ?? undefined} size={20} className="flex-shrink-0 text-archive" /></span>
                       <div className="min-w-0">
                         <div className="text-sm font-medium text-ink truncate">{def.display_name}</div>
                         <div className="text-xs text-archive">{def.direction}</div>
@@ -394,31 +418,28 @@ export default function ConnectorsPage() {
                 (d) => d.connector_definition_id === instance.connector_definition_id
               );
               return (
-                <Link
+                // The card is not itself a link: it holds a disclosure and a
+                // Delete button, which cannot be nested in an <a>. The name is
+                // the link, and its ::after overlay keeps the whole card clickable.
+                <div
                   key={instance.connector_instance_id}
-                  to={`/organizations/${organizationId}/bridge/setup/connectors/${instance.connector_instance_id}`}
-                  className="block border border-lichen rounded-lg p-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
-                  style={{
-                    textDecoration: 'none',
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#fafaf9';
-                    e.currentTarget.style.borderColor = '#a8a29e';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '';
-                    e.currentTarget.style.borderColor = 'rgb(var(--color-lichen))';
-                  }}
+                  className="relative block cursor-pointer border border-lichen rounded-lg p-4 transition-colors hover:bg-parchment-warm hover:border-archive/60"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3 flex-1">
                       <div className="flex-shrink-0 p-2 bg-lichen rounded-lg">
-                        <ConnectorIcon connectorKey={definition?.key} category={definition?.category ?? undefined} size={24} className="text-archive" />
+                        <span aria-hidden="true" className="contents"><ConnectorIcon connectorKey={definition?.key} category={definition?.category ?? undefined} size={24} className="text-archive" /></span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-ink">{instance.name}</h3>
+                          <h3 className="font-semibold text-ink">
+                            <Link
+                              to={`/organizations/${organizationId}/bridge/setup/connectors/${instance.connector_instance_id}`}
+                              className="text-ink no-underline after:absolute after:inset-0 after:rounded-lg focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-bark/30"
+                            >
+                              {instance.name}
+                            </Link>
+                          </h3>
                           {definition && (
                             <span
                               className={`px-2 py-0.5 text-xs font-medium rounded ${
@@ -458,7 +479,7 @@ export default function ConnectorsPage() {
                             );
                           })()}
                         </p>
-                        <details className="mt-2" onClick={(e) => e.stopPropagation()}>
+                        <details className="relative z-10 mt-2">
                           <summary className="text-sm text-bark cursor-pointer">
                             View config
                           </summary>
@@ -469,20 +490,20 @@ export default function ConnectorsPage() {
                       </div>
                     </div>
                     <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
+                      type="button"
+                      onClick={() => {
                         setDeleteConfirmInstance({
                           id: instance.connector_instance_id,
                           name: instance.name
                         });
                       }}
-                      className="text-semantic-error hover:text-semantic-error/80 text-sm"
+                      aria-label={`Delete ${instance.name}`}
+                      className="relative z-10 text-semantic-error hover:text-semantic-error/80 text-sm"
                     >
                       Delete
                     </button>
                   </div>
-                </Link>
+                </div>
               );
             })}
             {instances?.length === 0 && (
@@ -513,6 +534,18 @@ export default function ConnectorsPage() {
             organizationId={organizationId}
             onComplete={handleWizardComplete}
             onCancel={() => setWizardDefinition(null)}
+          />
+        </div>
+      )}
+
+      {/* Spreadsheet File Source Modal */}
+      {fileWizardDefinition && organizationId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4">
+          <FileSourceWizard
+            definition={fileWizardDefinition}
+            organizationId={organizationId}
+            onComplete={handleFileWizardComplete}
+            onCancel={() => setFileWizardDefinition(null)}
           />
         </div>
       )}

@@ -5,6 +5,8 @@
  * Note: "Authority" terminology is internal only - never shown to users.
  */
 
+import type { StrictVocabularyField } from '../../../hooks/useVocabularyValidation';
+
 // ============================================================================
 // COMPONENT PROPS
 // ============================================================================
@@ -51,6 +53,18 @@ export interface AuthorityAutocompleteProps {
 
   /** Whether to allow creating new values not in suggestions */
   allowCreate?: boolean;
+
+  /**
+   * Object field this input writes. When the organization has switched that
+   * field to strict vocabulary validation, "use as entered" is disabled (even
+   * if allowCreate is true), the reason is exposed as described text, and a
+   * chosen reference-source term is saved to the organization's vocabulary
+   * before the value is committed so the API accepts it.
+   */
+  strictField?: StrictVocabularyField;
+
+  /** Extra element id(s) describing the input (e.g. a field-level error) */
+  describedBy?: string;
 
   /** Custom class name */
   className?: string;
@@ -221,6 +235,7 @@ export type SuggestionSource =
   | 'wikidata'       // Wikidata
   | 'viaf'           // VIAF
   | 'iconclass'      // Iconclass iconographic classification
+  | 'loc'            // Library of Congress (LCSH, LCNAF)
   | 'other';         // Other external source
 
 /**

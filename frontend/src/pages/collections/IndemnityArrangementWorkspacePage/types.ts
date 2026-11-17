@@ -104,6 +104,7 @@ export const INDEMNITY_SECTION_GROUPS: SectionGroup[] = [
     sections: [
       { id: 'coveragePeriod', label: 'Coverage Period', dataKey: 'coveragePeriod' },
       { id: 'objects', label: 'Covered Objects', dataKey: 'objects' },
+      { id: 'claims', label: 'Claims', dataKey: 'claims' },
     ],
   },
   {
@@ -124,6 +125,7 @@ export const SECTION_GROUPS: Record<string, string> = {
   application: 'overview',
   coveragePeriod: 'coverage',
   objects: 'coverage',
+  claims: 'coverage',
   notes: 'admin',
   history: 'admin',
 };
@@ -132,7 +134,7 @@ export const GROUP_ORDER = ['overview', 'coverage', 'admin'];
 
 export const ALL_SECTION_IDS = [
   'arrangement', 'application',
-  'coveragePeriod', 'objects',
+  'coveragePeriod', 'objects', 'claims',
   'notes', 'history',
 ];
 
@@ -141,6 +143,7 @@ export const INITIAL_EXPANDED_SECTIONS: Record<string, boolean> = {
   application: true,
   coveragePeriod: false,
   objects: false,
+  claims: true,
   notes: false,
   history: false,
 };

@@ -52,7 +52,7 @@ export default function RollbackDialog({
 
   return (
     <ModalPortal>
-    { }
+    {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- backdrop click-to-dismiss; Escape closes via useAccessibleModal */}
     <div
       className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
       data-modal-layer="1000"
@@ -71,7 +71,7 @@ export default function RollbackDialog({
             id={titleId}
             className="m-0 text-lg font-semibold text-ink font-serif flex items-center gap-2"
           >
-            <RotateCcw size={18} className="text-semantic-warning" />
+            <RotateCcw size={18} className="text-semantic-warning" aria-hidden="true" />
             Revert {entityLabel} Status
           </h2>
         </div>
@@ -100,7 +100,6 @@ export default function RollbackDialog({
               placeholder="Explain why this record needs to be reverted..."
               rows={3}
               className="w-full px-3 py-2 text-sm border border-lichen rounded-lg bg-parchment text-ink placeholder:text-archive/50 focus-visible:ring-2 ring-bark/30 ring-offset-2 resize-none"
-              autoFocus
             />
             {reason.length > 0 && !isValid && (
               <p className="mt-1 text-xs text-semantic-warning">

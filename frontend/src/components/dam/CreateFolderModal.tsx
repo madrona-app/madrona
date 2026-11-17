@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Folder, AlertCircle } from 'lucide-react';
 import { createMediaFolder, updateMediaFolder } from '../../lib/api';
 import type { MediaFolder } from '../../lib/schemas';
+import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
 
 interface CreateFolderModalProps {
   organizationId: string;
@@ -21,6 +22,19 @@ export function CreateFolderModal({
 }: CreateFolderModalProps) {
   const queryClient = useQueryClient();
   const isEditing = !!editFolder;
+  const fid = useId();
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const { modalRef, titleId } = useAccessibleModal({
+    isOpen: true,
+    onClose,
+    titlePrefix: 'create-folder-modal',
+  });
+
+  // Initial focus goes to the name field (runs after the modal hook's own first-element focus)
+  useEffect(() => {
+    const t = setTimeout(() => nameInputRef.current?.focus(), 0);
+    return () => clearTimeout(t);
+  }, []);
 
   const [name, setName] = useState(editFolder?.name || '');
   const [error, setError] = useState<string | null>(null);
@@ -83,23 +97,29 @@ export function CreateFolderModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div role="presentation" className="absolute inset-0 bg-ink/50" onClick={onClose} />
+      <div aria-hidden="true" className="absolute inset-0 bg-ink/50" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative bg-parchment rounded-lg shadow-xl w-full max-w-md">
+      <div
+        ref={modalRef}
+        {...getModalAriaProps(titleId)}
+        className="relative bg-parchment rounded-lg shadow-xl w-full max-w-md"
+      >
         {/* Header */}
         <div className="px-6 py-4 border-b border-lichen flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Folder size={20} className="text-forest" />
-            <h2 className="text-lg font-semibold text-ink">
+            <Folder size={20} className="text-forest" aria-hidden="true" />
+            <h2 id={titleId} className="text-lg font-semibold text-ink">
               {isEditing ? 'Rename Folder' : 'Create Folder'}
             </h2>
           </div>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close"
             className="p-1 text-archive hover:text-ink rounded transition-colors"
           >
-            <X size={20} />
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
 
@@ -115,23 +135,24 @@ export function CreateFolderModal({
 
             {/* Folder name */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${fid}-name`} className="block text-sm font-medium text-ink mb-1">
                 Folder Name
               </label>
               <input
+                ref={nameInputRef}
+                id={`${fid}-name`}
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Enter folder name"
                 className="w-full px-3 py-2 border border-lichen rounded-lg text-sm focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
-                autoFocus
               />
             </div>
 
             {/* Error */}
             {error && (
-              <div className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-lg text-semantic-error flex items-center gap-2 text-sm">
-                <AlertCircle size={16} />
+              <div role="alert" className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-lg text-semantic-error flex items-center gap-2 text-sm">
+                <AlertCircle size={16} aria-hidden="true" />
                 <span>{error}</span>
               </div>
             )}

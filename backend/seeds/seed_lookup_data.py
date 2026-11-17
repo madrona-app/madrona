@@ -178,7 +178,6 @@ LOOKUP_VALUES = [
     ("condition", "804cf19c-a0ba-4daa-9540-5e9d979aee9e", "fair", "Fair", "Object in fair condition", None, 2, True, False),
     ("condition", "1b2f0aca-bd58-4e85-b50e-ff101bd0cd70", "poor", "Poor", "Object in poor condition", None, 3, True, False),
     ("condition", "a8eaf3e7-dc2a-4142-88ec-980362f48a11", "unacceptable", "Unacceptable", "Object in unacceptable condition", None, 4, True, False),
-    ("condition", "219ad9e0-5114-44ae-8271-6645ad9eca11", "critical", "Critical", "Object in critical condition requiring immediate attention", None, 5, True, False),
     # -- contact_role --
     ("contact_role", "af813da3-099f-470f-9079-2bbaf8759f66", "creator", "Creator", "Created the object", None, 0, True, False),
     ("contact_role", "057626d8-f354-4dc8-b5a4-5e412647161b", "donor", "Donor", "Donated the object", None, 1, True, False),
@@ -406,11 +405,10 @@ LOOKUP_VALUES = [
     # -- object_status --
     ("object_status", "f95ad48c-f034-4814-9ed7-22acbdf4df5b", "pending", "Pending", "Pending accessioning", None, 0, True, False),
     ("object_status", "4595879e-3157-449c-8dd8-6bca1c6191a9", "accessioned", "Accessioned", "Formally accessioned", None, 1, True, False),
-    ("object_status", "28cf50e8-1bd7-4cca-b5ef-849f338507fd", "active", "Active", "Active in collection", None, 2, True, False),
     ("object_status", "1c25ecb5-a01d-4a6f-923a-01ccc16b64cb", "on_loan", "On Loan", "Currently on loan", None, 3, True, False),
-    ("object_status", "dd983dd8-24dc-4b53-b9f5-a521901f07af", "in_conservation", "In Conservation", "Under conservation", None, 4, True, False),
     ("object_status", "9818dfb9-ea92-4d8c-bba2-2e45aded1625", "deaccessioned", "Deaccessioned", "Removed from collection", None, 5, True, False),
     ("object_status", "947adaf9-58f8-425e-b2d4-3c5a7da0d997", "missing", "Missing", "Location unknown", None, 6, True, False),
+    ("object_status", "3980d362-9bc6-4a46-8d36-b22f3ee48692", "destroyed", "Destroyed", "Destroyed or lost beyond recovery", None, 7, True, False),
     # -- object_type --
     ("object_type", "731edfe8-3488-4fc0-a4f9-7c817186ef61", "painting", "Painting", "Painting", None, 0, True, False),
     ("object_type", "1779f8e2-161a-4910-93b0-74d006fc0174", "sculpture", "Sculpture", "Sculpture", None, 1, True, False),
@@ -556,6 +554,74 @@ LOOKUP_VALUES = [
     ("valuation_type", "4ef15da1-c25f-477d-bb3c-f1f95bd76667", "replacement", "Replacement Cost", "Cost to replace", None, 2, True, False),
     ("valuation_type", "0897b8f2-7df1-4e6b-bea3-34d6f4df1785", "probate", "Probate", "For estate purposes", None, 3, True, False),
     ("valuation_type", "e46a244b-3dc5-4e3c-883a-b4f90d57e8d1", "donation", "Donation", "For tax deduction purposes", None, 4, True, False),
+    # -- values the columns' former CHECK constraints accepted (migration
+    #    7af089abb738 made these lookup-backed); kept so every value the API
+    #    took before is still offered and accepted --
+    ("acquisition_method", "2c0560f5-e99a-53c7-8c9f-4c7fbcb1ad4b", "commission", "Commission", None, None, 8, True, False),
+    ("acquisition_method", "13c6ef2e-1964-5b49-8638-0d1a90879fac", "conversion", "Conversion", None, None, 9, True, False),
+    ("acquisition_method", "1080283b-636f-52db-aa89-3c8caf466a6d", "donation", "Donation", None, None, 10, True, False),
+    ("acquisition_method", "be95fc71-1ca3-56b9-801e-684a3654b928", "unknown", "Unknown", None, None, 11, True, False),
+    ("audit_type", "e6c40082-49d7-54d2-a947-ac245c46d163", "spot_check", "Spot check", None, None, 5, True, False),
+    ("audit_type", "19aa5b13-9af0-5fdb-8a60-866cde464aa6", "annual", "Annual", None, None, 6, True, False),
+    ("citation_type", "34dbe95c-8c6f-57db-a35a-768d9d63990c", "monograph", "Monograph", None, None, 6, True, False),
+    ("citation_type", "2f35037e-07ea-5588-9d95-50845fa19d0c", "journal_article", "Journal article", None, None, 7, True, False),
+    ("citation_type", "283a2e5d-9633-584a-9cfe-9ed758048c10", "collection_catalog", "Collection catalog", None, None, 8, True, False),
+    ("citation_type", "0172efc0-d2d3-52af-9cf2-36cb4464aa85", "auction_catalog", "Auction catalog", None, None, 9, True, False),
+    ("citation_type", "6128c525-bb36-52c8-a21d-1ee0465b3571", "thesis", "Thesis", None, None, 10, True, False),
+    ("citation_type", "4601ea35-bd06-5a91-b25c-bab317958dd1", "database", "Database", None, None, 11, True, False),
+    ("citation_type", "5d428a54-88ba-5d9d-a159-79e2e2e0032f", "unpublished", "Unpublished", None, None, 12, True, False),
+    ("citation_type", "227ca263-0915-503a-8f68-d21933ed9f15", "correspondence", "Correspondence", None, None, 13, True, False),
+    ("citation_type", "d3cca905-c7f7-5190-b3b5-c61f2555e67d", "archival", "Archival", None, None, 14, True, False),
+    ("citation_type", "f803d67b-81d9-5392-a9a9-a5141bce1b13", "newspaper", "Newspaper", None, None, 15, True, False),
+    ("citation_type", "28fadee5-8ee6-55aa-937f-4931ddc4067e", "magazine", "Magazine", None, None, 16, True, False),
+    ("citation_type", "b9e2f805-9fd0-5590-aa45-c8014f0ac4ce", "other", "Other", None, None, 17, True, False),
+    ("review_type", "c7bb7091-dd20-5b06-b162-cb947a627cf2", "thematic", "Thematic", None, None, 5, True, False),
+    ("review_type", "40f15b2c-dc13-5b44-8103-cbd642462686", "condition", "Condition", None, None, 6, True, False),
+    ("review_type", "e21aa610-e171-55ee-b72f-cd55d9377d62", "documentation", "Documentation", None, None, 7, True, False),
+    ("review_type", "c017b7d8-249f-5883-8d42-446d5319dbe2", "comprehensive", "Comprehensive", None, None, 8, True, False),
+    ("report_type", "08d56e17-b98f-5253-915f-8b6ee1d0b700", "loan_return", "Loan return", None, None, 6, True, False),
+    ("report_type", "22bf0b26-cc08-5f8e-b012-cef2cedc0bd8", "pre_treatment", "Pre-treatment", None, None, 7, True, False),
+    ("report_type", "d1881e7b-b33a-5242-92ec-d08a414aa530", "post_treatment", "Post-treatment", None, None, 8, True, False),
+    ("treatment_type", "07ef742f-f05b-5c15-ab11-765371a43410", "stabilization", "Stabilization", None, None, 5, True, False),
+    ("treatment_type", "dcf100a7-adc0-51de-acd3-ca39aee9f2ce", "cleaning", "Cleaning", None, None, 6, True, False),
+    ("treatment_type", "69391216-7a7c-5b80-9124-ce8dee2520a5", "repair", "Repair", None, None, 7, True, False),
+    ("treatment_type", "0f663fca-5fb4-5349-b309-e1395a24c42e", "documentation", "Documentation", None, None, 8, True, False),
+    ("treatment_type", "d2b4e324-4172-551b-8ea8-1da443d64e1c", "mount_making", "Mount making", None, None, 9, True, False),
+    ("treatment_type", "3a972cbf-5bbf-5719-93e2-e4ad22dd9ef6", "rehousing", "Rehousing", None, None, 10, True, False),
+    ("treatment_type", "b84b2faf-cdd1-57c9-90fd-dc49536b67e9", "pest_treatment", "Pest treatment", None, None, 11, True, False),
+    ("deaccession_reason", "a855ced9-fc4e-579a-944e-df3b0a3c6658", "damage", "Damage", None, None, 6, True, False),
+    ("deaccession_reason", "ad5731bb-522d-547d-b261-9097b15ba994", "exchange", "Exchange", None, None, 7, True, False),
+    ("deaccession_reason", "985fe9db-eeff-5954-8761-c1956f8ef302", "ethical", "Ethical", None, None, 8, True, False),
+    ("deaccession_reason", "b5c248fb-e4d2-570f-aec8-63eb5f7da83d", "donor_request", "Donor request", None, None, 9, True, False),
+    ("deaccession_reason", "aa10cbc2-3a7e-596d-bfe2-191d3985442d", "legal_requirement", "Legal requirement", None, None, 10, True, False),
+    ("deaccession_reason", "d46d9418-e702-5eb9-a7cf-73e081b04444", "hazard", "Hazard", None, None, 11, True, False),
+    ("claim_status", "07a51081-25bc-525e-b802-5a63d83f305b", "pending", "Pending", None, None, 5, True, False),
+    ("claim_status", "3cc8cba7-f319-512e-8604-3555f23e51a7", "withdrawn", "Withdrawn", None, None, 6, True, False),
+    ("loan_purpose", "95f296a5-7d3d-5923-8055-4abdde388ab5", "photography", "Photography", None, None, 6, True, False),
+    ("loan_purpose", "3bcb710a-0ccf-58cd-9e05-a744f275858a", "study", "Study", None, None, 7, True, False),
+    ("loan_purpose", "c0eec9f5-99c6-51e9-92c1-3e6782f899b4", "touring", "Touring", None, None, 8, True, False),
+    ("loan_purpose", "f62f6c40-437f-5df7-81ba-d9623adc30bc", "inter_museum", "Inter-museum", None, None, 9, True, False),
+    ("entry_reason", "9eb549f0-e167-5e9d-a584-3250bd07a312", "purchase_consideration", "Purchase consideration", None, None, 7, True, False),
+    ("entry_reason", "38a7b4ab-5673-5c81-bc8a-187c45757c4e", "enquiry", "Enquiry", None, None, 8, True, False),
+    ("exit_reason", "52b9c2e6-8eae-5f3f-8884-36863d826489", "destruction", "Destruction", None, None, 10, True, False),
+    ("exit_reason", "6b96d5dd-3700-54bc-badb-22424ad1c96a", "theft_loss", "Theft or loss", None, None, 11, True, False),
+    ("right_type", "f6e53fa9-883d-5e9e-a0d2-27f541c2a92f", "performance", "Performance", None, None, 6, True, False),
+    ("right_type", "7de05e82-7d92-54e4-aef6-bb376d341dda", "adaptation", "Adaptation", None, None, 7, True, False),
+    ("right_type", "d05b3fa4-dbd8-5f99-9b4a-e0659eac215d", "distribution", "Distribution", None, None, 8, True, False),
+    ("right_type", "76837007-5361-5b33-b19f-afa0569f8d72", "moral_rights", "Moral rights", None, None, 9, True, False),
+    ("right_type", "a3e336f4-3e19-5b9f-8474-81d0d0bebdb3", "database_rights", "Database rights", None, None, 10, True, False),
+    ("right_type", "3263a10b-7200-5f81-82ee-3444463a658f", "trademark", "Trademark", None, None, 11, True, False),
+    ("right_type", "e5b846ee-30e6-5229-aa55-c1c253b81cd1", "other", "Other", None, None, 12, True, False),
+    ("reproduction_type", "fb1247b4-da58-5ce5-88f4-ef721fbf12d3", "video", "Video", None, None, 7, True, False),
+    ("reproduction_type", "a46b66c1-b930-5f13-bbfb-d365c534cede", "other", "Other", None, None, 8, True, False),
+    ("use_type", "56b6fd6d-d6ad-5639-b545-839555c2177b", "broadcast", "Broadcast", None, None, 5, True, False),
+    ("use_type", "4cae39a2-0855-50de-8d2c-d2c6cd27fe0e", "commercial", "Commercial", None, None, 6, True, False),
+    ("use_type", "aa3bbd44-57c7-597c-b2b2-9fcdf8a4b257", "conservation", "Conservation", None, None, 7, True, False),
+    ("use_type", "66bef828-9e45-5040-adff-6819aa93a30e", "loan", "Loan", None, None, 8, True, False),
+    ("use_type", "da1a4705-fe96-5763-a8cc-a90adcace2ec", "digitization", "Digitization", None, None, 9, True, False),
+    ("use_type", "b2181e02-564f-52b1-8eb4-9fbd09e05e98", "other", "Other", None, None, 10, True, False),
+    ("valuation_method", "510a3fa7-13a0-5e7d-8193-a10b215c3333", "hybrid", "Hybrid", None, None, 5, True, False),
+    ("valuation_type", "75da5644-d8a0-5b3e-8642-3f6b47105954", "internal", "Internal", None, None, 5, True, False),
 ]
 
 
@@ -597,6 +663,37 @@ INSERT_VALUE_SQL = text("""
 # ---------------------------------------------------------------------------
 # Seed function
 # ---------------------------------------------------------------------------
+
+def insert_lookup_rows(conn) -> None:
+    """Insert every category and system value (idempotent), quietly.
+
+    The test harness builds its schema with create_all and calls this so route
+    tests see the same lookup values a booted install has.
+    """
+    for (category_id, category_key, display_name, description,
+         applicable_contexts_json, supports_icons) in LOOKUP_CATEGORIES:
+        conn.execute(INSERT_CATEGORY_SQL, {
+            "category_id": category_id,
+            "category_key": category_key,
+            "display_name": display_name,
+            "description": description,
+            "applicable_contexts": applicable_contexts_json,
+            "supports_icons": supports_icons,
+        })
+    for (category_key, value_id, value_key, label, description,
+         icon_name, sort_order, is_active, is_hidden) in LOOKUP_VALUES:
+        conn.execute(INSERT_VALUE_SQL, {
+            "value_id": value_id,
+            "category_key": category_key,
+            "value_key": value_key,
+            "label": label,
+            "description": description,
+            "icon_name": icon_name if icon_name else None,
+            "sort_order": sort_order,
+            "is_active": is_active,
+            "is_hidden": is_hidden,
+        })
+
 
 def seed_lookup_data():
     """Seed lookup categories and lookup values."""

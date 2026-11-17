@@ -35,6 +35,7 @@ from app.services.uploads import (
     delete_org_media,
     get_org_media_url,
     detect_media_type,
+    normalize_upload_content_type,
 )
 from app.permissions import Permission
 from app.services.api_security import escape_ilike, sanitize_error_message
@@ -58,7 +59,8 @@ from app.fastapi_app.schemas.collections_procedures import (
     ObjectAcquisitionResponse,
 )
 from app.fastapi_app.schemas.common import MessageResponse
-from app.services.procedure_enforcement import check_blocking_requirements
+from app.services.procedure_enforcement import raise_if_requirements_unmet
+from app.services.collections.record_fields import apply_record_fields
 
 logger = logging.getLogger(__name__)
 
@@ -67,13 +69,26 @@ router = APIRouter(tags=["collections-procedures"])
 
 def _enforce_procedure(organization_id: UUID, procedure_type: str, entity, target_status: str, db: Session):
     """Raise 422 if procedure enforcement is enabled and blocking requirements are unmet."""
-    missing = check_blocking_requirements(organization_id, procedure_type, entity, target_status, db)
-    if missing:
-        raise HTTPException(status_code=422, detail={
-            "code": "procedure_requirements_not_met",
-            "message": f"Cannot advance to {target_status}: unmet requirements",
-            "blocking_requirements": missing,
-        })
+    raise_if_requirements_unmet(organization_id, procedure_type, entity, target_status, db)
+
+
+# Columns the form never writes, on create or update. Each procedure adds the
+# caller's write-restricted fields (field access) at request time.
+_ENTRY_PROTECTED = frozenset({'entry_id', 'entry_number', 'status'})
+# API name -> column, where they differ.
+_ENTRY_FIELD_MAPPING = {'reason': 'entry_reason'}
+# authorization_id / authorization_date record who approved and when; the
+# approve action sets them.
+_ACQUISITION_PROTECTED = frozenset({
+    'acquisition_id', 'acquisition_number', 'approved_by', 'approved_by_id', 'approval_date',
+    'authorization_id', 'authorization_date', 'status',
+})
+
+
+def _protected(base: frozenset[str], entity_type: str, organization_id, auth: AuthContext, db: Session) -> set[str]:
+    return set(base) | get_write_restricted_fields(
+        entity_type, str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override
+    )
 
 
 # ============================================================================
@@ -96,6 +111,9 @@ def create_object_entry(
             "field": "reason",
         })
 
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, ObjectEntry, data, aliases={"entry_reason": "reason"})
+
     # Create via the shared service — the same code the draft applier runs.
     from app.services.collections.creation.object_entry import (
         create_object_entry as _create_object_entry,
@@ -103,6 +121,11 @@ def create_object_entry(
 
     try:
         entry = _create_object_entry(db, organization_id, data, auth.user_id, open_approval=True)
+        # Every other form field, through the same path as update.
+        apply_record_fields(
+            entry, ObjectEntry, data, _protected(_ENTRY_PROTECTED, 'object_entry', organization_id, auth, db),
+            field_mapping=_ENTRY_FIELD_MAPPING, blank_to_none=True,
+        )
         db.commit()
     except ValueError as e:
         # Malformed field in the payload — bad input, not a server fault.
@@ -218,33 +241,28 @@ def update_object_entry(
         })
 
     # Map API field names to model attributes
-    field_mapping = {'reason': 'entry_reason'}
+    field_mapping = _ENTRY_FIELD_MAPPING
     # Validate enum fields against the model's CHECK sets (map API->column names
     # and treat "" as NULL) so a bad entry_reason returns 422, not a 500.
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(ObjectEntry, {
         field_mapping.get(k, k): (None if v == '' else v) for k, v in data.items()
     })
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, ObjectEntry, data, current=entry, aliases={"entry_reason": "reason"})
 
     # Optimistic concurrency — reject stale updates
-    from app.services.coerce import check_version, coerce_value_for_column
+    from app.services.coerce import check_version
     check_version(entry, data)
 
     # Handle status change separately with validation
     old_status = entry.status
     new_status = data.pop('status', None)
 
-    protected_fields = {'entry_id', 'organization_id', 'entry_number', 'created_at', 'created_by', 'updated_by', 'version'}
-    protected_fields |= get_write_restricted_fields('object_entry', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
-    for key, value in data.items():
-        attr_name = field_mapping.get(key, key)
-        if hasattr(entry, attr_name) and key not in protected_fields:
-            if value == '':
-                value = None
-            if attr_name.endswith('_id') and value:
-                setattr(entry, attr_name, UUID(value))
-            else:
-                setattr(entry, attr_name, coerce_value_for_column(ObjectEntry, attr_name, value))
+    protected_fields = _protected(_ENTRY_PROTECTED, 'object_entry', organization_id, auth, db)
+    apply_record_fields(
+        entry, ObjectEntry, data, protected_fields, field_mapping=_ENTRY_FIELD_MAPPING, blank_to_none=True
+    )
 
     if new_status and new_status != old_status:
         from app.services.workflow_definitions import WORKFLOW_DEFINITIONS
@@ -920,6 +938,7 @@ async def add_object_entry_item_media(
     if file and file.filename:
         # Upload new file
         content_type = file.content_type or 'application/octet-stream'
+        content_type = normalize_upload_content_type(content_type, file.filename)
         media_type = detect_media_type(content_type)
         if not media_type:
             raise HTTPException(status_code=400, detail={
@@ -1035,10 +1054,12 @@ async def add_object_entry_item_media(
 
     # If setting as primary, unset other primaries for this item
     if is_primary:
-        db.query(ObjectEntryItemMedia).filter(
+        # Row by row (not a bulk UPDATE) so the entry's history records it.
+        for other in db.query(ObjectEntryItemMedia).filter(
             ObjectEntryItemMedia.entry_item_id == item.entry_item_id,
             ObjectEntryItemMedia.is_primary == True
-        ).update({"is_primary": False})
+        ).all():
+            other.is_primary = False
 
     link = ObjectEntryItemMedia(
         entry_item_id=item.entry_item_id,
@@ -1132,10 +1153,12 @@ def set_object_entry_item_primary_media(
         })
 
     # Unset other primaries for this item
-    db.query(ObjectEntryItemMedia).filter(
+    for other in db.query(ObjectEntryItemMedia).filter(
         ObjectEntryItemMedia.entry_item_id == item.entry_item_id,
-        ObjectEntryItemMedia.is_primary == True
-    ).update({'is_primary': False})
+        ObjectEntryItemMedia.is_primary == True,
+        ObjectEntryItemMedia.media_id != link.media_id,
+    ).all():
+        other.is_primary = False
 
     # Set this as primary
     link.is_primary = True
@@ -1166,6 +1189,8 @@ def create_acquisition(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(Acquisition, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, Acquisition, data)
 
     # Create via the shared service — the same code the draft applier runs. It
     # owns the ACQ number and the acquisition/create approval gate. This router
@@ -1176,6 +1201,10 @@ def create_acquisition(
 
     try:
         acquisition = _create_acquisition(db, organization_id, data, auth.user_id, open_approval=True)
+        # Every other form field, through the same path as update.
+        apply_record_fields(
+            acquisition, Acquisition, data, _protected(_ACQUISITION_PROTECTED, 'acquisition', organization_id, auth, db)
+        )
         db.commit()
     except Exception:
         db.rollback()
@@ -1279,24 +1308,17 @@ def update_acquisition(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(Acquisition, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, Acquisition, data, current=acq)
 
-    from app.services.coerce import check_version, coerce_value_for_column
+    from app.services.coerce import check_version
     check_version(acq, data)
 
     old_status = acq.status
     new_status = data.pop('status', None)
 
-    protected_fields = {
-        'acquisition_id', 'organization_id', 'acquisition_number', 'created_at', 'created_by',
-        'updated_by', 'approved_by', 'approved_by_id', 'approval_date', 'authorization_id', 'authorization_date',
-    }
-    protected_fields |= get_write_restricted_fields('acquisition', organization_id, str(auth.user_id), session=db, role_override=auth.role_override)
-    for key, value in data.items():
-        if hasattr(acq, key) and key not in protected_fields:
-            if key.endswith('_id') and value:
-                setattr(acq, key, UUID(value))
-            else:
-                setattr(acq, key, coerce_value_for_column(Acquisition, key, value))
+    protected_fields = _protected(_ACQUISITION_PROTECTED, 'acquisition', organization_id, auth, db)
+    apply_record_fields(acq, Acquisition, data, protected_fields)
 
     if new_status and new_status != old_status:
         from app.services.workflow_definitions import WORKFLOW_DEFINITIONS

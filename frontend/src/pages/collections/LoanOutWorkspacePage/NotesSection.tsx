@@ -32,6 +32,7 @@ export function NotesSection({
       order={order}
     >
       <EditableField
+        name="loan_note"
         label="Loan Notes"
         value={formData.loan_note}
         isEditing={isEditing}

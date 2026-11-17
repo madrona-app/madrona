@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useId } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Package, ChevronDown, Check, Loader2 } from 'lucide-react';
 import { WorkspaceSection } from '../../../components/workspace';
@@ -300,6 +300,7 @@ function ItemEditSlideOver({
   onClose,
   onSuccess,
 }: ItemEditSlideOverProps) {
+  const uid = useId();
   const { showToast } = useToast();
   const [crateId, setCrateId] = useState(item.crate_id ?? '');
   const [packingNotes, setPackingNotes] = useState(item.packing_notes ?? '');
@@ -372,7 +373,7 @@ function ItemEditSlideOver({
 
         {/* Crate assignment */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${uid}-crate-assignment`} className="block text-sm font-medium text-ink mb-1.5">
             Crate Assignment
           </label>
           <div className="relative">
@@ -381,6 +382,7 @@ function ItemEditSlideOver({
               className="absolute left-2.5 top-1/2 -translate-y-1/2 text-archive pointer-events-none"
             />
             <select
+              id={`${uid}-crate-assignment`}
               value={crateId}
               onChange={(e) => setCrateId(e.target.value)}
               className="w-full pl-8 pr-3 py-2 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment text-ink appearance-none"
@@ -402,10 +404,11 @@ function ItemEditSlideOver({
 
         {/* Packing notes */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${uid}-packing-notes`} className="block text-sm font-medium text-ink mb-1.5">
             Packing Notes
           </label>
           <textarea
+            id={`${uid}-packing-notes`}
             value={packingNotes}
             onChange={(e) => setPackingNotes(e.target.value)}
             placeholder="Special packing instructions..."
@@ -432,6 +435,7 @@ interface AddItemSlideOverProps {
 }
 
 function AddItemSlideOver({ orgId: _orgId, shipmentId: _shipmentId, hit, crates, onClose, onConfirm }: AddItemSlideOverProps) {
+  const uid = useId();
   const [crateId, setCrateId] = useState('');
   const [packingNotes, setPackingNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -482,10 +486,11 @@ function AddItemSlideOver({ orgId: _orgId, shipmentId: _shipmentId, hit, crates,
 
         {/* Crate assignment */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">Crate Assignment</label>
+          <label htmlFor={`${uid}-crate-assignment`} className="block text-sm font-medium text-ink mb-1.5">Crate Assignment</label>
           <div className="relative">
             <Package size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-archive pointer-events-none" />
             <select
+              id={`${uid}-crate-assignment`}
               value={crateId}
               onChange={(e) => setCrateId(e.target.value)}
               className="w-full pl-8 pr-3 py-2 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment text-ink appearance-none"
@@ -503,8 +508,9 @@ function AddItemSlideOver({ orgId: _orgId, shipmentId: _shipmentId, hit, crates,
 
         {/* Packing notes */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">Packing Notes</label>
+          <label htmlFor={`${uid}-packing-notes`} className="block text-sm font-medium text-ink mb-1.5">Packing Notes</label>
           <textarea
+            id={`${uid}-packing-notes`}
             value={packingNotes}
             onChange={(e) => setPackingNotes(e.target.value)}
             placeholder="Special packing instructions..."

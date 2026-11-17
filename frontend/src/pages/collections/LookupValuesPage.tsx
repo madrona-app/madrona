@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useId } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -42,7 +42,9 @@ import {
   type LookupCategoryWithValues,
   type LookupValue,
 } from '../../lib/api';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { getFriendlyErrorMessage } from '../../lib/apiClient';
 
 interface EditingValue {
   categoryKey: string;
@@ -60,6 +62,7 @@ const generateValueKey = (label: string): string => {
 
 // Sortable row component for drag and drop
 interface SortableRowProps {
+  organizationId: string;
   value: LookupValue;
   isHiddenByOrg: boolean;
   onEdit: () => void;
@@ -71,6 +74,7 @@ interface SortableRowProps {
 }
 
 function SortableRow({
+  organizationId,
   value,
   isHiddenByOrg,
   onEdit,
@@ -107,8 +111,9 @@ function SortableRow({
           className="p-1 cursor-grab hover:bg-stone rounded transition-colors touch-none"
           {...attributes}
           {...listeners}
+          aria-label={`Reorder ${value.label}`}
         >
-          <GripVertical size={14} className="text-archive" />
+          <GripVertical size={14} className="text-archive" aria-hidden="true" />
         </button>
       </td>
       <td className="px-4 py-2.5">
@@ -153,6 +158,14 @@ function SortableRow({
             </button>
           ) : (
             <>
+              {/* Only organization-owned values are audited; system values have no organization. */}
+              <RecordHistoryButton
+                organizationId={organizationId}
+                entityType="lookup_value"
+                entityId={value.value_id}
+                recordName={value.label}
+                showLabel={false}
+              />
               <button
                 onClick={onEdit}
                 className="p-1.5 hover:bg-stone rounded transition-colors"
@@ -177,6 +190,7 @@ function SortableRow({
 }
 
 export default function LookupValuesPage() {
+  const uid = useId();
   const { orgId } = useParams<{ orgId: string }>();
   const queryClient = useQueryClient();
 
@@ -369,7 +383,14 @@ export default function LookupValuesPage() {
       label: '',
       description: '',
     });
+    createMutation.reset();
+    updateMutation.reset();
   };
+
+  // A refused save (a fixed list, a key too long for its field, a duplicate)
+  // is shown next to the form and announced, instead of failing silently.
+  const saveError = editingValue?.value ? updateMutation.error : createMutation.error;
+  const saveErrorId = `${uid}-save-error`;
 
   const toggleCategory = (categoryKey: string) => {
     setExpandedCategories((prev) => {
@@ -478,7 +499,7 @@ export default function LookupValuesPage() {
 
       {/* Help Text */}
       <div className="bg-stone/30 border border-lichen rounded-lg p-4 mb-6">
-        <h3 className="font-medium text-ink mb-2">About Lookup Values</h3>
+        <h2 className="font-medium text-ink mb-2">About Lookup Values</h2>
         <ul className="text-sm text-accessible-gray space-y-1">
           <li>- System default values are available to all organizations and cannot be deleted</li>
           <li>- You can hide system defaults if they don't apply to your organization</li>
@@ -526,40 +547,44 @@ export default function LookupValuesPage() {
                     className="bg-parchment rounded-lg border border-lichen shadow-sm overflow-hidden"
                   >
               {/* Category Header */}
-              <div
-                className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-stone/30 transition-colors"
-                onClick={() => toggleCategory(category.category_key)}
-              >
-                <div className="flex items-center gap-3">
-                  {isExpanded ? (
-                    <ChevronDown size={18} className="text-archive" />
-                  ) : (
-                    <ChevronRight size={18} className="text-archive" />
-                  )}
-                  <div>
-                    <h3 className="font-medium text-ink">{category.display_name}</h3>
-                    <p className="text-xs text-archive">
-                      {category.category_key} · {systemValues.length} system
-                      {orgValues.length > 0 && ` · ${orgValues.length} custom`}
-                      {hiddenCount > 0 && ` · ${hiddenCount} hidden`}
-                    </p>
-                  </div>
-                </div>
+              <div className="flex items-center justify-between px-4 py-3 hover:bg-stone/30 transition-colors">
+                <h3 className="flex-1 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => toggleCategory(category.category_key)}
+                    aria-expanded={isExpanded}
+                    aria-controls={isExpanded ? `lookup-category-${category.category_key}` : undefined}
+                    className="w-full flex items-center gap-3 text-left cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+                  >
+                    {isExpanded ? (
+                      <ChevronDown size={18} className="text-archive" aria-hidden="true" />
+                    ) : (
+                      <ChevronRight size={18} className="text-archive" aria-hidden="true" />
+                    )}
+                    <span>
+                      <span className="block font-medium text-ink">{category.display_name}</span>
+                      <span className="block text-xs text-archive font-normal">
+                        {category.category_key} · {systemValues.length} system
+                        {orgValues.length > 0 && ` · ${orgValues.length} custom`}
+                        {hiddenCount > 0 && ` · ${hiddenCount} hidden`}
+                      </span>
+                    </span>
+                  </button>
+                </h3>
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    startAddValue(category.category_key);
-                  }}
+                  type="button"
+                  onClick={() => startAddValue(category.category_key)}
+                  aria-label={`Add value to ${category.display_name}`}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-forest hover:bg-forest/10 rounded transition-colors"
                 >
-                  <Plus size={14} />
+                  <Plus size={14} aria-hidden="true" />
                   Add
                 </button>
               </div>
 
               {/* Expanded Content */}
               {isExpanded && (
-                <div className="border-t border-lichen">
+                <div id={`lookup-category-${category.category_key}`} className="border-t border-lichen">
                   {/* Add/Edit Form */}
                   {editingValue?.categoryKey === category.category_key && (
                     <div className="bg-stone/20 px-4 py-4 border-b border-lichen">
@@ -573,30 +598,35 @@ export default function LookupValuesPage() {
                             resetForm();
                           }}
                           className="p-1 hover:bg-stone rounded"
+                          aria-label="Cancel editing value"
                         >
-                          <X size={16} className="text-archive" />
+                          <X size={16} className="text-archive" aria-hidden="true" />
                         </button>
                       </div>
                       <div className="space-y-3">
                         <div>
-                          <label className="block text-xs font-medium text-archive mb-1">
+                          <label htmlFor={`${uid}-label`} className="block text-xs font-medium text-archive mb-1">
                             Label *
                           </label>
                           <input
+                            id={`${uid}-label`}
                             type="text"
                             value={formData.label}
                             onChange={(e) =>
                               setFormData((p) => ({ ...p, label: e.target.value }))
                             }
                             placeholder="My Custom Value"
+                            aria-invalid={saveError ? true : undefined}
+                            aria-describedby={saveError ? saveErrorId : undefined}
                             className="w-full px-3 py-2 text-sm border border-lichen rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-archive mb-1">
+                          <label htmlFor={`${uid}-description`} className="block text-xs font-medium text-archive mb-1">
                             Description
                           </label>
                           <input
+                            id={`${uid}-description`}
                             type="text"
                             value={formData.description}
                             onChange={(e) =>
@@ -607,6 +637,11 @@ export default function LookupValuesPage() {
                           />
                         </div>
                       </div>
+                      {saveError && (
+                        <p id={saveErrorId} role="alert" className="mt-3 text-sm text-semantic-error">
+                          {getFriendlyErrorMessage(saveError)}
+                        </p>
+                      )}
                       <div className="flex justify-end gap-2 mt-4">
                         <button
                           onClick={() => {
@@ -642,7 +677,7 @@ export default function LookupValuesPage() {
                     <table className="w-full text-sm">
                       <thead className="bg-stone/30 text-xs text-archive uppercase">
                         <tr>
-                          <th className="px-2 py-2 w-8"></th>
+                          <th className="px-2 py-2 w-8"><span className="sr-only">Reorder</span></th>
                           <th className="px-4 py-2 text-left font-medium">Label</th>
                           <th className="px-4 py-2 text-left font-medium">Type</th>
                           <th className="px-4 py-2 text-right font-medium">Actions</th>
@@ -664,6 +699,7 @@ export default function LookupValuesPage() {
                               return (
                                 <SortableRow
                                   key={value.value_id}
+                                  organizationId={orgId!}
                                   value={value}
                                   isHiddenByOrg={isHiddenByOrg}
                                   isSystem={value.is_system}

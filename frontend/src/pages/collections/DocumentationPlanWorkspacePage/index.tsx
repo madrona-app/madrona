@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useWorkspacePage } from '../../../hooks/useWorkspacePage';
@@ -33,6 +34,7 @@ import { getDocumentationPlan } from '../../../lib/api';
 import { ProcedureRequirementsCard } from '../../../components/collections/ProcedureRequirementsCard';
 import { useProcedureRequirements } from '../../../hooks/useProcedureRequirements';
 import ConfirmDialog from '../../../components/ConfirmDialog';
+import { ComplianceActionsHistoryList } from '../../../components/collections/ComplianceActionsHistoryList';
 
 import { useFormState, useSectionState, useSectionSummaries, useHasContent } from './hooks';
 import {
@@ -61,6 +63,7 @@ export default function DocumentationPlanWorkspacePage() {
 }
 
 function DocumentationPlanWorkspacePageContent() {
+  const uid = useId();
   const { orgId, planId } = useParams<{ orgId: string; planId?: string }>();
   const { requirementGroups } = useProcedureRequirements('doc_plan', orgId);
 
@@ -360,10 +363,10 @@ function DocumentationPlanWorkspacePageContent() {
             />
 
             {/* Measurable Results */}
-            <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+            <div role="group" aria-labelledby={`${uid}-measurable-results`}>
+              <span id={`${uid}-measurable-results`} className="block text-sm font-medium text-ink mb-1.5">
                 Measurable Results
-              </label>
+              </span>
               <div className="space-y-2 mb-2">
                 {(formData.measurable_results || []).map((result: string, i: number) => (
                   <div key={i} className="flex items-center gap-2 p-2 bg-stone/30 rounded-lg">
@@ -373,8 +376,9 @@ function DocumentationPlanWorkspacePageContent() {
                         type="button"
                         onClick={() => handleRemoveResult(i)}
                         className="text-archive hover:text-semantic-error"
+                        aria-label={`Remove result: ${result}`}
                       >
-                        <X size={16} />
+                        <X size={16} aria-hidden="true" />
                       </button>
                     )}
                   </div>
@@ -393,26 +397,34 @@ function DocumentationPlanWorkspacePageContent() {
                       }
                     }}
                     className="flex-1 px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
+                    aria-label="New measurable result"
                     placeholder="Add measurable result..."
                   />
                   <button
                     type="button"
                     onClick={handleAddResult}
+                    aria-label="Add measurable result"
                     className="px-3 py-2 border border-lichen rounded-lg text-ink hover:bg-stone transition-colors"
                   >
-                    <Plus size={16} />
+                    <Plus size={16} aria-hidden="true" />
                   </button>
                 </div>
               )}
             </div>
 
             {/* Actions */}
-            <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+            <div role="group" aria-labelledby={`${uid}-actions`}>
+              <span id={`${uid}-actions`} className="block text-sm font-medium text-ink mb-1.5">
                 Actions
-              </label>
+              </span>
               <div className="space-y-2 mb-2">
-                {(formData.actions || []).map((action: string, i: number) => (
+                {(formData.actions || []).map((rawAction: string, i: number) => {
+                  // The API returns actions as records ({ action_id, title, ... });
+                  // older payloads held plain strings. Show the title either way.
+                  const action = typeof rawAction === 'string'
+                    ? rawAction
+                    : String((rawAction as { title?: string | null } | null)?.title ?? '');
+                  return (
                   <div key={i} className="flex items-center gap-2 p-2 bg-stone/30 rounded-lg">
                     <span className="text-xs text-archive shrink-0">{i + 1}.</span>
                     <span className="flex-1 text-sm text-ink">{action}</span>
@@ -421,12 +433,14 @@ function DocumentationPlanWorkspacePageContent() {
                         type="button"
                         onClick={() => handleRemoveAction(i)}
                         className="text-archive hover:text-semantic-error"
+                        aria-label={`Remove action ${i + 1}: ${action}`}
                       >
-                        <X size={16} />
+                        <X size={16} aria-hidden="true" />
                       </button>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
               {isEditing && (
                 <div className="flex gap-2">
@@ -441,24 +455,32 @@ function DocumentationPlanWorkspacePageContent() {
                       }
                     }}
                     className="flex-1 px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
+                    aria-label="New action"
                     placeholder="Add action..."
                   />
                   <button
                     type="button"
                     onClick={handleAddAction}
+                    aria-label="Add action"
                     className="px-3 py-2 border border-lichen rounded-lg text-ink hover:bg-stone transition-colors"
                   >
-                    <Plus size={16} />
+                    <Plus size={16} aria-hidden="true" />
                   </button>
                 </div>
+              )}
+              {orgId && (
+                <ComplianceActionsHistoryList
+                  organizationId={orgId}
+                  actions={(existingPlan as { actions?: unknown } | undefined)?.actions}
+                />
               )}
             </div>
 
             {/* Milestones */}
-            <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+            <div role="group" aria-labelledby={`${uid}-milestones`}>
+              <span id={`${uid}-milestones`} className="block text-sm font-medium text-ink mb-1.5">
                 Milestones
-              </label>
+              </span>
               <div className="space-y-2 mb-2">
                 {(formData.milestones || []).map((milestone, i) => (
                   <div key={i} className="flex items-center gap-3 p-2 bg-stone/30 rounded-lg">
@@ -471,8 +493,9 @@ function DocumentationPlanWorkspacePageContent() {
                         type="button"
                         onClick={() => handleRemoveMilestone(i)}
                         className="text-archive hover:text-semantic-error"
+                        aria-label={`Remove milestone: ${milestone.description || milestone.date || i + 1}`}
                       >
-                        <X size={16} />
+                        <X size={16} aria-hidden="true" />
                       </button>
                     )}
                   </div>
@@ -482,6 +505,7 @@ function DocumentationPlanWorkspacePageContent() {
                 <div className="flex gap-2">
                   <input
                     type="date"
+                    aria-label="New milestone date"
                     value={newMilestone.date}
                     onChange={(e) => setNewMilestone({ ...newMilestone, date: e.target.value })}
                     className="w-40 px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -497,14 +521,16 @@ function DocumentationPlanWorkspacePageContent() {
                       }
                     }}
                     className="flex-1 px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
+                    aria-label="New milestone description"
                     placeholder="Milestone description..."
                   />
                   <button
                     type="button"
                     onClick={handleAddMilestone}
+                    aria-label="Add milestone"
                     className="px-3 py-2 border border-lichen rounded-lg text-ink hover:bg-stone transition-colors"
                   >
-                    <Plus size={16} />
+                    <Plus size={16} aria-hidden="true" />
                   </button>
                 </div>
               )}

@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
+import { RecordAuditHistory } from '../../components/workspace/RecordAuditHistory';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -57,6 +58,12 @@ export default function MediaCollectionDetailPage() {
   const queryClient = useQueryClient();
 
   const [isEditing, setIsEditing] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  // Move focus to the name field when the user starts editing
+  useEffect(() => {
+    if (isEditing) nameInputRef.current?.focus();
+  }, [isEditing]);
   const [editForm, setEditForm] = useState<Partial<MediaCollection>>({});
   const [showShareModal, setShowShareModal] = useState(false);
   const [draggingItem, setDraggingItem] = useState<string | null>(null);
@@ -244,17 +251,19 @@ export default function MediaCollectionDetailPage() {
           <Link
             to={`/organizations/${orgId}/media/collections`}
             className="p-2 hover:bg-stone/50 rounded"
+            aria-label="Back to lightboxes"
           >
             <ArrowLeft size={20} />
           </Link>
           <div>
             {isEditing ? (
               <input
+                ref={nameInputRef}
                 type="text"
+                aria-label="Lightbox name"
                 value={editForm.name || ''}
                 onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                 className="input text-2xl font-bold"
-                autoFocus
               />
             ) : (
               <h1 className="text-2xl font-bold">{collection.name}</h1>
@@ -313,10 +322,12 @@ export default function MediaCollectionDetailPage() {
               </button>
               {canDelete && (
                 <button
+                  type="button"
                   onClick={handleDelete}
-                  className="btn btn-danger flex items-center gap-2"
+                  aria-label={`Delete lightbox ${collection.name}`}
+                  className="btn btn-danger flex items-center gap-2 min-h-[44px] min-w-[44px]"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={16} aria-hidden="true" />
                 </button>
               )}
             </>
@@ -342,8 +353,9 @@ export default function MediaCollectionDetailPage() {
       {/* Description */}
       {isEditing ? (
         <div>
-          <label className="block text-sm font-medium mb-1">Description</label>
+          <label htmlFor="lightbox-description" className="block text-sm font-medium mb-1">Description</label>
           <textarea
+            id="lightbox-description"
             value={editForm.description || ''}
             onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
             className="input w-full"
@@ -358,13 +370,15 @@ export default function MediaCollectionDetailPage() {
       {/* Visibility selector (edit mode) */}
       {isEditing && (
         <div>
-          <label className="block text-sm font-medium mb-2">Visibility</label>
-          <div className="flex gap-2">
+          <span id="lightbox-visibility" className="block text-sm font-medium mb-2">Visibility</span>
+          <div role="group" aria-labelledby="lightbox-visibility" className="flex gap-2">
             {VISIBILITY_OPTIONS.map((option) => {
               const Icon = option.icon;
               return (
                 <button
                   key={option.value}
+                  type="button"
+                  aria-pressed={editForm.visibility === option.value}
                   onClick={() => setEditForm({ ...editForm, visibility: option.value as MediaCollection['visibility'] })}
                   className={`flex items-center gap-2 px-3 py-2 border rounded ${
                     editForm.visibility === option.value
@@ -386,7 +400,7 @@ export default function MediaCollectionDetailPage() {
         <div className="card p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-medium text-sm">Generate Contact Sheet</h3>
-            <button onClick={() => setShowContactSheet(false)} className="text-archive hover:text-ink">
+            <button type="button" onClick={() => setShowContactSheet(false)} className="text-archive hover:text-ink" aria-label="Close contact sheet generator">
               <X size={16} />
             </button>
           </div>
@@ -444,17 +458,22 @@ export default function MediaCollectionDetailPage() {
                 {/* Remove Button */}
                 {canEdit && (
                   <button
+                    type="button"
                     onClick={() => handleRemoveItem(item.media_id)}
-                    className="absolute top-2 right-2 p-1 bg-ink/50 rounded hover:bg-semantic-error/80 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                    aria-label={`Remove ${media?.title || media?.filename || 'item'} from lightbox`}
+                    className="absolute top-2 right-2 p-1 bg-ink/50 rounded hover:bg-semantic-error/80 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity z-10"
                   >
                     <X size={14} className="text-parchment" />
                   </button>
                 )}
 
                 {/* Thumbnail */}
+                {/* Duplicate of the title link below, so kept out of the tab order and the accessibility tree */}
                 <Link
                   to={`/organizations/${orgId}/media/${item.media_id}`}
                   className="block aspect-square bg-stone/50/30"
+                  tabIndex={-1}
+                  aria-hidden="true"
                 >
                   {media?.thumbnail_url ? (
                     <img
@@ -524,6 +543,16 @@ export default function MediaCollectionDetailPage() {
         />,
         document.body,
       )}
+
+      {/* Change history: details, manual adds and removals, feedback requests */}
+      <section className="mt-8 border border-lichen rounded-lg p-4" aria-label="Lightbox change history">
+        <RecordAuditHistory
+          organizationId={orgId!}
+          entityType="media_collection"
+          entityId={collectionId!}
+          headingLevel={2}
+        />
+      </section>
 
       {/* Remove Item Confirm Dialog */}
       <ConfirmDialog

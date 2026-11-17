@@ -76,7 +76,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const listRef = useRef<HTMLUListElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const { modalRef, titleId } = useAccessibleModal({
     isOpen,
@@ -184,7 +184,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   );
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         setActiveIndex((i) => (i + 1) % Math.max(rows.length, 1));
@@ -219,7 +219,6 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   const body = (
     <div
       className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-[10vh]"
-      onKeyDown={handleKeyDown}
     >
       {/* Backdrop */}
       <div
@@ -233,7 +232,6 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         ref={modalRef}
         {...getModalAriaProps(titleId)}
         className="relative w-full max-w-xl rounded-lg bg-parchment shadow-2xl border border-lichen overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
       >
         <h2 id={titleId} className="sr-only">
           Command palette
@@ -250,8 +248,12 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
               setQuery(e.target.value);
               setActiveIndex(0);
             }}
+            onKeyDown={handleKeyDown}
             placeholder="Jump to a page, or ask Guide…"
             className="flex-1 bg-transparent text-ink placeholder:text-archive outline-none text-sm"
+            role="combobox"
+            aria-expanded="true"
+            aria-autocomplete="list"
             aria-label="Search or ask Guide"
             aria-controls="command-palette-results"
             aria-activedescendant={
@@ -266,7 +268,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         </div>
 
         {/* Results */}
-        <ul
+        <div
           ref={listRef}
           id="command-palette-results"
           role="listbox"
@@ -327,12 +329,16 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
             );
           })()}
 
+        </div>
+
+        {/* Outside the listbox (it is not an option); announced politely. */}
+        <div role="status" className="empty:hidden">
           {navRows.length === 0 && query.trim().length > 0 && (
-            <li className="px-4 py-2 text-xs text-archive italic">
+            <p className="px-4 pb-2 text-xs text-archive italic">
               No pages match "{query.trim()}" — try Ask Guide instead.
-            </li>
+            </p>
           )}
-        </ul>
+        </div>
 
         {/* Footer hint */}
         <div className="px-4 py-2 border-t border-lichen flex items-center justify-between text-[10px] text-archive">
@@ -343,7 +349,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
               navigate
             </span>
             <span className="flex items-center gap-1">
-              <CornerDownLeft size={10} />
+              <CornerDownLeft size={10} aria-hidden="true" />
               select
             </span>
           </div>
@@ -366,13 +372,13 @@ function SectionHeader({
   className?: string;
 }) {
   return (
-    <li
+    <div
       className={`px-4 py-1 text-[10px] uppercase tracking-wide font-semibold text-archive flex items-center gap-1.5 ${className}`}
       aria-hidden="true"
     >
       <Icon size={11} />
       {label}
-    </li>
+    </div>
   );
 }
 
@@ -390,7 +396,8 @@ function ResultRow({
   onHover: () => void;
 }) {
   return (
-    <li
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus -- combobox listbox option (aria-activedescendant pattern): focus stays on the input, which handles arrows/Enter
+    <div
       role="option"
       id={`palette-row-${index}`}
       data-row-index={index}
@@ -415,6 +422,6 @@ function ResultRow({
       {active && (
         <CornerDownLeft size={12} className="text-archive flex-shrink-0" aria-hidden="true" />
       )}
-    </li>
+    </div>
   );
 }

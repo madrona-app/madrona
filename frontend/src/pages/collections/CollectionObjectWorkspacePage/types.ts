@@ -55,6 +55,8 @@ export interface FormData {
   installation_instructions: string;
   // Physical — JSONB arrays
   watermarks: Record<string, any>[];
+  // Links to outside sources (e.g. Wikipedia) — validated http(s) by the API
+  external_links: { url: string; label: string; link_type?: string }[];
   technical_attributes: Record<string, any>[];
   // Subject — string lists (no authority backing)
   depicted_activities: string[];
@@ -164,14 +166,15 @@ export const NAGPRA_RELEVANT_CLASSIFICATIONS = new Set([
   'costume',
 ]);
 
+// Must match the CHECK on collection_objects.object_status: code branches on
+// these values (loans, deaccession, public visibility), so the list is fixed.
 export const OBJECT_STATUSES = [
-  { value: 'accessioned', label: 'Accessioned' },
-  { value: 'active', label: 'Active' },
-  { value: 'on_loan', label: 'On Loan' },
-  { value: 'in_conservation', label: 'In Conservation' },
   { value: 'pending', label: 'Pending' },
+  { value: 'accessioned', label: 'Accessioned' },
+  { value: 'on_loan', label: 'On Loan' },
   { value: 'deaccessioned', label: 'Deaccessioned' },
   { value: 'missing', label: 'Missing' },
+  { value: 'destroyed', label: 'Destroyed' },
 ];
 
 // Section group mapping for ordering

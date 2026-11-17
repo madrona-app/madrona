@@ -1,7 +1,7 @@
 """
 Public Collection Discovery API endpoints (FastAPI).
 
-12 routes — public (unauthenticated) access to discoverable collection objects,
+14 routes — public (unauthenticated) access to discoverable collection objects,
 events, exhibitions, venues, and staff for embedding in museum websites.
 
 Access control note
@@ -26,12 +26,16 @@ session is intentional and bounded to data the org has explicitly
 marked as public.
 """
 
+import csv
+import io
+import json
 import logging
-from datetime import date, datetime
+import re
+from datetime import date, datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -51,9 +55,12 @@ from app.models import (
     Organization,
     Venue,
 )
+from app.services.deaccession_visibility import hides_deaccessioned, public_visible_clause
+from app.services.rate_limiter import RateLimiter
 from app.services.uploads import get_org_media_url
 from app.services.public_cache import pub_cache_get, pub_cache_set, pub_cache_key_with_params
 from app.fastapi_app.schemas.discover_public import (
+    DiscoverDocumentTextOut,
     DiscoverEventDetailOut,
     DiscoverEventListResponse,
     DiscoverExhibitionDetailOut,
@@ -71,6 +78,10 @@ from app.fastapi_app.schemas.discover_public import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["discover-public"])
+
+# Caption/transcript fetches and file downloads. Generous: one record page
+# can carry several tracks, and a visitor may step through many records.
+_media_limiter = RateLimiter(max_requests=120, window_seconds=60)
 
 
 # =============================================================================
@@ -107,9 +118,9 @@ def _get_org_by_slug(db: Session, slug: str) -> Organization | None:
     ).first()
 
 
-def _get_media_url(media_id, organization_id: UUID, db: Session) -> str | None:
+def _get_media_url(media_id, organization_id: UUID, db: Session, *, logo: bool = False) -> str | None:
     from app.services.discovery_service import get_media_url
-    return get_media_url(media_id, organization_id, db)
+    return get_media_url(media_id, organization_id, db, logo=logo)
 
 
 def _get_thumbnail_urls_bulk_with_srcset(
@@ -253,6 +264,167 @@ def _get_hero_image_url(config: DiscoverConfig, organization_id: UUID, db: Sessi
 # =============================================================================
 
 
+def _public_object_fields(obj: CollectionObject, org_slug: str, public_keys: frozenset[str] | None = None) -> dict:
+    """The descriptive fields of a discoverable object, as shown publicly.
+
+    Single source of truth for what an anonymous visitor may see about an
+    object record. The object detail endpoint adds media to this; the export
+    endpoints emit exactly this and nothing more, so an export can never
+    carry a field the public record page does not already show.
+    Callers are responsible for having gated ``obj`` on ``is_discoverable``.
+
+    Fields the organization has not made public (Discover settings > Public
+    fields; see app.services.public_object_fields) are blanked. Pass
+    ``public_keys`` when serializing many objects of one organization.
+    """
+    from app.services import public_object_fields as pof
+
+    keys = public_keys if public_keys is not None else pof.keys_for_object(obj)
+    canonical_url = f"/c/{org_slug}/objects/{obj.object_number}" if obj.object_number else f"/c/{org_slug}/objects/{obj.object_id}"
+    payload = {
+        "object_id": str(obj.object_id),
+        "object_number": obj.object_number,
+        "canonical_url": canonical_url,
+        "title": _get_display_title(obj.title_links),
+        "titles": [
+            {"title": t.title, "title_type": t.title_type, "language": t.language, "is_preferred": t.is_preferred}
+            for t in (obj.title_links or [])
+        ],
+        "object_name": obj.object_name,
+        "brief_description": obj.brief_description,
+        "full_description": obj.full_description,
+        "physical_description": obj.physical_description,
+        "subjects": pof.format_subjects(obj),
+        "object_type": obj.object_type,
+        "classification": _get_primary_classification(obj),
+        "classifications": _serialize_classifications(obj),
+        "creators": _extract_creators_list(obj.creators),
+        "creation_date_display": obj.creation_date_display,
+        "creation_date_earliest": obj.creation_date_earliest.isoformat() if obj.creation_date_earliest else None,
+        "creation_date_latest": obj.creation_date_latest.isoformat() if obj.creation_date_latest else None,
+        "creation_place": obj.creation_place,
+        "materials": obj.materials,
+        "techniques": obj.techniques,
+        "measurements": [
+            {"dimension": m.dimension, "value": float(m.value), "unit": m.unit, "part": m.part}
+            for m in (obj.measurement_links or [])
+        ],
+        "inscriptions": [i.content for i in (obj.inscription_links or [])],
+        "edition": pof.format_edition(obj),
+        "style_period": obj.style_period,
+        "provenance": obj.provenance,
+        "credit_line": obj.credit_line,
+        "external_links": [
+            {"url": l.get("url"), "label": l.get("label") or ""}
+            for l in (obj.external_links or [])
+            if isinstance(l, dict) and str(l.get("url", "")).startswith(("http://", "https://"))
+        ],
+        # Only user-defined fields the administrator marked public.
+        "additional_fields": _public_custom_fields(obj),
+    }
+    return pof.redact(payload, keys)
+
+
+def _public_custom_fields(obj: CollectionObject) -> list[dict]:
+    if not obj.custom_fields:
+        return []
+    from sqlalchemy.orm import object_session
+    from app.services.custom_fields import public_display
+    db = object_session(obj)
+    return public_display(db, obj.organization_id, obj.custom_fields) if db is not None else []
+
+
+def _build_discover_search_request(
+    request: Request,
+    *,
+    q: str,
+    sort: str,
+    limit: int,
+    offset: int,
+    include_facets: bool,
+    public_keys: frozenset[str] | None = None,
+    hide_deaccessioned: bool = True,
+):
+    """Translate the public search URL into a collections search request.
+
+    Shared by the search endpoint and the search-results export so that an
+    export of "these results" runs exactly the query the visitor is looking
+    at. ``is_discoverable=True`` is forced here, never taken from the URL.
+
+    Only public fields are searchable, filterable and sortable: a filter or
+    full-text match on a field the organization does not publish would let a
+    visitor probe its hidden values.
+    """
+    from app.search.collections.query_builder import CollectionsQueryBuilder
+    from app.search.collections.schemas import (
+        CollectionsSearchRequest,
+        CollectionsSearchQuery,
+        CollectionsSearchFilters,
+        SearchSort,
+    )
+    from app.services import public_object_fields as pof
+
+    keys = public_keys if public_keys is not None else pof.DEFAULT_KEYS
+    q_str = q.strip() or None
+
+    def _param(name: str):
+        return request.query_params.get(name) or None if pof.filter_param_public(name, keys) else None
+
+    def _params(name: str):
+        return request.query_params.getlist(name) or None if pof.filter_param_public(name, keys) else None
+
+    filters = CollectionsSearchFilters(
+        is_discoverable=True,
+        object_type=_params("object_type"),
+        classification=_params("classification"),
+        creator_name=_param("creator"),
+        material=_param("material"),
+        technique=_param("technique"),
+        subject=_param("subject"),
+        style_period=_params("style_period"),
+        creation_place=_param("creation_place"),
+        date_from=_param("date_from"),
+        date_to=_param("date_to"),
+        # Deaccessioned records are never shown while the organization hides
+        # them from search (Organization.hide_deaccessioned_in_search).
+        exclude_object_status=["deaccessioned"] if hide_deaccessioned else None,
+    )
+
+    on_display_param = request.query_params.get("on_display")
+    if on_display_param is not None:
+        filters.on_display = on_display_param.lower() == "true"
+
+    has_image_param = request.query_params.get("has_image")
+    if has_image_param is not None:
+        filters.has_image = has_image_param.lower() == "true"
+
+    sort_map = {
+        "relevance": SearchSort(field="_score", order="desc"),
+        "title_asc": SearchSort(field="title.keyword", order="asc"),
+        "title_desc": SearchSort(field="title.keyword", order="desc"),
+        "date_asc": SearchSort(field="creation_date", order="asc"),
+        "date_desc": SearchSort(field="creation_date", order="desc"),
+        "newest": SearchSort(field="created_at", order="desc"),
+    }
+    if sort in ("date_asc", "date_desc") and not pof.is_public("creation_date", keys):
+        sort = "relevance"
+    sort_obj = sort_map.get(sort, sort_map["relevance"])
+
+    search_request = CollectionsSearchRequest(
+        query=CollectionsSearchQuery(
+            q=q_str,
+            fields=pof.search_fields(CollectionsQueryBuilder.DEFAULT_SEARCH_FIELDS, keys),
+        ) if q_str else None,
+        filters=filters,
+        sort=sort_obj if sort != "relevance" or not q_str else None,
+        limit=limit,
+        offset=offset,
+        include_facets=include_facets,
+        highlight=False,
+    )
+    return search_request
+
+
 @router.get("/api/discover/{org_slug}/info", response_model=DiscoverInfoOut, summary="Get discover info")
 def get_discover_info(
     org_slug: str,
@@ -271,6 +443,8 @@ def get_discover_info(
     count = db.query(func.count(CollectionObject.object_id)).filter(
         CollectionObject.organization_id == org.organization_id,
         CollectionObject.is_discoverable == True,  # noqa: E712
+        public_visible_clause(db, org.organization_id),
+        CollectionObject.is_deleted == False,  # noqa: E712
     ).scalar()
 
     config = db.query(DiscoverConfig).filter(
@@ -289,7 +463,7 @@ def get_discover_info(
         "show_object_count": config.show_object_count if config else True,
         "default_view_mode": config.default_view_mode if config else "grid",
         "default_sort": config.default_sort if config else "relevance",
-        "header_logo_url": _get_media_url(config.header_logo_media_id, org.organization_id, db) if config else None,
+        "header_logo_url": _get_media_url(config.header_logo_media_id, org.organization_id, db, logo=True) if config else None,
         "primary_color": config.primary_color if config else None,
         "accent_color": config.accent_color if config else None,
         "font_family": config.font_family if config else None,
@@ -309,7 +483,7 @@ def get_discover_info(
         "custom_css": config.custom_css if config else None,
         "footer_columns": config.footer_columns if config else None,
         "land_acknowledgment": config.land_acknowledgment if config else None,
-        "footer_logo_url": _get_media_url(config.footer_logo_media_id, org.organization_id, db) if config and config.footer_logo_media_id else None,
+        "footer_logo_url": _get_media_url(config.footer_logo_media_id, org.organization_id, db, logo=True) if config and config.footer_logo_media_id else None,
         "external_integrations": config.external_integrations if config else None,
         "analytics_config": config.analytics_config if config else None,
         # Guide (AI assistant) — only shown when org has purchased Guide
@@ -342,55 +516,15 @@ def search_discover_objects(
     from opensearchpy.exceptions import NotFoundError
     from app.search.collections.index_manager import CollectionsIndexManager
     from app.search.collections.service import CollectionsSearchService, get_collections_search_service
-    from app.search.collections.schemas import (
-        CollectionsSearchRequest,
-        CollectionsSearchQuery,
-        CollectionsSearchFilters,
-        SearchSort,
-    )
 
-    q_str = q.strip() or None
+    from app.services import public_object_fields as pof
 
-    filters = CollectionsSearchFilters(
-        is_discoverable=True,
-        object_type=request.query_params.getlist("object_type") or None,
-        classification=request.query_params.getlist("classification") or None,
-        creator_name=request.query_params.get("creator") or None,
-        material=request.query_params.get("material") or None,
-        technique=request.query_params.get("technique") or None,
-        subject=request.query_params.get("subject") or None,
-        style_period=request.query_params.getlist("style_period") or None,
-        creation_place=request.query_params.get("creation_place") or None,
-        date_from=request.query_params.get("date_from") or None,
-        date_to=request.query_params.get("date_to") or None,
-    )
-
-    on_display_param = request.query_params.get("on_display")
-    if on_display_param is not None:
-        filters.on_display = on_display_param.lower() == "true"
-
-    has_image_param = request.query_params.get("has_image")
-    if has_image_param is not None:
-        filters.has_image = has_image_param.lower() == "true"
-
-    sort_map = {
-        "relevance": SearchSort(field="_score", order="desc"),
-        "title_asc": SearchSort(field="title.keyword", order="asc"),
-        "title_desc": SearchSort(field="title.keyword", order="desc"),
-        "date_asc": SearchSort(field="creation_date", order="asc"),
-        "date_desc": SearchSort(field="creation_date", order="desc"),
-        "newest": SearchSort(field="created_at", order="desc"),
-    }
-    sort_obj = sort_map.get(sort, sort_map["relevance"])
-
-    search_request = CollectionsSearchRequest(
-        query=CollectionsSearchQuery(q=q_str) if q_str else None,
-        filters=filters,
-        sort=sort_obj if sort != "relevance" or not q_str else None,
-        limit=limit,
-        offset=offset,
+    public_keys = pof.get_public_field_keys(db, org.organization_id)
+    search_request = _build_discover_search_request(
+        request, q=q, sort=sort, limit=limit, offset=offset,
         include_facets=include_facets.lower() != "false",
-        highlight=False,
+        public_keys=public_keys,
+        hide_deaccessioned=hides_deaccessioned(db, org.organization_id),
     )
 
     if not CollectionsSearchService.is_available():
@@ -429,7 +563,7 @@ def search_discover_objects(
     hits = []
     for h in response.hits:
         thumb_data = thumbnails.get(h.object_id, {})
-        hits.append({
+        hits.append(pof.redact({
             "object_id": h.object_id,
             "object_number": h.object_number,
             "title": h.title,
@@ -441,16 +575,19 @@ def search_discover_objects(
             "thumbnail_url": thumb_data.get("url") if thumb_data else None,
             "thumbnail_srcset": thumb_data.get("srcset") if thumb_data else None,
             "has_image": bool(thumb_data),
-        })
+        }, public_keys))
 
     facets = None
     if response.facets:
+        # Only facets of public fields. Location, condition, status and
+        # acquisition-method facets are never public.
         facets = [
             {
                 "field": f.field,
                 "buckets": [{"key": b.key, "count": b.doc_count} for b in f.buckets],
             }
             for f in response.facets
+            if pof.facet_public(f.field, public_keys)
         ]
 
     return {"hits": hits, "total": response.total, "facets": facets, "next_offset": response.next_offset}
@@ -491,82 +628,153 @@ def get_discover_object(
         .all()
     )
 
-    media_items = []
-    for link in media_links:
-        media = db.query(Media).filter(
-            Media.media_id == link.media_id,
-            Media.is_published == True,  # noqa: E712
-        ).first()
-        if media and media.s3_key:
-            try:
-                # A rendition, never media.s3_key. This endpoint is anonymous,
-                # so minting the master handed every visitor a presigned link
-                # to the full-resolution original of every published image.
-                from app.services.discovery_service import build_display_key_for_media
+    # Images display from a rendition only; audio, video and documents are
+    # included with their public captions/transcripts. See discover_media.
+    from app.services.discover_media import build_public_media_items
 
-                display_key = build_display_key_for_media(media, db)
-                if not display_key:
-                    continue
-                url = get_org_media_url(
-                    display_key,
-                    organization_id=str(org.organization_id),
-                    db_session=db,
-                    expiry_seconds=3600,
-                )
-                srcset = _build_srcset_for_media(media.media_id, org.organization_id, db)
-                media_items.append({
-                    "media_id": str(media.media_id),
-                    "url": url,
-                    "srcset": srcset,
-                    "media_type": media.media_type,
-                    "mime_type": media.mime_type,
-                    "width": media.width,
-                    "height": media.height,
-                    "alt_text": media.alt_text,
-                    "credit": media.credit,
-                    "is_primary": link.is_primary,
-                    "caption": link.caption_override,
-                })
-            except Exception as e:
-                logger.warning("Failed to build media URL for %s: %s", media.media_id, e)
-
-    canonical_url = f"/c/{org_slug}/objects/{obj.object_number}" if obj.object_number else f"/c/{org_slug}/objects/{obj.object_id}"
+    media_items = build_public_media_items(db, org, org_slug, media_links)
 
     result = {
-        "object_id": str(obj.object_id),
-        "object_number": obj.object_number,
-        "canonical_url": canonical_url,
-        "title": _get_display_title(obj.title_links),
-        "titles": [
-            {"title": t.title, "title_type": t.title_type, "language": t.language, "is_preferred": t.is_preferred}
-            for t in (obj.title_links or [])
-        ],
-        "brief_description": obj.brief_description,
-        "full_description": obj.full_description,
-        "object_type": obj.object_type,
-        "classification": _get_primary_classification(obj),
-        "classifications": _serialize_classifications(obj),
-        "creators": _extract_creators_list(obj.creators),
-        "creation_date_display": obj.creation_date_display,
-        "creation_date_earliest": obj.creation_date_earliest.isoformat() if obj.creation_date_earliest else None,
-        "creation_date_latest": obj.creation_date_latest.isoformat() if obj.creation_date_latest else None,
-        "creation_place": obj.creation_place,
-        "materials": obj.materials,
-        "techniques": obj.techniques,
-        "measurements": [
-            {"dimension": m.dimension, "value": float(m.value), "unit": m.unit, "part": m.part}
-            for m in (obj.measurement_links or [])
-        ],
-        "inscriptions": [i.content for i in (obj.inscription_links or [])],
-        "style_period": obj.style_period,
-        "provenance": obj.provenance,
-        "credit_line": obj.credit_line,
+        **_public_object_fields(obj, org_slug),
         "media": media_items,
-        "has_image": len(media_items) > 0,
+        "has_image": any(m["media_type"] == "image" for m in media_items),
     }
 
     pub_cache_set(cache_key, result)
     return result
+
+
+@router.get(
+    "/api/discover/{org_slug}/media/{media_id}/alternatives/{alternative_id}",
+    summary="Get a public caption or transcript file",
+    response_class=Response,
+)
+def get_public_media_alternative(
+    org_slug: str,
+    media_id: UUID,
+    alternative_id: UUID,
+    request: Request,
+    db: Session = Depends(get_admin_db),
+):
+    """Serve a caption (WebVTT) or plain-text transcript for public media.
+
+    Same-origin with the record page, so ``<track>`` loads without CORS. Only
+    caption/transcript/OCR files of published media linked to a discoverable
+    object are reachable; anything else is a 404, never a hint it exists.
+    """
+    from app.fastapi_app.middleware.rate_limit import _get_client_ip
+    from app.services.discover_media import read_public_alternative
+
+    if not _media_limiter.allow(_get_client_ip(request), "discover_media_text"):
+        return JSONResponse(
+            status_code=429,
+            content={"error": {"code": "rate_limit_exceeded", "message": "Too many requests, please try again in a minute", "details": {}}},
+            headers={"Retry-After": "60"},
+        )
+    not_found = JSONResponse(status_code=404, content={"error": {"code": "not_found", "message": "File not found"}})
+    org = _get_org_by_slug(db, org_slug)
+    if not org:
+        return not_found
+    try:
+        found = read_public_alternative(db, org, media_id, alternative_id)
+    except Exception as e:  # noqa: BLE001 - storage miss is a 404 to the public
+        logger.warning("Failed to read public alternative %s: %s", alternative_id, e)
+        found = None
+    if not found:
+        return not_found
+    body, content_type = found
+    return Response(
+        content=body,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=300", "X-Content-Type-Options": "nosniff"},
+    )
+
+
+@router.get(
+    "/api/discover/{org_slug}/media/{media_id}/text",
+    summary="Get the text of a public document",
+    response_model=DiscoverDocumentTextOut,
+)
+def get_public_document_text(
+    org_slug: str,
+    media_id: UUID,
+    request: Request,
+    db: Session = Depends(get_admin_db),
+):
+    """The text of a published document, page by page for PDFs.
+
+    The record page shows it as HTML so that a page-image access copy, which
+    has no text layer, never leaves screen-reader users without the words.
+    Same gates as every other public media route; anything else is a 404.
+    """
+    from app.fastapi_app.middleware.rate_limit import _get_client_ip
+    from app.services.discover_media import public_document_text
+
+    if not _media_limiter.allow(_get_client_ip(request), "discover_media_text"):
+        return JSONResponse(
+            status_code=429,
+            content={"error": {"code": "rate_limit_exceeded", "message": "Too many requests, please try again in a minute", "details": {}}},
+            headers={"Retry-After": "60"},
+        )
+    not_found = JSONResponse(status_code=404, content={"error": {"code": "not_found", "message": "Text not found"}})
+    org = _get_org_by_slug(db, org_slug)
+    if not org:
+        return not_found
+    found = public_document_text(db, org, media_id)
+    if not found:
+        return not_found
+    return JSONResponse(content=found, headers={"Cache-Control": "public, max-age=300"})
+
+
+@router.get(
+    "/api/discover/{org_slug}/media/{media_id}/download",
+    summary="Download a public media file",
+    response_class=Response,
+    status_code=302,
+)
+def download_public_media(
+    org_slug: str,
+    media_id: UUID,
+    request: Request,
+    variant: str = Query("access", description="'access' (access copy) or 'original' (master file)"),
+    db: Session = Depends(get_admin_db),
+):
+    """Redirect to a short-lived attachment URL for an allowed download.
+
+    This is the enforcement point for the per-file public download level
+    (Media.public_download_level): a direct request for a variant the file
+    does not allow is refused here with 403, whatever the page showed. Media
+    that is not public at all is a 404.
+    """
+    from fastapi.responses import RedirectResponse
+
+    from app.fastapi_app.middleware.rate_limit import _get_client_ip
+    from app.services.discover_media import (
+        DownloadRefused,
+        resolve_public_download,
+        signed_download_url,
+    )
+
+    if not _media_limiter.allow(_get_client_ip(request), "discover_media_download"):
+        return JSONResponse(
+            status_code=429,
+            content={"error": {"code": "rate_limit_exceeded", "message": "Too many requests, please try again in a minute", "details": {}}},
+            headers={"Retry-After": "60"},
+        )
+    org = _get_org_by_slug(db, org_slug)
+    if not org:
+        return JSONResponse(status_code=404, content={"error": {"code": "not_found", "message": "Collection not found"}})
+    try:
+        key, filename = resolve_public_download(db, org, media_id, variant)
+    except DownloadRefused as refused:
+        return JSONResponse(
+            status_code=refused.status,
+            content={"error": {"code": refused.code, "message": refused.message}},
+        )
+    url = signed_download_url(key, filename, org, db)
+    if not url:
+        return JSONResponse(status_code=503, content={"error": {"code": "unavailable", "message": "The file is temporarily unavailable"}})
+    return RedirectResponse(url, status_code=302, headers={"Cache-Control": "no-store"})
 
 
 @router.get("/api/discover/{org_slug}/objects/{object_id}/related", response_model=RelatedObjectsResponse, summary="Get related objects")
@@ -593,12 +801,15 @@ def get_related_objects(
     if not should_clauses:
         return {"hits": []}
 
+    must_not = [{"term": {"object_id": str(obj.object_id)}}]
+    if hides_deaccessioned(db, org.organization_id):
+        must_not.append({"term": {"object_status": "deaccessioned"}})
     query = {
         "size": 8,
         "_source": ["object_id", "object_number", "title", "creators", "creation_date", "classification"],
         "query": {
             "bool": {
-                "must_not": [{"term": {"object_id": str(obj.object_id)}}],
+                "must_not": must_not,
                 "filter": [
                     {"term": {"is_discoverable": True}},
                     {"term": {"organization_id": str(org.organization_id)}},
@@ -622,6 +833,9 @@ def get_related_objects(
 
     hit_ids = [UUID(h["_source"]["object_id"]) for h in os_hits]
     thumbnails = _get_thumbnail_urls_bulk_with_srcset(hit_ids, org.organization_id, db)
+    from app.services import public_object_fields as pof
+
+    public_keys = pof.get_public_field_keys(db, org.organization_id)
 
     hits = []
     for h in os_hits:
@@ -630,7 +844,7 @@ def get_related_objects(
         creators_raw = src.get("creators") or []
         creator_names_list = [c.get("name") for c in creators_raw if isinstance(c, dict) and c.get("name")]
         thumb_data = thumbnails.get(oid, {})
-        hits.append({
+        hits.append(pof.redact({
             "object_id": oid,
             "object_number": src.get("object_number"),
             "title": src.get("title"),
@@ -639,7 +853,7 @@ def get_related_objects(
             "classification": src.get("classification"),
             "thumbnail_url": thumb_data.get("url") if thumb_data else None,
             "thumbnail_srcset": thumb_data.get("srcset") if thumb_data else None,
-        })
+        }, public_keys))
 
     return {"hits": hits}
 
@@ -680,12 +894,17 @@ def get_featured_objects(
         CollectionObject.object_id.in_(featured_ids),
         CollectionObject.organization_id == org.organization_id,
         CollectionObject.is_discoverable == True,  # noqa: E712
+        public_visible_clause(db, org.organization_id),
+        CollectionObject.is_deleted == False,  # noqa: E712
     ).all()
 
     obj_map = {obj.object_id: obj for obj in objects}
     thumbnails = _get_thumbnail_urls_bulk_with_srcset(
         [obj.object_id for obj in objects], org.organization_id, db,
     )
+    from app.services import public_object_fields as pof
+
+    public_keys = pof.get_public_field_keys(db, org.organization_id)
 
     hits = []
     for fid in featured_ids:
@@ -693,7 +912,7 @@ def get_featured_objects(
         if not obj:
             continue
         thumb_data = thumbnails.get(str(obj.object_id), {})
-        hits.append({
+        hits.append(pof.redact({
             "object_id": str(obj.object_id),
             "object_number": obj.object_number,
             "title": _get_display_title(obj.title_links),
@@ -705,7 +924,7 @@ def get_featured_objects(
             "thumbnail_url": thumb_data.get("url") if thumb_data else None,
             "thumbnail_srcset": thumb_data.get("srcset") if thumb_data else None,
             "has_image": bool(thumb_data),
-        })
+        }, public_keys))
 
     data = {"hits": hits}
     pub_cache_set(cache_key, data)
@@ -1130,10 +1349,37 @@ def get_public_exhibition(
     if exh.venue_id:
         v = db.query(Venue).filter(Venue.venue_id == exh.venue_id).first()
 
-    exhibition_objects = db.query(ExhibitionObject).filter(
-        ExhibitionObject.exhibition_id == exh.exhibition_id,
-        ExhibitionObject.object_id.isnot(None),
-    ).order_by(ExhibitionObject.display_order.asc()).limit(8).all()
+    # Only objects the org has made discoverable. A public exhibition can hold
+    # objects that are not themselves public; their titles, creators and
+    # thumbnails must not reach an anonymous visitor through this page.
+    exhibition_objects = (
+        db.query(ExhibitionObject)
+        .join(CollectionObject, CollectionObject.object_id == ExhibitionObject.object_id)
+        .filter(
+            ExhibitionObject.exhibition_id == exh.exhibition_id,
+            CollectionObject.organization_id == org.organization_id,
+            CollectionObject.is_discoverable == True,  # noqa: E712
+            public_visible_clause(db, org.organization_id),
+            CollectionObject.is_deleted == False,  # noqa: E712
+        )
+        .order_by(ExhibitionObject.display_order.asc())
+        .limit(8)
+        .all()
+    )
+
+    # Size of the exportable group (same gate as the export endpoint).
+    public_object_count = (
+        db.query(func.count(func.distinct(ExhibitionObject.object_id)))
+        .join(CollectionObject, CollectionObject.object_id == ExhibitionObject.object_id)
+        .filter(
+            ExhibitionObject.exhibition_id == exh.exhibition_id,
+            CollectionObject.organization_id == org.organization_id,
+            CollectionObject.is_discoverable == True,  # noqa: E712
+            public_visible_clause(db, org.organization_id),
+            CollectionObject.is_deleted == False,  # noqa: E712
+        )
+        .scalar()
+    ) or 0
 
     related_object_ids = [eo.object_id for eo in exhibition_objects if eo.object_id]
     thumbnails_data = _get_thumbnail_urls_bulk_with_srcset(related_object_ids, org.organization_id, db)
@@ -1144,12 +1390,15 @@ def get_public_exhibition(
             CollectionObject.object_id.in_(related_object_ids),
         ).all()
         obj_map = {obj.object_id: obj for obj in objects}
+        from app.services import public_object_fields as pof
+
+        public_keys = pof.get_public_field_keys(db, org.organization_id)
 
         for eo in exhibition_objects:
             obj = obj_map.get(eo.object_id) if eo.object_id else None
             if obj:
                 td = thumbnails_data.get(str(obj.object_id), {})
-                related_objects.append({
+                related_objects.append(pof.redact({
                     "object_id": str(obj.object_id),
                     "object_number": obj.object_number,
                     "title": _get_display_title(obj.title_links),
@@ -1157,7 +1406,7 @@ def get_public_exhibition(
                     "creation_date_display": obj.creation_date_display,
                     "thumbnail_url": td.get("url") if td else None,
                     "thumbnail_srcset": td.get("srcset") if td else None,
-                })
+                }, public_keys))
 
     result = {
         "exhibition_id": str(exh.exhibition_id),
@@ -1182,6 +1431,7 @@ def get_public_exhibition(
         "thumbnail_url": _get_media_url(exh.thumbnail_media_id, org.organization_id, db),
         "tags": exh.tags,
         "related_objects": related_objects,
+        "public_object_count": public_object_count,
     }
 
     pub_cache_set(cache_key, result)
@@ -1265,3 +1515,307 @@ def get_public_event(
     return result
 
 
+
+# =============================================================================
+# Export — groups of public object records as CSV or JSON
+# =============================================================================
+#
+# Two groups can be exported: the current search results (same query string
+# as /search, so the visitor exports exactly what they are looking at) and a
+# public exhibition's object list. Both emit _public_object_fields() and
+# nothing else — the same whitelist the public record page is built from —
+# and both re-check is_discoverable in SQL, so a stale search index can never
+# leak an object that has since been unpublished.
+
+#: Most records a single export will contain. Stated to the visitor in the UI
+#: and echoed in the X-Export-Cap header and the JSON envelope.
+EXPORT_MAX_OBJECTS = 500
+_EXPORT_SEARCH_PAGE = 100  # CollectionsSearchRequest.limit maximum
+
+# Exports are far heavier than a page view (up to EXPORT_MAX_OBJECTS records
+# per request), so they get their own per-IP bucket on top of the global
+# RateLimitMiddleware read bucket every /api/ route already sits behind.
+_export_limiter = RateLimiter(max_requests=10, window_seconds=60)
+
+#: (CSV header, field key) — order is the column order of the CSV.
+EXPORT_CSV_COLUMNS: list[tuple[str, str]] = [
+    ("Object number", "object_number"),
+    ("Title", "title"),
+    ("Other titles", "titles"),
+    ("Object name", "object_name"),
+    ("Creators", "creators"),
+    ("Date", "creation_date_display"),
+    ("Earliest date", "creation_date_earliest"),
+    ("Latest date", "creation_date_latest"),
+    ("Place made", "creation_place"),
+    ("Object type", "object_type"),
+    ("Classification", "classification"),
+    ("All classifications", "classifications"),
+    ("Materials", "materials"),
+    ("Techniques", "techniques"),
+    ("Style or period", "style_period"),
+    ("Measurements", "measurements"),
+    ("Inscriptions", "inscriptions"),
+    ("Edition and state", "edition"),
+    ("Brief description", "brief_description"),
+    ("Full description", "full_description"),
+    ("Physical description", "physical_description"),
+    ("Subjects", "subjects"),
+    ("Provenance", "provenance"),
+    ("Credit line", "credit_line"),
+    ("External links", "external_links"),
+    ("Record path", "canonical_url"),
+    ("Object ID", "object_id"),
+]
+
+
+def _export_rate_limited(request: Request) -> JSONResponse | None:
+    from app.fastapi_app.middleware.rate_limit import _get_client_ip
+
+    if _export_limiter.allow(_get_client_ip(request), "discover_export"):
+        return None
+    return JSONResponse(
+        status_code=429,
+        content={"error": {"code": "rate_limit_exceeded", "message": "Too many export requests, please try again in a minute", "details": {}}},
+        headers={"Retry-After": "60"},
+    )
+
+
+def _load_public_objects(db: Session, org: Organization, object_ids: list[UUID]) -> list[CollectionObject]:
+    """Discoverable objects of ``org`` among ``object_ids``, in that order."""
+    if not object_ids:
+        return []
+    from sqlalchemy.orm import selectinload
+
+    objects = (
+        db.query(CollectionObject)
+        .options(
+            selectinload(CollectionObject.title_links),
+            selectinload(CollectionObject.classification_links),
+            selectinload(CollectionObject.measurement_links),
+            selectinload(CollectionObject.inscription_links),
+        )
+        .filter(
+            CollectionObject.object_id.in_(object_ids),
+            CollectionObject.organization_id == org.organization_id,
+            CollectionObject.is_discoverable == True,  # noqa: E712
+            public_visible_clause(db, org.organization_id),
+            CollectionObject.is_deleted == False,  # noqa: E712
+        )
+        .all()
+    )
+    by_id = {o.object_id: o for o in objects}
+    return [by_id[i] for i in object_ids if i in by_id]
+
+
+def _csv_cell(value) -> str:
+    """Flatten one public field value into a single CSV cell."""
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "yes" if value else "no"
+    if isinstance(value, (list, tuple)):
+        return "; ".join(c for c in (_csv_cell(v) for v in value) if c)
+    if isinstance(value, dict):
+        if "dimension" in value and "value" in value:
+            text = f"{value.get('dimension') or ''}: {value['value']:g} {value.get('unit') or ''}".strip()
+            return f"{text} ({value['part']})" if value.get("part") else text
+        if "url" in value:
+            label = value.get("label")
+            return f"{label} <{value['url']}>" if label else str(value["url"])
+        for key in ("title", "term", "label", "value", "name"):
+            if value.get(key):
+                return str(value[key])
+        return json.dumps(value, ensure_ascii=False, default=str)
+    return str(value)
+
+
+def _csv_safe(text: str) -> str:
+    # Spreadsheet formula injection: a public visitor opens this in Excel, and
+    # record text is staff-entered. Neutralise a leading formula trigger.
+    if text and text[0] in ("=", "+", "-", "@", "\t", "\r"):
+        return "'" + text
+    return text
+
+
+def _export_response(
+    *,
+    fmt: str,
+    rows: list[dict],
+    filename_stem: str,
+    source: dict,
+    total_matches: int,
+    public_keys: frozenset[str] | None = None,
+) -> Response:
+    """Rows are _public_object_fields() output. Fields the organization does
+    not publish are left out entirely: JSON objects omit the key and the CSV
+    has no column for it."""
+    from app.services import public_object_fields as pof
+
+    keys = public_keys if public_keys is not None else pof.DEFAULT_KEYS
+    rows = [pof.omit(r, keys) for r in rows]
+    columns = [(h, k) for h, k in EXPORT_CSV_COLUMNS if pof.payload_key_public(k, keys)]
+    count = len(rows)
+    truncated = total_matches > count
+    stem = re.sub(r"[^A-Za-z0-9._-]+", "-", filename_stem).strip("-")[:120] or "export"
+    filename = f"{stem}.{fmt}"
+    headers = {
+        "Content-Disposition": f'attachment; filename="{filename}"',
+        "X-Export-Count": str(count),
+        "X-Export-Total": str(total_matches),
+        "X-Export-Cap": str(EXPORT_MAX_OBJECTS),
+        "X-Export-Truncated": "true" if truncated else "false",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+    }
+    if fmt == "json":
+        body = {
+            "source": source,
+            "exported_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+            "total_matches": total_matches,
+            "count": count,
+            "cap": EXPORT_MAX_OBJECTS,
+            "truncated": truncated,
+            "objects": rows,
+        }
+        return Response(
+            content=json.dumps(body, ensure_ascii=False, default=str, indent=2),
+            media_type="application/json; charset=utf-8",
+            headers=headers,
+        )
+
+    buf = io.StringIO()
+    # BOM so Excel opens non-ASCII text (accents, diacritics) as UTF-8.
+    buf.write("﻿")
+    writer = csv.writer(buf, lineterminator="\r\n")
+    writer.writerow([h for h, _ in columns])
+    for row in rows:
+        writer.writerow([_csv_safe(_csv_cell(row.get(key))) for _, key in columns])
+    return Response(content=buf.getvalue(), media_type="text/csv; charset=utf-8", headers=headers)
+
+
+@router.get("/api/discover/{org_slug}/search/export", summary="Export discover search results")
+def export_discover_search(
+    org_slug: str,
+    request: Request,
+    q: str = Query(""),
+    sort: str = Query("relevance"),
+    format: str = Query("csv", pattern="^(csv|json)$", description="csv or json"),
+    db: Session = Depends(get_admin_db),
+):
+    """Download the current search results (same query string as ``/search``)
+    as CSV or JSON, capped at ``EXPORT_MAX_OBJECTS`` records."""
+    limited = _export_rate_limited(request)
+    if limited:
+        return limited
+
+    org = _get_org_by_slug(db, org_slug)
+    if not org:
+        return JSONResponse(status_code=404, content={"error": {"code": "not_found", "message": "Collection not found"}})
+
+    from opensearchpy.exceptions import NotFoundError
+    from app.search.collections.service import CollectionsSearchService, get_collections_search_service
+
+    from app.services import public_object_fields as pof
+
+    public_keys = pof.get_public_field_keys(db, org.organization_id)
+    hide_deacc = hides_deaccessioned(db, org.organization_id)
+    object_ids: list[UUID] = []
+    total = 0
+    if CollectionsSearchService.is_available():
+        service = get_collections_search_service()
+        offset = 0
+        try:
+            while offset < EXPORT_MAX_OBJECTS:
+                page_size = min(_EXPORT_SEARCH_PAGE, EXPORT_MAX_OBJECTS - offset)
+                search_request = _build_discover_search_request(
+                    request, q=q, sort=sort, limit=page_size, offset=offset, include_facets=False,
+                    public_keys=public_keys,
+                    hide_deaccessioned=hide_deacc,
+                )
+                response = service.search(search_request, org.organization_id, db_session=db)
+                total = response.total
+                object_ids.extend(UUID(h.object_id) for h in response.hits)
+                offset += page_size
+                if len(response.hits) < page_size or offset >= total:
+                    break
+        except NotFoundError:
+            logger.error("Discover export for org %s hit a missing collections index", org_slug)
+            object_ids, total = [], 0
+
+    # Dedupe while keeping rank order (paging over a live index can repeat).
+    object_ids = list(dict.fromkeys(object_ids))
+    objects = _load_public_objects(db, org, object_ids)
+    rows = [_public_object_fields(o, org_slug, public_keys) for o in objects]
+    # Anything the index returned that SQL no longer considers public is not
+    # a match the visitor can see; keep the stated total honest.
+    total = max(total - (len(object_ids) - len(objects)), len(rows))
+
+    query_echo = {}
+    for key in sorted(set(request.query_params.keys()) - {"format"}):
+        values = request.query_params.getlist(key)
+        query_echo[key] = values if len(values) > 1 else values[0]
+    return _export_response(
+        fmt=format,
+        rows=rows,
+        filename_stem=f"{org_slug}-search-results-{date.today().isoformat()}",
+        source={"type": "search", "collection": org.name, "query": query_echo},
+        total_matches=total,
+        public_keys=public_keys,
+    )
+
+
+@router.get("/api/discover/{org_slug}/exhibitions/{slug}/export", summary="Export public exhibition objects")
+def export_public_exhibition(
+    org_slug: str,
+    slug: str,
+    request: Request,
+    format: str = Query("csv", pattern="^(csv|json)$", description="csv or json"),
+    db: Session = Depends(get_admin_db),
+):
+    """Download the public objects of a public exhibition as CSV or JSON,
+    capped at ``EXPORT_MAX_OBJECTS`` records."""
+    limited = _export_rate_limited(request)
+    if limited:
+        return limited
+
+    org = _get_org_by_slug(db, org_slug)
+    if not org:
+        return JSONResponse(status_code=404, content={"error": {"code": "not_found", "message": "Collection not found"}})
+
+    exh = db.query(Exhibition).filter(
+        Exhibition.organization_id == org.organization_id,
+        Exhibition.public_url_slug == slug,
+        Exhibition.is_public == True,  # noqa: E712
+    ).first()
+    if not exh:
+        return JSONResponse(status_code=404, content={"error": {"code": "not_found", "message": "Exhibition not found"}})
+
+    public_links = (
+        db.query(ExhibitionObject.object_id, ExhibitionObject.display_order)
+        .join(CollectionObject, CollectionObject.object_id == ExhibitionObject.object_id)
+        .filter(
+            ExhibitionObject.exhibition_id == exh.exhibition_id,
+            CollectionObject.organization_id == org.organization_id,
+            CollectionObject.is_discoverable == True,  # noqa: E712
+            public_visible_clause(db, org.organization_id),
+            CollectionObject.is_deleted == False,  # noqa: E712
+        )
+        .order_by(ExhibitionObject.display_order.asc())
+    )
+    linked_ids = list(dict.fromkeys(r[0] for r in public_links.all()))
+    total = len(linked_ids)
+    objects = _load_public_objects(db, org, linked_ids[:EXPORT_MAX_OBJECTS])
+    from app.services import public_object_fields as pof
+
+    public_keys = pof.get_public_field_keys(db, org.organization_id)
+    rows = [_public_object_fields(o, org_slug, public_keys) for o in objects]
+
+    return _export_response(
+        fmt=format,
+        rows=rows,
+        filename_stem=f"{org_slug}-{slug}-objects-{date.today().isoformat()}",
+        source={"type": "exhibition", "collection": org.name, "exhibition": exh.title, "slug": slug},
+        total_matches=total,
+        public_keys=public_keys,
+    )

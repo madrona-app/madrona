@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
-import { getDiscoverInfo, searchDiscoverObjects } from '../../lib/api';
+import { getDiscoverInfo, getDiscoverSearchExportUrl, searchDiscoverObjects } from '../../lib/api';
 import { getPublishedPageById } from '../../lib/api/content';
 import { useDiscoverSearch } from './hooks/useDiscoverSearch';
 import { CollectionSiteShell } from './components/CollectionSiteShell';
@@ -12,6 +12,10 @@ import { FilterPanel } from './components/FilterPanel';
 import { ActiveFilters } from './components/ActiveFilters';
 import { ResultsGrid } from './components/ResultsGrid';
 import { Pagination } from './components/Pagination';
+import { Breadcrumbs } from './components/Breadcrumbs';
+import type { BreadcrumbItem } from './components/Breadcrumbs';
+import { ResultsActions } from './components/ResultsActions';
+import { canonicalSearch, describeFacets } from './searchUrl';
 import { BlockRenderer } from '../content/components/BlockRenderer';
 import type { ContentBlock } from '../../types/content';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
@@ -35,6 +39,7 @@ export function DiscoverPage() {
     handleRemoveFilter,
     handleClearAll,
     updateParams,
+    resultsSearch,
   } = useDiscoverSearch();
 
   // Hide the initial loading overlay
@@ -97,6 +102,26 @@ export function DiscoverPage() {
   const hasActiveSearch = !!params.q || Object.keys(params).some(
     (k) => !['sort', 'limit', 'offset', 'include_facets'].includes(k) && params[k as keyof typeof params] !== undefined,
   );
+
+  // Breadcrumb trail for the results view: Home > Search: “q” > Filtered by …
+  const breadcrumbItems = useMemo<BreadcrumbItem[]>(() => {
+    if (!orgSlug || !hasActiveSearch) return [];
+    const home = `/c/${orgSlug}`;
+    const facets = describeFacets(params);
+    const items: BreadcrumbItem[] = [{ label: 'Home', to: home }];
+    if (params.q) {
+      items.push(
+        facets.length
+          ? { label: `Search: “${params.q}”`, to: `${home}${canonicalSearch({ q: params.q, sort: params.sort })}` }
+          : { label: `Search results for “${params.q}”` },
+      );
+    }
+    if (facets.length) items.push({ label: `Filtered by ${facets.join(', ')}` });
+    return items;
+  }, [orgSlug, hasActiveSearch, params]);
+
+  const resultsTotal = searchResult?.total ?? 0;
+  const showResultsActions = !!orgSlug && !isLoading && !searchError && !!searchResult;
 
   // ── CMS Homepage Rendering ────────────────────────────────────────────
   if (homepagePageId) {
@@ -188,6 +213,24 @@ export function DiscoverPage() {
 
       {/* Results area */}
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {breadcrumbItems.length > 0 && (
+          <div className="mb-4">
+            <Breadcrumbs items={breadcrumbItems} />
+          </div>
+        )}
+
+        {showResultsActions && (
+          <div className="mb-6">
+            <ResultsActions
+              total={resultsTotal}
+              noun={['result', 'results']}
+              permalink={`/c/${orgSlug}${resultsSearch}`}
+              csvUrl={getDiscoverSearchExportUrl(orgSlug!, resultsSearch, 'csv')}
+              jsonUrl={getDiscoverSearchExportUrl(orgSlug!, resultsSearch, 'json')}
+            />
+          </div>
+        )}
+
         <ActiveFilters
           params={params}
           onRemove={handleRemoveFilter}
@@ -201,6 +244,7 @@ export function DiscoverPage() {
           error={searchError}
           viewMode={viewMode}
           orgSlug={orgSlug!}
+          resultsSearch={resultsSearch}
         />
 
         <Pagination

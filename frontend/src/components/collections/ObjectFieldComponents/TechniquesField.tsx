@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Plus, X } from 'lucide-react';
 import { AuthorityAutocomplete, type AuthorityBackedValue } from '../AuthorityAutocomplete';
 import type { Technique } from './types';
@@ -46,6 +47,7 @@ export function TechniquesField({
   onAdd: () => void;
   onSave: () => void;
 }) {
+  const groupLabelId = useId();
   if (!isEditing) {
     if (techniques.length === 0) return null;
     return (
@@ -65,11 +67,11 @@ export function TechniquesField({
   }
 
   return (
-    <div>
+    <div role="group" aria-labelledby={groupLabelId}>
       <div className="flex items-center justify-between mb-2">
-        <label className="text-sm font-medium text-ink">Techniques</label>
+        <span id={groupLabelId} className="text-sm font-medium text-ink">Techniques</span>
         <button type="button" onClick={onAdd} className="text-sm text-bark hover:text-copper-dark flex items-center gap-1">
-          <Plus size={14} />
+          <Plus size={14} aria-hidden="true" />
           Add technique
         </button>
       </div>
@@ -89,10 +91,13 @@ export function TechniquesField({
                 placeholder="Technique name (e.g., impasto, etching)"
                 showVerifiedBadge={true}
                 allowCreate={true}
+                strictField="techniques"
+                ariaLabel={`Technique ${i + 1}`}
               />
             </div>
             <input
               type="text"
+              aria-label={`Technique ${i + 1} part`}
               value={t.part || ''}
               onChange={(e) => {
                 const updated = [...techniques];
@@ -109,9 +114,10 @@ export function TechniquesField({
                 onChange(techniques.filter((_, idx) => idx !== i));
                 onSave();
               }}
-              className="p-1 text-archive hover:text-semantic-error"
+              aria-label={`Remove technique ${i + 1}${t.name ? `, ${t.name}` : ''}`}
+              className="min-h-11 min-w-11 inline-flex items-center justify-center rounded text-archive hover:text-semantic-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             >
-              <X size={16} />
+              <X size={16} aria-hidden="true" />
             </button>
           </div>
         ))}

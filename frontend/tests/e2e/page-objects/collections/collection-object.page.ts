@@ -191,7 +191,12 @@ export class CollectionObjectPage extends BasePage {
    * Click on an object row to view details.
    */
   async clickObject(objectNumber: string): Promise<void> {
-    await this.page.getByText(objectNumber).click();
+    // Each grid card and list row has one link, the title. On a card it is
+    // stretched over the whole card, so the object number sits under the
+    // link's overlay and a click on the number's text is intercepted. Open
+    // the record the way a user does: through that link.
+    const item = this.page.locator('.card, tr').filter({ hasText: objectNumber }).first();
+    await item.getByRole('link').first().click();
     await this.waitForPageReady();
   }
 

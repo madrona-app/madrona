@@ -1,22 +1,23 @@
 """Typed payload for a `loan_in` draft (Loans In, Procedure 7).
 
 The proposable subset of the live LoanIn create shape
-(`app/models/objects.py::LoanIn`). `loan_purpose` is a `Literal` mirroring the
-live CHECK. `extra='forbid'` rejects anything else. Approval-gated — the draft
+(`app/models/objects.py::LoanIn`). `loan_purpose` is a lookup key checked against the organization's
+lookup values. `extra='forbid'` rejects anything else. Approval-gated — the draft
 carries the approval.
 """
 
 from datetime import date
 from decimal import Decimal
-from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-LoanInPurpose = Literal[
-    "exhibition", "research", "conservation", "long_term", "photography",
-    "education", "study", "other",
-]
+from app.schemas.drafts.base import LookupKey
+
+# Lookup-backed (organizations add values): checked against the org's
+# active lookup values when the draft is proposed or edited
+# (app/services/lookup_fields.check_draft_lookup_values), not a fixed list.
+LoanInPurpose = LookupKey
 
 
 class LoanInDraftPayload(BaseModel):

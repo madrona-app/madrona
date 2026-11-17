@@ -160,7 +160,7 @@ export function RoleColumn({
       <div className="px-4 py-3 border-b border-lichen bg-parchment rounded-t-lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <h3 className="font-medium text-ink">{role.display_name}</h3>
+            <h2 className="font-medium text-ink">{role.display_name}</h2>
             {hasTooltipContent && (
               <div className="relative">
                 <button

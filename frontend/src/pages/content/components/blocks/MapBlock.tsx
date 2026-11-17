@@ -5,6 +5,7 @@
  * Editor allows setting coordinates, zoom, and marker label.
  */
 
+import { useId } from 'react';
 // =============================================================================
 // Shared Types
 // =============================================================================
@@ -38,6 +39,7 @@ function buildMapLinkUrl(lat: number, lng: number, zoom: number): string {
 // =============================================================================
 
 export function MapEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const lat = (content.lat as number) ?? 40.7794;
   const lng = (content.lng as number) ?? -73.9632;
   const zoom = (content.zoom as number) ?? 15;
@@ -47,10 +49,10 @@ export function MapEditor({ content, onChange }: BlockEditorComponentProps) {
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-latitude`} className="block text-sm font-medium text-ink mb-1">
             Latitude <span className="text-semantic-error">*</span>
           </label>
-          <input
+          <input id={`${fieldId}-latitude`}
             type="number"
             step="any"
             value={lat}
@@ -62,10 +64,10 @@ export function MapEditor({ content, onChange }: BlockEditorComponentProps) {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-longitude`} className="block text-sm font-medium text-ink mb-1">
             Longitude <span className="text-semantic-error">*</span>
           </label>
-          <input
+          <input id={`${fieldId}-longitude`}
             type="number"
             step="any"
             value={lng}
@@ -80,10 +82,10 @@ export function MapEditor({ content, onChange }: BlockEditorComponentProps) {
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-zoom-level`} className="block text-sm font-medium text-ink mb-1">
             Zoom Level
           </label>
-          <input
+          <input id={`${fieldId}-zoom-level`}
             type="number"
             min={1}
             max={19}
@@ -99,10 +101,10 @@ export function MapEditor({ content, onChange }: BlockEditorComponentProps) {
           <p className="text-xs text-archive mt-1">1 (world) to 19 (building)</p>
         </div>
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-marker-label`} className="block text-sm font-medium text-ink mb-1">
             Marker Label
           </label>
-          <input
+          <input id={`${fieldId}-marker-label`}
             type="text"
             value={markerLabel}
             onChange={(e) =>

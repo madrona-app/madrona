@@ -114,7 +114,13 @@ def _load_media_links(db: Session, object_id: UUID, *, published_only: bool = Fa
             Media.media_id == link.media_id
         )
         if published_only:
-            media_query = media_query.filter(Media.is_published.is_(True))
+            # Published, and owned by the object's organization: a link row
+            # must not carry another organization's file onto a public page.
+            media_query = media_query.filter(
+                Media.is_published.is_(True),
+                Media.organization_id == CollectionObject.organization_id,
+                CollectionObject.object_id == object_id,
+            )
         media = media_query.first()
         if published_only and media is None:
             # Unpublished media never appears in a public manifest. Skip the
@@ -164,13 +170,11 @@ def get_object_manifest(
     """
     obj = (
         db.query(CollectionObject)
-        .filter(
-            CollectionObject.object_id == object_id,
-            CollectionObject.is_discoverable.is_(True),
-        )
+        .filter(CollectionObject.object_id == object_id)
         .first()
     )
-    if not obj:
+    # Discoverable, not deleted, not hidden as deaccessioned (Discover gates).
+    if not _lod_object_is_public(db, obj):
         raise HTTPException(status_code=404, detail="Object not found")
 
     media_links = _load_media_links(db, object_id, published_only=True)
@@ -188,11 +192,12 @@ def get_object_manifest(
         if org:
             org_name = org.name
 
-    from app.services.iiif_presentation import get_iiif_presentation_service
+    from app.services.iiif_presentation import IIIFPresentationService
 
-    service = get_iiif_presentation_service()
-    service.db_session = db
-    service._url_cache = {}
+    # Public mode on a fresh instance: renditions only, the master only when
+    # the file's public download level allows originals. Mutating the shared
+    # singleton (as this did) also leaked one request's session into the next.
+    service = IIIFPresentationService(db_session=db, public=True)
     manifest = service.generate_manifest(obj, media_links, org_name)
 
     return _iiif_json_response(manifest, IIIF_PRESENTATION_CT, cache_max_age=300)
@@ -215,14 +220,17 @@ def get_collection_manifest(
     objects = []
     if object_ids:
         parsed_ids = [UUID(oid.strip()) for oid in object_ids.split(",")]
-        objects = (
-            db.query(CollectionObject)
+        objects = [
+            obj
+            for obj in db.query(CollectionObject)
             .filter(
                 CollectionObject.object_id.in_(parsed_ids),
                 CollectionObject.is_discoverable.is_(True),
+                CollectionObject.is_deleted.is_(False),
             )
             .all()
-        )
+            if _lod_object_is_public(db, obj)
+        ]
 
     from app.services.iiif_presentation import get_iiif_presentation_service
 
@@ -234,6 +242,41 @@ def get_collection_manifest(
     return _iiif_json_response(manifest, IIIF_PRESENTATION_CT, cache_max_age=300)
 
 
+def _public_iiif_media(db: Session, media_id: UUID):
+    """(media, rendition source) for the anonymous Image API, or 404.
+
+    The Discover gates: published, linked to a public object of its own
+    organization. Unpublished, unlinked, hidden-object and nonexistent media
+    are one indistinguishable 404. A published image with no rendition has no
+    public IIIF source (never the master) and is a 404 too.
+    """
+    from app.services.discover_media import get_public_media
+    from app.services.iiif_public_image import public_iiif_source
+
+    media = (
+        db.query(Media)
+        .filter(Media.media_id == media_id, Media.is_published.is_(True))
+        .first()
+    )
+    org = None
+    if media is not None:
+        org = (
+            db.query(Organization)
+            .filter(Organization.organization_id == media.organization_id)
+            .first()
+        )
+    if media is None or org is None or get_public_media(db, org, media_id) is None:
+        raise HTTPException(status_code=404, detail="Media not found")
+
+    if media.media_type != "image":
+        raise HTTPException(status_code=400, detail="Only images support IIIF")
+
+    source = public_iiif_source(media)
+    if source is None:
+        raise HTTPException(status_code=404, detail="No public image rendition for this media")
+    return media, source
+
+
 @router.get("/iiif/3/media/{media_id}/info.json", summary="Get media info")
 def get_media_info(
     media_id: UUID,
@@ -242,47 +285,82 @@ def get_media_info(
 ):
     """Public IIIF Image API 3.0 info.json for a media item.
 
-    Anonymous + BYPASSRLS, so the `is_published` gate is the access control:
-    an unpublished (or nonexistent) media item is an indistinguishable 404.
+    Anonymous + BYPASSRLS, so the Discover gates are the access control (see
+    _public_iiif_media). The service describes the published rendition, never
+    the master: width/height are the rendition's, and maxWidth/maxHeight
+    advertise the public size cap (services/iiif_public_image.py). Image
+    requests against this service id are answered by get_media_image below.
+    It used to redirect to the image server's info.json for the master.
     """
-    media = (
-        db.query(Media)
-        .filter(Media.media_id == media_id, Media.is_published.is_(True))
-        .first()
-    )
-    if not media:
-        raise HTTPException(status_code=404, detail="Media not found")
+    from app.services.iiif_image import IIIFImageService
+    from app.services.iiif_public_image import info_json
 
-    if media.media_type != "image":
-        raise HTTPException(status_code=400, detail="Only images support IIIF")
+    _, source = _public_iiif_media(db, media_id)
+    service_id = str(request.url).split("?", 1)[0][: -len("/info.json")]
+    info = info_json(service_id, source)
 
-    from app.services.iiif_image import IIIFImageService, get_iiif_image_service
-
-    image_service = get_iiif_image_service()
-    if IIIFImageService.is_available():
-        info_url = image_service.get_info_url(media)
-        return RedirectResponse(url=info_url, status_code=302)
-
-    # Return basic info.json
-    width = media.width or 1000
-    height = media.height or 1000
-
-    info = {
-        "@context": "http://iiif.io/api/image/3/context.json",
-        "id": str(request.url).replace("/info.json", ""),
-        "type": "ImageService3",
-        "protocol": "http://iiif.io/api/image",
-        "profile": "level0",
-        "width": width,
-        "height": height,
-        "sizes": [
-            {"width": 200, "height": int(200 * height / width)},
-            {"width": 800, "height": int(800 * height / width)},
-            {"width": width, "height": height},
-        ],
-    }
+    if not IIIFImageService.is_available():
+        # No image server, so no region or tile requests can be answered.
+        info["profile"] = "level0"
+        info.pop("tiles", None)
 
     return _iiif_json_response(info, IIIF_IMAGE_CT, cache_max_age=3600)
+
+
+@router.get(
+    "/iiif/3/media/{media_id}/{region}/{size}/{rotation}/{quality}.{fmt}",
+    summary="Get public media image",
+)
+def get_media_image(
+    media_id: UUID,
+    region: str,
+    size: str,
+    rotation: str,
+    quality: str,
+    fmt: str,
+    db: Session = Depends(get_admin_db),
+):
+    """Public IIIF Image API 3.0 image request, served from the rendition.
+
+    The request is validated against the rendition and the public size cap
+    before anything reaches the image server: ``max`` returns the capped
+    image; any other size beyond maxWidth/maxHeight is a 400. Cantaloupe is
+    asked for the rendition by its storage key with an explicit pixel region
+    and size, so neither the master nor an uncapped size can come back.
+    """
+    from fastapi.responses import Response
+
+    from app.services.iiif_image import IIIFImageService, get_iiif_image_service
+    from app.services import iiif_public_image as pub
+
+    _, source = _public_iiif_media(db, media_id)
+
+    if not IIIFImageService.is_available():
+        raise HTTPException(status_code=404, detail="IIIF image server not configured")
+
+    try:
+        plan = pub.plan_request(source, region, size, rotation, quality, fmt)
+    except pub.IIIFRequestError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    url = pub.upstream_url(get_iiif_image_service().server_url, source, plan)
+    try:
+        status, content, content_type = pub.fetch_upstream(url)
+    except Exception as e:  # noqa: BLE001 - an unreachable image server is a gateway error
+        logger.warning("IIIF image server request failed for %s: %s", media_id, e)
+        raise HTTPException(status_code=502, detail="Image server unavailable")
+    if status != 200:
+        logger.warning("IIIF image server returned %s for media %s", status, media_id)
+        raise HTTPException(status_code=502, detail="Image server error")
+
+    return Response(
+        content=content,
+        media_type=content_type or plan.content_type,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Cache-Control": "public, max-age=3600",
+        },
+    )
 
 
 @router.get("/api/organizations/{org_id}/iiif/objects/{object_id}/manifest.json", summary="Get authenticated manifest")
@@ -313,11 +391,9 @@ def get_authenticated_manifest(
     )
     org_name = org.name if org else None
 
-    from app.services.iiif_presentation import get_iiif_presentation_service
+    from app.services.iiif_presentation import IIIFPresentationService
 
-    service = get_iiif_presentation_service()
-    service.db_session = db
-    service._url_cache = {}
+    service = IIIFPresentationService(db_session=db)
     manifest = service.generate_manifest(obj, media_links, org_name)
 
     return JSONResponse(
@@ -331,11 +407,58 @@ def get_authenticated_manifest(
 # ============================================================================
 
 
+# Database session for the anonymous LOD routes.
+#
+# These routes used to take `get_db`: the app role (NOBYPASSRLS) with no org
+# context, because an anonymous request has no user and therefore no org.
+# Every org-scoped read — the organization lookup by slug included — came
+# back empty, so in production they 404'd for public records too; only the
+# superuser test connection made them look working. They now use the owner
+# session like the other anonymous surfaces (Discover, the /iiif/3/ routes),
+# which makes the code-level gates the access control:
+#   * the organization comes from the URL slug (active orgs only), and every
+#     query below is scoped to it — nothing resolves across organizations;
+#   * objects must pass the Discover gates (_lod_object_is_public);
+#   * media must be published and linked to a public object of the org.
+# tests/test_lod_routes_app_role.py runs these routes under the production
+# roles.
+_lod_db = get_admin_db
+
+
+def _lod_org(db: Session, org_slug: str) -> Organization:
+    org = (
+        db.query(Organization)
+        .filter(Organization.slug == org_slug, Organization.status == "active")
+        .first()
+    )
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    return org
+
+
+def _lod_object_is_public(db: Session, obj: CollectionObject | None) -> bool:
+    from app.services.deaccession_visibility import public_object_visible
+
+    return bool(
+        obj is not None
+        and obj.is_discoverable
+        and not obj.is_deleted
+        and public_object_visible(obj, db)
+    )
+
+
 def _generate_lod_manifest_response(
     db: Session, obj: CollectionObject, org: Organization, org_slug: str
 ) -> JSONResponse:
-    """Generate and return a LOD manifest response."""
-    media_links = _load_media_links(db, obj.object_id)
+    """Generate and return a LOD manifest response.
+
+    These stable-URI routes are anonymous, so they apply the same publish
+    gates as Discover: the object must be discoverable, not deleted and not
+    hidden as deaccessioned, and only published media are included.
+    """
+    if not _lod_object_is_public(db, obj):
+        raise HTTPException(status_code=404, detail="Object not found")
+    media_links = _load_media_links(db, obj.object_id, published_only=True)
 
     from app.services.iiif_lod import get_iiif_lod_service
 
@@ -354,18 +477,23 @@ def _generate_lod_manifest_response(
 def get_object_manifest_lod(
     org_slug: str,
     public_id: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(_lod_db),
 ):
     """Get IIIF Presentation 3.0 manifest via stable URI (public LOD)."""
+    org = _lod_org(db, org_slug)
     full_uri = f"{BASE_URI}/org/{org_slug}/object/{public_id}"
 
-    record = db.query(URIRegistry).filter(URIRegistry.full_uri == full_uri).first()
+    record = (
+        db.query(URIRegistry)
+        .filter(
+            URIRegistry.full_uri == full_uri,
+            URIRegistry.organization_id == org.organization_id,
+            URIRegistry.entity_type == "collection_object",
+        )
+        .first()
+    )
 
     if not record:
-        org = db.query(Organization).filter(Organization.slug == org_slug).first()
-        if not org:
-            raise HTTPException(status_code=404, detail="Organization not found")
-
         obj = _find_object_by_public_id(db, org.organization_id, public_id)
         if not obj:
             raise HTTPException(status_code=404, detail="Object not found")
@@ -388,14 +516,12 @@ def get_object_manifest_lod(
         )
 
     # Active URI
-    org = (
-        db.query(Organization)
-        .filter(Organization.organization_id == record.organization_id)
-        .first()
-    )
     obj = (
         db.query(CollectionObject)
-        .filter(CollectionObject.object_id == record.entity_id)
+        .filter(
+            CollectionObject.object_id == record.entity_id,
+            CollectionObject.organization_id == org.organization_id,
+        )
         .first()
     )
     if not obj:
@@ -404,22 +530,24 @@ def get_object_manifest_lod(
     return _generate_lod_manifest_response(db, obj, org, org_slug)
 
 
+# Plain `def`, not `async def`: these call the blocking DB code above, which
+# must not run on the event loop.
 @router.get("/org/{org_slug}/object/{public_id}/manifest.json", summary="Get object manifest lod json")
-async def get_object_manifest_lod_json(
+def get_object_manifest_lod_json(
     org_slug: str,
     public_id: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(_lod_db),
 ):
     """Get manifest with .json extension (alternative URL pattern)."""
     return get_object_manifest_lod(org_slug, public_id, db)
 
 
 @router.get("/org/{org_slug}/object/{public_id}", summary="Resolve object uri")
-async def resolve_object_uri(
+def resolve_object_uri(
     org_slug: str,
     public_id: str,
     request: Request,
-    db: Session = Depends(get_db),
+    db: Session = Depends(_lod_db),
 ):
     """Resolve a stable object URI with content negotiation (public LOD)."""
     preferred_format = _get_preferred_format(request)
@@ -438,32 +566,22 @@ def get_canvas(
     org_slug: str,
     public_id: str,
     sequence: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(_lod_db),
 ):
     """Get a specific canvas from an object manifest (public LOD)."""
-    org = db.query(Organization).filter(Organization.slug == org_slug).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
+    org = _lod_org(db, org_slug)
 
     obj = _find_object_by_public_id(db, org.organization_id, public_id)
-    if not obj:
+    if not _lod_object_is_public(db, obj):
         raise HTTPException(status_code=404, detail="Object not found")
 
-    media_links = (
-        db.query(CollectionObjectMedia)
-        .filter(CollectionObjectMedia.object_id == obj.object_id)
-        .order_by(
-            CollectionObjectMedia.is_primary.desc(),
-            CollectionObjectMedia.sort_order,
-        )
-        .all()
-    )
+    # Same published-only list as the manifest, so canvas numbers match it.
+    media_links = _load_media_links(db, obj.object_id, published_only=True)
 
     if sequence < 1 or sequence > len(media_links):
         raise HTTPException(status_code=404, detail="Canvas not found")
 
     link = media_links[sequence - 1]
-    link.media = db.query(Media).filter(Media.media_id == link.media_id).first()
 
     if not link.media:
         raise HTTPException(status_code=404, detail="Media not found")
@@ -493,26 +611,27 @@ def get_lod_collection_manifest(
     object_ids: str = Query(None),
     classification: str = Query(None),
     limit: int = Query(100, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(_lod_db),
 ):
     """Get a IIIF Collection manifest (public LOD)."""
-    org = db.query(Organization).filter(Organization.slug == org_slug).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
+    org = _lod_org(db, org_slug)
 
     if object_ids:
         public_ids = [pid.strip() for pid in object_ids.split(",")]
         objects = []
         for pid in public_ids:
             obj = _find_object_by_public_id(db, org.organization_id, pid)
-            if obj:
+            # Named IDs get the same gates as the listing below.
+            if _lod_object_is_public(db, obj):
                 objects.append(obj)
     else:
         from app.models import ObjectClassification, LookupValue
 
+        from app.services.discover_media import public_object_clauses
+
         query = db.query(CollectionObject).filter(
             CollectionObject.organization_id == org.organization_id,
-            CollectionObject.is_discoverable == True,  # noqa: E712
+            *public_object_clauses(db, org.organization_id),
         )
 
         if classification:
@@ -557,18 +676,18 @@ def get_activity_stream(
     org_slug: str,
     since: str = Query(None),
     limit: int = Query(100, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(_lod_db),
 ):
     """Get IIIF Change Discovery activity stream (public LOD)."""
-    org = db.query(Organization).filter(Organization.slug == org_slug).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
+    org = _lod_org(db, org_slug)
+
+    from app.services.discover_media import public_object_clauses
 
     query = (
         db.query(CollectionObject)
         .filter(
             CollectionObject.organization_id == org.organization_id,
-            CollectionObject.is_discoverable == True,  # noqa: E712
+            *public_object_clauses(db, org.organization_id),
         )
         .order_by(CollectionObject.updated_at.desc())
     )
@@ -612,7 +731,7 @@ def get_activity_stream(
 def get_media_lod(
     org_slug: str,
     public_id: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(_lod_db),
 ):
     """Get LOD representation of a media item (public).
 
@@ -625,28 +744,22 @@ def get_media_lod(
       * it ignored `org_slug` completely, so the org in the URL was decoration;
       * it had no `is_published` filter, unlike every other public IIIF route.
 
-    Repairing the 404 by handing this an admin session — the obvious fix, and
-    what its /iiif/3/ siblings use — would have turned it into a cross-org
-    media enumerator. Resolve the org, match the full id, require published.
+    Repairing the 404 by handing this an admin session without fixing those
+    would have turned it into a cross-org media enumerator. It now runs on
+    the owner session (see _lod_db) with all three fixed: the org comes from
+    the slug, the id must match in full, and the media must pass the Discover
+    gates (published, linked to a public object of this org).
     """
-    org = db.query(Organization).filter(Organization.slug == org_slug).first()
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
+    from app.services.discover_media import get_public_media
+
+    org = _lod_org(db, org_slug)
 
     try:
         media_uuid = UUID(public_id)
     except (ValueError, AttributeError):
         raise HTTPException(status_code=404, detail="Media not found")
 
-    media = (
-        db.query(Media)
-        .filter(
-            Media.media_id == media_uuid,
-            Media.organization_id == org.organization_id,
-            Media.is_published == True,  # noqa: E712
-        )
-        .first()
-    )
+    media = get_public_media(db, org, media_uuid)
     if not media:
         raise HTTPException(status_code=404, detail="Media not found")
 
@@ -661,10 +774,15 @@ def get_media_lod(
     for link in links:
         obj = (
             db.query(CollectionObject)
-            .filter(CollectionObject.object_id == link.object_id)
+            .filter(
+                CollectionObject.object_id == link.object_id,
+                CollectionObject.organization_id == org.organization_id,
+            )
             .first()
         )
-        if obj:
+        # A published file can be linked to a private record; name only the
+        # public ones.
+        if _lod_object_is_public(db, obj):
             obj_public_id = _slugify(obj.object_number)
             parent_objects.append(
                 {
@@ -704,7 +822,12 @@ def get_media_lod(
 
     image_service = get_iiif_image_service()
     if image_service.is_available():
-        jsonld["url"] = image_service.get_info_url(media)
+        # The public Image API (rendition, capped), never the image server's
+        # own identifier for the master.
+        from app.services.iiif_public_image import public_iiif_source, public_service_id
+
+        if public_iiif_source(media) is not None:
+            jsonld["url"] = f"{public_service_id(media)}/info.json"
 
     return JSONResponse(
         content=jsonld,

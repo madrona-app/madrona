@@ -156,6 +156,10 @@ export const DEFAULT_FORM_DATA = {
   insurance_value: '',
   insurance_currency: 'USD',
   insurance_note: '',
+  packing_note: '',
+  special_conditions: '',
+  depositor_requirements: '',
+  insurance_policy: '',
   entry_note: '',
   // Entry method
   entry_method: '',

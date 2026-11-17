@@ -896,15 +896,17 @@ class TestCreateAcquisition:
         assert body["error"]["field"] == "acquisition_method"
 
     def test_create_rejects_invalid_source_type(self, auth_setup):
-        """The named fault: a non-canonical source_type must 422 at the API, not
-        silently persist and brick the page on read."""
+        """The named fault: a source_type that is not one of the org's lookup
+        values must be refused at the API, not silently persist and brick the
+        page on read."""
         auth_client, org, _ = auth_setup
         resp = auth_client.post(
             _acq_url(org.organization_id),
             json={"acquisition_method": "gift", "source_type": "Auction House"},
         )
-        assert resp.status_code == 422
-        assert resp.get_json()["error"]["code"] == "invalid_enum_value"
+        assert resp.status_code == 400
+        assert resp.get_json()["error"]["code"] == "invalid_lookup_value"
+        assert resp.get_json()["error"]["field"] == "source_type"
 
     def test_update_rejects_invalid_source_type(self, auth_setup, db_session):
         auth_client, org, _ = auth_setup
@@ -913,8 +915,9 @@ class TestCreateAcquisition:
             f"{_acq_url(org.organization_id)}/{acq.acquisition_id}",
             json={"source_type": "Auction House"},
         )
-        assert resp.status_code == 422
-        assert resp.get_json()["error"]["code"] == "invalid_enum_value"
+        assert resp.status_code == 400
+        assert resp.get_json()["error"]["code"] == "invalid_lookup_value"
+        assert resp.get_json()["error"]["field"] == "source_type"
 
 
 class TestListAcquisitions:

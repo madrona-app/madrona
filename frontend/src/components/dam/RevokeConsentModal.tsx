@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { revokeMediaConsent } from '../../lib/api';
@@ -23,6 +23,7 @@ export function RevokeConsentModal({
 }: RevokeConsentModalProps) {
   const queryClient = useQueryClient();
   const [reason, setReason] = useState('');
+  const fid = useId();
   const { modalRef, titleId, descriptionId } = useAccessibleModal({
     isOpen,
     onClose,
@@ -45,14 +46,13 @@ export function RevokeConsentModal({
 
   return (
     <ModalPortal>
-    <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50">
+      <div aria-hidden="true" className="absolute inset-0" onClick={onClose} />
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation only: keeps dialog clicks from bubbling to React ancestors through the portal */}
       <div
         ref={modalRef}
         {...getModalAriaProps(titleId, descriptionId)}
-        className="bg-parchment rounded-lg shadow-xl w-full max-w-md"
+        className="relative bg-parchment rounded-lg shadow-xl w-full max-w-md"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-6 py-4 border-b border-lichen">
@@ -73,8 +73,9 @@ export function RevokeConsentModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">Revocation Reason</label>
+            <label htmlFor={`${fid}-reason`} className="block text-sm font-medium text-ink mb-1">Revocation Reason</label>
             <textarea
+              id={`${fid}-reason`}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"

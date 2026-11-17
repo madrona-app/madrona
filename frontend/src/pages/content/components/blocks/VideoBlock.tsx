@@ -2,6 +2,7 @@
  * Video Block — YouTube/Vimeo embed with caption.
  */
 
+import { useId } from 'react';
 import { Video } from 'lucide-react';
 
 // =============================================================================
@@ -50,6 +51,7 @@ function getEmbedUrl(url: string): string | null {
 // =============================================================================
 
 export function VideoEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const url = (content.url as string) || '';
   const caption = (content.caption as string) || '';
   const embedUrl = getEmbedUrl(url);
@@ -57,10 +59,10 @@ export function VideoEditor({ content, onChange }: BlockEditorComponentProps) {
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-video-url`} className="block text-sm font-medium text-ink mb-1">
           Video URL
         </label>
-        <input
+        <input id={`${fieldId}-video-url`}
           type="text"
           value={url}
           onChange={(e) => onChange({ ...content, url: e.target.value })}
@@ -80,10 +82,10 @@ export function VideoEditor({ content, onChange }: BlockEditorComponentProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-caption`} className="block text-sm font-medium text-ink mb-1">
           Caption
         </label>
-        <input
+        <input id={`${fieldId}-caption`}
           type="text"
           value={caption}
           onChange={(e) => onChange({ ...content, caption: e.target.value })}

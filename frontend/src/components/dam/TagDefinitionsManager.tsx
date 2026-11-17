@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   DndContext,
@@ -31,6 +31,7 @@ import type { MediaTagDefinition, MediaTagFieldType } from '../../lib/schemas';
 import ConfirmDialog from '../ConfirmDialog';
 import { ModalPortal } from '../ModalPortal';
 import { TagValuesManager } from './TagValuesManager';
+import { RecordHistoryButton } from '../audit/RecordHistoryButton';
 
 const FIELD_TYPE_LABELS: Record<MediaTagFieldType, string> = {
   text: 'Text',
@@ -161,6 +162,13 @@ function SortableTagRow({
           )}
         </div>
         <div className="flex items-center gap-1">
+          <RecordHistoryButton
+            organizationId={organizationId}
+            entityType="media_tag_definition"
+            entityId={definition.definition_id}
+            recordName={definition.display_name}
+            showLabel={false}
+          />
           {!definition.is_active ? (
             <>
               <button
@@ -215,6 +223,7 @@ function SortableTagRow({
 
 export function TagDefinitionsManager({ organizationId }: TagDefinitionsManagerProps) {
   const queryClient = useQueryClient();
+  const fid = useId();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<EditingDefinition | null>(null);
   const [includeInactive, setIncludeInactive] = useState(false);
@@ -404,8 +413,9 @@ export function TagDefinitionsManager({ organizationId }: TagDefinitionsManagerP
           <h3 className="text-lg font-medium text-stone-900">Tag Definitions</h3>
         </div>
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2 text-sm text-ink">
+          <label htmlFor={`${fid}-show-inactive`} className="flex items-center gap-2 text-sm text-ink">
             <Checkbox
+              id={`${fid}-show-inactive`}
               checked={includeInactive}
               onChange={(e) => setIncludeInactive(e.target.checked)}
             />
@@ -446,14 +456,13 @@ export function TagDefinitionsManager({ organizationId }: TagDefinitionsManagerP
 
       {showForm && editing && (
         <ModalPortal>
-    <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
-          onClick={() => setShowForm(false)}
-        >
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50">
+      <div aria-hidden="true" className="absolute inset-0" onClick={() => setShowForm(false)} />
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation only: keeps dialog clicks from bubbling to React ancestors through the portal */}
           <div
             ref={modalRef}
             {...getModalAriaProps(titleId)}
-            className="bg-parchment rounded-lg shadow-xl w-full max-w-md"
+            className="relative bg-parchment rounded-lg shadow-xl w-full max-w-md"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-6 py-4 border-b border-stone-200 flex items-center justify-between">
@@ -461,7 +470,9 @@ export function TagDefinitionsManager({ organizationId }: TagDefinitionsManagerP
                 {editing.definition_id ? 'Edit Tag Definition' : 'New Tag Definition'}
               </h4>
               <button
+                type="button"
                 onClick={() => setShowForm(false)}
+                aria-label="Close"
                 className="p-1 hover:bg-stone-100 rounded text-archive hover:text-ink"
               >
                 <X size={20} />
@@ -469,8 +480,9 @@ export function TagDefinitionsManager({ organizationId }: TagDefinitionsManagerP
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Tag Key</label>
+                <label htmlFor={`${fid}-tag-key`} className="block text-sm font-medium text-ink mb-1">Tag Key</label>
                 <input
+                  id={`${fid}-tag-key`}
                   type="text"
                   value={editing.tag_key}
                   onChange={(e) => setEditing({ ...editing, tag_key: e.target.value })}
@@ -486,8 +498,9 @@ export function TagDefinitionsManager({ organizationId }: TagDefinitionsManagerP
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Display Name</label>
+                <label htmlFor={`${fid}-display-name`} className="block text-sm font-medium text-ink mb-1">Display Name</label>
                 <input
+                  id={`${fid}-display-name`}
                   type="text"
                   value={editing.display_name}
                   onChange={(e) => setEditing({ ...editing, display_name: e.target.value })}
@@ -497,8 +510,9 @@ export function TagDefinitionsManager({ organizationId }: TagDefinitionsManagerP
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Description (optional)</label>
+                <label htmlFor={`${fid}-description`} className="block text-sm font-medium text-ink mb-1">Description (optional)</label>
                 <textarea
+                  id={`${fid}-description`}
                   value={editing.description}
                   onChange={(e) => setEditing({ ...editing, description: e.target.value })}
                   placeholder="Help text for users"
@@ -507,8 +521,9 @@ export function TagDefinitionsManager({ organizationId }: TagDefinitionsManagerP
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Field type</label>
+                <label htmlFor={`${fid}-field-type`} className="block text-sm font-medium text-ink mb-1">Field type</label>
                 <select
+                  id={`${fid}-field-type`}
                   value={editing.field_type}
                   onChange={(e) => {
                     const ft = e.target.value as MediaTagFieldType;
@@ -535,8 +550,9 @@ export function TagDefinitionsManager({ organizationId }: TagDefinitionsManagerP
                 </p>
               </div>
               <div>
-                <label className="flex items-center gap-2">
+                <label htmlFor={`${fid}-allow-multiple`} className="flex items-center gap-2">
                   <Checkbox
+                    id={`${fid}-allow-multiple`}
                     checked={editing.allow_multiple}
                     disabled={editing.field_type === 'multi_select' || editing.field_type === 'category_tree'}
                     onChange={(e) => setEditing({ ...editing, allow_multiple: e.target.checked })}
@@ -548,8 +564,9 @@ export function TagDefinitionsManager({ organizationId }: TagDefinitionsManagerP
                 </p>
               </div>
               <div>
-                <label className="flex items-center gap-2">
+                <label htmlFor={`${fid}-required`} className="flex items-center gap-2">
                   <Checkbox
+                    id={`${fid}-required`}
                     checked={editing.is_required}
                     onChange={(e) => setEditing({ ...editing, is_required: e.target.checked })}
                   />

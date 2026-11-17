@@ -74,6 +74,7 @@ export const ACQUISITION_SECTION_GROUPS: SectionGroup[] = [
       { id: 'legal', label: 'Legal & Provenance', dataKey: 'legal' },
       { id: 'boardApproval', label: 'Board Approval', dataKey: 'boardApproval' },
       { id: 'documentation', label: 'Documentation', dataKey: 'documentation' },
+      { id: 'attachments', label: 'Attachments', dataKey: 'attachments' },
     ],
   },
   {
@@ -108,6 +109,7 @@ export const SECTION_GROUPS: Record<string, string> = {
   legal: 'details',
   boardApproval: 'details',
   documentation: 'details',
+  attachments: 'details',
   linkedEntry: 'linked',
   accessioning: 'linked',
   discussion: 'admin',
@@ -117,7 +119,7 @@ export const SECTION_GROUPS: Record<string, string> = {
 // Default section order within groups
 export const DEFAULT_SECTION_ORDER: Record<string, string[]> = {
   overview: ['acquisition', 'source'],
-  details: ['financial', 'legal', 'boardApproval', 'documentation'],
+  details: ['financial', 'legal', 'boardApproval', 'documentation', 'attachments'],
   linked: ['linkedEntry', 'accessioning', 'objects'],
   admin: ['discussion', 'history'],
 };
@@ -135,6 +137,7 @@ export const INITIAL_EXPANDED_SECTIONS: Record<string, boolean> = {
   legal: false,
   boardApproval: false,
   documentation: false,
+  attachments: false,
   objects: true,
   accessioning: true,
   discussion: false,

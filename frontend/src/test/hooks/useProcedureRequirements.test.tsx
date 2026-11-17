@@ -162,7 +162,20 @@ describe('useProcedureRequirements', () => {
   });
 
   describe('with organization ID', () => {
-    it('includes organization_id query param', async () => {
+    it('fetches the shared baseline route without an organization', async () => {
+      mockApiFetch.mockResolvedValue(mockApiResponse);
+
+      renderHook(
+        () => useProcedureRequirements('object_entry'),
+        { wrapper: createWrapper() }
+      );
+
+      await waitFor(() => {
+        expect(mockApiFetch).toHaveBeenCalledWith('/procedure-requirements/object_entry');
+      });
+    });
+
+    it('fetches the org-scoped route', async () => {
       mockApiFetch.mockResolvedValue(mockApiResponse);
 
       renderHook(
@@ -172,9 +185,53 @@ describe('useProcedureRequirements', () => {
 
       await waitFor(() => {
         expect(mockApiFetch).toHaveBeenCalledWith(
-          '/procedure-requirements/object_entry?organization_id=org-1'
+          '/organizations/org-1/procedure-requirements/object_entry'
         );
       });
+    });
+  });
+
+  describe('org-added required fields', () => {
+    it('keeps the org group, marks sources, and exposes orgRequiredFields', async () => {
+      mockApiFetch.mockResolvedValue({
+        ...mockApiResponse,
+        requirementGroups: [
+          ...mockApiResponse.requirementGroups.map((g) => ({
+            ...g,
+            requirements: g.requirements.map((r) => ({ ...r, source: 'baseline' })),
+          })),
+          {
+            id: 'org_required',
+            label: 'Required by your organization',
+            sectionId: 'details',
+            requirements: [{
+              id: 'org:insurance_policy',
+              label: 'Insurance policy',
+              groupId: 'org_required',
+              fieldPaths: ['insurance_policy'],
+              requiredForStatuses: ['pending', 'approved', 'completed'],
+              severity: 'blocking',
+              source: 'org',
+            }],
+          },
+        ],
+        orgRequiredFields: [{ field: 'insurance_policy', label: 'Insurance policy' }],
+      });
+
+      const { result } = renderHook(
+        () => useProcedureRequirements('object_entry', 'org-1'),
+        { wrapper: createWrapper() }
+      );
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      const orgGroup = result.current.requirementGroups.find((g) => g.id === 'org_required');
+      expect(orgGroup?.requirements[0]).toMatchObject({
+        fieldPaths: ['insurance_policy'],
+        severity: 'blocking',
+        source: 'org',
+      });
+      expect(result.current.requirementGroups[0].requirements[0].source).toBe('baseline');
+      expect(result.current.orgRequiredFields).toEqual([{ field: 'insurance_policy', label: 'Insurance policy' }]);
     });
   });
 

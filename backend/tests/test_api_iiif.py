@@ -52,7 +52,13 @@ def _create_object(db_session, org_id, **kwargs):
 
 
 def _create_media(db_session, org_id, **kwargs):
-    """Insert a Media record and return it."""
+    """Insert a Media record (with a display rendition) and return it.
+
+    The public manifest shows images from a rendition, never the master, so
+    an image with no rendition is left out of it; pass with_rendition=False
+    to test that.
+    """
+    with_rendition = kwargs.pop("with_rendition", True)
     defaults = dict(
         organization_id=org_id,
         s3_key=kwargs.pop("s3_key", f"orgs/{org_id}/media/images/{uuid.uuid4().hex}.jpg"),
@@ -69,6 +75,18 @@ def _create_media(db_session, org_id, **kwargs):
     media = Media(**defaults)
     db_session.add(media)
     db_session.flush()
+    if with_rendition and media.media_type == "image":
+        from app.models import MediaDerivative
+
+        db_session.add(MediaDerivative(
+            media_id=media.media_id,
+            organization_id=org_id,
+            derivative_type="large",
+            format="jpeg",
+            s3_key=f"orgs/{org_id}/media/derivatives/{media.media_id}/large.jpeg",
+            width=2000, height=1125, file_size=200_000,
+        ))
+        db_session.flush()
     return media
 
 
@@ -239,9 +257,15 @@ class TestGetMediaInfo:
 
     @patch("app.services.iiif_image.IIIF_IMAGE_SERVER_ENABLED", False)
     def test_info_json_basic(self, client, auth_setup):
-        """info.json returns valid IIIF Image API 3.0 structure for an image."""
+        """info.json returns valid IIIF Image API 3.0 structure for an image.
+
+        It describes the published rendition (2000x1125), not the master
+        (2000x1500), and the media must be linked to a discoverable object.
+        """
         _, org, _ = auth_setup
+        obj = _create_object(current_session(), org.organization_id, is_discoverable=True)
         media = _create_media(current_session(), org.organization_id, width=2000, height=1500, is_published=True)
+        _link_media(current_session(), obj, media)
         current_session().commit()
 
         resp = client.get(f"/iiif/3/media/{media.media_id}/info.json")
@@ -250,7 +274,7 @@ class TestGetMediaInfo:
         assert data["@context"] == "http://iiif.io/api/image/3/context.json"
         assert data["type"] == "ImageService3"
         assert data["width"] == 2000
-        assert data["height"] == 1500
+        assert data["height"] == 1125
         assert data["profile"] == "level0"
         assert "sizes" in data
 
@@ -285,6 +309,8 @@ class TestGetMediaInfo:
             height=None,
             is_published=True,  # published, so the guard passes and we reach the image-type check
         )
+        obj = _create_object(current_session(), org.organization_id, is_discoverable=True)
+        _link_media(current_session(), obj, media)
         current_session().commit()
 
         resp = client.get(f"/iiif/3/media/{media.media_id}/info.json")

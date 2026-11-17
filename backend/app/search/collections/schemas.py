@@ -22,6 +22,9 @@ class CollectionsSearchFilters(BaseModel):
     object_type: Optional[list[str]] = Field(None, description="Filter by object type")
     classification: Optional[list[str]] = Field(None, description="Filter by classification")
     object_status: Optional[list[str]] = Field(None, description="Filter by object status")
+    exclude_object_status: Optional[list[str]] = Field(
+        None, description="Leave out objects with these statuses (e.g. deaccessioned)"
+    )
     location_id: Optional[list[str]] = Field(None, description="Filter by location ID")
     on_display: Optional[bool] = Field(None, description="Filter by on-display status")
     creator_name: Optional[str] = Field(None, description="Filter by creator name")
@@ -93,6 +96,13 @@ class CollectionsSearchRequest(BaseModel):
 
     # Options
     highlight: bool = Field(True, description="Include search highlights")
+    include_deaccessioned: bool = Field(
+        False,
+        description=(
+            "Include deaccessioned objects even when the organization hides them "
+            "from search (Organization.hide_deaccessioned_in_search)"
+        ),
+    )
 
     # Vocabulary expansion options
     expand_vocabulary_terms: bool = Field(

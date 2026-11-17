@@ -93,9 +93,12 @@ export function UserRoleCard({ user, isDragging, isOverlay, dataTour }: UserRole
       <div
         {...(!isOverlay ? attributes : {})}
         {...(!isOverlay ? listeners : {})}
-        className="cursor-grab active:cursor-grabbing text-archive hover:text-accessible-gray"
+        // dnd-kit makes this a keyboard-operable button (Space to pick up,
+        // arrow keys to move between role columns, Space to drop).
+        aria-label={!isOverlay ? `Move ${user.name || user.email} to another role` : undefined}
+        className="cursor-grab active:cursor-grabbing text-archive hover:text-accessible-gray rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
       >
-        <GripVertical size={16} />
+        <GripVertical size={16} aria-hidden="true" />
       </div>
 
       {/* Avatar */}

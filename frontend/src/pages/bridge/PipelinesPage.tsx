@@ -247,8 +247,8 @@ export default function PipelinesPage() {
             <div className="space-y-4">
               {/* Organization is auto-set from context - show read-only */}
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Organization</label>
-                <div className="w-full border border-lichen bg-stone rounded-md px-3 py-2 text-archive">
+                <span id="pipeline-organization-label" className="block text-sm font-medium text-ink mb-1">Organization</span>
+                <div aria-labelledby="pipeline-organization-label" role="group" className="w-full border border-lichen bg-stone rounded-md px-3 py-2 text-archive">
                   {organizationId ? `Current organization` : 'No organization selected'}
                 </div>
               </div>

@@ -62,7 +62,7 @@ def upload_report_export(
         report_id: Report UUID
         run_id: Report run UUID
         content: Export file content (bytes)
-        export_format: File format ('pdf', 'excel', 'csv')
+        export_format: A key of report_export.FORMAT_INFO
         report_name: Optional report name for filename
         region: AWS region
 
@@ -77,12 +77,10 @@ def upload_report_export(
     rn_id = str(run_id)
 
     # Determine extension and content type
-    format_info = {
-        'pdf': ('pdf', 'application/pdf'),
-        'excel': ('xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
-        'csv': ('csv', 'text/csv'),
-    }
-    extension, content_type = format_info.get(export_format, ('pdf', 'application/pdf'))
+    from app.services.report_export import FORMAT_INFO
+    if export_format not in FORMAT_INFO:
+        raise ValueError(f"Unsupported export format: {export_format}")
+    extension, content_type = FORMAT_INFO[export_format]
 
     # Generate timestamp for unique filename
     timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')

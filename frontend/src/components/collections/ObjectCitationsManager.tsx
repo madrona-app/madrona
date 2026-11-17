@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Checkbox from '../Checkbox';
 import {
@@ -23,6 +23,7 @@ import {
 } from '../../lib/api';
 import type { ObjectCitationLink, Citation } from '../../lib/schemas';
 import SlideOver from '../ui/SlideOver';
+import { useFocusFirstFieldOnViewChange } from './useFocusFirstFieldOnViewChange';
 import ConfirmDialog from '../ConfirmDialog';
 
 interface ObjectCitationsManagerProps {
@@ -262,18 +263,20 @@ function CitationLinkCard({
       <div className="flex items-center gap-2">
         <button
           onClick={onView}
-          className="text-bark hover:text-copper-dark p-1"
+          className="text-bark hover:text-copper-dark p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 rounded"
           title="View citation"
+          aria-label={`View citation ${citation.brief_citation}`}
         >
-          <ExternalLink size={14} />
+          <ExternalLink size={14} aria-hidden="true" />
         </button>
         {!readOnly && (
           <button
             onClick={onUnlink}
-            className="text-semantic-error hover:text-semantic-error/80 p-1"
+            className="text-semantic-error hover:text-semantic-error/80 p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 rounded"
             title="Unlink citation"
+            aria-label={`Unlink citation ${citation.brief_citation}`}
           >
-            <X size={14} />
+            <X size={14} aria-hidden="true" />
           </button>
         )}
       </div>
@@ -301,7 +304,10 @@ function LinkCitationSlideOver({
   onClose,
   onSuccess,
 }: LinkCitationSlideOverProps) {
+  const fid = useId();
   const [mode, setMode] = useState<SlideOverMode>('search');
+  const contentRef = useRef<HTMLDivElement>(null);
+  useFocusFirstFieldOnViewChange(contentRef, mode);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCitation, setSelectedCitation] = useState<Citation | null>(null);
 
@@ -479,9 +485,9 @@ function LinkCitationSlideOver({
         </div>
       }
     >
-      <div className="space-y-5">
+      <div className="space-y-5" ref={contentRef}>
         {error && (
-          <div className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-lg text-sm text-semantic-error">
+          <div role="alert" className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-lg text-sm text-semantic-error">
             {error}
           </div>
         )}
@@ -490,14 +496,14 @@ function LinkCitationSlideOver({
           <>
             {/* Search */}
             <div className="relative">
-              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-archive" />
+              <Search size={18} aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-archive" />
               <input
-                type="text"
+                type="search"
+                aria-label="Search citations"
                 placeholder="Search citations..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
-                autoFocus
               />
             </div>
 
@@ -581,8 +587,9 @@ function LinkCitationSlideOver({
             {/* Link details */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">Page(s)</label>
+                <label htmlFor={`${fid}-page-s`} className="block text-sm font-medium text-ink mb-1.5">Page(s)</label>
                 <input
+                  id={`${fid}-page-s`}
                   type="text"
                   value={pageReference}
                   onChange={(e) => setPageReference(e.target.value)}
@@ -591,8 +598,9 @@ function LinkCitationSlideOver({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">Figure</label>
+                <label htmlFor={`${fid}-figure`} className="block text-sm font-medium text-ink mb-1.5">Figure</label>
                 <input
+                  id={`${fid}-figure`}
                   type="text"
                   value={figureReference}
                   onChange={(e) => setFigureReference(e.target.value)}
@@ -603,15 +611,17 @@ function LinkCitationSlideOver({
             </div>
 
             <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label htmlFor={`${fid}-works-cited`} className="flex items-center gap-2 cursor-pointer">
                 <Checkbox
+                  id={`${fid}-works-cited`}
                   checked={worksCited}
                   onChange={(e) => setWorksCited(e.target.checked)}
                 />
                 <span className="text-sm text-ink">Works Cited</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label htmlFor={`${fid}-works-illustrated`} className="flex items-center gap-2 cursor-pointer">
                 <Checkbox
+                  id={`${fid}-works-illustrated`}
                   checked={worksIllustrated}
                   onChange={(e) => setWorksIllustrated(e.target.checked)}
                 />
@@ -620,8 +630,9 @@ function LinkCitationSlideOver({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">Note</label>
+              <label htmlFor={`${fid}-note`} className="block text-sm font-medium text-ink mb-1.5">Note</label>
               <textarea
+                id={`${fid}-note`}
                 value={linkNote}
                 onChange={(e) => setLinkNote(e.target.value)}
                 placeholder="Additional notes..."
@@ -645,10 +656,11 @@ function LinkCitationSlideOver({
 
             {/* Citation Type */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+              <label htmlFor={`${fid}-citation-type`} className="block text-sm font-medium text-ink mb-1.5">
                 Citation Type <span className="text-semantic-error">*</span>
               </label>
               <select
+                id={`${fid}-citation-type`}
                 value={citationType}
                 onChange={(e) => setCitationType(e.target.value)}
                 className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -663,10 +675,11 @@ function LinkCitationSlideOver({
 
             {/* Brief Citation */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+              <label htmlFor={`${fid}-brief-citation`} className="block text-sm font-medium text-ink mb-1.5">
                 Brief Citation <span className="text-semantic-error">*</span>
               </label>
               <input
+                id={`${fid}-brief-citation`}
                 type="text"
                 value={briefCitation}
                 onChange={(e) => setBriefCitation(e.target.value)}
@@ -677,10 +690,11 @@ function LinkCitationSlideOver({
 
             {/* Author */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+              <label htmlFor={`${fid}-author`} className="block text-sm font-medium text-ink mb-1.5">
                 Author
               </label>
               <input
+                id={`${fid}-author`}
                 type="text"
                 value={author}
                 onChange={(e) => setAuthor(e.target.value)}
@@ -691,10 +705,11 @@ function LinkCitationSlideOver({
 
             {/* Publication Year */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+              <label htmlFor={`${fid}-publication-year`} className="block text-sm font-medium text-ink mb-1.5">
                 Publication Year
               </label>
               <input
+                id={`${fid}-publication-year`}
                 type="text"
                 value={publicationYear}
                 onChange={(e) => setPublicationYear(e.target.value)}
@@ -705,10 +720,11 @@ function LinkCitationSlideOver({
 
             {/* Page Reference for the link */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+              <label htmlFor={`${fid}-page-reference-for-this-object`} className="block text-sm font-medium text-ink mb-1.5">
                 Page Reference (for this object)
               </label>
               <input
+                id={`${fid}-page-reference-for-this-object`}
                 type="text"
                 value={pageReference}
                 onChange={(e) => setPageReference(e.target.value)}
@@ -741,6 +757,7 @@ function CitationDetailSlideOver({
   onClose: () => void;
   onUpdated: () => void;
 }) {
+  const fid = useId();
   const { data: citation, isLoading } = useQuery({
     queryKey: ['citation', organizationId, citationId],
     queryFn: () => getCitation(organizationId, citationId),
@@ -843,8 +860,9 @@ function CitationDetailSlideOver({
       ) : (
         <div className="space-y-5">
           <div>
-            <label className="text-sm font-medium text-ink block mb-1.5">Type</label>
+            <label htmlFor={`${fid}-type`} className="text-sm font-medium text-ink block mb-1.5">Type</label>
             <select
+              id={`${fid}-type`}
               value={formData.citation_type || 'book'}
               onChange={(e) => updateField('citation_type', e.target.value)}
               className={inputClass}

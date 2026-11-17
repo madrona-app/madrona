@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useId } from 'react';
 import Checkbox from '../Checkbox';
 import {
   Plus,
@@ -10,8 +10,6 @@ import {
   Calendar,
   Link2,
   Loader2,
-  ChevronDown,
-  MoreVertical,
   Trash2,
   Edit3,
   Upload,
@@ -25,6 +23,9 @@ import ConfirmDialog from '../ConfirmDialog';
 import { logger } from '../../lib/logger';
 import { MadronaLoader } from '../ui/MadronaLoader';
 import { ModalPortal } from '../ModalPortal';
+import { RecordHistoryButton } from '../audit/RecordHistoryButton';
+import { StatusDropdown } from './ExhibitionChecklistTab/StatusDropdown';
+import { RowActionMenu } from './RowActionMenu';
 
 // === Types ===
 type InfoRequestType =
@@ -129,60 +130,6 @@ const SOURCE_PARTIES = [
 
 // === Sub-components ===
 
-interface StatusDropdownProps {
-  currentStatus: InfoRequestStatus;
-  onStatusChange: (status: InfoRequestStatus) => void;
-  disabled?: boolean;
-}
-
-function StatusDropdown({ currentStatus, onStatusChange, disabled }: StatusDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const config = STATUS_CONFIG[currentStatus];
-  const StatusIcon = config.icon;
-
-  return (
-    <div className="relative">
-      <button
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-        disabled={disabled}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-sm font-medium rounded-full ${config.bgColor} ${config.color} ${
-          disabled ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80 cursor-pointer'
-        }`}
-      >
-        <StatusIcon className="w-3.5 h-3.5" />
-        {config.label}
-        {!disabled && <ChevronDown className="w-3 h-3 ml-0.5" />}
-      </button>
-      {isOpen && (
-        <>
-          <div role="presentation" className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute z-20 mt-1 w-40 bg-parchment border border-lichen rounded-lg shadow-lg py-1">
-            {Object.entries(STATUS_CONFIG).map(([status, cfg]) => {
-              const Icon = cfg.icon;
-              return (
-                <button
-                  key={status}
-                  onClick={() => {
-                    onStatusChange(status as InfoRequestStatus);
-                    setIsOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-stone ${
-                    status === currentStatus ? 'bg-stone/50' : ''
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 ${cfg.color}`} />
-                  {cfg.label}
-                </button>
-              );
-            })}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 interface InfoRequestRowProps {
   request: InfoRequest;
   onStatusChange: (requestId: string, status: InfoRequestStatus) => void;
@@ -192,17 +139,18 @@ interface InfoRequestRowProps {
 }
 
 function InfoRequestRow({ request, onStatusChange, onEdit, onDelete, canEdit }: InfoRequestRowProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
   const isOverdue = request.due_date && new Date(request.due_date) < new Date() && request.status === 'requested';
   const TypeIcon = REQUEST_TYPE_CONFIG[request.request_type]?.icon || FileText;
 
   return (
     <tr className="border-b border-lichen/50 hover:bg-stone/30">
       <td className="px-4 py-3">
-        <StatusDropdown
+        <StatusDropdown<InfoRequestStatus>
           currentStatus={request.status}
           onStatusChange={(status) => onStatusChange(request.request_id, status)}
+          config={STATUS_CONFIG}
           disabled={!canEdit}
+          label={request.title}
         />
       </td>
       <td className="px-4 py-3">
@@ -247,41 +195,19 @@ function InfoRequestRow({ request, onStatusChange, onEdit, onDelete, canEdit }: 
       </td>
       <td className="px-4 py-3">
         {canEdit && (
-          <div className="relative">
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="p-1 text-archive hover:text-ink rounded"
-            >
-              <MoreVertical className="w-5 h-5" />
-            </button>
-            {menuOpen && (
-              <>
-                <div role="presentation" className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                <div className="absolute right-0 top-full mt-1 w-36 bg-parchment border border-lichen rounded-lg shadow-lg py-1 z-20">
-                  <button
-                    onClick={() => {
-                      onEdit(request);
-                      setMenuOpen(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-stone"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => {
-                      onDelete(request);
-                      setMenuOpen(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-semantic-error hover:bg-semantic-error/10"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          <RowActionMenu
+            label={`Actions for ${request.title}`}
+            widthClassName="w-36 py-1"
+            items={[
+              { label: 'Edit', icon: <Edit3 className="w-4 h-4" aria-hidden="true" />, onSelect: () => onEdit(request) },
+              {
+                label: 'Delete',
+                icon: <Trash2 className="w-4 h-4" aria-hidden="true" />,
+                onSelect: () => onDelete(request),
+                destructive: true,
+              },
+            ]}
+          />
         )}
       </td>
     </tr>
@@ -363,6 +289,7 @@ interface RequestEditorSlideOverProps {
 }
 
 function RequestEditorSlideOver({ isOpen, onClose, request, onSave, isNew }: RequestEditorSlideOverProps) {
+  const fieldId = useId();
   const [formData, setFormData] = useState<Partial<InfoRequest>>({});
   const [saving, setSaving] = useState(false);
 
@@ -413,10 +340,10 @@ function RequestEditorSlideOver({ isOpen, onClose, request, onSave, isNew }: Req
     >
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-type`} className="block text-sm font-medium text-ink mb-1">
             Type <span className="text-semantic-error">*</span>
           </label>
-          <select
+          <select id={`${fieldId}-type`}
             value={formData.request_type || 'other'}
             onChange={(e) => setFormData({ ...formData, request_type: e.target.value as InfoRequestType })}
             className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -430,10 +357,10 @@ function RequestEditorSlideOver({ isOpen, onClose, request, onSave, isNew }: Req
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-title`} className="block text-sm font-medium text-ink mb-1">
             Title <span className="text-semantic-error">*</span>
           </label>
-          <input
+          <input id={`${fieldId}-title`}
             type="text"
             value={formData.title || ''}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -443,8 +370,8 @@ function RequestEditorSlideOver({ isOpen, onClose, request, onSave, isNew }: Req
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">Description</label>
-          <textarea
+          <label htmlFor={`${fieldId}-description`} className="block text-sm font-medium text-ink mb-1">Description</label>
+          <textarea id={`${fieldId}-description`}
             value={formData.description || ''}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             rows={2}
@@ -455,8 +382,8 @@ function RequestEditorSlideOver({ isOpen, onClose, request, onSave, isNew }: Req
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">Source Party</label>
-            <select
+            <label htmlFor={`${fieldId}-source-party`} className="block text-sm font-medium text-ink mb-1">Source Party</label>
+            <select id={`${fieldId}-source-party`}
               value={formData.source_party || ''}
               onChange={(e) => setFormData({ ...formData, source_party: e.target.value })}
               className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -471,8 +398,8 @@ function RequestEditorSlideOver({ isOpen, onClose, request, onSave, isNew }: Req
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-ink mb-1">Due Date</label>
-            <input
+            <label htmlFor={`${fieldId}-due-date`} className="block text-sm font-medium text-ink mb-1">Due Date</label>
+            <input id={`${fieldId}-due-date`}
               type="date"
               value={formData.due_date || ''}
               onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
@@ -482,8 +409,8 @@ function RequestEditorSlideOver({ isOpen, onClose, request, onSave, isNew }: Req
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">Notes</label>
-          <textarea
+          <label htmlFor={`${fieldId}-notes`} className="block text-sm font-medium text-ink mb-1">Notes</label>
+          <textarea id={`${fieldId}-notes`}
             value={formData.notes || ''}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             rows={3}
@@ -492,8 +419,8 @@ function RequestEditorSlideOver({ isOpen, onClose, request, onSave, isNew }: Req
           />
         </div>
 
-        <label className="flex items-center gap-2 cursor-pointer">
-          <Checkbox
+        <label htmlFor={`${fieldId}-required-item`} className="flex items-center gap-2 cursor-pointer">
+          <Checkbox id={`${fieldId}-required-item`}
             checked={formData.is_required !== false}
             onChange={(e) => setFormData({ ...formData, is_required: e.target.checked })}
           />
@@ -565,20 +492,29 @@ function GenerateFromTemplateModal({ isOpen, onClose, onGenerate, organizationId
             ) : templates.length > 0 ? (
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {templates.map((template) => (
-                  <button
-                    key={template.template_id}
-                    onClick={() => handleGenerate(template.template_id)}
-                    disabled={generating}
-                    className="w-full text-left p-4 border border-lichen rounded-lg hover:bg-stone/30 transition-colors disabled:opacity-50"
-                  >
-                    <div className="font-medium text-ink">{template.name}</div>
-                    {template.description && (
-                      <div className="text-sm text-archive mt-1">{template.description}</div>
-                    )}
-                    <div className="text-xs text-archive mt-2">
-                      {template.item_count} items
-                    </div>
-                  </button>
+                  <div key={template.template_id} className="flex items-stretch gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleGenerate(template.template_id)}
+                      disabled={generating}
+                      className="flex-1 min-w-0 text-left p-4 border border-lichen rounded-lg hover:bg-stone/30 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+                    >
+                      <div className="font-medium text-ink">{template.name}</div>
+                      {template.description && (
+                        <div className="text-sm text-archive mt-1">{template.description}</div>
+                      )}
+                      <div className="text-xs text-archive mt-2">
+                        {template.item_count} items
+                      </div>
+                    </button>
+                    <RecordHistoryButton
+                      organizationId={organizationId}
+                      entityType="info_request_template"
+                      entityId={template.template_id}
+                      recordName={template.name}
+                      className="self-center"
+                    />
+                  </div>
                 ))}
               </div>
             ) : (

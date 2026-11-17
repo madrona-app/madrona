@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Tag } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getOtherNumberTypes } from '../../../lib/api';
@@ -199,6 +200,7 @@ function OtherNumbersField({
   onAdd: () => void;
   onSave: () => void;
 }) {
+  const uid = useId();
   const { data: typesData } = useQuery({
     queryKey: ['other-number-types', organizationId],
     queryFn: () => getOtherNumberTypes(organizationId),
@@ -229,11 +231,11 @@ function OtherNumbersField({
   }
 
   return (
-    <div>
+    <div role="group" aria-labelledby={`${uid}-other-numbers`}>
       <div className="flex items-center justify-between mb-2">
-        <label className="text-sm font-medium text-ink">Other Numbers</label>
+        <span id={`${uid}-other-numbers`} className="text-sm font-medium text-ink">Other Numbers</span>
         <button type="button" onClick={onAdd} className="text-sm text-bark hover:text-copper-dark flex items-center gap-1">
-          <Plus size={14} />
+          <Plus size={14} aria-hidden="true" />
           Add number
         </button>
       </div>
@@ -248,6 +250,7 @@ function OtherNumbersField({
                 onChange(updated);
               }}
               onBlur={onSave}
+              aria-label={`Other number ${i + 1} type`}
               className="input w-48"
             >
               <option value="">Select type...</option>
@@ -267,6 +270,7 @@ function OtherNumbersField({
               }}
               onBlur={onSave}
               placeholder="Number"
+              aria-label={`Other number ${i + 1} value`}
               className="input flex-1"
             />
             <button
@@ -276,8 +280,9 @@ function OtherNumbersField({
                 onSave();
               }}
               className="p-1 text-archive hover:text-semantic-error"
+              aria-label={`Remove other number ${i + 1}${n.value ? ` (${n.value})` : ''}`}
             >
-              <X size={16} />
+              <X size={16} aria-hidden="true" />
             </button>
           </div>
         ))}

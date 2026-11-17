@@ -1,8 +1,8 @@
 """Typed payload for an `acquisition` draft (Acquisition, Procedure 1).
 
 The proposable subset of the live Acquisition create shape
-(`app/models/objects.py::Acquisition`). `acquisition_method` is a `Literal`
-mirroring the live CHECK. `extra='forbid'` rejects anything else.
+(`app/models/objects.py::Acquisition`). `acquisition_method` is a lookup key
+checked against the organization's lookup values. `extra='forbid'` rejects anything else.
 
 Acquisition is approval-gated: when an org has an acquisition/create approval
 rule, the *draft* carries that approval (a human approves the draft), so the
@@ -11,15 +11,16 @@ applier creates the live row already approved — it does not open a second gate
 
 from datetime import date
 from decimal import Decimal
-from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-AcquisitionMethod = Literal[
-    "gift", "purchase", "bequest", "transfer", "exchange", "field_collection",
-    "commission", "found_in_collection", "conversion", "donation", "unknown",
-]
+from app.schemas.drafts.base import LookupKey
+
+# Lookup-backed (organizations add values): checked against the org's
+# active lookup values when the draft is proposed or edited
+# (app/services/lookup_fields.check_draft_lookup_values), not a fixed list.
+AcquisitionMethod = LookupKey
 
 
 class AcquisitionDraftPayload(BaseModel):

@@ -174,9 +174,10 @@ export function LayoutCustomizerSlideOver({ isOpen, onClose, surfaceKey, groups 
       <div className="flex flex-col gap-6">
         {/* Variant switcher */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">Layout</label>
+          <label htmlFor="layout-customizer-variant" className="block text-sm font-medium text-ink mb-1">Layout</label>
           <div className="flex items-center gap-2">
             <select
+              id="layout-customizer-variant"
               value={selected}
               onChange={(e) => selectVariant(e.target.value)}
               className="flex-1 rounded-md border border-lichen bg-parchment px-3 py-2 text-sm text-ink"
@@ -197,7 +198,7 @@ export function LayoutCustomizerSlideOver({ isOpen, onClose, surfaceKey, groups 
                 aria-label="Delete layout"
                 className="text-archive hover:text-semantic-error p-2"
               >
-                <Trash2 size={16} />
+                <Trash2 size={16} aria-hidden="true" />
               </button>
             )}
           </div>
@@ -205,8 +206,9 @@ export function LayoutCustomizerSlideOver({ isOpen, onClose, surfaceKey, groups 
 
         {/* AI box */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">Describe your layout</label>
+          <label htmlFor="layout-customizer-instruction" className="block text-sm font-medium text-ink mb-1">Describe your layout</label>
           <textarea
+            id="layout-customizer-instruction"
             value={instruction}
             onChange={(e) => setInstruction(e.target.value)}
             rows={2}
@@ -219,7 +221,7 @@ export function LayoutCustomizerSlideOver({ isOpen, onClose, surfaceKey, groups 
             disabled={busy || !instruction.trim()}
             className="btn-secondary mt-2 px-3 py-1.5 text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Sparkles size={15} />
+            <Sparkles size={15} aria-hidden="true" />
             {suggest.isPending ? 'Generating…' : 'Generate'}
           </button>
         </div>
@@ -241,12 +243,14 @@ export function LayoutCustomizerSlideOver({ isOpen, onClose, surfaceKey, groups 
                       type="button"
                       onClick={() => !required && toggle(s.id)}
                       disabled={required}
+                      aria-pressed={!isHidden || required}
+                      aria-label={`Show ${s.label}${required ? ' (required)' : ''}`}
                       className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-ink hover:bg-stone disabled:cursor-not-allowed text-left"
                     >
                       {isHidden && !required ? (
-                        <EyeOff size={15} className="text-archive" />
+                        <EyeOff size={15} className="text-archive" aria-hidden="true" />
                       ) : (
-                        <Eye size={15} className="text-forest" />
+                        <Eye size={15} className="text-forest" aria-hidden="true" />
                       )}
                       <span className={isHidden && !required ? 'text-archive line-through' : ''}>
                         {s.label}
@@ -262,8 +266,9 @@ export function LayoutCustomizerSlideOver({ isOpen, onClose, surfaceKey, groups 
 
         {/* Name */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">Name</label>
+          <label htmlFor="layout-customizer-name" className="block text-sm font-medium text-ink mb-1">Name</label>
           <input
+            id="layout-customizer-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Cataloging view"
@@ -271,7 +276,7 @@ export function LayoutCustomizerSlideOver({ isOpen, onClose, surfaceKey, groups 
           />
         </div>
 
-        {error && <p className="text-sm text-semantic-error">{error}</p>}
+        {error && <p role="alert" className="text-sm text-semantic-error">{error}</p>}
       </div>
     </SlideOver>
   );

@@ -44,6 +44,7 @@ export function LogisticsSection({
       >
         <div className="grid grid-cols-2 gap-6">
           <EditableField
+            name="insurance_value"
             value={formData.insurance_value}
             label="Insurance Value"
             isEditing={isEditing}
@@ -53,6 +54,7 @@ export function LogisticsSection({
             restricted={isRestricted('insurance_value')}
           />
           <EditableSelect
+            name="insurance_currency"
             value={formData.insurance_currency}
             label="Currency"
             isEditing={isEditing}
@@ -60,6 +62,7 @@ export function LogisticsSection({
             options={currencyOptions}
           />
           <EditableField
+            name="insurance_policy"
             value={formData.insurance_policy}
             label="Policy Number"
             isEditing={isEditing}
@@ -67,6 +70,7 @@ export function LogisticsSection({
             placeholder="Policy number"
           />
           <EditableField
+            name="insurance_provider"
             value={formData.insurance_provider}
             label="Insurance Provider"
             isEditing={isEditing}
@@ -87,6 +91,7 @@ export function LogisticsSection({
           {(formData.indemnity || !isEditing) && formData.indemnity && (
               <div className="mt-4">
                 <EditableField
+                  name="indemnity_reference"
                   value={formData.indemnity_reference}
                   label="Indemnity Reference"
                   isEditing={isEditing}
@@ -127,6 +132,7 @@ export function LogisticsSection({
           <div className="grid grid-cols-2 gap-6">
             {(formData.facility_report_sent || !isEditing) && (
               <EditableField
+                name="facility_report_date"
                 value={formData.facility_report_date}
                 label="Date Sent"
                 isEditing={isEditing}
@@ -136,6 +142,7 @@ export function LogisticsSection({
             )}
             {(formData.facility_report_approved || !isEditing) && formData.facility_report_approved && (
               <EditableField
+                name="facility_report_approved_date"
                 value={formData.facility_report_approved_date}
                 label="Date Approved"
                 isEditing={isEditing}
@@ -145,6 +152,7 @@ export function LogisticsSection({
             )}
           </div>
           <EditableField
+            name="facility_report_note"
             value={formData.facility_report_note}
             label="Facility Report Notes"
             isEditing={isEditing}

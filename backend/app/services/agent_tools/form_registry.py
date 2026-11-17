@@ -29,6 +29,11 @@ class FieldMeta:
     required: bool = False
     enum_values: list[str] | None = None
     lookup_category: str | None = None  # e.g. 'location', 'user', 'constituent'
+    # Lookup category whose active values (global + the org's own) are this
+    # enum's options, for organization-extendable vocabularies
+    # (app/services/lookup_fields.py OPEN columns). enum_values stays None
+    # for these: a hard-coded list would refuse values the org added.
+    lookup_values: str | None = None
 
 
 @dataclass(frozen=True)
@@ -123,10 +128,7 @@ _OBJECT_ENTRY = FormDefinition(
         FieldMeta("entry_number", "Entry number", "entry", "text", required=True),
         FieldMeta("entry_date", "Entry date", "entry", "date", required=True),
         FieldMeta("department_id", "Department", "entry", "contact", lookup_category="department"),
-        FieldMeta("entry_reason", "Entry reason", "entry", "enum", required=True,
-                  enum_values=["loan_consideration", "gift_offer", "purchase_consideration",
-                               "identification", "conservation", "photography", "research",
-                               "enquiry", "other"]),
+        FieldMeta("entry_reason", "Entry reason", "entry", "enum", required=True, lookup_values="entry_reason"),
         FieldMeta("entry_method", "Entry method", "entry", "text"),
         # Depositor
         FieldMeta("depositor_id", "Depositor", "depositor", "contact", required=True,
@@ -200,10 +202,7 @@ _ACQUISITION = FormDefinition(
         # Identification
         FieldMeta("acquisition_number", "Acquisition number", "identification", "text", required=True),
         FieldMeta("department_id", "Department", "identification", "contact", lookup_category="department"),
-        FieldMeta("acquisition_method", "Acquisition method", "identification", "enum", required=True,
-                  enum_values=["gift", "purchase", "bequest", "transfer", "exchange",
-                               "field_collection", "commission", "found_in_collection",
-                               "conversion", "donation", "unknown"]),
+        FieldMeta("acquisition_method", "Acquisition method", "identification", "enum", required=True, lookup_values="acquisition_method"),
         FieldMeta("acquisition_date", "Acquisition date", "identification", "date"),
         # Accessioning
         FieldMeta("accession_number", "Accession number", "accessioning", "text"),
@@ -215,7 +214,7 @@ _ACQUISITION = FormDefinition(
         # Source
         FieldMeta("source_id", "Source", "source", "contact", lookup_category="constituent"),
         FieldMeta("source_name", "Source name", "source", "text"),
-        FieldMeta("source_type", "Source type", "source", "text"),
+        FieldMeta("source_type", "Source type", "source", "enum", lookup_values="source_type"),
         # Authorization
         FieldMeta("authorization_date", "Authorization date", "authorization", "date"),
         FieldMeta("authorization_note", "Authorization note", "authorization", "text"),
@@ -236,7 +235,7 @@ _ACQUISITION = FormDefinition(
         FieldMeta("appraised_date", "Appraisal date", "appraisal", "date"),
         FieldMeta("appraiser_name", "Appraiser", "appraisal", "text"),
         # Legal
-        FieldMeta("legal_status", "Legal status", "legal", "text"),
+        FieldMeta("legal_status", "Legal status", "legal", "enum", lookup_values="legal_status"),
         FieldMeta("legal_note", "Legal note", "legal", "text"),
         # Provenance
         FieldMeta("provenance_verified", "Provenance verified", "provenance", "boolean"),
@@ -296,9 +295,7 @@ _LOAN_IN = FormDefinition(
         # Details
         FieldMeta("loan_number", "Loan number", "details", "text", required=True),
         FieldMeta("department_id", "Department", "details", "contact", lookup_category="department"),
-        FieldMeta("loan_purpose", "Loan purpose", "details", "enum", required=True,
-                  enum_values=["exhibition", "research", "conservation", "long_term",
-                               "photography", "education", "study", "other"]),
+        FieldMeta("loan_purpose", "Loan purpose", "details", "enum", required=True, lookup_values="loan_purpose"),
         FieldMeta("exhibition_name", "Exhibition name", "details", "text"),
         FieldMeta("exhibition_venue", "Exhibition venue", "details", "text"),
         FieldMeta("loan_conditions", "Loan conditions", "details", "text"),
@@ -393,9 +390,7 @@ _LOAN_OUT = FormDefinition(
         # Venue
         FieldMeta("venue_name", "Venue name", "venue", "text"),
         # Purpose
-        FieldMeta("loan_purpose", "Loan purpose", "purpose", "enum", required=True,
-                  enum_values=["exhibition", "research", "conservation", "education",
-                               "photography", "touring", "inter_museum", "other"]),
+        FieldMeta("loan_purpose", "Loan purpose", "purpose", "enum", required=True, lookup_values="loan_purpose"),
         FieldMeta("exhibition_title", "Exhibition title", "purpose", "text"),
         # Dates
         FieldMeta("request_date", "Request date", "dates", "date"),
@@ -470,10 +465,7 @@ _CONDITION_REPORT = FormDefinition(
         # Identification
         FieldMeta("report_number", "Report number", "identification", "text", required=True),
         FieldMeta("department_id", "Department", "identification", "contact", lookup_category="department"),
-        FieldMeta("report_type", "Report type", "identification", "enum", required=True,
-                  enum_values=["intake", "loan_out", "loan_in", "loan_return",
-                               "periodic", "conservation", "incident",
-                               "pre_treatment", "post_treatment"]),
+        FieldMeta("report_type", "Report type", "identification", "enum", required=True, lookup_values="report_type"),
         FieldMeta("report_date", "Report date", "identification", "date", required=True),
         # Examiner
         FieldMeta("examiner_name", "Examiner name", "examiner", "text"),
@@ -540,10 +532,7 @@ _CONSERVATION = FormDefinition(
         FieldMeta("conservator_institution", "Institution", "conservator", "text"),
         FieldMeta("is_external", "External conservator", "conservator", "boolean"),
         # Treatment type
-        FieldMeta("treatment_type", "Treatment type", "treatment-type", "enum", required=True,
-                  enum_values=["preventive", "remedial", "restoration", "analysis",
-                               "stabilization", "cleaning", "repair", "documentation",
-                               "mount_making", "rehousing", "pest_treatment", "other"]),
+        FieldMeta("treatment_type", "Treatment type", "treatment-type", "enum", required=True, lookup_values="treatment_type"),
         # Place
         FieldMeta("treatment_place", "Treatment place", "place", "text"),
         # Proposal
@@ -612,11 +601,7 @@ _OBJECT_EXIT = FormDefinition(
         FieldMeta("exit_number", "Exit number", "exit", "text", required=True),
         FieldMeta("department_id", "Department", "exit", "contact", lookup_category="department"),
         FieldMeta("exit_date", "Exit date", "exit", "date", required=True),
-        FieldMeta("exit_reason", "Exit reason", "exit", "enum", required=True,
-                  enum_values=["loan_return", "loan_out", "transfer", "disposal",
-                               "deaccession", "conservation", "photography",
-                               "enquiry_return", "repatriation", "destruction",
-                               "theft_loss", "other"]),
+        FieldMeta("exit_reason", "Exit reason", "exit", "enum", required=True, lookup_values="exit_reason"),
         # Recipient
         FieldMeta("recipient_id", "Recipient", "recipient", "contact",
                   lookup_category="constituent"),
@@ -760,7 +745,8 @@ _COLLECTION_OBJECT = FormDefinition(
         FieldMeta("edition_note", "Edition note", "edition", "text"),
         # Catalog level
         FieldMeta("catalog_level", "Catalog level", "catalog", "enum",
-                  enum_values=["item", "group", "collection", "series", "component", "volume"]),
+                  enum_values=["collection", "subcollection", "series", "subseries", "file", "box",
+                               "folder", "item", "group", "component", "volume"]),
         FieldMeta("orientation", "Orientation", "catalog", "enum",
                   enum_values=["portrait", "landscape", "square", "vertical",
                                "horizontal", "variable", "site_specific"]),
@@ -866,10 +852,7 @@ _DEACCESSION = FormDefinition(
         # Proposal
         FieldMeta("proposal_date", "Proposal date", "proposal", "date"),
         # Reason
-        FieldMeta("reason", "Reason", "reason", "enum", required=True,
-                  enum_values=["duplicate", "outside_scope", "deterioration", "damage",
-                               "repatriation", "theft_loss", "exchange", "ethical",
-                               "donor_request", "legal_requirement", "hazard", "other"]),
+        FieldMeta("reason", "Reason", "reason", "enum", required=True, lookup_values="deaccession_reason"),
         FieldMeta("reason_detail", "Reason detail", "reason", "text"),
         FieldMeta("justification", "Justification", "reason", "text"),
         # Disposal
@@ -964,10 +947,7 @@ _USE_REQUEST = FormDefinition(
         # Identification
         FieldMeta("request_number", "Request number", "identification", "text", required=True),
         FieldMeta("request_date", "Request date", "identification", "date", required=True),
-        FieldMeta("use_type", "Use type", "identification", "enum", required=True,
-                  enum_values=["research", "exhibition", "reproduction", "education",
-                               "publication", "broadcast", "commercial", "conservation",
-                               "loan", "digitization", "other"]),
+        FieldMeta("use_type", "Use type", "identification", "enum", required=True, lookup_values="use_type"),
         FieldMeta("use_purpose", "Use purpose", "identification", "text", required=True),
         FieldMeta("use_description", "Use description", "identification", "text"),
         # Requester
@@ -1042,9 +1022,7 @@ _VALUATION = FormDefinition(
     fields=[
         # Valuation details
         FieldMeta("object_id", "Object", "details", "text", lookup_category="collection_object"),
-        FieldMeta("valuation_type", "Valuation type", "details", "enum", required=True,
-                  enum_values=["insurance", "market", "replacement", "probate",
-                               "donation", "internal"]),
+        FieldMeta("valuation_type", "Valuation type", "details", "enum", required=True, lookup_values="valuation_type"),
         FieldMeta("valuation_amount", "Amount", "details", "currency", required=True),
         FieldMeta("valuation_currency", "Currency", "details", "text", required=True),
         FieldMeta("valuation_date", "Valuation date", "details", "date", required=True),
@@ -1054,9 +1032,7 @@ _VALUATION = FormDefinition(
         FieldMeta("valuator_name", "Valuator name", "source", "text"),
         FieldMeta("valuator_organization", "Organization", "source", "text"),
         FieldMeta("valuator_credentials", "Credentials", "source", "text"),
-        FieldMeta("valuation_method", "Method", "source", "enum",
-                  enum_values=["comparable_sales", "replacement_cost", "income_approach",
-                               "expert_opinion", "formula", "hybrid"]),
+        FieldMeta("valuation_method", "Method", "source", "enum", lookup_values="valuation_method"),
         # Documentation
         FieldMeta("documentation_reference", "Documentation reference", "documentation", "text"),
         FieldMeta("valuation_note", "Note", "documentation", "text"),
@@ -1091,9 +1067,7 @@ _INCIDENT_REPORT = FormDefinition(
         # Identification
         FieldMeta("report_number", "Report number", "identification", "text", required=True),
         FieldMeta("report_date", "Report date", "identification", "date", required=True),
-        FieldMeta("incident_type", "Incident type", "identification", "enum", required=True,
-                  enum_values=["damage", "loss", "theft", "vandalism", "environmental",
-                               "fire", "water", "pest", "other"]),
+        FieldMeta("incident_type", "Incident type", "identification", "enum", required=True, lookup_values="incident_type"),
         FieldMeta("incident_subtype", "Incident subtype", "identification", "text"),
         # Incident details
         FieldMeta("incident_date", "Incident date", "incident-details", "date"),
@@ -1120,8 +1094,7 @@ _INCIDENT_REPORT = FormDefinition(
         FieldMeta("insurance_claim_number", "Claim number", "insurance-claim", "text"),
         FieldMeta("insurance_claim_date", "Claim date", "insurance-claim", "date"),
         FieldMeta("insurance_adjuster", "Adjuster", "insurance-claim", "text"),
-        FieldMeta("insurance_claim_status", "Claim status", "insurance-claim", "enum",
-                  enum_values=["pending", "approved", "denied", "settled", "withdrawn"]),
+        FieldMeta("insurance_claim_status", "Claim status", "insurance-claim", "enum", lookup_values="claim_status"),
         FieldMeta("insurance_claim_amount", "Claim amount", "insurance-claim", "currency"),
         FieldMeta("insurance_settlement_amount", "Settlement amount", "insurance-claim", "currency"),
         FieldMeta("insurance_currency", "Currency", "insurance-claim", "text"),
@@ -1176,13 +1149,12 @@ _OBJECT_RIGHT = FormDefinition(
         FieldMeta("object_id", "Object", "object", "text", required=True,
                   lookup_category="collection_object"),
         # Right type
-        FieldMeta("right_type", "Right type", "type", "enum", required=True,
-                  enum_values=["copyright", "reproduction", "exhibition", "publication",
-                               "broadcast", "performance", "adaptation", "distribution",
-                               "moral_rights", "database_rights", "trademark", "other"]),
+        FieldMeta("right_type", "Right type", "type", "enum", required=True, lookup_values="right_type"),
         FieldMeta("right_subtype", "Right subtype", "type", "text"),
         # Rights holder
         FieldMeta("rights_holder_contact_id", "Rights holder", "holder", "contact",
+                  lookup_category="constituent"),
+        FieldMeta("rights_holder_agent_contact_id", "Agent for rights holder", "holder", "contact",
                   lookup_category="constituent"),
         # Dates
         FieldMeta("start_date", "Start date", "dates", "date"),
@@ -1255,9 +1227,7 @@ _REPRODUCTION_REQUEST = FormDefinition(
         FieldMeta("requester_email", "Email", "requester", "text"),
         FieldMeta("requester_phone", "Phone", "requester", "text"),
         # Reproduction details
-        FieldMeta("reproduction_type", "Reproduction type", "reproduction", "enum", required=True,
-                  enum_values=["photograph", "scan", "cast", "3d_print", "digital_copy",
-                               "film", "video", "other"]),
+        FieldMeta("reproduction_type", "Reproduction type", "reproduction", "enum", required=True, lookup_values="reproduction_type"),
         FieldMeta("reproduction_purpose", "Purpose", "reproduction", "text"),
         FieldMeta("intended_use", "Intended use", "reproduction", "text"),
         FieldMeta("quantity", "Quantity", "reproduction", "integer"),

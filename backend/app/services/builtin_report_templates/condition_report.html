@@ -84,13 +84,13 @@
     margin: 10pt 0 4pt 0;
   }
 
-  table.field-grid {
+  .field-grid {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 6pt;
   }
 
-  table.field-grid td.field {
+  .field-grid .field {
     width: 50%;
     padding: 0 8pt 6pt 0;
     vertical-align: top;
@@ -120,7 +120,7 @@
     white-space: pre-wrap;
   }
 
-  table.record-info {
+  .record-info {
     width: 100%;
     border-collapse: collapse;
     margin-top: 14pt;
@@ -129,7 +129,7 @@
     color: var(--archive);
   }
 
-  table.record-info td {
+  .record-info .row > div {
     padding: 4pt 0;
     width: 50%;
   }
@@ -137,6 +137,16 @@
   .keep-together {
     break-inside: avoid;
   }
+
+  /* Layout rows (divs, not tables, so tagged PDF has no false data tables) */
+  .field-grid > .row, .ident-layout > .row, .record-info > .row, .signature-block > .row {
+    display: flex;
+  }
+  .field-grid > .row > div, .record-info > .row > div, .signature-block > .row > div {
+    flex: 1 1 0;
+  }
+  .ident-layout .ident-fields { flex: 1 1 auto; }
+  .ident-layout .ident-image { flex: 0 0 2.5in; }
 </style>
 </head>
 <body>
@@ -158,109 +168,109 @@
 
 {# ── Report Details ── #}
 <h2 class="section-header">Report Details</h2>
-<table class="field-grid">
+<div class="field-grid">
   {% if report_number or report_type %}
-  <tr>
+  <div class="row">
     {% if report_number %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Report Number</div>
       <div class="field-value">{{ report_number }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if report_type %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Report Type</div>
       <div class="field-value">{{ report_type }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if report_date or status %}
-  <tr>
+  <div class="row">
     {% if report_date %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Report Date</div>
       <div class="field-value">{{ report_date }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if status %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Status</div>
       <div class="field-value">{{ status }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if examiner_name or examiner_institution %}
-  <tr>
+  <div class="row">
     {% if examiner_name %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Examiner</div>
       <div class="field-value">{{ examiner_name }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if examiner_institution %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Institution</div>
       <div class="field-value">{{ examiner_institution }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if examination_method or examination_place %}
-  <tr>
+  <div class="row">
     {% if examination_method %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Method</div>
       <div class="field-value">{{ examination_method }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if examination_place %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Place</div>
       <div class="field-value">{{ examination_place }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
-</table>
+</div>
 
 {# ── Assessment ── #}
 <h2 class="section-header">Assessment</h2>
-<table class="field-grid">
+<div class="field-grid">
   {% if overall_condition or conservation_needed %}
-  <tr>
+  <div class="row">
     {% if overall_condition %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Overall Condition</div>
       <div class="field-value">{{ overall_condition }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if conservation_needed %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Conservation Needed</div>
       <div class="field-value">{{ conservation_needed }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if conservation_priority or completed_date %}
-  <tr>
+  <div class="row">
     {% if conservation_priority %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Conservation Priority</div>
       <div class="field-value">{{ conservation_priority }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if completed_date %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Completed</div>
       <div class="field-value">{{ completed_date }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
-</table>
+</div>
 {% if condition_summary %}
 <div class="field-full">
   <div class="field-label">Condition Summary</div>
@@ -310,16 +320,16 @@
 {% endif %}
 
 {# ── Record Information ── #}
-<table class="record-info">
-  <tr>
+<div class="record-info">
+  <div class="row">
     {% if assigned_to_name %}
-    <td>Assigned To: {{ assigned_to_name }}</td>
+    <div>Assigned To: {{ assigned_to_name }}</div>
     {% endif %}
     {% if created_at %}
-    <td>Created: {{ created_at }}</td>
+    <div>Created: {{ created_at }}</div>
     {% endif %}
-  </tr>
-</table>
+  </div>
+</div>
 
 </body>
 </html>

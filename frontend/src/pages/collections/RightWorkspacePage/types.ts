@@ -13,6 +13,7 @@ export interface FormData {
   right_type: string;
   right_subtype: string;
   rights_holder_contact_id: string;
+  rights_holder_agent_contact_id: string;
   status: string;
   start_date: string;
   end_date: string;
@@ -45,6 +46,7 @@ export const defaultFormData: FormData = {
   right_type: 'copyright',
   right_subtype: '',
   rights_holder_contact_id: '',
+  rights_holder_agent_contact_id: '',
   status: 'unknown',
   start_date: '',
   end_date: '',

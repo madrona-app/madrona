@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useId } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Bell, Check, CheckCheck, MessageSquare, ExternalLink } from 'lucide-react';
@@ -63,6 +63,8 @@ export function NotificationBell() {
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelId = useId();
 
   // Refresh bell instantly when a WebSocket notification arrives
   useNotifications({
@@ -125,6 +127,7 @@ export function NotificationBell() {
     function handleEscape(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         setIsOpen(false);
+        buttonRef.current?.focus();
       }
     }
 
@@ -150,6 +153,8 @@ export function NotificationBell() {
     <div className="relative" ref={dropdownRef}>
       {/* Bell button */}
       <button
+        ref={buttonRef}
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           'relative p-2 rounded-lg transition-colors',
@@ -157,11 +162,11 @@ export function NotificationBell() {
         )}
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
         aria-expanded={isOpen}
-        aria-haspopup="true"
+        aria-controls={isOpen ? panelId : undefined}
       >
-        <Bell size={20} className="text-archive" />
+        <Bell size={20} className="text-archive" aria-hidden="true" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-parchment bg-semantic-error rounded-full">
+          <span aria-hidden="true" className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-parchment bg-semantic-error rounded-full">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
@@ -169,17 +174,23 @@ export function NotificationBell() {
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-parchment rounded-lg shadow-lg border border-lichen z-50">
+        <div
+          id={panelId}
+          role="region"
+          aria-labelledby={`${panelId}-heading`}
+          className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-parchment rounded-lg shadow-lg border border-lichen z-50"
+        >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-lichen">
-            <h3 className="font-medium text-ink">Notifications</h3>
+            <h2 id={`${panelId}-heading`} className="font-medium text-ink text-base">Notifications</h2>
             {unreadCount > 0 && (
               <button
+                type="button"
                 onClick={() => markAllReadMutation.mutate()}
                 disabled={markAllReadMutation.isPending}
                 className="text-xs text-bark hover:text-copper-dark flex items-center gap-1"
               >
-                <CheckCheck size={14} />
+                <CheckCheck size={14} aria-hidden="true" />
                 Mark all read
               </button>
             )}
@@ -193,7 +204,7 @@ export function NotificationBell() {
               </div>
             ) : notifications.length === 0 ? (
               <div className="p-8 text-center">
-                <Bell size={32} className="mx-auto text-lichen mb-2" />
+                <Bell size={32} className="mx-auto text-lichen mb-2" aria-hidden="true" />
                 <p className="text-sm text-archive">No notifications yet</p>
               </div>
             ) : (
@@ -222,7 +233,7 @@ export function NotificationBell() {
                                 : 'bg-stone/50 text-archive'
                             )}
                           >
-                            <MessageSquare size={14} />
+                            <MessageSquare size={14} aria-hidden="true" />
                           </div>
 
                           {/* Content */}
@@ -233,6 +244,7 @@ export function NotificationBell() {
                                 notification.is_read ? 'text-archive' : 'text-ink font-medium'
                               )}
                             >
+                              {!notification.is_read && <span className="sr-only">Unread: </span>}
                               {notification.title}
                             </p>
                             {notification.message && (
@@ -251,7 +263,8 @@ export function NotificationBell() {
                                   className="text-xs text-bark hover:text-copper-dark flex items-center gap-0.5"
                                 >
                                   View
-                                  <ExternalLink size={10} />
+                                  <span className="sr-only"> {notification.title}</span>
+                                  <ExternalLink size={10} aria-hidden="true" />
                                 </Link>
                               )}
                             </div>
@@ -260,11 +273,13 @@ export function NotificationBell() {
                           {/* Mark as read button */}
                           {!notification.is_read && (
                             <button
+                              type="button"
                               onClick={() => markReadMutation.mutate(notification.notification_id)}
                               className="p-1 text-archive hover:text-bark rounded transition-colors"
                               title="Mark as read"
+                              aria-label={`Mark ${notification.title} as read`}
                             >
-                              <Check size={14} />
+                              <Check size={14} aria-hidden="true" />
                             </button>
                           )}
                         </div>

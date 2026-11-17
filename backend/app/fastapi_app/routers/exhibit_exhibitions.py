@@ -186,6 +186,16 @@ def _get_collection_object_image_url(
 # =============================================================================
 
 
+
+def _uuid_or_none(value):
+    """A UUID column value from a request field ("" and None clear it)."""
+    if value in (None, ""):
+        return None
+    try:
+        return UUID(str(value))
+    except ValueError:
+        raise HTTPException(status_code=400, detail={"code": "bad_request", "message": f"Not a valid id: {value}"})
+
 @router.get("/api/organizations/{org_id}/exhibit/exhibitions", response_model=ExhibitionListResponse, summary="List exhibitions")
 def list_exhibitions(
     org_id: UUID,
@@ -258,7 +268,7 @@ async def create_exhibition(
             description=data.get("description"),
             exhibition_type=data.get("exhibition_type", "temporary"),
             status=data.get("status", "proposed"),
-            venue_id=data.get("venue_id"),
+            venue_id=_uuid_or_none(data.get("venue_id")),
             planned_start_date=data.get("planned_start_date"),
             planned_end_date=data.get("planned_end_date"),
             is_public=data.get("is_public", False),
@@ -456,7 +466,8 @@ async def update_exhibition(
 
         for field in allowed_fields:
             if field in data:
-                setattr(exhibition, field, data[field])
+                value = _uuid_or_none(data[field]) if field == "venue_id" else data[field]
+                setattr(exhibition, field, value)
 
         exhibition.updated_at = datetime.now(timezone.utc)
         db.commit()
@@ -1383,13 +1394,16 @@ def remove_floor_plan_from_exhibition(
         if not assoc:
             raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Floor plan in exhibition not found"})
 
-        # Also delete placements for this floor plan in this exhibition
-        db.query(Placement).filter(
+        # Also delete placements for this floor plan in this exhibition, row
+        # by row so the exhibition's history records each one removed.
+        for placement in db.query(Placement).filter(
             and_(
                 Placement.exhibition_id == exhibition_id,
                 Placement.floor_plan_id == floor_plan_id,
             )
-        ).delete()
+        ).all():
+            db.delete(placement)
+        db.flush()
 
         db.delete(assoc)
         db.commit()

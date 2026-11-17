@@ -12,7 +12,7 @@
  * 8. Analytics (Phase 8)
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useId } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -43,6 +43,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { MenuBuilder } from './components/MenuBuilder';
 import { MediaPickerModal } from '../../components/content/MediaPickerModal';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 
 // =============================================================================
 // Types for footer columns and integrations
@@ -290,6 +291,13 @@ function RedirectManager({ orgId }: { orgId: string }) {
                     </button>
                   </td>
                   <td className="px-3 py-2 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                    <RecordHistoryButton
+                      organizationId={orgId}
+                      entityType="redirect"
+                      entityId={r.redirect_id}
+                      recordName={r.source_path}
+                    />
                     <button
                       onClick={() => deleteMut.mutate(r.redirect_id)}
                       className="p-1 text-archive hover:text-semantic-error transition-colors"
@@ -297,6 +305,7 @@ function RedirectManager({ orgId }: { orgId: string }) {
                     >
                       <Trash2 size={14} />
                     </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -313,6 +322,7 @@ function RedirectManager({ orgId }: { orgId: string }) {
 // =============================================================================
 
 export default function ContentSiteSettingsPage() {
+  const fieldId = useId();
   const { orgId } = useParams<{ orgId: string }>();
   const { applications, memberships } = useAuth();
   const queryClient = useQueryClient();
@@ -907,11 +917,11 @@ export default function ContentSiteSettingsPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-medium text-ink mb-1">
+            <label htmlFor={`${fieldId}-primary-color`} className="block text-xs font-medium text-ink mb-1">
               Primary Color
             </label>
             <div className="flex items-center gap-2">
-              <input
+              <input id={`${fieldId}-primary-color`}
                 type="color"
                 value={primaryColor || 'rgb(var(--color-forest))'}
                 onChange={(e) => {
@@ -920,7 +930,7 @@ export default function ContentSiteSettingsPage() {
                 }}
                 className="w-8 h-8 border border-lichen rounded cursor-pointer"
               />
-              <input
+              <input aria-label="Primary Color hex value"
                 type="text"
                 value={primaryColor}
                 onChange={(e) => {
@@ -934,11 +944,11 @@ export default function ContentSiteSettingsPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-ink mb-1">
+            <label htmlFor={`${fieldId}-accent-color`} className="block text-xs font-medium text-ink mb-1">
               Accent Color
             </label>
             <div className="flex items-center gap-2">
-              <input
+              <input id={`${fieldId}-accent-color`}
                 type="color"
                 value={accentColor || 'rgb(var(--color-copper))'}
                 onChange={(e) => {
@@ -947,7 +957,7 @@ export default function ContentSiteSettingsPage() {
                 }}
                 className="w-8 h-8 border border-lichen rounded cursor-pointer"
               />
-              <input
+              <input aria-label="Accent Color hex value"
                 type="text"
                 value={accentColor}
                 onChange={(e) => {
@@ -961,10 +971,10 @@ export default function ContentSiteSettingsPage() {
           </div>
 
           <div className="sm:col-span-2">
-            <label className="block text-xs font-medium text-ink mb-1">
+            <label htmlFor={`${fieldId}-font-family`} className="block text-xs font-medium text-ink mb-1">
               Font Family
             </label>
-            <input
+            <input id={`${fieldId}-font-family`}
               type="text"
               value={fontFamily}
               onChange={(e) => {
@@ -1026,11 +1036,11 @@ export default function ContentSiteSettingsPage() {
         {/* Colors row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div>
-            <label className="block text-xs font-medium text-ink mb-1">
+            <label htmlFor={`${fieldId}-secondary-color`} className="block text-xs font-medium text-ink mb-1">
               Secondary Color
             </label>
             <div className="flex items-center gap-2">
-              <input
+              <input id={`${fieldId}-secondary-color`}
                 type="color"
                 value={secondaryColor || 'rgb(var(--color-archive))'}
                 onChange={(e) => {
@@ -1039,7 +1049,7 @@ export default function ContentSiteSettingsPage() {
                 }}
                 className="w-8 h-8 border border-lichen rounded cursor-pointer"
               />
-              <input
+              <input aria-label="Secondary Color hex value"
                 type="text"
                 value={secondaryColor}
                 onChange={(e) => {
@@ -1053,11 +1063,11 @@ export default function ContentSiteSettingsPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-ink mb-1">
+            <label htmlFor={`${fieldId}-background-color`} className="block text-xs font-medium text-ink mb-1">
               Background Color
             </label>
             <div className="flex items-center gap-2">
-              <input
+              <input id={`${fieldId}-background-color`}
                 type="color"
                 value={backgroundColor || 'rgb(var(--color-parchment))'}
                 onChange={(e) => {
@@ -1066,7 +1076,7 @@ export default function ContentSiteSettingsPage() {
                 }}
                 className="w-8 h-8 border border-lichen rounded cursor-pointer"
               />
-              <input
+              <input aria-label="Background Color hex value"
                 type="text"
                 value={backgroundColor}
                 onChange={(e) => {
@@ -1080,11 +1090,11 @@ export default function ContentSiteSettingsPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-ink mb-1">
+            <label htmlFor={`${fieldId}-text-color`} className="block text-xs font-medium text-ink mb-1">
               Text Color
             </label>
             <div className="flex items-center gap-2">
-              <input
+              <input id={`${fieldId}-text-color`}
                 type="color"
                 value={textColor || 'rgb(var(--color-ink))'}
                 onChange={(e) => {
@@ -1093,7 +1103,7 @@ export default function ContentSiteSettingsPage() {
                 }}
                 className="w-8 h-8 border border-lichen rounded cursor-pointer"
               />
-              <input
+              <input aria-label="Text Color hex value"
                 type="text"
                 value={textColor}
                 onChange={(e) => {
@@ -1110,10 +1120,10 @@ export default function ContentSiteSettingsPage() {
         {/* Typography */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
           <div>
-            <label className="block text-xs font-medium text-ink mb-1">
+            <label htmlFor={`${fieldId}-heading-font-family`} className="block text-xs font-medium text-ink mb-1">
               Heading Font Family
             </label>
-            <input
+            <input id={`${fieldId}-heading-font-family`}
               type="text"
               value={headingFontFamily}
               onChange={(e) => {
@@ -1126,10 +1136,10 @@ export default function ContentSiteSettingsPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-ink mb-1">
+            <label htmlFor={`${fieldId}-body-font-family`} className="block text-xs font-medium text-ink mb-1">
               Body Font Family
             </label>
-            <input
+            <input id={`${fieldId}-body-font-family`}
               type="text"
               value={bodyFontFamily}
               onChange={(e) => {
@@ -1145,10 +1155,10 @@ export default function ContentSiteSettingsPage() {
         {/* Style selectors */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
           <div>
-            <label className="block text-xs font-medium text-ink mb-1">
+            <label htmlFor={`${fieldId}-button-style`} className="block text-xs font-medium text-ink mb-1">
               Button Style
             </label>
-            <select
+            <select id={`${fieldId}-button-style`}
               value={buttonStyle}
               onChange={(e) => {
                 setButtonStyle(e.target.value);
@@ -1165,10 +1175,10 @@ export default function ContentSiteSettingsPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-ink mb-1">
+            <label htmlFor={`${fieldId}-header-style`} className="block text-xs font-medium text-ink mb-1">
               Header Style
             </label>
-            <select
+            <select id={`${fieldId}-header-style`}
               value={headerStyle}
               onChange={(e) => {
                 setHeaderStyle(e.target.value);
@@ -1187,10 +1197,10 @@ export default function ContentSiteSettingsPage() {
 
         {/* Google Fonts */}
         <div className="mb-6">
-          <label className="block text-xs font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-google-fonts`} className="block text-xs font-medium text-ink mb-1">
             Google Fonts
           </label>
-          <input
+          <input id={`${fieldId}-google-fonts`}
             type="text"
             value={googleFonts}
             onChange={(e) => {
@@ -1207,10 +1217,10 @@ export default function ContentSiteSettingsPage() {
 
         {/* Custom CSS */}
         <div>
-          <label className="block text-xs font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-custom-css`} className="block text-xs font-medium text-ink mb-1">
             Custom CSS
           </label>
-          <textarea
+          <textarea id={`${fieldId}-custom-css`}
             value={customCss}
             onChange={(e) => {
               setCustomCss(e.target.value);
@@ -1273,10 +1283,10 @@ export default function ContentSiteSettingsPage() {
 
         {/* Footer text */}
         <div className="mb-4">
-          <label className="block text-xs font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-footer-text`} className="block text-xs font-medium text-ink mb-1">
             Footer Text
           </label>
-          <input
+          <input id={`${fieldId}-footer-text`}
             type="text"
             value={footerText}
             onChange={(e) => {
@@ -1289,10 +1299,10 @@ export default function ContentSiteSettingsPage() {
         </div>
 
         {/* Social links */}
-        <div className="mb-6">
-          <label className="block text-xs font-medium text-ink mb-2">
+        <div role="group" aria-labelledby={`${fieldId}-social-links-group`} className="mb-6">
+          <span id={`${fieldId}-social-links-group`} className="block text-xs font-medium text-ink mb-2">
             Social Links
-          </label>
+          </span>
           {socialLinks.map((link, i) => (
             <div key={i} className="flex items-center gap-2 mb-2">
               <select
@@ -1375,10 +1385,10 @@ export default function ContentSiteSettingsPage() {
         </p>
 
         {/* Footer Logo */}
-        <div className="mb-6">
-          <label className="block text-xs font-medium text-ink mb-1">
+        <div role="group" aria-labelledby={`${fieldId}-footer-logo-group`} className="mb-6">
+          <span id={`${fieldId}-footer-logo-group`} className="block text-xs font-medium text-ink mb-1">
             Footer Logo
-          </label>
+          </span>
           {footerLogoMediaId ? (
             <div className="flex items-center gap-3">
               <div className="w-16 h-16 border border-lichen rounded-lg overflow-hidden bg-stone/30">
@@ -1418,10 +1428,10 @@ export default function ContentSiteSettingsPage() {
         </div>
 
         {/* Footer Columns */}
-        <div className="mb-6">
-          <label className="block text-xs font-medium text-ink mb-2">
+        <div role="group" aria-labelledby={`${fieldId}-footer-columns-group`} className="mb-6">
+          <span id={`${fieldId}-footer-columns-group`} className="block text-xs font-medium text-ink mb-2">
             Footer Columns
-          </label>
+          </span>
           <p className="text-xs text-archive mb-3">
             Add columns to your footer. Each column can contain links, text
             content, or opening hours.
@@ -1448,10 +1458,10 @@ export default function ContentSiteSettingsPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                   <div>
-                    <label className="block text-xs text-archive mb-1">
+                    <label htmlFor={`${fieldId}-heading-${i}`} className="block text-xs text-archive mb-1">
                       Heading
                     </label>
-                    <input
+                    <input id={`${fieldId}-heading-${i}`}
                       type="text"
                       value={col.heading}
                       onChange={(e) => updateFooterColumn(i, 'heading', e.target.value)}
@@ -1461,10 +1471,10 @@ export default function ContentSiteSettingsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs text-archive mb-1">
+                    <label htmlFor={`${fieldId}-type-${i}`} className="block text-xs text-archive mb-1">
                       Type
                     </label>
-                    <select
+                    <select id={`${fieldId}-type-${i}`}
                       value={col.type}
                       onChange={(e) => updateFooterColumn(i, 'type', e.target.value)}
                       className="w-full border border-lichen rounded-lg px-3 py-2 text-sm text-ink bg-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -1521,10 +1531,10 @@ export default function ContentSiteSettingsPage() {
 
         {/* Land Acknowledgment */}
         <div>
-          <label className="block text-xs font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-land-acknowledgment`} className="block text-xs font-medium text-ink mb-1">
             Land Acknowledgment
           </label>
-          <textarea
+          <textarea id={`${fieldId}-land-acknowledgment`}
             value={landAcknowledgment}
             onChange={(e) => {
               setLandAcknowledgment(e.target.value);
@@ -1581,10 +1591,10 @@ export default function ContentSiteSettingsPage() {
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-archive mb-1">
+                <label htmlFor={`${fieldId}-base-url`} className="block text-xs text-archive mb-1">
                   Base URL
                 </label>
-                <input
+                <input id={`${fieldId}-base-url`}
                   type="text"
                   value={integrations.ticketing.base_url ?? ''}
                   onChange={(e) => updateIntegration('ticketing', 'base_url', e.target.value)}
@@ -1593,10 +1603,10 @@ export default function ContentSiteSettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-archive mb-1">
+                <label htmlFor={`${fieldId}-button-text`} className="block text-xs text-archive mb-1">
                   Button Text
                 </label>
-                <input
+                <input id={`${fieldId}-button-text`}
                   type="text"
                   value={integrations.ticketing.button_text}
                   onChange={(e) => updateIntegration('ticketing', 'button_text', e.target.value)}
@@ -1614,10 +1624,10 @@ export default function ContentSiteSettingsPage() {
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-archive mb-1">
+                <label htmlFor={`${fieldId}-url`} className="block text-xs text-archive mb-1">
                   URL
                 </label>
-                <input
+                <input id={`${fieldId}-url`}
                   type="text"
                   value={integrations.membership.url ?? ''}
                   onChange={(e) => updateIntegration('membership', 'url', e.target.value)}
@@ -1626,10 +1636,10 @@ export default function ContentSiteSettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-archive mb-1">
+                <label htmlFor={`${fieldId}-button-text-2`} className="block text-xs text-archive mb-1">
                   Button Text
                 </label>
-                <input
+                <input id={`${fieldId}-button-text-2`}
                   type="text"
                   value={integrations.membership.button_text}
                   onChange={(e) => updateIntegration('membership', 'button_text', e.target.value)}
@@ -1647,10 +1657,10 @@ export default function ContentSiteSettingsPage() {
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-archive mb-1">
+                <label htmlFor={`${fieldId}-url-2`} className="block text-xs text-archive mb-1">
                   URL
                 </label>
-                <input
+                <input id={`${fieldId}-url-2`}
                   type="text"
                   value={integrations.shop.url ?? ''}
                   onChange={(e) => updateIntegration('shop', 'url', e.target.value)}
@@ -1659,10 +1669,10 @@ export default function ContentSiteSettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-archive mb-1">
+                <label htmlFor={`${fieldId}-button-text-3`} className="block text-xs text-archive mb-1">
                   Button Text
                 </label>
-                <input
+                <input id={`${fieldId}-button-text-3`}
                   type="text"
                   value={integrations.shop.button_text}
                   onChange={(e) => updateIntegration('shop', 'button_text', e.target.value)}
@@ -1680,10 +1690,10 @@ export default function ContentSiteSettingsPage() {
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-archive mb-1">
+                <label htmlFor={`${fieldId}-url-3`} className="block text-xs text-archive mb-1">
                   URL
                 </label>
-                <input
+                <input id={`${fieldId}-url-3`}
                   type="text"
                   value={integrations.donate.url ?? ''}
                   onChange={(e) => updateIntegration('donate', 'url', e.target.value)}
@@ -1692,10 +1702,10 @@ export default function ContentSiteSettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-archive mb-1">
+                <label htmlFor={`${fieldId}-button-text-4`} className="block text-xs text-archive mb-1">
                   Button Text
                 </label>
-                <input
+                <input id={`${fieldId}-button-text-4`}
                   type="text"
                   value={integrations.donate.button_text}
                   onChange={(e) => updateIntegration('donate', 'button_text', e.target.value)}
@@ -1743,10 +1753,10 @@ export default function ContentSiteSettingsPage() {
 
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-ink mb-1">
+            <label htmlFor={`${fieldId}-google-analytics-id`} className="block text-xs font-medium text-ink mb-1">
               Google Analytics ID
             </label>
-            <input
+            <input id={`${fieldId}-google-analytics-id`}
               type="text"
               value={analyticsConfig.ga_id}
               onChange={(e) => updateAnalytics('ga_id', e.target.value)}
@@ -1759,10 +1769,10 @@ export default function ContentSiteSettingsPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-ink mb-1">
+            <label htmlFor={`${fieldId}-google-tag-manager-id`} className="block text-xs font-medium text-ink mb-1">
               Google Tag Manager ID
             </label>
-            <input
+            <input id={`${fieldId}-google-tag-manager-id`}
               type="text"
               value={analyticsConfig.gtm_id}
               onChange={(e) => updateAnalytics('gtm_id', e.target.value)}
@@ -1776,10 +1786,10 @@ export default function ContentSiteSettingsPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-ink mb-1">
+            <label htmlFor={`${fieldId}-plausible-domain`} className="block text-xs font-medium text-ink mb-1">
               Plausible Domain
             </label>
-            <input
+            <input id={`${fieldId}-plausible-domain`}
               type="text"
               value={analyticsConfig.plausible_domain}
               onChange={(e) => updateAnalytics('plausible_domain', e.target.value)}
@@ -1845,10 +1855,10 @@ export default function ContentSiteSettingsPage() {
         </p>
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-ink mb-1">
+            <label htmlFor={`${fieldId}-cdn-provider`} className="block text-xs font-medium text-ink mb-1">
               CDN Provider
             </label>
-            <select
+            <select id={`${fieldId}-cdn-provider`}
               value={cdnConfig.provider}
               onChange={(e) => updateCdn('provider', e.target.value)}
               className="w-full border border-lichen rounded-lg px-3 py-2 text-sm text-ink bg-parchment focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -1862,10 +1872,10 @@ export default function ContentSiteSettingsPage() {
           {cdnConfig.provider === 'cloudflare' && (
             <>
               <div>
-                <label className="block text-xs font-medium text-ink mb-1">
+                <label htmlFor={`${fieldId}-zone-id`} className="block text-xs font-medium text-ink mb-1">
                   Zone ID
                 </label>
-                <input
+                <input id={`${fieldId}-zone-id`}
                   type="text"
                   value={cdnConfig.zone_id}
                   onChange={(e) => updateCdn('zone_id', e.target.value)}
@@ -1877,10 +1887,10 @@ export default function ContentSiteSettingsPage() {
                 </p>
               </div>
               <div>
-                <label className="block text-xs font-medium text-ink mb-1">
+                <label htmlFor={`${fieldId}-api-token`} className="block text-xs font-medium text-ink mb-1">
                   API Token
                 </label>
-                <input
+                <input id={`${fieldId}-api-token`}
                   type="password"
                   value={cdnConfig.api_token}
                   onChange={(e) => updateCdn('api_token', e.target.value)}
@@ -1896,10 +1906,10 @@ export default function ContentSiteSettingsPage() {
 
           {cdnConfig.provider === 'cloudfront' && (
             <div>
-              <label className="block text-xs font-medium text-ink mb-1">
+              <label htmlFor={`${fieldId}-distribution-id`} className="block text-xs font-medium text-ink mb-1">
                 Distribution ID
               </label>
-              <input
+              <input id={`${fieldId}-distribution-id`}
                 type="text"
                 value={cdnConfig.distribution_id}
                 onChange={(e) => updateCdn('distribution_id', e.target.value)}

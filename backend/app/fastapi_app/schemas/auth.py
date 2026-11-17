@@ -183,6 +183,8 @@ class MFAPasswordChallengeResponse(BaseModel):
 class MFASetupStartResponse(BaseModel):
     secret: str
     otpauthUrl: str
+    # data: URI of an SVG QR code for otpauthUrl, generated server-side.
+    qrSvg: str | None = None
     session: str
 
 

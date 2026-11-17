@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useAccessibleModal } from '../../hooks/useAccessibleModal';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { X, Shield, HelpCircle, User, LogOut, Settings, Building2, Check, ChevronDown } from 'lucide-react';
 import { useSidebar } from '../../contexts/SidebarContext';
@@ -21,12 +22,19 @@ export function MobileNavDrawer({ orgId }: MobileNavDrawerProps) {
   const { hasPermission } = usePermissions();
   const location = useLocation();
   const navigate = useNavigate();
-  const drawerRef = useRef<HTMLDivElement>(null);
   const auth = useAuth();
   const { theme, setTheme } = useTheme();
   const [isSwitching, setIsSwitching] = useState(false);
   const { activeProduct, activeProductId } = useActiveProduct();
   const [isProductSwitcherOpen, setIsProductSwitcherOpen] = useState(false);
+  // Dialog behaviour: Escape closes, Tab is trapped, focus returns to the
+  // hamburger on close.
+  const closeDrawer = useCallback(() => setMobileOpen(false), [setMobileOpen]);
+  const { modalRef: drawerRef } = useAccessibleModal({
+    isOpen: isMobileOpen,
+    onClose: closeDrawer,
+    titlePrefix: 'mobile-nav-drawer',
+  });
 
   // Filter admin items by permissions
   const visibleAdminItems = adminItems.filter(item => hasPermission(item.requiresPermission));
@@ -93,7 +101,7 @@ export function MobileNavDrawer({ orgId }: MobileNavDrawerProps) {
         document.body.style.overflow = '';
       };
     }
-  }, [isMobileOpen, setMobileOpen]);
+  }, [isMobileOpen, setMobileOpen, drawerRef]);
 
   // Close drawer on navigation
   useEffect(() => {
@@ -133,36 +141,41 @@ export function MobileNavDrawer({ orgId }: MobileNavDrawerProps) {
         <div className="flex items-center justify-between h-14 px-4 flex-shrink-0 border-b" style={{ borderColor: 'rgba(107, 122, 126, 0.3)' }}>
           <span className="text-2xl font-serif font-semibold text-parchment"><Wordmark /></span>
           <button
+            type="button"
             onClick={() => setMobileOpen(false)}
             className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] -mr-2 text-parchment rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-parchment/40"
             style={{ background: 'transparent' }}
             aria-label="Close navigation menu"
           >
-            <X size={24} />
+            <X size={24} aria-hidden="true" />
           </button>
         </div>
 
         {/* Product Selector - dropdown instead of horizontal tabs */}
         <div className="flex-shrink-0 border-b" style={{ borderColor: 'rgba(107, 122, 126, 0.3)' }}>
           <button
+            type="button"
             onClick={() => setIsProductSwitcherOpen(!isProductSwitcherOpen)}
             className="flex items-center justify-between w-full px-4 py-3 text-parchment transition-colors hover:bg-parchment/5"
             aria-expanded={isProductSwitcherOpen}
+            aria-controls={isProductSwitcherOpen ? 'mobile-nav-products' : undefined}
           >
             <div className="flex items-center gap-2">
               {activeProduct && (() => {
                 const ActiveIcon = activeProduct.icon as React.ComponentType<{ size?: number; className?: string }>;
                 return <ActiveIcon size={16} className="opacity-70" />;
               })()}
+              <span className="sr-only">Switch application. Current application: </span>
               <span className="font-serif font-semibold">{activeProduct?.label ?? 'Select Product'}</span>
             </div>
             <ChevronDown
               size={16}
+              aria-hidden="true"
               className={`opacity-50 transition-transform ${isProductSwitcherOpen ? 'rotate-180' : ''}`}
             />
           </button>
           {isProductSwitcherOpen && (
-            <div className="pb-2 px-2">
+            <div id="mobile-nav-products" className="pb-2 px-2">
               {visibleProducts.map(product => {
                 const Icon = product.icon as React.ComponentType<{ size?: number; className?: string }>;
                 const isActive = product.id === activeProductId;
@@ -172,6 +185,7 @@ export function MobileNavDrawer({ orgId }: MobileNavDrawerProps) {
                   <Link
                     key={product.id}
                     to={path}
+                    aria-current={isActive ? 'true' : undefined}
                     className={`flex items-center gap-2.5 px-3 py-2 rounded text-sm no-underline transition-colors ${
                       isActive
                         ? 'bg-parchment/12 text-parchment font-medium'
@@ -182,9 +196,9 @@ export function MobileNavDrawer({ orgId }: MobileNavDrawerProps) {
                       setMobileOpen(false);
                     }}
                   >
-                    <Icon size={16} className={isActive ? 'opacity-100' : 'opacity-50'} />
+                    <Icon size={16} className={isActive ? 'opacity-100' : 'opacity-50'} aria-hidden="true" />
                     <span>{product.label}</span>
-                    {isActive && <Check size={14} className="ml-auto opacity-50" />}
+                    {isActive && <Check size={14} className="ml-auto opacity-50" aria-hidden="true" />}
                   </Link>
                 );
               })}
@@ -198,7 +212,7 @@ export function MobileNavDrawer({ orgId }: MobileNavDrawerProps) {
         </div>
 
         {/* Navigation content - scoped to active product */}
-        <nav className="flex-1 min-h-0 overflow-y-auto py-4">
+        <nav className="flex-1 min-h-0 overflow-y-auto py-4" aria-label="Main">
           {/* Active product items */}
           {activeProduct && visibleItems.length > 0 && (
             <div className="mb-4">
@@ -234,10 +248,11 @@ export function MobileNavDrawer({ orgId }: MobileNavDrawerProps) {
                             <Link
                               key={child.id}
                               to={path}
+                              aria-current={isActive ? 'page' : undefined}
                               className={`nav-mobile-item pl-8 ${isActive ? 'bg-parchment/12 border-l-[3px] border-l-copper font-medium' : ''}`}
                               onClick={() => setMobileOpen(false)}
                             >
-                              <ChildIcon size={16} />
+                              <ChildIcon size={16} aria-hidden="true" />
                               <span className="text-sm">{child.label}</span>
                             </Link>
                           );
@@ -257,10 +272,11 @@ export function MobileNavDrawer({ orgId }: MobileNavDrawerProps) {
                   <Link
                     key={item.id}
                     to={path}
+                    aria-current={isActive ? 'page' : undefined}
                     className={`nav-mobile-item ${isActive ? 'bg-parchment/12 border-l-[3px] border-l-copper font-medium' : ''}`}
                     onClick={() => setMobileOpen(false)}
                   >
-                    <ItemIcon size={18} />
+                    <ItemIcon size={18} aria-hidden="true" />
                     <span>{item.label}</span>
                   </Link>
                 );
@@ -272,7 +288,7 @@ export function MobileNavDrawer({ orgId }: MobileNavDrawerProps) {
           {visibleAdminItems.length > 0 && (
             <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(107, 122, 126, 0.3)' }}>
               <div className="flex items-center gap-2 px-4 py-2">
-                <Shield size={16} style={{ opacity: 0.7 }} />
+                <Shield size={16} style={{ opacity: 0.7 }} aria-hidden="true" />
                 <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'rgba(243, 236, 221, 0.5)' }}>
                   Admin
                 </span>
@@ -286,10 +302,11 @@ export function MobileNavDrawer({ orgId }: MobileNavDrawerProps) {
                   <Link
                     key={item.id}
                     to={path}
+                    aria-current={isActive ? 'page' : undefined}
                     className={`nav-mobile-item ${isActive ? 'bg-parchment/12 border-l-[3px] border-l-copper font-medium' : ''}`}
                     onClick={() => setMobileOpen(false)}
                   >
-                    <Icon size={18} />
+                    <Icon size={18} aria-hidden="true" />
                     <span>{item.label}</span>
                   </Link>
                 );
@@ -305,7 +322,7 @@ export function MobileNavDrawer({ orgId }: MobileNavDrawerProps) {
               className="nav-mobile-item"
               onClick={() => setMobileOpen(false)}
             >
-              <HelpCircle size={18} />
+              <HelpCircle size={18} aria-hidden="true" />
               <span>Documentation</span>
             </a>
           </div>
@@ -320,11 +337,11 @@ export function MobileNavDrawer({ orgId }: MobileNavDrawerProps) {
                     {auth.user.avatar_url ? (
                       <img
                         src={auth.user.avatar_url}
-                        alt={auth.user.name}
+                        alt=""
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <User size={20} className="text-parchment" />
+                      <User size={20} className="text-parchment" aria-hidden="true" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -337,7 +354,7 @@ export function MobileNavDrawer({ orgId }: MobileNavDrawerProps) {
               {/* Current org */}
               <div className="px-4 py-2">
                 <div className="flex items-center gap-2">
-                  <Building2 size={14} style={{ color: 'rgba(243, 236, 221, 0.5)' }} />
+                  <Building2 size={14} style={{ color: 'rgba(243, 236, 221, 0.5)' }} aria-hidden="true" />
                   <span className="text-xs" style={{ color: 'rgba(243, 236, 221, 0.5)' }}>Organization:</span>
                   <span className="text-xs text-parchment font-medium truncate">{activeOrg.name}</span>
                 </div>
@@ -346,15 +363,17 @@ export function MobileNavDrawer({ orgId }: MobileNavDrawerProps) {
               {/* Org switcher */}
               {hasMultipleOrgs && (
                 <div className="px-4 py-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'rgba(243, 236, 221, 0.5)' }}>
+                  <p id="mobile-nav-orgs" className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'rgba(243, 236, 221, 0.5)' }}>
                     Switch Organization
                   </p>
-                  <div className="max-h-32 overflow-y-auto rounded" style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}>
+                  <div role="group" aria-labelledby="mobile-nav-orgs" className="max-h-32 overflow-y-auto rounded" style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}>
                     {auth.memberships.map((org: Organization) => {
                       const isActive = org.organization_id === auth.activeOrganizationId;
                       return (
                         <button
                           key={org.organization_id}
+                          type="button"
+                          aria-current={isActive ? 'true' : undefined}
                           onClick={() => handleSwitchOrg(org.organization_id)}
                           disabled={isSwitching || isActive}
                           className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors disabled:opacity-50 ${
@@ -363,7 +382,8 @@ export function MobileNavDrawer({ orgId }: MobileNavDrawerProps) {
                           style={{ color: 'var(--color-parchment)' }}
                         >
                           <span className="truncate">{org.name}</span>
-                          {isActive && <Check size={14} />}
+                          {isActive && <Check size={14} aria-hidden="true" />}
+                          {isActive && <span className="sr-only">(current organization)</span>}
                         </button>
                       );
                     })}
@@ -373,13 +393,15 @@ export function MobileNavDrawer({ orgId }: MobileNavDrawerProps) {
 
               {/* Theme toggle */}
               <div className="px-4 py-2">
-                <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'rgba(243, 236, 221, 0.5)' }}>
+                <p id="mobile-nav-theme" className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'rgba(243, 236, 221, 0.5)' }}>
                   Appearance
                 </p>
-                <div className="flex gap-1 rounded-md p-1" style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}>
+                <div role="group" aria-labelledby="mobile-nav-theme" className="flex gap-1 rounded-md p-1" style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}>
                   {(['light', 'dark', 'system'] as const).map((option) => (
                     <button
                       key={option}
+                      type="button"
+                      aria-pressed={theme === option}
                       onClick={() => setTheme(option)}
                       className={`flex-1 px-3 py-1.5 text-xs font-medium rounded transition-colors ${
                         theme === option
@@ -396,6 +418,7 @@ export function MobileNavDrawer({ orgId }: MobileNavDrawerProps) {
               {/* Settings & Logout */}
               <div className="mt-2">
                 <button
+                  type="button"
                   onClick={() => {
                     setMobileOpen(false);
                     if (auth.activeOrganizationId) {
@@ -407,15 +430,16 @@ export function MobileNavDrawer({ orgId }: MobileNavDrawerProps) {
                   className="nav-mobile-item w-full text-left"
                   style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                 >
-                  <Settings size={18} />
+                  <Settings size={18} aria-hidden="true" />
                   <span>Settings</span>
                 </button>
                 <button
+                  type="button"
                   onClick={handleLogout}
                   className="nav-mobile-item w-full text-left"
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-error)' }}
                 >
-                  <LogOut size={18} />
+                  <LogOut size={18} aria-hidden="true" />
                   <span>Sign out</span>
                 </button>
               </div>

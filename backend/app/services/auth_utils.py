@@ -312,3 +312,80 @@ def get_api_key_prefix(api_key: str) -> str:
         First 8 characters for display purposes
     """
     return api_key[:8]
+
+
+# ============================================================================
+# Portal member sessions and sign-in links
+# ============================================================================
+#
+# Portal members (public-portal accounts for saved collections) are a separate
+# identity from staff users. Their session token is signed with the same
+# server secret and algorithm as staff access tokens, but carries a different
+# ``type`` and an ``aud`` claim. ``decode_access_token`` rejects it (wrong
+# type), and ``decode_portal_member_session`` rejects a staff access token
+# (wrong type, and no audience), so neither can stand in for the other.
+
+PORTAL_MEMBER_TOKEN_TYPE = 'portal_member'
+PORTAL_MEMBER_AUDIENCE = 'madrona-portal-member'
+
+
+def generate_portal_member_session(
+    member_id: str,
+    organization_id: str,
+    session_version: int,
+    auth_time: int,
+    expires_minutes: int,
+) -> str:
+    """Signed session token for a portal member.
+
+    ``auth_time`` is the epoch second the member signed in with a link; it is
+    carried unchanged through sliding renewals so an absolute session limit
+    can be enforced.
+    """
+    now = datetime.now(timezone.utc)
+    payload = {
+        'sub': member_id,
+        'org': organization_id,
+        'sv': session_version,
+        'auth_time': auth_time,
+        'iat': now,
+        'exp': now + timedelta(minutes=expires_minutes),
+        'type': PORTAL_MEMBER_TOKEN_TYPE,
+        'aud': PORTAL_MEMBER_AUDIENCE,
+    }
+    return jwt.encode(payload, settings.secret_key, algorithm='HS256')
+
+
+def decode_portal_member_session(token: str) -> dict[str, Any] | None:
+    """Payload of a valid, unexpired portal member session token, else None."""
+    try:
+        payload = jwt.decode(
+            token,
+            settings.secret_key,
+            algorithms=['HS256'],
+            audience=PORTAL_MEMBER_AUDIENCE,
+            options={'require': ['exp', 'iat', 'sub', 'aud']},
+        )
+    except jwt.InvalidTokenError:
+        return None
+    if payload.get('type') != PORTAL_MEMBER_TOKEN_TYPE:
+        return None
+    return payload
+
+
+def generate_portal_member_login_token() -> str:
+    """Random one-time sign-in token (32 bytes, URL-safe)."""
+    return secrets.token_urlsafe(32)
+
+
+def hash_portal_member_login_token(token: str) -> str:
+    """Keyed SHA-256 (HMAC) of a sign-in token, for storage and lookup.
+
+    Same primitive as the password-reset and refresh-token hashes: a leaked
+    database row cannot be turned back into a working link without the
+    server secret.
+    """
+    import hmac
+
+    key_bytes = settings.secret_key.encode('utf-8')
+    return hmac.new(key_bytes, token.encode('utf-8'), hashlib.sha256).hexdigest()

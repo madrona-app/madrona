@@ -120,7 +120,7 @@ describe('PhaseGroup', () => {
   it('select-all checkbox toggles every item when none are selected', () => {
     const onToggleSelect = vi.fn();
     renderGroup({ onToggleSelect });
-    fireEvent.click(screen.getByLabelText('Select all items in phase'));
+    fireEvent.click(screen.getByLabelText('Select all items in Planning phase'));
     expect(onToggleSelect).toHaveBeenCalledWith('a');
     expect(onToggleSelect).toHaveBeenCalledWith('b');
   });
@@ -131,7 +131,7 @@ describe('PhaseGroup', () => {
       selectedItems: new Set(['a', 'b']),
       onToggleSelect,
     });
-    fireEvent.click(screen.getByLabelText('Select all items in phase'));
+    fireEvent.click(screen.getByLabelText('Select all items in Planning phase'));
     expect(onToggleSelect).toHaveBeenCalledWith('a');
     expect(onToggleSelect).toHaveBeenCalledWith('b');
   });

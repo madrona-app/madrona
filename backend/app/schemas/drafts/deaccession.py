@@ -1,8 +1,8 @@
 """Typed payload for a `deaccession` draft (Deaccessioning, Proc. 4).
 
 The proposable subset of the live Deaccession create shape
-(`app/models/objects.py::Deaccession`). `reason` is a `Literal` mirroring the
-live CHECK. `extra='forbid'` rejects anything else.
+(`app/models/objects.py::Deaccession`). `reason` is a lookup key checked against the
+organization's lookup values. `extra='forbid'` rejects anything else.
 
 Like acquisition, deaccession is approval-gated: the draft carries the approval,
 so the applier creates the live row in its post-approval state without opening a
@@ -10,16 +10,16 @@ second gate. (The draft pipeline additionally NAGPRA-gates the object before the
 proposal is ever created.)
 """
 
-from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
-DeaccessionReason = Literal[
-    "duplicate", "outside_scope", "deterioration", "damage", "repatriation",
-    "theft_loss", "exchange", "ethical", "donor_request", "legal_requirement",
-    "hazard", "other",
-]
+from app.schemas.drafts.base import LookupKey
+
+# Lookup-backed (organizations add values): checked against the org's
+# active lookup values when the draft is proposed or edited
+# (app/services/lookup_fields.check_draft_lookup_values), not a fixed list.
+DeaccessionReason = LookupKey
 
 
 class DeaccessionDraftPayload(BaseModel):

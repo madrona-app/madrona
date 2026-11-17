@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE ead PUBLIC "+//ISBN 1-931666-00-8//DTD ead.dtd (Encoded Archival Description (EAD) Version 2002)//EN" "ead.dtd">
+<ead audience="external">
+  <eadheader langencoding="iso639-2b" countryencoding="iso3166-1" repositoryencoding="iso15511" dateencoding="iso8601">
+    <eadid countrycode="US" mainagencycode="US-XX">legacy-002</eadid>
+    <filedesc>
+      <titlestmt>
+        <titleproper>Guide to the Records of a State Affiliate &mdash; 1940&ndash;1975</titleproper>
+        <author>Processed by an archivist &amp; volunteers</author>
+      </titlestmt>
+    </filedesc>
+    <profiledesc><creation>Encoded 2004.</creation><langusage>English</langusage></profiledesc>
+  </eadheader>
+  <archdesc level="fonds" type="inventory">
+    <did>
+      <head>Overview</head>
+      <repository><corpname>Example Archives</corpname></repository>
+      <unittitle label="Title" encodinganalog="245$a">Records of a State Affiliate,</unittitle>
+      <unitdate type="inclusive" normal="1940/1975">1940&ndash;1975</unitdate>
+      <unitdate type="bulk" normal="1950/1960">bulk 1950&ndash;1960</unitdate>
+      <unitid countrycode="US" repositorycode="US-XX">MS 0042</unitid>
+      <physdesc><extent>3.5 linear ft.</extent> <extent>(7 boxes)</extent></physdesc>
+      <abstract>Minutes, correspondence and newsletters.</abstract>
+    </did>
+    <bioghist><head>History</head><p>Founded in 1940 by members&#8217; vote.</p><chronlist><chronitem><date>1940</date><event>Founded</event></chronitem></chronlist></bioghist>
+    <scopecontent><head>Scope</head><p>The records include:</p><list type="simple"><item>Minutes</item><item>Correspondence</item></list></scopecontent>
+    <arrangement><p>Arranged in two series.</p></arrangement>
+    <accessrestrict><p>Open for research.</p></accessrestrict>
+    <prefercite><p>[Item], Records of a State Affiliate, MS 0042.</p></prefercite>
+    <controlaccess>
+      <head>Indexing Terms</head>
+      <controlaccess>
+        <subject source="lcsh" encodinganalog="650">Blind&mdash;United States&mdash;Societies, etc.</subject>
+        <persname source="lcnaf" role="creator">Doe, Jane, 1910-1990</persname>
+        <genreform source="aat">Minutes (administrative records)</genreform>
+      </controlaccess>
+    </controlaccess>
+    <dsc type="combined">
+      <head>Container List</head>
+      <c level="series" id="ser1">
+        <did><unittitle>Series I: Minutes</unittitle><unitdate>1940&ndash;1975</unitdate></did>
+        <scopecontent><p>Board minutes.</p></scopecontent>
+        <c level="file">
+          <did>
+            <container type="Box" label="Box">1</container>
+            <container type="Folder">1&ndash;3</container>
+            <unittitle>Minutes, <unitdate>1940&ndash;1945</unitdate></unittitle>
+            <physloc>Offsite</physloc>
+            <note><p>Fragile.</p></note>
+          </did>
+        </c>
+        <c level="file">
+          <did><container type="Box">1</container><container type="Folder">4</container><unittitle>Minutes, 1946&ndash;1950</unittitle></did>
+          <dao href="https://example.org/digital/1" title="Digitized minutes"/>
+        </c>
+      </c>
+      <c level="series" id="ser2">
+        <did><unittitle>Series II: Correspondence</unittitle></did>
+        <c level="file"><did><container type="box">2</container><unittitle>General, A&ndash;M</unittitle></did></c>
+        <c level="item"><did><unittitle>Letter from J. Doe</unittitle><unitdate normal="1952-03-04">March 4, 1952</unitdate></did></c>
+      </c>
+    </dsc>
+  </archdesc>
+</ead>

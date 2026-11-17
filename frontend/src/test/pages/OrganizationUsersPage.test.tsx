@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { checkA11y, formatViolations } from '../a11y';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import OrganizationUsersPage from '../../pages/admin/OrganizationUsersPage';
@@ -161,5 +162,53 @@ describe('OrganizationUsersPage', () => {
         expect(mockApiFetch).toHaveBeenCalled();
       });
     });
+  });
+});
+
+describe('OrganizationUsersPage accessibility', () => {
+  const users = [
+    {
+      user_id: 'u-1',
+      email: 'jane@example.com',
+      name: 'Jane Doe',
+      role_id: 'r-1',
+      role_key: 'admin',
+      role_display_name: 'Admin',
+      status: 'active',
+      user_status: 'active',
+      created_at: '2026-01-01T00:00:00Z',
+    },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setAuth(['platform.admin']);
+    mockApiFetch.mockImplementation((url: string) => {
+      if (url.includes('/users')) return Promise.resolve({ users });
+      if (url.includes('/roles')) {
+        return Promise.resolve({ roles: [{ role_id: 'r-1', role_key: 'admin', display_name: 'Admin' }] });
+      }
+      return Promise.resolve({});
+    });
+  });
+
+  it('user list has no axe violations', async () => {
+    const { container } = renderPage();
+    await screen.findByText('Jane Doe');
+    const results = await checkA11y(container);
+    expect(results.violations, formatViolations(results)).toEqual([]);
+  });
+
+  it('invite dialog is a named dialog with labelled fields and no axe violations', async () => {
+    const { container } = renderPage();
+    await screen.findByText('Jane Doe');
+    fireEvent.click(screen.getByRole('button', { name: /Invite User/ }));
+    expect(screen.getByRole('dialog', { name: 'Invite User' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Organization Administrator/ })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'App Access & Roles' })).toBeInTheDocument();
+    const results = await checkA11y(container);
+    expect(results.violations, formatViolations(results)).toEqual([]);
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: 'Invite User' })).not.toBeInTheDocument();
   });
 });

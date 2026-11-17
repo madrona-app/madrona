@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { listMediaCollections, deleteMediaCollection } from '../../lib/api';
 import { CreateCollectionModal, ShareCollectionModal } from '../../components/dam';
+import { useActionMenu } from '../../components/dam/useActionMenu';
 import { usePermissions } from '@/hooks/usePermissions';
 import type { MediaCollection } from '../../lib/schemas';
 
@@ -44,6 +45,7 @@ export default function MediaCollectionsPage() {
   const [sharingCollection, setSharingCollection] = useState<MediaCollection | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const actionMenu = useActionMenu(menuOpen, () => setMenuOpen(null));
   const [deleteTarget, setDeleteTarget] = useState<MediaCollection | null>(null);
   const { hasPermission } = usePermissions();
   const canEdit = hasPermission('media.edit');
@@ -167,6 +169,8 @@ export default function MediaCollectionsPage() {
                 <Link
                   to={`/organizations/${orgId}/media/collections/${collection.collection_id}`}
                   className="block aspect-video bg-stone/50/30 relative overflow-hidden rounded-t-lg"
+                  tabIndex={-1}
+                  aria-hidden="true"
                 >
                   {collection.cover_url ? (
                     <img
@@ -203,19 +207,34 @@ export default function MediaCollectionsPage() {
                     {/* Actions */}
                     <div className="relative">
                       <button
+                        ref={menuOpen === collection.collection_id ? actionMenu.triggerRef : undefined}
+                        type="button"
+                        aria-haspopup="menu"
+                        aria-expanded={menuOpen === collection.collection_id}
+                        aria-label={`Actions for ${collection.name}`}
                         onClick={() => setMenuOpen(menuOpen === collection.collection_id ? null : collection.collection_id)}
-                        className="p-1 hover:bg-stone/50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="p-1 hover:bg-stone/50 rounded opacity-0 group-hover:opacity-100 focus-visible:opacity-100 aria-expanded:opacity-100 transition-opacity"
                       >
                         <MoreVertical size={16} />
                       </button>
                       {menuOpen === collection.collection_id && (
                         <>
                           <div
+                            aria-hidden="true"
                             className="fixed inset-0 z-10"
                             onClick={() => setMenuOpen(null)}
                           />
-                          <div className="absolute right-0 top-full mt-1 w-40 bg-parchment border rounded-lg shadow-lg z-20">
+                          <div
+                            ref={actionMenu.menuRef}
+                            role="menu"
+                            tabIndex={-1}
+                            aria-label={`Actions for ${collection.name}`}
+                            onKeyDown={actionMenu.onMenuKeyDown}
+                            className="absolute right-0 top-full mt-1 w-40 bg-parchment border rounded-lg shadow-lg z-20"
+                          >
                             <button
+                              type="button"
+                              role="menuitem"
                               onClick={() => {
                                 if (!canEdit) return;
                                 setSharingCollection(collection);
@@ -230,6 +249,8 @@ export default function MediaCollectionsPage() {
                             </button>
                             {canDelete && (
                               <button
+                                type="button"
+                                role="menuitem"
                                 onClick={() => {
                                   handleDelete(collection);
                                   setMenuOpen(null);
@@ -262,6 +283,8 @@ export default function MediaCollectionsPage() {
                 <Link
                   to={`/organizations/${orgId}/media/collections/${collection.collection_id}`}
                   className="w-20 h-14 bg-stone/50/30 rounded overflow-hidden flex-shrink-0"
+                  tabIndex={-1}
+                  aria-hidden="true"
                 >
                   {collection.cover_url ? (
                     <img

@@ -107,7 +107,7 @@ export default function WorkspaceCreatePage() {
         {/* Name */}
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-ink mb-1">
-            Name <span className="text-semantic-error">*</span>
+            Name <span className="text-semantic-error" aria-hidden="true">*</span>
           </label>
           <input
             id="name"
@@ -115,8 +115,8 @@ export default function WorkspaceCreatePage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g., Q1 Loan Exhibition Objects"
+            aria-required="true"
             className="w-full px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
-            autoFocus
           />
         </div>
 
@@ -136,10 +136,10 @@ export default function WorkspaceCreatePage() {
         </div>
 
         {/* Visibility */}
-        <div>
-          <label className="block text-sm font-medium text-ink mb-2">
+        <fieldset>
+          <legend className="block text-sm font-medium text-ink mb-2">
             Visibility
-          </label>
+          </legend>
           <div className="space-y-2">
             {visibilityOptions.map((option) => {
               const Icon = option.icon;
@@ -148,6 +148,8 @@ export default function WorkspaceCreatePage() {
                   key={option.value}
                   className={cn(
                     'flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors',
+                    // the radio is visually hidden, so show its keyboard focus on the card
+                    'has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-bark/30 has-[:focus-visible]:ring-offset-2',
                     visibility === option.value
                       ? 'border-bark bg-bark/5'
                       : 'border-lichen hover:border-bark/30'
@@ -161,21 +163,21 @@ export default function WorkspaceCreatePage() {
                     onChange={(e) => setVisibility(e.target.value as typeof visibility)}
                     className="sr-only"
                   />
-                  <div className={cn(
+                  <span className={cn(
                     'p-2 rounded-lg',
                     visibility === option.value ? 'bg-bark/10' : 'bg-stone/30'
                   )}>
-                    <Icon size={18} className={visibility === option.value ? 'text-bark' : 'text-archive'} />
-                  </div>
-                  <div>
-                    <div className="font-medium text-ink">{option.label}</div>
-                    <div className="text-sm text-archive">{option.description}</div>
-                  </div>
+                    <Icon size={18} aria-hidden="true" className={visibility === option.value ? 'text-bark' : 'text-archive'} />
+                  </span>
+                  <span>
+                    <span className="block font-medium text-ink">{option.label}</span>
+                    <span className="block text-sm text-archive">{option.description}</span>
+                  </span>
                 </label>
               );
             })}
           </div>
-        </div>
+        </fieldset>
 
         {/* Actions */}
         <div className="flex items-center justify-end gap-3 pt-4 border-t border-lichen">

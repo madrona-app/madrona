@@ -1,21 +1,22 @@
 """Typed payload for a `use_request` draft (Use of Collections).
 
 The proposable subset of the live UseRequest create shape
-(`app/models/objects.py::UseRequest`). `use_type` is a `Literal` mirroring the
-live CHECK. `extra='forbid'` rejects anything else. `request_number` is
+(`app/models/objects.py::UseRequest`). `use_type` is a lookup key checked against the
+organization's lookup values. `extra='forbid'` rejects anything else. `request_number` is
 optional — generated (USE-{year}-NNN) when omitted.
 """
 
 from datetime import date
-from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-UseType = Literal[
-    "research", "exhibition", "reproduction", "education", "publication",
-    "broadcast", "commercial", "conservation", "loan", "digitization", "other",
-]
+from app.schemas.drafts.base import LookupKey
+
+# Lookup-backed (organizations add values): checked against the org's
+# active lookup values when the draft is proposed or edited
+# (app/services/lookup_fields.check_draft_lookup_values), not a fixed list.
+UseType = LookupKey
 
 
 class UseRequestDraftPayload(BaseModel):

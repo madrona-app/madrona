@@ -248,7 +248,7 @@ export default function ScheduleModal({
 
   return (
     <ModalPortal>
-    { }
+    {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- backdrop click-to-dismiss; Escape closes via useAccessibleModal */}
     <div
       className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
       onClick={handleCancel}
@@ -306,14 +306,15 @@ export default function ScheduleModal({
           </div>
 
           {/* Schedule Type Selector */}
-          <div>
-            <label className="block text-sm font-medium text-ink mb-1">
+          <fieldset>
+            <legend className="block text-sm font-medium text-ink mb-1">
               Schedule Type
-            </label>
+            </legend>
             <div className="flex gap-3">
               <label className="flex items-center gap-1.5 cursor-pointer">
                 <input
                   type="radio"
+                  name="schedule-type"
                   checked={scheduleType === 'interval'}
                   onChange={() => setScheduleType('interval')}
                   className="cursor-pointer text-bark focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -326,6 +327,7 @@ export default function ScheduleModal({
               <label className="flex items-center gap-1.5 cursor-pointer">
                 <input
                   type="radio"
+                  name="schedule-type"
                   checked={scheduleType === 'time'}
                   onChange={() => setScheduleType('time')}
                   className="cursor-pointer text-bark focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -336,14 +338,14 @@ export default function ScheduleModal({
                 </span>
               </label>
             </div>
-          </div>
+          </fieldset>
 
           {/* Conditional fields based on schedule type */}
           {scheduleType === 'interval' && (
-            <div>
-              <label className="block text-sm font-medium text-ink mb-1">
+            <fieldset>
+              <legend className="block text-sm font-medium text-ink mb-1">
                 Frequency
-              </label>
+              </legend>
               <div className="flex gap-2 items-center">
                 <label
                   htmlFor="schedule-interval"
@@ -378,7 +380,7 @@ export default function ScheduleModal({
                   <option value="days">days</option>
                 </select>
               </div>
-            </div>
+            </fieldset>
           )}
 
           {scheduleType === 'time' && (

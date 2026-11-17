@@ -81,9 +81,13 @@ function EventRow({ event, orgId }: { event: EntityAuditEvent; orgId: string }) 
 
   const formatTime = (dateString: string) => fmtTime(dateString);
 
+  const detailsId = `entity-audit-details-${event.event_id}`;
+  const entityName = event.entity_display_key || event.entity_id.slice(0, 8);
+
   return (
     <div className="border-b border-lichen last:border-0">
-      {/* Row */}
+      {/* Row: clicking anywhere toggles (mouse convenience); the chevron button is the keyboard path */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- mouse convenience; the row's expand button is the keyboard path */}
       <div
         className={cn(
           'flex items-center gap-4 px-4 py-3 text-sm',
@@ -94,7 +98,7 @@ function EventRow({ event, orgId }: { event: EntityAuditEvent; orgId: string }) 
         {/* Timestamp */}
         <div className="w-36 shrink-0 text-archive">
           <div className="flex items-center gap-1">
-            <Calendar size={12} />
+            <Calendar size={12} aria-hidden="true" />
             {formatDate(event.changed_at)}
           </div>
           <div className="text-xs">{formatTime(event.changed_at)}</div>
@@ -102,7 +106,7 @@ function EventRow({ event, orgId }: { event: EntityAuditEvent; orgId: string }) 
 
         {/* User */}
         <div className="w-40 shrink-0 flex items-center gap-1.5 text-ink truncate">
-          <User size={14} className="text-archive shrink-0" />
+          <User size={14} className="text-archive shrink-0" aria-hidden="true" />
           <span className="truncate">
             {event.changed_by_name || event.changed_by_email || 'System'}
           </span>
@@ -117,7 +121,7 @@ function EventRow({ event, orgId }: { event: EntityAuditEvent; orgId: string }) 
 
         {/* Entity Name */}
         <div className="flex-1 min-w-0 truncate text-ink">
-          {event.entity_display_key || event.entity_id.slice(0, 8)}
+          {entityName}
         </div>
 
         {/* Change Type Badge */}
@@ -143,14 +147,30 @@ function EventRow({ event, orgId }: { event: EntityAuditEvent; orgId: string }) 
         {/* Expand icon */}
         <div className="w-6 shrink-0">
           {canExpand && (
-            isExpanded ? <ChevronUp size={16} className="text-archive" /> : <ChevronDown size={16} className="text-archive" />
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsExpanded(!isExpanded);
+              }}
+              aria-expanded={isExpanded}
+              aria-controls={isExpanded ? detailsId : undefined}
+              aria-label={`Field changes for ${entityName}`}
+              className="p-0.5 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+            >
+              {isExpanded ? (
+                <ChevronUp size={16} className="text-archive" aria-hidden="true" />
+              ) : (
+                <ChevronDown size={16} className="text-archive" aria-hidden="true" />
+              )}
+            </button>
           )}
         </div>
       </div>
 
       {/* Expanded field diffs */}
       {isExpanded && canExpand && (
-        <div className="px-4 pb-3">
+        <div id={detailsId} className="px-4 pb-3">
           <div className="ml-36 pl-4 border-l-2 border-lichen bg-stone/20 rounded-r-lg p-3">
             {isLoadingDetail ? (
               <div className="animate-pulse space-y-2">
@@ -255,8 +275,9 @@ export default function EntityAuditPage() {
         <div className="grid grid-cols-4 gap-4">
           {/* Entity Type */}
           <div>
-            <label className="block text-xs text-archive mb-1">Entity Type</label>
+            <label htmlFor="entity-audit-entity-type" className="block text-xs text-archive mb-1">Entity Type</label>
             <select
+              id="entity-audit-entity-type"
               value={entityType}
               onChange={(e) => { setEntityType(e.target.value); setOffset(0); }}
               className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg bg-parchment text-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -270,8 +291,9 @@ export default function EntityAuditPage() {
 
           {/* Change Type */}
           <div>
-            <label className="block text-xs text-archive mb-1">Change Type</label>
+            <label htmlFor="entity-audit-change-type" className="block text-xs text-archive mb-1">Change Type</label>
             <select
+              id="entity-audit-change-type"
               value={changeType}
               onChange={(e) => { setChangeType(e.target.value); setOffset(0); }}
               className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg bg-parchment text-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
@@ -285,8 +307,9 @@ export default function EntityAuditPage() {
 
           {/* Since Date */}
           <div>
-            <label className="block text-xs text-archive mb-1">From Date</label>
+            <label htmlFor="entity-audit-from-date" className="block text-xs text-archive mb-1">From Date</label>
             <input
+              id="entity-audit-from-date"
               type="date"
               value={sinceDate}
               onChange={(e) => { setSinceDate(e.target.value); setOffset(0); }}
@@ -296,8 +319,9 @@ export default function EntityAuditPage() {
 
           {/* Until Date */}
           <div>
-            <label className="block text-xs text-archive mb-1">To Date</label>
+            <label htmlFor="entity-audit-to-date" className="block text-xs text-archive mb-1">To Date</label>
             <input
+              id="entity-audit-to-date"
               type="date"
               value={untilDate}
               onChange={(e) => { setUntilDate(e.target.value); setOffset(0); }}

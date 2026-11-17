@@ -520,11 +520,13 @@ def update_page(
                 ))
 
             # Collapse redirect chains: update any redirect pointing to old_path
-            db.query(Redirect).filter(
+            # Row by row so each redirect's history records the new target.
+            for chained in db.query(Redirect).filter(
                 Redirect.organization_id == organization_id,
                 Redirect.target_path == old_path,
-                Redirect.is_active == True,
-            ).update({"target_path": new_path})
+                Redirect.is_active == True,  # noqa: E712
+            ).all():
+                chained.target_path = new_path
 
             page.slug = new_slug
 
@@ -565,16 +567,15 @@ def update_page(
 
     # Update categories for posts
     if body.category_ids is not None and page.page_type == "post":
-        # Remove existing
-        db.query(PageCategory).filter(
-            PageCategory.page_id == page.page_id,
-        ).delete()
-        # Add new
-        for cat_id in body.category_ids:
-            db.add(PageCategory(
-                page_id=page.page_id,
-                category_id=cat_id,
-            ))
+        # Edit the set in place so the page's history records only the
+        # categories actually added or removed.
+        wanted = {UUID(str(c)) for c in body.category_ids}
+        current = {pc.category_id: pc for pc in db.query(PageCategory).filter(PageCategory.page_id == page.page_id)}
+        for cat_id, pc in current.items():
+            if cat_id not in wanted:
+                db.delete(pc)
+        for cat_uuid in wanted - set(current):
+            db.add(PageCategory(page_id=page.page_id, category_id=cat_uuid))
 
     page.updated_by = auth.user_id
     db.commit()
@@ -638,31 +639,47 @@ def replace_blocks(
             "message": f"Page {page_id} not found",
         })
 
-    # Delete existing blocks
-    db.query(ContentBlock).filter(
-        ContentBlock.page_id == page.page_id,
-    ).delete()
-
-    # Create new blocks
-    new_blocks = []
     for i, block_data in enumerate(body.blocks):
-        block_type = block_data.get("block_type", "")
-        if block_type not in VALID_BLOCK_TYPES:
+        if block_data.get("block_type", "") not in VALID_BLOCK_TYPES:
             raise HTTPException(status_code=422, detail={
                 "code": "validation_error",
-                "message": f"Invalid block_type: {block_type}",
+                "message": f"Invalid block_type: {block_data.get('block_type', '')}",
                 "field": f"blocks[{i}].block_type",
             })
-        block = ContentBlock(
-            block_id=UUID(block_data["block_id"]) if block_data.get("block_id") else uuid.uuid4(),
-            page_id=page.page_id,
-            organization_id=organization_id,
-            block_type=block_type,
-            content=block_data.get("content", {}),
-            sort_order=i,
-        )
-        db.add(block)
+
+    # Edit blocks in place (matched by block_id) rather than deleting and
+    # re-inserting them all, so the page's history records the blocks that
+    # were actually added, removed or edited; an unchanged save records
+    # nothing.
+    existing = {b.block_id: b for b in db.query(ContentBlock).filter(ContentBlock.page_id == page.page_id)}
+    kept: set = set()
+    new_blocks = []
+    for i, block_data in enumerate(body.blocks):
+        block_id = UUID(block_data["block_id"]) if block_data.get("block_id") else None
+        block = existing.get(block_id) if block_id else None
+        content = block_data.get("content", {})
+        if block is None:
+            block = ContentBlock(
+                block_id=block_id or uuid.uuid4(),
+                page_id=page.page_id,
+                organization_id=organization_id,
+                block_type=block_data["block_type"],
+                content=content,
+                sort_order=i,
+            )
+            db.add(block)
+        else:
+            kept.add(block.block_id)
+            if block.block_type != block_data["block_type"]:
+                block.block_type = block_data["block_type"]
+            if block.content != content:
+                block.content = content
+            if block.sort_order != i:
+                block.sort_order = i
         new_blocks.append(block)
+    for block_id, block in existing.items():
+        if block_id not in kept:
+            db.delete(block)
 
     page.updated_by = auth.user_id
     db.commit()
@@ -1011,53 +1028,62 @@ def save_menu(
         db.flush()
     else:
         menu.name = body.name if body.name is not None else menu.name
-        # Delete existing items (full replace)
-        db.query(MenuItem).filter(
-            MenuItem.menu_id == menu.menu_id,
-        ).delete()
 
-    # Create new items from nested tree
-    for i, item_data in enumerate(body.items):
-        link_type = item_data.get("link_type", "url")
+    # Bring the items in line in place, one level at a time, so the menu's
+    # history records the links actually added, removed or edited; an
+    # unchanged save records nothing.
+    from app.services.child_rows import reconcile_rows
+
+    fields = ("label", "link_type", "page_id", "url", "description", "image_media_id", "highlight")
+
+    def _item(data):
+        link_type = data.get("link_type", "url")
         if link_type not in VALID_LINK_TYPES:
-            continue
-        parent = MenuItem(
-            menu_item_id=uuid.uuid4(),
-            menu_id=menu.menu_id,
-            organization_id=organization_id,
-            parent_item_id=None,
-            label=(item_data.get("label") or "").strip()[:100],
-            link_type=link_type,
-            page_id=UUID(item_data["page_id"]) if item_data.get("page_id") else None,
-            url=item_data.get("url"),
-            sort_order=i,
-            description=item_data.get("description"),
-            image_media_id=UUID(item_data["image_media_id"]) if item_data.get("image_media_id") else None,
-            highlight=bool(item_data.get("highlight", False)),
-        )
-        db.add(parent)
-        db.flush()
+            return None
+        return {
+            "label": (data.get("label") or "").strip()[:100],
+            "link_type": link_type,
+            "page_id": UUID(data["page_id"]) if data.get("page_id") else None,
+            "url": data.get("url"),
+            "description": data.get("description"),
+            "image_media_id": UUID(data["image_media_id"]) if data.get("image_media_id") else None,
+            "highlight": bool(data.get("highlight", False)),
+        }
 
-        # Children (one level of nesting -- supports 2 levels total)
-        for j, child_data in enumerate(item_data.get("children", [])):
-            child_link_type = child_data.get("link_type", "url")
-            if child_link_type not in VALID_LINK_TYPES:
-                continue
-            child = MenuItem(
-                menu_item_id=uuid.uuid4(),
-                menu_id=menu.menu_id,
-                organization_id=organization_id,
-                parent_item_id=parent.menu_item_id,
-                label=(child_data.get("label") or "").strip()[:100],
-                link_type=child_link_type,
-                page_id=UUID(child_data["page_id"]) if child_data.get("page_id") else None,
-                url=child_data.get("url"),
-                sort_order=j,
-                description=child_data.get("description"),
-                image_media_id=UUID(child_data["image_media_id"]) if child_data.get("image_media_id") else None,
-                highlight=bool(child_data.get("highlight", False)),
-            )
-            db.add(child)
+    def _new_item(parent_id):
+        return lambda i, item: MenuItem(
+            menu_item_id=uuid.uuid4(), menu_id=menu.menu_id, organization_id=organization_id,
+            parent_item_id=parent_id, sort_order=i, **item,
+        )
+
+    current = db.query(MenuItem).filter(MenuItem.menu_id == menu.menu_id).all()
+    children_of: dict = {}
+    for row in current:
+        children_of.setdefault(row.parent_item_id, []).append(row)
+    for rows in children_of.values():
+        rows.sort(key=lambda r: r.sort_order or 0)
+
+    top_data = [d for d in body.items if _item(d) is not None]
+    top_rows = reconcile_rows(
+        db, children_of.get(None, []), [_item(d) for d in top_data], fields,
+        _new_item(None), key_fields=("label",), order_field="sort_order",
+    )
+    db.flush()  # new parents need their ids before their children
+    kept_parents = set()
+    for row, data in zip(top_rows, top_data):
+        kept_parents.add(row.menu_item_id)
+        child_data = [c for c in data.get("children", []) if _item(c) is not None]
+        reconcile_rows(
+            db, children_of.get(row.menu_item_id, []), [_item(c) for c in child_data], fields,
+            _new_item(row.menu_item_id), key_fields=("label",), order_field="sort_order",
+        )
+    # Children of removed parents go explicitly (not by the database
+    # cascade) so their removal is recorded too.
+    for parent_id, rows in children_of.items():
+        if parent_id is not None and parent_id not in kept_parents:
+            for row in rows:
+                if row not in db.deleted:
+                    db.delete(row)
 
     db.commit()
     db.refresh(menu)

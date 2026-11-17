@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from sqlalchemy import func
@@ -90,6 +91,66 @@ def _serialize_tag_value(value: MediaTagValue, depth: int | None = None, usage_c
     if usage_count is not None:
         out["usage_count"] = usage_count
     return out
+
+
+def set_media_tags(db: Session, org_id: UUID, media_id: UUID, desired: list[dict], user_id, definition_ids=None) -> list[MediaTag]:
+    """Bring a media item's tags in line with ``desired`` by editing in place.
+
+    ``desired`` items are {"definition_id", "value_id", "tag_value"}.
+    Unchanged tags are kept, a text tag whose value changed is updated, and
+    only tags that were really added or removed are inserted or deleted, so
+    the media item's history records real changes and an unchanged save
+    records nothing. ``definition_ids`` limits the edit to those definitions
+    (the workspace bulk action edits one definition at a time).
+    """
+    query = db.query(MediaTag).filter(MediaTag.media_id == media_id)
+    if definition_ids is not None:
+        query = query.filter(MediaTag.definition_id.in_(list(definition_ids)))
+    current = query.all()
+
+    def key(item):
+        get = item.get if isinstance(item, dict) else (lambda f: getattr(item, f))
+        return (get("definition_id"), get("value_id"), None if get("value_id") else get("tag_value"))
+
+    by_key = {}
+    for row in current:
+        by_key.setdefault(key(row), []).append(row)
+    kept, unmatched = [], []
+    for item in desired:
+        rows = by_key.get(key(item))
+        if rows:
+            kept.append(rows.pop(0))
+        else:
+            unmatched.append(item)
+    leftovers = [r for rows in by_key.values() for r in rows]
+
+    result = list(kept)
+    to_add = []
+    for item in unmatched:
+        # A single text value replaced by another: one edit, not a removal
+        # and an addition.
+        reuse = None
+        if not item.get("value_id"):
+            reuse = next((r for r in leftovers if r.definition_id == item["definition_id"] and not r.value_id), None)
+        if reuse is not None:
+            leftovers.remove(reuse)
+            reuse.tag_value = item["tag_value"]
+            result.append(reuse)
+        else:
+            to_add.append(item)
+    for row in leftovers:
+        db.delete(row)
+    # Flush the deletes before the inserts so nothing trips the uniqueness rule.
+    db.flush()
+    for item in to_add:
+        tag = MediaTag(
+            organization_id=org_id, media_id=media_id, definition_id=item["definition_id"],
+            value_id=item.get("value_id"), tag_value=item["tag_value"], created_by=user_id,
+        )
+        db.add(tag)
+        result.append(tag)
+    db.flush()
+    return result
 
 
 def _serialize_media_tag(tag: MediaTag, include_definition: bool = True) -> dict:
@@ -261,9 +322,9 @@ def create_tag_definition(
     db.add(definition)
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Tag key already exists")
+        raise integrity_http_error(exc, "Tag key already exists") from None
 
     db.refresh(definition)
     return _serialize_tag_definition(definition)
@@ -344,9 +405,9 @@ def update_tag_definition(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Tag definition conflict")
+        raise integrity_http_error(exc, "Tag definition conflict") from None
 
     db.refresh(definition)
     return _serialize_tag_definition(definition)
@@ -538,9 +599,9 @@ def set_media_tag(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Tag already exists for this media")
+        raise integrity_http_error(exc, "Tag already exists for this media") from None
 
     db.refresh(tag)
     _reindex_media_for_tags(media, db)
@@ -608,10 +669,7 @@ def bulk_update_media_tags(
     if not media:
         raise HTTPException(status_code=404, detail="Media not found")
 
-    # Remove all existing tags for this media, then reinsert from scratch.
-    db.query(MediaTag).filter(MediaTag.media_id == media_id).delete(synchronize_session=False)
-
-    new_tags: list[MediaTag] = []
+    new_tags: list[dict] = []
     seen_single: set[UUID] = set()  # enforce single-value for non-multi controlled
     seen_pairs: set[tuple[UUID, UUID]] = set()  # (definition_id, value_id)
 
@@ -653,36 +711,21 @@ def bulk_update_media_tags(
             if (def_uuid, node.value_id) in seen_pairs:
                 continue
             seen_pairs.add((def_uuid, node.value_id))
-            new_tags.append(MediaTag(
-                organization_id=org_id,
-                media_id=media_id,
-                definition_id=def_uuid,
-                value_id=node.value_id,
-                tag_value=node.value,
-                created_by=auth.user_id,
-            ))
+            new_tags.append({"definition_id": def_uuid, "value_id": node.value_id, "tag_value": node.value})
         else:
             if not tag_value_in:
                 continue
             if def_uuid in seen_single:
                 continue
             seen_single.add(def_uuid)
-            new_tags.append(MediaTag(
-                organization_id=org_id,
-                media_id=media_id,
-                definition_id=def_uuid,
-                tag_value=tag_value_in,
-                created_by=auth.user_id,
-            ))
-
-    for t in new_tags:
-        db.add(t)
+            new_tags.append({"definition_id": def_uuid, "value_id": None, "tag_value": tag_value_in})
 
     try:
+        new_tags = set_media_tags(db, org_id, media_id, new_tags, auth.user_id)
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Duplicate tag in batch operation")
+        raise integrity_http_error(exc, "Duplicate tag in batch operation") from None
 
     _reindex_media_for_tags(media, db)
 
@@ -830,9 +873,9 @@ def add_tag_value(
     db.add(node)
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Value already exists at this level")
+        raise integrity_http_error(exc, "Value already exists at this level") from None
     db.refresh(node)
     return _serialize_tag_value(node)
 
@@ -909,9 +952,9 @@ def update_tag_value(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Value conflict (duplicate sibling)")
+        raise integrity_http_error(exc, "Value conflict (duplicate sibling)") from None
     db.refresh(node)
     # If the canonical value string changed, keep denormalized MediaTag rows in sync.
     if "value" in body:

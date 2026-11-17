@@ -40,7 +40,8 @@ from app.fastapi_app.schemas.collections_conservation import (
     DeaccessionListResponse,
     DeaccessionAuditListResponse,
 )
-from app.services.procedure_enforcement import check_blocking_requirements
+from app.services.procedure_enforcement import raise_if_requirements_unmet
+from app.services.collections.record_fields import apply_record_fields
 
 logger = logging.getLogger(__name__)
 
@@ -49,13 +50,36 @@ router = APIRouter(tags=["collections-conservation"])
 
 def _enforce_procedure(organization_id: UUID, procedure_type: str, entity, target_status: str, db: Session):
     """Raise 422 if procedure enforcement is enabled and blocking requirements are unmet."""
-    missing = check_blocking_requirements(organization_id, procedure_type, entity, target_status, db)
-    if missing:
+    raise_if_requirements_unmet(organization_id, procedure_type, entity, target_status, db)
+
+
+# Columns the form never writes, on create or update. Each procedure adds the
+# caller's write-restricted fields (field access) at request time.
+_CONSERVATION_PROTECTED = frozenset({
+    'treatment_id', 'treatment_number', 'approved_by', 'approval_date', 'approved_at', 'status',
+})
+_EXIT_PROTECTED = frozenset({'exit_id', 'exit_number', 'status'})
+_DEACCESSION_PROTECTED = frozenset({'deaccession_id', 'deaccession_number', 'status'})
+
+
+def _protected(base: frozenset[str], entity_type: str, organization_id, auth: AuthContext, db: Session) -> set[str]:
+    return set(base) | get_write_restricted_fields(
+        entity_type, str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override
+    )
+
+
+def _sync_materials(db: Session, treatment, value, actor) -> None:
+    """Write ``materials_used`` to treatment_materials; 422 on a bad shape."""
+    from app.services.collections.treatment_materials import sync_treatment_materials
+
+    try:
+        sync_treatment_materials(db, treatment, value, actor)
+    except ValueError as exc:
         raise HTTPException(status_code=422, detail={
-            "code": "procedure_requirements_not_met",
-            "message": f"Cannot advance to {target_status}: unmet requirements",
-            "blocking_requirements": missing,
-        })
+            "code": "validation_error",
+            "message": str(exc),
+            "field": "materials_used",
+        }) from exc
 
 
 def _sync_entry_outcome_from_exit(
@@ -132,6 +156,8 @@ def create_conservation_treatment(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(ConservationTreatment, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, ConservationTreatment, data)
 
     # Create via the shared service — the same code the draft applier runs.
     from app.services.collections.creation.conservation_treatment import (
@@ -142,6 +168,11 @@ def create_conservation_treatment(
         treatment = _create_conservation_treatment(
             db, organization_id, data, auth.user_id, open_approval=True
         )
+        # Every other form field, through the same path as update.
+        protected_fields = _protected(_CONSERVATION_PROTECTED, 'conservation_treatment', organization_id, auth, db)
+        apply_record_fields(treatment, ConservationTreatment, data, protected_fields)
+        if data.get("materials_used") is not None and 'materials_used' not in protected_fields:
+            _sync_materials(db, treatment, data["materials_used"], auth.user_id)
         db.commit()
     except Exception:
         db.rollback()
@@ -247,11 +278,13 @@ def update_conservation_treatment(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(ConservationTreatment, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, ConservationTreatment, data, current=treatment)
 
     old_status = treatment.status
 
     # Optimistic concurrency — reject stale updates
-    from app.services.coerce import check_version, coerce_value_for_column
+    from app.services.coerce import check_version
     check_version(treatment, data)
 
     # Prevent removing object_id
@@ -264,25 +297,22 @@ def update_conservation_treatment(
 
     old_status = treatment.status
     new_status = data.pop('status', None)
+    # Materials live in their own table; the form sends them as a list.
+    materials_present = 'materials_used' in data
+    materials_value = data.pop('materials_used', None)
 
-    protected_fields = {
-        'treatment_id', 'organization_id', 'treatment_number', 'created_at', 'created_by',
-        'updated_by', 'approved_by', 'approval_date', 'approved_at', 'version',
-    }
-    protected_fields |= get_write_restricted_fields('conservation_treatment', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
-    for key, value in data.items():
-        if hasattr(treatment, key) and key not in protected_fields:
-            if key.endswith('_id') and value:
-                setattr(treatment, key, UUID(value))
-            else:
-                setattr(treatment, key, coerce_value_for_column(ConservationTreatment, key, value))
+    protected_fields = _protected(_CONSERVATION_PROTECTED, 'conservation_treatment', organization_id, auth, db)
+    apply_record_fields(treatment, ConservationTreatment, data, protected_fields)
+
+    if materials_present and 'materials_used' not in protected_fields:
+        _sync_materials(db, treatment, materials_value, auth.user_id)
 
     if new_status and new_status != old_status:
         from app.services.workflow_definitions import WORKFLOW_DEFINITIONS
         workflow = WORKFLOW_DEFINITIONS.get('conservation_treatment')
         if workflow and new_status not in workflow.valid_statuses:
             raise HTTPException(status_code=409, detail={"code": "invalid_status", "message": f"'{new_status}' is not a valid status"})
-        _enforce_procedure(organization_id, "conservation_treatment", treatment, new_status, db)
+        _enforce_procedure(organization_id, "conservation", treatment, new_status, db)
         treatment.status = new_status
 
     treatment.updated_by = auth.user_id
@@ -442,6 +472,8 @@ def create_object_exit(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(ObjectExit, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, ObjectExit, data)
 
     # Create via the shared service — the same code the draft applier runs. It
     # owns the EX number, the object_exit/create approval gate, and the
@@ -452,6 +484,10 @@ def create_object_exit(
 
     try:
         exit_rec = _create_object_exit(db, organization_id, data, auth.user_id, open_approval=True)
+        # Every other form field, through the same path as update.
+        apply_record_fields(
+            exit_rec, ObjectExit, data, _protected(_EXIT_PROTECTED, 'object_exit', organization_id, auth, db)
+        )
         db.commit()
     except Exception:
         db.rollback()
@@ -564,24 +600,18 @@ def update_object_exit(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(ObjectExit, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, ObjectExit, data, current=exit_rec)
 
-    from app.services.coerce import check_version, coerce_value_for_column
+    from app.services.coerce import check_version
     check_version(exit_rec, data)
 
     old_status = exit_rec.status
     new_status = data.pop('status', None)
     previous_entry_id = exit_rec.entry_id
 
-    protected_fields = {'exit_id', 'organization_id', 'exit_number', 'created_at', 'created_by', 'updated_by'}
-    protected_fields |= get_write_restricted_fields('object_exit', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
-    for key, value in data.items():
-        if hasattr(exit_rec, key) and key not in protected_fields:
-            if key.endswith('_id') and value:
-                setattr(exit_rec, key, UUID(value))
-            elif key.endswith('_id') and value in (None, ""):
-                setattr(exit_rec, key, None)
-            else:
-                setattr(exit_rec, key, coerce_value_for_column(ObjectExit, key, value))
+    protected_fields = _protected(_EXIT_PROTECTED, 'object_exit', organization_id, auth, db)
+    apply_record_fields(exit_rec, ObjectExit, data, protected_fields)
 
     if new_status and new_status != old_status:
         from app.services.workflow_definitions import WORKFLOW_DEFINITIONS
@@ -788,6 +818,8 @@ def create_deaccession(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(Deaccession, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, Deaccession, data)
 
     # Create via the shared service — the same code the draft applier runs. It
     # owns the DA number, the deaccession/create approval gate, and the
@@ -798,6 +830,10 @@ def create_deaccession(
 
     try:
         deacc = _create_deaccession(db, organization_id, data, auth.user_id, open_approval=True)
+        # Every other form field, through the same path as update.
+        apply_record_fields(
+            deacc, Deaccession, data, _protected(_DEACCESSION_PROTECTED, 'deaccession', organization_id, auth, db)
+        )
         db.commit()
     except Exception:
         db.rollback()
@@ -908,33 +944,27 @@ def update_deaccession(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(Deaccession, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, Deaccession, data, current=deacc)
 
     # Optimistic concurrency — reject stale updates
-    from app.services.coerce import check_version, coerce_value_for_column
+    from app.services.coerce import check_version
     check_version(deacc, data)
 
     old_status = deacc.status
     new_status = data.pop('status', None)
 
-    protected_fields = {'deaccession_id', 'organization_id', 'deaccession_number', 'created_at', 'created_by', 'updated_by', 'version'}
-    protected_fields |= get_write_restricted_fields('deaccession', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
+    protected_fields = _protected(_DEACCESSION_PROTECTED, 'deaccession', organization_id, auth, db)
 
     # Track changes for audit
     changes = []
-    for key, value in data.items():
-        if hasattr(deacc, key) and key not in protected_fields:
-            old_value = getattr(deacc, key)
-            if key.endswith('_id') and value:
-                setattr(deacc, key, UUID(value))
-            else:
-                setattr(deacc, key, coerce_value_for_column(Deaccession, key, value))
-
-            if str(old_value) != str(value):
-                changes.append({
-                    "field": key,
-                    "old": str(old_value) if old_value else None,
-                    "new": str(value) if value else None,
-                })
+    for key, old_value, value in apply_record_fields(deacc, Deaccession, data, protected_fields):
+        if str(old_value) != str(value):
+            changes.append({
+                "field": key,
+                "old": str(old_value) if old_value else None,
+                "new": str(value) if value else None,
+            })
 
     if new_status and new_status != old_status:
         from app.services.workflow_definitions import WORKFLOW_DEFINITIONS
@@ -1313,9 +1343,11 @@ def rollback_deaccession(
     if (current_index >= status_order.index("committee_reviewed")
             and target_index < status_order.index("committee_reviewed")):
         from app.models import DeaccessionVote
-        db.query(DeaccessionVote).filter(
+        # Row by row so each cleared vote is recorded on the deaccession's history.
+        for vote in db.query(DeaccessionVote).filter(
             DeaccessionVote.deaccession_id == deacc.deaccession_id
-        ).delete()
+        ).all():
+            db.delete(vote)
 
     try:
         rollback_entity(

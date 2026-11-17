@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useId } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { formatDateShort, formatDateTime } from '@/lib/formatters';
@@ -21,6 +21,7 @@ import {
   X,
   ShieldCheck,
   ClipboardList,
+  Paperclip,
 } from 'lucide-react';
 import {
   WorkspaceHeader,
@@ -34,8 +35,11 @@ import {
   ReadOnlyBanner,
   PendingApprovalBanner,
 } from '../../../components/workspace';
+import { RequiredFieldsProvider, RequiredFieldMessage } from '../../../components/workspace/RequiredFieldsContext';
+import { useRevealSection, useRequiredField } from '../../../components/workspace/requiredFields';
 import { ContactSelectorSlideOver } from '../../../components/collections/ConstituentSelectorSlideOver';
 import { SignedDocumentSlot } from '../../../components/collections/SignedDocumentSlot';
+import { ProcedureAttachments } from '../../../components/collections/ProcedureAttachments';
 import { useConstituentSelector } from '../../../hooks/useContactSelector';
 import { getContact } from '../../../lib/api';
 import { RecordDetailPageWrapper, SectionOrderProvider } from '../../../components/record-detail';
@@ -71,7 +75,9 @@ import { MadronaLoader } from '../../../components/ui/MadronaLoader';
 export default function AcquisitionWorkspacePage() {
   return (
     <SectionOrderProvider>
-      <AcquisitionWorkspacePageContent />
+      <RequiredFieldsProvider procedureType="acquisition">
+        <AcquisitionWorkspacePageContent />
+      </RequiredFieldsProvider>
     </SectionOrderProvider>
   );
 }
@@ -106,6 +112,8 @@ function AcquisitionWorkspacePageContent() {
 
   // Source contact selector
   const sourceSelector = useConstituentSelector();
+  const sourceLabelId = useId();
+  const { register: sourceRegister, error: sourceError } = useRequiredField('source_id', false, 'source', formData.source_id);
 
   const { data: sourceContact } = useQuery({
     queryKey: ['contact', orgId, formData.source_id],
@@ -236,6 +244,7 @@ function AcquisitionWorkspacePageContent() {
       deed_of_gift_date: formData.deed_of_gift_date,
       authorization_date: formData.authorization_date,
     },
+    attachments: {},
     linkedEntry: linkedEntry ? { entry_id: acquisition?.entry_id } : {},
     accessioning: acquisition?.status === 'completed' || acquisition?.status === 'accessioned'
       ? { accession_number: formData.accession_number, completed: true }
@@ -243,6 +252,9 @@ function AcquisitionWorkspacePageContent() {
     discussion: {},
     history: {},
   };
+
+  // Lets the required-fields error summary open a collapsed section.
+  useRevealSection(handleEnterEditMode);
 
   // Loading state
   if (!isCreateMode && isLoading) {
@@ -467,6 +479,7 @@ function AcquisitionWorkspacePageContent() {
         >
           <div className="grid grid-cols-2 gap-6">
             <EditableSelect
+              name="acquisition_method"
               value={formData.acquisition_method || ''}
               label="Acquisition Method"
               isEditing={isEditing}
@@ -475,6 +488,7 @@ function AcquisitionWorkspacePageContent() {
               required
             />
             <EditableField
+              name="acquisition_date"
               value={formData.acquisition_date || ''}
               label="Acquisition Date"
               isEditing={isEditing}
@@ -482,6 +496,7 @@ function AcquisitionWorkspacePageContent() {
               type="date"
             />
             <EditableField
+              name="objects_count"
               value={formData.objects_count?.toString() || '1'}
               label="Number of Objects"
               isEditing={isEditing}
@@ -489,6 +504,7 @@ function AcquisitionWorkspacePageContent() {
               type="number"
             />
             <EditableField
+              name="acquisition_reason"
               value={formData.acquisition_reason || ''}
               label="Acquisition Reason"
               isEditing={isEditing}
@@ -513,8 +529,8 @@ function AcquisitionWorkspacePageContent() {
         >
           <div className="grid grid-cols-2 gap-6">
             {/* Contact-linked source selector */}
-            <div className="col-span-2">
-              <dt className="text-sm font-medium text-archive mb-1">Source</dt>
+            <div className="col-span-2" role="group" aria-labelledby={`${sourceLabelId}`}>
+              <span id={sourceLabelId} className="block text-sm font-medium text-archive mb-1">Source</span>
               {isEditing ? (
                 <div className="flex items-center gap-2">
                   {formData.source_id && sourceContact ? (
@@ -528,13 +544,16 @@ function AcquisitionWorkspacePageContent() {
                         <button
                           type="button"
                           onClick={() => updateField('source_id', '')}
+                          aria-label={`Clear source ${sourceContact.name}`}
                           className="ml-auto p-1 text-archive hover:text-semantic-error"
                         >
-                          <X size={14} />
+                          <X size={14} aria-hidden="true" />
                         </button>
                       </div>
                       <button
                         type="button"
+                        ref={sourceRegister}
+                        aria-describedby={sourceError?.id}
                         onClick={() => sourceSelector.open()}
                         className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
                       >
@@ -544,6 +563,8 @@ function AcquisitionWorkspacePageContent() {
                   ) : (
                     <button
                       type="button"
+                      ref={sourceRegister}
+                      aria-describedby={sourceError?.id}
                       onClick={() => sourceSelector.open()}
                       className="flex-1 flex items-center gap-2 px-3 py-2 border border-dashed border-lichen rounded-lg text-sm text-archive hover:border-bark hover:text-bark transition-colors"
                     >
@@ -553,7 +574,7 @@ function AcquisitionWorkspacePageContent() {
                   )}
                 </div>
               ) : (
-                <dd className="text-ink">
+                <div className="text-ink">
                   {sourceContact ? (
                     <span>
                       {sourceContact.name}
@@ -564,10 +585,12 @@ function AcquisitionWorkspacePageContent() {
                   ) : (
                     <span className="text-archive">Not specified</span>
                   )}
-                </dd>
+                </div>
               )}
+              {sourceError && <RequiredFieldMessage error={sourceError} />}
             </div>
             <EditableSelect
+              name="source_type"
               value={formData.source_type || ''}
               label="Source Type"
               isEditing={isEditing}
@@ -593,6 +616,7 @@ function AcquisitionWorkspacePageContent() {
         >
           <div className="grid grid-cols-2 gap-6">
             <EditableField
+              name="cost"
               value={formData.cost || ''}
               label="Cost/Value"
               isEditing={isEditing}
@@ -602,6 +626,7 @@ function AcquisitionWorkspacePageContent() {
               restricted={isRestricted('cost')}
             />
             <EditableSelect
+              name="cost_currency"
               value={formData.cost_currency || 'USD'}
               label="Currency"
               isEditing={isEditing}
@@ -609,6 +634,7 @@ function AcquisitionWorkspacePageContent() {
               options={getLookup('currency')}
             />
             <EditableField
+              name="funding_source"
               value={formData.funding_source || ''}
               label="Funding Source"
               isEditing={isEditing}
@@ -617,6 +643,7 @@ function AcquisitionWorkspacePageContent() {
               restricted={isRestricted('funding_source')}
             />
             <EditableField
+              name="funding_account"
               value={formData.funding_account || ''}
               label="Funding Account"
               isEditing={isEditing}
@@ -627,6 +654,7 @@ function AcquisitionWorkspacePageContent() {
           </div>
           <div className="mt-6">
             <EditableField
+              name="funding_note"
               value={formData.funding_note || ''}
               label="Funding Notes"
               isEditing={isEditing}
@@ -642,6 +670,7 @@ function AcquisitionWorkspacePageContent() {
             <h4 className="text-sm font-medium text-ink mb-4">Appraisal</h4>
             <div className="grid grid-cols-2 gap-6">
               <EditableField
+                name="appraised_value"
                 value={formData.appraised_value || ''}
                 label="Appraised Value"
                 isEditing={isEditing}
@@ -651,6 +680,7 @@ function AcquisitionWorkspacePageContent() {
                 restricted={isRestricted('appraised_value')}
               />
               <EditableSelect
+                name="appraised_value_currency"
                 value={formData.appraised_value_currency || 'USD'}
                 label="Appraisal Currency"
                 isEditing={isEditing}
@@ -658,6 +688,7 @@ function AcquisitionWorkspacePageContent() {
                 options={getLookup('currency')}
               />
               <EditableField
+                name="appraised_date"
                 value={formData.appraised_date || ''}
                 label="Appraisal Date"
                 isEditing={isEditing}
@@ -665,6 +696,7 @@ function AcquisitionWorkspacePageContent() {
                 type="date"
               />
               <EditableField
+                name="appraiser_name"
                 value={formData.appraiser_name || ''}
                 label="Appraiser Name"
                 isEditing={isEditing}
@@ -688,6 +720,7 @@ function AcquisitionWorkspacePageContent() {
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-6">
               <EditableSelect
+                name="legal_status"
                 value={formData.legal_status || 'clear'}
                 label="Legal Status"
                 isEditing={isEditing}
@@ -695,6 +728,7 @@ function AcquisitionWorkspacePageContent() {
                 options={getLookup('legal_status')}
               />
               <EditableField
+                name="credit_line"
                 value={formData.credit_line || ''}
                 label="Credit Line"
                 isEditing={isEditing}
@@ -703,6 +737,7 @@ function AcquisitionWorkspacePageContent() {
               />
             </div>
             <EditableField
+              name="provisos"
               value={formData.provisos || ''}
               label="Provisos"
               isEditing={isEditing}
@@ -713,6 +748,7 @@ function AcquisitionWorkspacePageContent() {
               restricted={isRestricted('provisos')}
             />
             <EditableField
+              name="donor_restrictions"
               value={formData.donor_restrictions || ''}
               label="Donor Restrictions"
               isEditing={isEditing}
@@ -723,6 +759,7 @@ function AcquisitionWorkspacePageContent() {
             />
             {/* Acknowledgment */}
             <EditableField
+              name="acknowledgement_date"
               value={formData.acknowledgement_date || ''}
               label="Acknowledgment Date"
               isEditing={isEditing}
@@ -730,6 +767,7 @@ function AcquisitionWorkspacePageContent() {
               type="date"
             />
             <EditableField
+              name="acknowledgement_reference"
               value={formData.acknowledgement_reference || ''}
               label="Acknowledgment Reference"
               isEditing={isEditing}
@@ -737,6 +775,7 @@ function AcquisitionWorkspacePageContent() {
               placeholder="Reference number for acknowledgment"
             />
             <EditableField
+              name="transfer_of_title_number"
               value={formData.transfer_of_title_number || ''}
               label="Transfer of Title Number"
               isEditing={isEditing}
@@ -751,6 +790,7 @@ function AcquisitionWorkspacePageContent() {
               description="Confirm that provenance research has been completed."
             />
             <EditableField
+              name="provenance_note"
               value={formData.provenance_note || ''}
               label="Provenance Note"
               isEditing={isEditing}
@@ -760,6 +800,7 @@ function AcquisitionWorkspacePageContent() {
               placeholder="Provenance research details..."
             />
             <EditableField
+              name="legal_note"
               value={formData.legal_note || ''}
               label="Legal Note"
               isEditing={isEditing}
@@ -793,6 +834,7 @@ function AcquisitionWorkspacePageContent() {
             {formData.board_approval_required && (
               <div className="grid grid-cols-2 gap-6">
                 <EditableField
+                  name="board_approval_date"
                   value={formData.board_approval_date || ''}
                   label="Board Approval Date"
                   isEditing={isEditing}
@@ -800,6 +842,7 @@ function AcquisitionWorkspacePageContent() {
                   type="date"
                 />
                 <EditableField
+                  name="board_approval_reference"
                   value={formData.board_approval_reference || ''}
                   label="Board Approval Reference"
                   isEditing={isEditing}
@@ -809,6 +852,7 @@ function AcquisitionWorkspacePageContent() {
               </div>
             )}
             <EditableField
+              name="board_note"
               value={formData.board_note || ''}
               label="Board Note"
               isEditing={isEditing}
@@ -832,6 +876,7 @@ function AcquisitionWorkspacePageContent() {
         >
           <div className="grid grid-cols-2 gap-6">
             <EditableField
+              name="deed_of_gift_date"
               value={formData.deed_of_gift_date || ''}
               label="Deed of Gift Date"
               isEditing={isEditing}
@@ -839,20 +884,23 @@ function AcquisitionWorkspacePageContent() {
               type="date"
             />
             <EditableField
+              name="deed_of_gift_reference"
               value={formData.deed_of_gift_reference || ''}
               label="Deed of Gift Reference"
               isEditing={isEditing}
               onChange={(v) => updateField('deed_of_gift_reference', v)}
               placeholder="Document reference number"
             />
+            {/* Set by the Approve action (with the approver); not editable. */}
             <EditableField
               value={formData.authorization_date || ''}
               label="Authorization Date"
-              isEditing={isEditing}
-              onChange={(v) => updateField('authorization_date', v)}
-              type="date"
+              isEditing={false}
+              onChange={() => {}}
+              emptyText="Set when the acquisition is approved"
             />
             <EditableField
+              name="authorization_note"
               value={formData.authorization_note || ''}
               label="Authorization Note"
               isEditing={isEditing}
@@ -863,6 +911,7 @@ function AcquisitionWorkspacePageContent() {
           </div>
           <div className="mt-6">
             <EditableField
+              name="acquisition_note"
               value={formData.acquisition_note || ''}
               label="Acquisition Notes"
               isEditing={isEditing}
@@ -874,6 +923,7 @@ function AcquisitionWorkspacePageContent() {
           </div>
           <div className="mt-6">
             <EditableField
+              name="internal_note"
               value={formData.internal_note || ''}
               label="Internal Note"
               isEditing={isEditing}
@@ -898,6 +948,31 @@ function AcquisitionWorkspacePageContent() {
             </div>
           )}
         </WorkspaceSection>
+
+        {/* Attachments — general files (invoices, correspondence, braille copies) */}
+        {!isCreateMode && acquisition?.acquisition_id && orgId && (
+          <WorkspaceSection
+            id="attachments"
+            title="Attachments"
+            icon={<Paperclip size={20} />}
+            isExpanded={expandedSections.attachments}
+            onToggle={() => toggleSection('attachments')}
+            isEditing={isEditing}
+            order={getSectionOrder('attachments')}
+          >
+            <ProcedureAttachments
+              organizationId={orgId}
+              procedureType="acquisition"
+              procedureId={acquisition.acquisition_id}
+              canManage={isEditing && checkPerm('collections.edit')}
+              readOnlyHint={
+                checkPerm('collections.edit')
+                  ? 'Switch to edit mode to add or delete attachments.'
+                  : undefined
+              }
+            />
+          </WorkspaceSection>
+        )}
 
         {/* === LINKED GROUP === */}
         {useNewLayout && !isCreateMode && <SectionGroupDivider label="Linked" icon={Package} />}
@@ -975,6 +1050,7 @@ function AcquisitionWorkspacePageContent() {
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-6">
                   <EditableField
+                    name="accession_number"
                     value={formData.accession_number || ''}
                     label="Accession Number"
                     isEditing={isEditing}
@@ -982,6 +1058,7 @@ function AcquisitionWorkspacePageContent() {
                     placeholder="e.g., 2026.001"
                   />
                   <EditableField
+                    name="accession_date"
                     value={formData.accession_date || ''}
                     label="Accession Date"
                     isEditing={isEditing}
@@ -998,6 +1075,7 @@ function AcquisitionWorkspacePageContent() {
                 />
                 {formData.accessioning_approved && (
                   <EditableField
+                    name="accessioning_approved_date"
                     value={formData.accessioning_approved_date || ''}
                     label="Approval Date"
                     isEditing={isEditing}
@@ -1006,6 +1084,7 @@ function AcquisitionWorkspacePageContent() {
                   />
                 )}
                 <EditableField
+                  name="accessioning_resolution"
                   value={formData.accessioning_resolution || ''}
                   label="Resolution Reference"
                   isEditing={isEditing}
@@ -1013,6 +1092,7 @@ function AcquisitionWorkspacePageContent() {
                   placeholder="Board resolution or committee reference"
                 />
                 <EditableField
+                  name="accessioning_note"
                   value={formData.accessioning_note || ''}
                   label="Accessioning Note"
                   isEditing={isEditing}

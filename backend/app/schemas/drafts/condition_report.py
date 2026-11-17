@@ -12,20 +12,14 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-# Mirror the live condition_reports CHECK constraints so an out-of-range value
-# fails at draft creation (a clear tool error), not at apply time (a buried
-# CheckViolation). Source: app/models/objects.py::ConditionReport.__table_args__.
-ReportType = Literal[
-    "intake",
-    "loan_out",
-    "loan_in",
-    "loan_return",
-    "periodic",
-    "conservation",
-    "incident",
-    "pre_treatment",
-    "post_treatment",
-]
+from app.schemas.drafts.base import LookupKey
+
+# Lookup-backed (organizations add values): checked against the org's
+# active lookup values when the draft is proposed or edited
+# (app/services/lookup_fields.check_draft_lookup_values), not a fixed list.
+ReportType = LookupKey
+# Mirrors the live CHECK (a ranked scale), so an out-of-range value fails at
+# draft creation, not at apply time.
 OverallCondition = Literal["excellent", "good", "fair", "poor", "unacceptable"]
 
 

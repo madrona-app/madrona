@@ -42,6 +42,18 @@ from app.services.uri_persistence import (
 
 logger = logging.getLogger(__name__)
 
+
+def _object_session(obj):
+    from sqlalchemy.orm import object_session
+
+    return object_session(obj)
+
+
+def _entry_label(entry: Dict[str, Any]) -> str:
+    """The English label of a IIIF metadata entry."""
+    labels = (entry.get("label") or {}).get("en") or []
+    return labels[0] if labels else ""
+
 # Configuration
 IIIF_BASE_URL = os.environ.get('IIIF_BASE_URL', 'https://iiif.madrona.io')
 PUBLIC_UI_BASE_URL = os.environ.get('PUBLIC_UI_BASE_URL', 'https://collections.madrona.io')
@@ -181,6 +193,15 @@ class IIIFLODService:
         """
         org_slug = org_slug or organization.slug or str(organization.organization_id)[:8]
 
+        # Only the organization's public fields (Discover settings > Public
+        # fields). Labels outside the field catalog (current location,
+        # department, depicted people) are never public.
+        from app.services import public_object_fields as pof
+
+        public_keys = pof.get_public_field_keys(
+            _object_session(obj), organization.organization_id,
+        )
+
         # Build stable URI for manifest @id
         # The manifest IS the LOD representation of the object
         manifest_uri = self._get_stable_manifest_uri(obj, org_slug)
@@ -196,7 +217,10 @@ class IIIFLODService:
             "label": self._create_language_map(self._get_display_title(obj)),
 
             # IIIF 3.0 metadata array with complete CDWA mapping
-            "metadata": self._build_cdwa_metadata(obj, org_slug),
+            "metadata": [
+                entry for entry in self._build_cdwa_metadata(obj, org_slug)
+                if pof.iiif_label_public(_entry_label(entry), public_keys)
+            ],
 
             # Canvases containing images
             "items": [],
@@ -207,7 +231,7 @@ class IIIFLODService:
         }
 
         # Summary from description
-        if obj.brief_description:
+        if obj.brief_description and pof.is_public("brief_description", public_keys):
             manifest["summary"] = self._create_language_map(obj.brief_description)
 
         # Rights statement (copyright fields moved to ObjectRight model)
@@ -230,7 +254,9 @@ class IIIFLODService:
         # Thumbnail from primary image
         primary_media = self._get_primary_media(media_items)
         if primary_media and primary_media.media:
-            manifest["thumbnail"] = [self._create_thumbnail(primary_media.media)]
+            thumb = self._create_thumbnail(primary_media.media)
+            if thumb:
+                manifest["thumbnail"] = [thumb]
 
         # Create canvases for each image
         for idx, link in enumerate(media_items):
@@ -245,7 +271,7 @@ class IIIFLODService:
                 manifest["items"].append(canvas)
 
         # NavDate for sorting in collections
-        if obj.creation_date_earliest:
+        if obj.creation_date_earliest and pof.is_public("creation_date", public_keys):
             manifest["navDate"] = obj.creation_date_earliest.isoformat()
 
         return manifest
@@ -694,6 +720,23 @@ class IIIFLODService:
     # CANVAS CREATION
     # ========================================================================
 
+    def _image_server_on(self) -> bool:
+        return bool(self.image_service and self.image_service.is_available())
+
+    def _public_source(self, media: Media):
+        """The rendition the public Image API serves, when an image server
+        is configured; None otherwise or when the image has no rendition."""
+        if not self._image_server_on():
+            return None
+        from app.services.iiif_public_image import public_iiif_source
+
+        return public_iiif_source(media)
+
+    def _public_service_id(self, media: Media) -> str:
+        from app.services.iiif_public_image import public_service_id
+
+        return public_service_id(media)
+
     def _create_canvas(
         self,
         media: Media,
@@ -716,9 +759,21 @@ class IIIFLODService:
         else:
             canvas_id = f"{self.base_url}canvas/{media.media_id}"
 
-        # Use actual dimensions or defaults
-        width = media.width or 1000
-        height = media.height or 1000
+        # These manifests are anonymous. With an image server, images come
+        # through the public Image API, which serves the rendition only, so
+        # the canvas uses the rendition's coordinate space. An image with no
+        # rendition keeps its canvas (canvas numbers must match get_canvas)
+        # but paints nothing.
+        source = self._public_source(media)
+        if source is not None:
+            width, height = source.width, source.height
+        else:
+            width = media.width or 1000
+            height = media.height or 1000
+
+        painting = []
+        if source is not None or not self._image_server_on():
+            painting = [self._create_image_annotation(media, canvas_id, width, height)]
 
         canvas = {
             "id": canvas_id,
@@ -732,15 +787,15 @@ class IIIFLODService:
                 {
                     "id": f"{canvas_id}/page",
                     "type": "AnnotationPage",
-                    "items": [
-                        self._create_image_annotation(media, canvas_id, width, height)
-                    ],
+                    "items": painting,
                 }
             ],
         }
 
         # Add thumbnail
-        canvas["thumbnail"] = [self._create_thumbnail(media)]
+        thumb = self._create_thumbnail(media)
+        if thumb:
+            canvas["thumbnail"] = [thumb]
 
         # Add metadata about the media itself
         canvas["metadata"] = self._build_media_metadata(media)
@@ -774,23 +829,13 @@ class IIIFLODService:
         """Create an image annotation for a canvas."""
         annotation_id = f"{canvas_id}/annotation"
 
-        # Get IIIF image info URL
-        if self.image_service and self.image_service.is_available():
-            image_service_id = self.image_service.get_info_url(media).replace('/info.json', '')
-            image_body = {
-                "id": f"{image_service_id}/full/max/0/default.jpg",
-                "type": "Image",
-                "format": "image/jpeg",
-                "width": width,
-                "height": height,
-                "service": [
-                    {
-                        "id": image_service_id,
-                        "type": "ImageService3",
-                        "profile": "level2",
-                    }
-                ],
-            }
+        # Never the image server's own identifier: it resolves to the master.
+        # The public Image API serves the rendition, capped.
+        source = self._public_source(media)
+        if source is not None:
+            from app.services.iiif_public_image import image_body as public_body
+
+            image_body = public_body(self._public_service_id(media), source)
         else:
             # Fallback to static image
             image_body = {
@@ -819,8 +864,8 @@ class IIIFLODService:
         if media.description:
             metadata.append(self._metadata_entry("Description", media.description))
 
-        if media.original_filename:
-            metadata.append(self._metadata_entry("Filename", media.original_filename))
+        if media.filename:
+            metadata.append(self._metadata_entry("Filename", media.filename))
 
         if media.width and media.height:
             metadata.append(self._metadata_entry(
@@ -846,9 +891,12 @@ class IIIFLODService:
         return metadata
 
     def _create_thumbnail(self, media: Media) -> Dict[str, Any]:
-        """Create a thumbnail object."""
-        if self.image_service and self.image_service.is_available():
-            thumbnail_url = self.image_service.get_thumbnail_url(media, width=200)
+        """Create a thumbnail object (None when there is no public source)."""
+        if self._image_server_on():
+            from app.services.iiif_public_image import thumbnail
+
+            source = self._public_source(media)
+            return thumbnail(self._public_service_id(media), source) if source else None
         else:
             thumbnail_url = f"{self.base_url}media/{media.media_id}/thumbnail.jpg"
 

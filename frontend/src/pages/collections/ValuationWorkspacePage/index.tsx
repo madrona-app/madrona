@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useWorkspacePage } from '../../../hooks/useWorkspacePage';
@@ -78,6 +78,7 @@ function ValuationWorkspacePageContent({ orgId, valuationId, valuation }: {
   valuationId: string | undefined;
   valuation: Valuation | undefined;
 }) {
+  const uid = useId();
   const wp = useWorkspacePage({
     entityType: 'valuation',
     entityId: valuationId,
@@ -340,10 +341,10 @@ function ValuationWorkspacePageContent({ orgId, valuationId, valuation }: {
         >
           <div className="space-y-4">
             {/* Valuator Contact Selector */}
-            <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+            <div role="group" aria-labelledby={`${uid}-valuator`}>
+              <span id={`${uid}-valuator`} className="block text-sm font-medium text-ink mb-1.5">
                 Valuator
-              </label>
+              </span>
               {isEditing ? (
                 <div className="flex items-center gap-2">
                   {formData.valuator_id && valuatorContact ? (
@@ -359,8 +360,9 @@ function ValuationWorkspacePageContent({ orgId, valuationId, valuation }: {
                           updateField('valuator_id', '');
                         }}
                         className="ml-auto p-1 text-archive hover:text-semantic-error"
+                        aria-label="Clear valuator"
                       >
-                        <X size={14} />
+                        <X size={14} aria-hidden="true" />
                       </button>
                     </div>
                   ) : (
@@ -378,6 +380,7 @@ function ValuationWorkspacePageContent({ orgId, valuationId, valuation }: {
                       type="button"
                       onClick={() => setShowValuatorSelector(true)}
                       className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
+                      aria-label="Change valuator"
                     >
                       Change
                     </button>
@@ -509,10 +512,10 @@ function ValuationWorkspacePageContent({ orgId, valuationId, valuation }: {
         >
           <div className="space-y-4">
             {/* Authorizer contact selector — mirrors the valuator picker */}
-            <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+            <div role="group" aria-labelledby={`${uid}-authorizer`}>
+              <span id={`${uid}-authorizer`} className="block text-sm font-medium text-ink mb-1.5">
                 Authorizer
-              </label>
+              </span>
               {isEditing ? (
                 <div className="flex items-center gap-2">
                   {formData.authorizer_id && authorizerContact ? (
@@ -546,6 +549,7 @@ function ValuationWorkspacePageContent({ orgId, valuationId, valuation }: {
                       type="button"
                       onClick={() => setShowAuthorizerSelector(true)}
                       className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
+                      aria-label="Change authorizer"
                     >
                       Change
                     </button>

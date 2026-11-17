@@ -139,7 +139,6 @@ export default function ActivateAccountPage() {
           required
           disabled={isLoading}
           autoComplete="new-password"
-          autoFocus
         />
 
         <AuthInput

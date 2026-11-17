@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { checkA11y, formatViolations } from '../../a11y';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { InterpretiveContentTab } from '../../../components/exhibit/InterpretiveContentTab';
 
@@ -141,5 +142,35 @@ describe('InterpretiveContentTab', () => {
     renderTab();
     await waitFor(() => screen.getByText('Unsorted'));
     expect(screen.getByText('Unsorted')).toBeInTheDocument();
+  });
+
+  describe('accessibility and keyboard reordering', () => {
+    const blocks = [
+      { block_id: 'b-1', block_type: 'intro_text', title: 'Welcome', content: 'Hello', section: 'Intro', status: 'draft', sort_order: 1, is_public: true },
+      { block_id: 'b-2', block_type: 'intro_text', title: 'Second', content: 'More', section: 'Intro', status: 'draft', sort_order: 2, is_public: false },
+    ];
+
+    it('has no axe violations in editing mode', async () => {
+      getExhibitionContentBlocksMock.mockResolvedValue({ content_blocks: blocks });
+      const { container } = renderTab({ isEditing: true });
+      await waitFor(() => screen.getByText('Welcome'));
+      const results = await checkA11y(container);
+      expect(results.violations, formatViolations(results)).toEqual([]);
+      expect(screen.getByRole('list', { name: 'Intro content blocks' })).toBeInTheDocument();
+    });
+
+    it('offers move up/down buttons as a non-drag alternative', async () => {
+      getExhibitionContentBlocksMock.mockResolvedValue({ content_blocks: blocks });
+      reorderExhibitionContentBlocksMock.mockResolvedValue({});
+      renderTab({ isEditing: true });
+      await waitFor(() => screen.getByText('Welcome'));
+      expect(screen.getByRole('button', { name: 'Move Welcome up' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Move Second down' })).toBeDisabled();
+      fireEvent.click(screen.getByRole('button', { name: 'Move Welcome down' }));
+      await waitFor(() =>
+        expect(reorderExhibitionContentBlocksMock).toHaveBeenCalledWith('org-1', 'ex-1', ['b-2', 'b-1']),
+      );
+      expect(screen.getByRole('status')).toHaveTextContent('Welcome moved down, position 2 of 2 in Intro');
+    });
   });
 });

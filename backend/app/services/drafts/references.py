@@ -25,7 +25,7 @@ KIND_BY_LOOKUP: dict[str, str] = {
 CONSTITUENT_REFS = frozenset({
     "source_id", "lender_id", "lender_contact_id", "lender_authorizer_id",
     "borrower_id", "borrower_contact_id", "venue_id", "valuator_id",
-    "conservator_id", "recipient_id", "authorizer_id", "rights_holder_contact_id",
+    "conservator_id", "recipient_id", "authorizer_id", "rights_holder_contact_id", "rights_holder_agent_contact_id",
     "current_owner_id", "depositor_id", "examiner_id",
 })
 USER_REFS = frozenset({"requester_user_id"})

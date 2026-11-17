@@ -47,6 +47,10 @@ export interface EntryFormData {
   insurance_value: string;
   insurance_currency: string;
   insurance_note: string;
+  packing_note: string;
+  special_conditions: string;
+  depositor_requirements: string;
+  insurance_policy: string;
   entry_note: string;
   // Entry method
   entry_method: string;

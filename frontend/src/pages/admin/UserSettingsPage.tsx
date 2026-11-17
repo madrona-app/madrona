@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { usePermissions } from '../../hooks/usePermissions';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { updateUserProfile, updateOrganization, uploadAvatar, deleteAvatar, getOrganizationStorage } from '../../lib/api';
 import { User, Building2, Mail, Shield, Edit2, Camera, Trash2, HardDrive, AlertCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useFocusWhen } from '../../components/workspace/useFocusWhen';
 import ChangePasswordModal from '../../components/ChangePasswordModal';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
 import { GuidePreferencesPanel } from '../../components/guide/GuidePreferencesPanel';
@@ -13,11 +14,12 @@ type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 export const UserSettingsPage: React.FC = () => {
   const auth = useAuth();
-  const navigate = useNavigate();
   const { hasPermission } = usePermissions();
   
   // Local state for editing name
   const [isEditingName, setIsEditingName] = useState(false);
+  const displayNameInputRef = useRef<HTMLInputElement>(null);
+  useFocusWhen(displayNameInputRef, isEditingName);
   const [displayName, setDisplayName] = useState(auth.user?.name || '');
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -39,6 +41,8 @@ export const UserSettingsPage: React.FC = () => {
   
   // Local state for editing organization name
   const [isEditingOrgName, setIsEditingOrgName] = useState(false);
+  const orgNameInputRef = useRef<HTMLInputElement>(null);
+  useFocusWhen(orgNameInputRef, isEditingOrgName);
   const [orgName, setOrgName] = useState('');
   const [orgNameSaveStatus, setOrgNameSaveStatus] = useState<SaveStatus>('idle');
   const [orgNameError, setOrgNameError] = useState<string | null>(null);
@@ -191,6 +195,11 @@ export const UserSettingsPage: React.FC = () => {
   };
 
   // Avatar handlers
+  const timezoneSelectRef = useRef<HTMLSelectElement>(null);
+  useFocusWhen(timezoneSelectRef, isEditingTimezone);
+  const orgTimezoneSelectRef = useRef<HTMLSelectElement>(null);
+  useFocusWhen(orgTimezoneSelectRef, isEditingOrgTimezone);
+
   const handleAvatarClick = () => {
     avatarInputRef.current?.click();
   };
@@ -464,12 +473,14 @@ export const UserSettingsPage: React.FC = () => {
                   )}
                 </div>
                 {/* Hover overlay */}
-                <div
-                  className="absolute inset-0 rounded-full bg-ink/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                <button
+                  type="button"
+                  aria-label="Change profile picture"
+                  className="absolute inset-0 rounded-full bg-ink/50 flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                   onClick={handleAvatarClick}
                 >
-                  <Camera size={20} className="text-parchment" />
-                </div>
+                  <Camera size={20} className="text-parchment" aria-hidden="true" />
+                </button>
                 {/* Delete button (only show if avatar exists) */}
                 {auth.user?.avatar_url && !avatarUploading && (
                   <button
@@ -500,7 +511,7 @@ export const UserSettingsPage: React.FC = () => {
                 )}
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-sm font-medium text-ink">Display name</label>
+                    <label htmlFor="user-settings-display-name" className="block text-sm font-medium text-ink">Display name</label>
                     {!isEditingName && (
                       <button
                         onClick={() => {
@@ -508,9 +519,10 @@ export const UserSettingsPage: React.FC = () => {
                           setSaveStatus('idle');
                           setSaveError(null);
                         }}
+                        aria-label="Edit display name"
                         className="text-sm text-stone-600 hover:text-stone-800 flex items-center gap-1"
                       >
-                        <Edit2 size={14} />
+                        <Edit2 size={14} aria-hidden="true" />
                         Edit
                       </button>
                     )}
@@ -527,8 +539,8 @@ export const UserSettingsPage: React.FC = () => {
                             onFocus={(e) => e.target.select()}
                             placeholder="Enter your display name"
                             className="flex-1 px-3 py-2 border border-lichen rounded-md focus-visible:ring-1 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-stone-500"
-                            autoFocus
-                            aria-label="Display name"
+                            ref={displayNameInputRef}
+                            id="user-settings-display-name"
                           />
                           <button
                             onClick={handleSaveName}
@@ -548,10 +560,10 @@ export const UserSettingsPage: React.FC = () => {
                         </div>
                         {/* Inline status messages */}
                         {saveStatus === 'saving' && (
-                          <p className="text-sm text-archive">Saving…</p>
+                          <p role="status" className="text-sm text-archive">Saving…</p>
                         )}
                         {saveStatus === 'saved' && (
-                          <p className="text-sm text-archive">Saved</p>
+                          <p role="status" className="text-sm text-archive">Saved</p>
                         )}
                         {saveStatus === 'error' && saveError && (
                           <p className="text-sm text-stone-700">{saveError}</p>
@@ -563,7 +575,7 @@ export const UserSettingsPage: React.FC = () => {
                         value={auth.user.name}
                         disabled
                         className="flex-1 px-3 py-2 border border-lichen rounded-md bg-stone text-ink"
-                        aria-label="Display name"
+                        id="user-settings-display-name"
                       />
                     )}
                   </div>
@@ -578,7 +590,7 @@ export const UserSettingsPage: React.FC = () => {
               {/* Timezone */}
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-medium text-ink">Timezone</label>
+                  <label htmlFor="user-settings-timezone" className="block text-sm font-medium text-ink">Timezone</label>
                   {!isEditingTimezone && (
                     <button
                       onClick={() => {
@@ -586,9 +598,10 @@ export const UserSettingsPage: React.FC = () => {
                         setTimezoneSaveStatus('idle');
                         setTimezoneError(null);
                       }}
-                      className="text-sm text-stone-600 hover:text-stone-800 flex items-center gap-1"
+                      aria-label="Edit timezone"
+                        className="text-sm text-stone-600 hover:text-stone-800 flex items-center gap-1"
                     >
-                      <Edit2 size={14} />
+                      <Edit2 size={14} aria-hidden="true" />
                       Edit
                     </button>
                   )}
@@ -598,10 +611,11 @@ export const UserSettingsPage: React.FC = () => {
                     <>
                       <div className="flex items-center gap-2">
                         <select
+                          ref={timezoneSelectRef}
                           value={timezone}
                           onChange={(e) => handleTimezoneChange(e.target.value)}
                           className="flex-1 px-3 py-2 border border-lichen rounded-md focus-visible:ring-1 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-stone-500"
-                          aria-label="Timezone"
+                          id="user-settings-timezone"
                         >
                           {commonTimezones.map((tz) => (
                             <option key={tz.value} value={tz.value}>
@@ -618,10 +632,10 @@ export const UserSettingsPage: React.FC = () => {
                         </button>
                       </div>
                       {timezoneSaveStatus === 'saving' && (
-                        <p className="text-sm text-archive">Saving…</p>
+                        <p role="status" className="text-sm text-archive">Saving…</p>
                       )}
                       {timezoneSaveStatus === 'saved' && (
-                        <p className="text-sm text-archive">Saved</p>
+                        <p role="status" className="text-sm text-archive">Saved</p>
                       )}
                       {timezoneSaveStatus === 'error' && timezoneError && (
                         <p className="text-sm text-stone-700">{timezoneError}</p>
@@ -634,7 +648,7 @@ export const UserSettingsPage: React.FC = () => {
                         value={commonTimezones.find(tz => tz.value === (auth.user?.timezone || 'America/New_York'))?.label || auth.user?.timezone || 'Eastern Time (ET)'}
                         disabled
                         className="flex-1 px-3 py-2 border border-lichen rounded-md bg-stone text-ink"
-                        aria-label="Timezone"
+                        id="user-settings-timezone"
                       />
                       <p className="text-xs text-archive">All times will be displayed in this timezone</p>
                     </>
@@ -717,10 +731,10 @@ export const UserSettingsPage: React.FC = () => {
                 .map((org) => {
                   const isActive = org.organization_id === auth.activeOrganizationId;
                   return (
-                    <div
+                    <Link
                       key={org.organization_id}
-                      onClick={() => navigate(`/organizations/${org.organization_id}`)}
-                      className="px-6 py-4 cursor-pointer transition-colors hover:bg-stone-100/50"
+                      to={`/organizations/${org.organization_id}`}
+                      className="block px-6 py-4 cursor-pointer transition-colors hover:bg-stone-100/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bark/30"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -745,7 +759,7 @@ export const UserSettingsPage: React.FC = () => {
                           </span>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   );
                 })}
             </div>
@@ -786,7 +800,7 @@ export const UserSettingsPage: React.FC = () => {
                 
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-sm font-medium text-ink">Name</label>
+                    <label htmlFor="org-settings-name" className="block text-sm font-medium text-ink">Name</label>
                     {!isEditingOrgName && (
                       <button
                         onClick={() => {
@@ -794,9 +808,10 @@ export const UserSettingsPage: React.FC = () => {
                           setOrgNameSaveStatus('idle');
                           setOrgNameError(null);
                         }}
+                        aria-label="Edit organization name"
                         className="text-sm text-stone-500 hover:text-stone-700 flex items-center gap-1"
                       >
-                        <Edit2 size={14} />
+                        <Edit2 size={14} aria-hidden="true" />
                         Edit
                       </button>
                     )}
@@ -813,8 +828,8 @@ export const UserSettingsPage: React.FC = () => {
                             onFocus={(e) => e.target.select()}
                             placeholder="Enter organization name"
                             className="flex-1 px-3 py-2 border border-lichen rounded-md focus-visible:ring-1 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-stone-500"
-                            autoFocus
-                            aria-label="Organization name"
+                            ref={orgNameInputRef}
+                            id="org-settings-name"
                           />
                           <button
                             onClick={handleSaveOrgName}
@@ -834,10 +849,10 @@ export const UserSettingsPage: React.FC = () => {
                         </div>
                         {/* Inline status messages */}
                         {orgNameSaveStatus === 'saving' && (
-                          <p className="text-sm text-archive">Saving…</p>
+                          <p role="status" className="text-sm text-archive">Saving…</p>
                         )}
                         {orgNameSaveStatus === 'saved' && (
-                          <p className="text-sm text-archive">Saved</p>
+                          <p role="status" className="text-sm text-archive">Saved</p>
                         )}
                         {orgNameSaveStatus === 'error' && orgNameError && (
                           <p className="text-sm text-stone-700">{orgNameError}</p>
@@ -852,7 +867,7 @@ export const UserSettingsPage: React.FC = () => {
                         value={activeOrg.name}
                         disabled
                         className="flex-1 px-3 py-2 border border-lichen rounded-md bg-stone text-ink"
-                        aria-label="Organization name"
+                        id="org-settings-name"
                       />
                     )}
                   </div>
@@ -868,7 +883,7 @@ export const UserSettingsPage: React.FC = () => {
                 {/* Organization Timezone */}
                 <div className="mt-4 pt-4 border-t border-lichen">
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-sm font-medium text-ink">Timezone</label>
+                    <label htmlFor="org-settings-timezone" className="block text-sm font-medium text-ink">Timezone</label>
                     {!isEditingOrgTimezone && (
                       <button
                         onClick={() => {
@@ -876,9 +891,10 @@ export const UserSettingsPage: React.FC = () => {
                           setOrgTimezoneSaveStatus('idle');
                           setOrgTimezoneError(null);
                         }}
+                        aria-label="Edit organization timezone"
                         className="text-sm text-stone-500 hover:text-stone-700 flex items-center gap-1"
                       >
-                        <Edit2 size={14} />
+                        <Edit2 size={14} aria-hidden="true" />
                         Edit
                       </button>
                     )}
@@ -888,6 +904,8 @@ export const UserSettingsPage: React.FC = () => {
                       <>
                         <div className="flex items-center gap-2">
                           <select
+                            ref={orgTimezoneSelectRef}
+                            id="org-settings-timezone"
                             value={orgTimezone}
                             onChange={(e) => handleOrgTimezoneChange(e.target.value)}
                             className="flex-1 px-3 py-2 border border-lichen rounded-md focus-visible:ring-1 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-stone-500"
@@ -907,10 +925,10 @@ export const UserSettingsPage: React.FC = () => {
                           </button>
                         </div>
                         {orgTimezoneSaveStatus === 'saving' && (
-                          <p className="text-sm text-archive">Saving…</p>
+                          <p role="status" className="text-sm text-archive">Saving…</p>
                         )}
                         {orgTimezoneSaveStatus === 'saved' && (
-                          <p className="text-sm text-archive">Saved</p>
+                          <p role="status" className="text-sm text-archive">Saved</p>
                         )}
                         {orgTimezoneSaveStatus === 'error' && orgTimezoneError && (
                           <p className="text-sm text-stone-700">{orgTimezoneError}</p>
@@ -923,7 +941,7 @@ export const UserSettingsPage: React.FC = () => {
                           value={orgTimezoneOptions.find(tz => tz.value === (activeOrg?.timezone || 'UTC'))?.label || activeOrg?.timezone || 'UTC'}
                           disabled
                           className="flex-1 px-3 py-2 border border-lichen rounded-md bg-stone text-ink"
-                          aria-label="Organization timezone"
+                          id="org-settings-timezone"
                         />
                         <p className="text-xs text-archive">All scheduled runs and timestamps will use this timezone</p>
                       </>

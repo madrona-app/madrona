@@ -1,3 +1,4 @@
+import { useEffect, useId, useRef } from 'react';
 import { FileText, Search, X } from 'lucide-react';
 import {
   WorkspaceSection,
@@ -8,6 +9,8 @@ import { SectionCompletionBadge } from '../../../components/collections/SectionC
 import type { SectionCompletion } from '../../../lib/procedureValidation';
 import type { FormData } from './types';
 import type { LookupOption } from '../../../hooks/useLookupValues';
+import { useRequiredField } from '../../../components/workspace/requiredFields';
+import { RequiredFieldMessage } from '../../../components/workspace/RequiredFieldsContext';
 
 interface Exhibition {
   exhibition_id: string;
@@ -54,6 +57,13 @@ export function LoanDetailsSection({
   isRestricted,
   orgId: _orgId,
 }: LoanDetailsSectionProps) {
+  // The user just opened the exhibition search popover, so focus moves into it.
+  const exhibitionSearchRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (showExhibitionSelector) exhibitionSearchRef.current?.focus();
+  }, [showExhibitionSelector]);
+  const uid = useId();
+  const { register: exhibitionRegister, error: exhibitionError } = useRequiredField('exhibition_id', false, 'details', formData.exhibition_id);
   return (
     <WorkspaceSection
       id="details"
@@ -69,6 +79,7 @@ export function LoanDetailsSection({
     >
       <div className="grid grid-cols-2 gap-6">
         <EditableSelect
+          name="loan_purpose"
           value={formData.loan_purpose}
           label="Loan Purpose"
           isEditing={isEditing}
@@ -76,11 +87,25 @@ export function LoanDetailsSection({
           options={loanPurposeOptions}
           required
         />
+        <EditableField
+          name="exhibition_name"
+          label="Exhibition Name"
+          value={formData.exhibition_name || ''}
+          isEditing={isEditing}
+          onChange={(v) => updateField('exhibition_name', v)}
+        />
+        <EditableField
+          name="exhibition_venue"
+          label="Exhibition Venue"
+          value={formData.exhibition_venue || ''}
+          isEditing={isEditing}
+          onChange={(v) => updateField('exhibition_venue', v)}
+        />
         {formData.loan_purpose === 'exhibition' && (
-          <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">
+          <div role="group" aria-labelledby={`${uid}-exhibition`}>
+            <span id={`${uid}-exhibition`} className="block text-sm font-medium text-ink mb-1.5">
               Exhibition
-            </label>
+            </span>
             {isEditing ? (
               <div className="relative">
                 {formData.exhibition_id && linkedExhibition ? (
@@ -94,14 +119,18 @@ export function LoanDetailsSection({
                         type="button"
                         onClick={() => updateField('exhibition_id', '')}
                         className="ml-auto p-1 text-archive hover:text-semantic-error"
+                        aria-label="Clear exhibition"
                       >
-                        <X size={14} />
+                        <X size={14} aria-hidden="true" />
                       </button>
                     </div>
                     <button
                       type="button"
+                      ref={exhibitionRegister}
+                      aria-describedby={exhibitionError?.id}
                       onClick={() => setShowExhibitionSelector(true)}
                       className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
+                      aria-label="Change exhibition"
                     >
                       Change
                     </button>
@@ -110,6 +139,8 @@ export function LoanDetailsSection({
                   <>
                     <button
                       type="button"
+                      ref={exhibitionRegister}
+                      aria-describedby={exhibitionError?.id}
                       onClick={() => setShowExhibitionSelector(true)}
                       className="w-full flex items-center gap-2 px-3 py-2 border border-dashed border-lichen rounded-lg text-sm text-archive hover:border-bark hover:text-bark transition-colors"
                     >
@@ -124,8 +155,9 @@ export function LoanDetailsSection({
                             value={exhibitionSearch}
                             onChange={(e) => setExhibitionSearch(e.target.value)}
                             placeholder="Search by title..."
+                            aria-label="Search exhibitions by title"
                             className="w-full px-3 py-2 border border-lichen rounded text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
-                            autoFocus
+                            ref={exhibitionSearchRef}
                           />
                         </div>
                         <div className="py-1">
@@ -181,11 +213,13 @@ export function LoanDetailsSection({
                 )}
               </div>
             )}
+            {exhibitionError && <RequiredFieldMessage error={exhibitionError} />}
           </div>
         )}
       </div>
       <div className="mt-6 space-y-6">
         <EditableField
+          name="loan_conditions"
           value={formData.loan_conditions}
           label="Loan Conditions"
           isEditing={isEditing}
@@ -196,6 +230,7 @@ export function LoanDetailsSection({
           restricted={isRestricted('loan_conditions')}
         />
         <EditableField
+          name="special_requirements"
           value={formData.special_requirements}
           label="Special Requirements"
           isEditing={isEditing}
@@ -206,6 +241,7 @@ export function LoanDetailsSection({
           restricted={isRestricted('special_requirements')}
         />
         <EditableField
+          name="display_requirements"
           value={formData.display_requirements}
           label="Display Requirements"
           isEditing={isEditing}
@@ -215,6 +251,7 @@ export function LoanDetailsSection({
           placeholder="Lighting, mounting, case requirements..."
         />
         <EditableField
+          name="photography_restrictions"
           value={formData.photography_restrictions}
           label="Photography Restrictions"
           isEditing={isEditing}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FileText, Plus, X, Trash2 } from 'lucide-react';
 import { WorkspaceSection } from '../../../components/workspace';
@@ -54,6 +54,7 @@ export default function ReferencesSection({
   isEmpty,
   summary,
 }: ReferencesSectionProps) {
+  const uid = useId();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [showForm, setShowForm] = useState(false);
@@ -162,10 +163,11 @@ export default function ReferencesSection({
         <div className="mt-3 p-4 border border-lichen rounded-lg bg-parchment space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-ink mb-1">
+              <label htmlFor={`${uid}-procedure-type`} className="block text-xs font-medium text-ink mb-1">
                 Procedure Type <span className="text-semantic-error">*</span>
               </label>
               <select
+                id={`${uid}-procedure-type`}
                 value={formData.procedure_type}
                 onChange={(e) => setFormData((d) => ({ ...d, procedure_type: e.target.value }))}
                 className={inputClassName}
@@ -178,10 +180,11 @@ export default function ReferencesSection({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-ink mb-1">
+              <label htmlFor={`${uid}-procedure-id`} className="block text-xs font-medium text-ink mb-1">
                 Procedure ID <span className="text-semantic-error">*</span>
               </label>
               <input
+                id={`${uid}-procedure-id`}
                 type="text"
                 value={formData.procedure_id}
                 onChange={(e) => setFormData((d) => ({ ...d, procedure_id: e.target.value }))}
@@ -191,8 +194,9 @@ export default function ReferencesSection({
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-ink mb-1">Notes</label>
+            <label htmlFor={`${uid}-notes`} className="block text-xs font-medium text-ink mb-1">Notes</label>
             <input
+              id={`${uid}-notes`}
               type="text"
               value={formData.notes}
               onChange={(e) => setFormData((d) => ({ ...d, notes: e.target.value }))}

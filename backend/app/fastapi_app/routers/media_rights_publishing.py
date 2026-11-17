@@ -21,6 +21,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import (
@@ -52,6 +53,7 @@ from app.fastapi_app.schemas.media_rights_publishing import (
     UsageEventCreatedResponse,
 )
 from app.permissions import Permission
+from app.services.contact_links import contact_display_name, validate_org_contact_id
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +73,13 @@ def _serialize_rights(r: MediaRights) -> dict:
         "rights_type": r.rights_type,
         "rights_status": r.rights_status,
         "rights_holder": r.rights_holder,
+        "rights_holder_agent": r.rights_holder_agent,
+        "rights_holder_agent_contact_id": (
+            str(r.rights_holder_agent_contact_id) if r.rights_holder_agent_contact_id else None
+        ),
+        "rights_holder_agent_contact_name": (
+            contact_display_name(r.rights_holder_agent_contact) if r.rights_holder_agent_contact_id else None
+        ),
         "license_type": r.license_type,
         "license_url": r.license_url,
         "rights_statement": r.rights_statement,
@@ -278,6 +287,12 @@ def create_media_rights(
 ):
     """Create media rights."""
     _get_media_or_404(db, org_id, media_id)
+    body = {
+        **body,
+        "rights_holder_agent_contact_id": validate_org_contact_id(
+            db, org_id, body.get("rights_holder_agent_contact_id"), "rights_holder_agent_contact_id"
+        ),
+    }
     # Single source of truth: the draft applier and this route share create_fn.
     from app.services.media.creation.media_rights import (
         create_media_rights as _create_media_rights,
@@ -289,9 +304,9 @@ def create_media_rights(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Rights record already exists")
+        raise integrity_http_error(exc, "Rights record already exists") from None
 
     return {
         "rights_id": str(rights.rights_id),
@@ -318,12 +333,16 @@ def update_media_rights(
         raise HTTPException(status_code=404, detail="Rights record not found")
 
     for field in [
-        "rights_type", "rights_status", "rights_holder", "license_type",
-        "license_url", "rights_statement", "territory", "usage_restrictions",
-        "is_active",
+        "rights_type", "rights_status", "rights_holder", "rights_holder_agent",
+        "license_type", "license_url", "rights_statement", "territory",
+        "usage_restrictions", "is_active",
     ]:
         if field in body:
             setattr(rights, field, body[field])
+    if "rights_holder_agent_contact_id" in body:
+        rights.rights_holder_agent_contact_id = validate_org_contact_id(
+            db, org_id, body["rights_holder_agent_contact_id"], "rights_holder_agent_contact_id"
+        )
 
     if "start_date" in body:
         rights.start_date = datetime.fromisoformat(body["start_date"]).date() if body["start_date"] else None
@@ -335,9 +354,9 @@ def update_media_rights(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Rights record conflict")
+        raise integrity_http_error(exc, "Rights record conflict") from None
 
     return {"rights_id": str(rights.rights_id)}
 
@@ -419,9 +438,9 @@ def create_media_consent(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Consent record already exists")
+        raise integrity_http_error(exc, "Consent record already exists") from None
 
     return {
         "consent_id": str(consent.consent_id),
@@ -468,9 +487,9 @@ def update_media_consent(
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Consent record conflict")
+        raise integrity_http_error(exc, "Consent record conflict") from None
 
     return {
         "consent_id": str(consent.consent_id),

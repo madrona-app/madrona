@@ -19,25 +19,32 @@ from app.models import (
 from app.services.uploads import get_org_media_url
 
 
-def get_media_url(media_id, organization_id: UUID, db: Session) -> str | None:
-    """Get a signed URL for a published media item."""
+def get_media_url(media_id, organization_id: UUID, db: Session, *, logo: bool = False) -> str | None:
+    """Signed URL for a published image of the organization (logos, heroes).
+
+    With ``logo=True`` (the header/footer logo slots only), a published image
+    with no rendition is served as uploaded (discover_media.sign_public_logo).
+
+    A rendition, never the uploaded master unless that file's public download
+    level allows originals (discover_media.public_image_key). The media must
+    belong to ``organization_id``: this is served anonymously.
+    """
     if not media_id:
         return None
     media = db.query(Media).filter(
         Media.media_id == media_id,
+        Media.organization_id == organization_id,
         Media.is_published == True,  # noqa: E712
     ).first()
-    if not media or not media.s3_key:
+    if not media:
         return None
-    try:
-        return get_org_media_url(
-            media.s3_key,
-            organization_id=str(organization_id),
-            db_session=db,
-            expiry_seconds=3600,
-        )
-    except Exception:
-        return None
+    from app.services.discover_media import sign_public_image
+
+    if logo:
+        from app.services.discover_media import sign_public_logo
+
+        return sign_public_logo(media, db, organization_id=organization_id)
+    return sign_public_image(media, db, organization_id=organization_id)
 
 
 def build_srcset_for_media(media_id: UUID, organization_id: UUID, db: Session) -> dict | None:
@@ -129,13 +136,21 @@ def serialize_classifications(obj) -> list[dict]:
 
 
 def resolve_discover_object(db: Session, org: Organization, identifier: str) -> CollectionObject | None:
-    """Look up a discoverable object by UUID or object_number."""
+    """Look up a discoverable object by UUID or object_number.
+
+    Deaccessioned objects are not found while the organization hides them
+    from search (services/deaccession_visibility.py).
+    """
+    from app.services.deaccession_visibility import public_visible_clause as _public_visible
+
     try:
         obj_uuid = UUID(identifier)
         obj = db.query(CollectionObject).filter(
             CollectionObject.object_id == obj_uuid,
             CollectionObject.organization_id == org.organization_id,
             CollectionObject.is_discoverable == True,  # noqa: E712
+            _public_visible(db, org.organization_id),
+        CollectionObject.is_deleted == False,  # noqa: E712
         ).first()
         if obj:
             return obj
@@ -146,6 +161,8 @@ def resolve_discover_object(db: Session, org: Organization, identifier: str) -> 
         CollectionObject.organization_id == org.organization_id,
         CollectionObject.object_number == identifier,
         CollectionObject.is_discoverable == True,  # noqa: E712
+        _public_visible(db, org.organization_id),
+        CollectionObject.is_deleted == False,  # noqa: E712
     ).first()
 
 
@@ -258,8 +275,12 @@ def get_object_card_thumbnails(
 
     org_str = str(organization_id)
     urls: dict[str, str] = {}
-    for oid, (media_id, base_key) in primary.items():
-        key = best_deriv.get(media_id, base_key)
+    for oid, (media_id, _master_key) in primary.items():
+        # A rendition only. Falling back to the master (as this did) put the
+        # full-resolution original behind a chat card thumbnail.
+        key = best_deriv.get(media_id)
+        if not key:
+            continue
         try:
             urls[oid] = get_org_media_url(
                 key, organization_id=org_str, db_session=db, expiry_seconds=3600,

@@ -14,6 +14,7 @@ from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_auth, require_permission
 from app.models import (
@@ -35,7 +36,8 @@ from app.fastapi_app.serializers.collections import (
     _serialize_loan_out,
     _serialize_loan_out_object,
 )
-from app.services.procedure_enforcement import check_blocking_requirements
+from app.services.procedure_enforcement import raise_if_requirements_unmet
+from app.services.collections.record_fields import apply_record_fields
 from app.fastapi_app.schemas.collections_loans import (
     LoanInOut,
     LoanInDetailOut,
@@ -60,13 +62,20 @@ router = APIRouter(tags=["collections-loans"])
 
 def _enforce_procedure(organization_id: UUID, procedure_type: str, entity, target_status: str, db: Session):
     """Raise 422 if procedure enforcement is enabled and blocking requirements are unmet."""
-    missing = check_blocking_requirements(organization_id, procedure_type, entity, target_status, db)
-    if missing:
-        raise HTTPException(status_code=422, detail={
-            "code": "procedure_requirements_not_met",
-            "message": f"Cannot advance to {target_status}: unmet requirements",
-            "blocking_requirements": missing,
-        })
+    raise_if_requirements_unmet(organization_id, procedure_type, entity, target_status, db)
+
+
+# Columns the form never writes, on create or update. Each procedure adds the
+# caller's write-restricted fields (field access) at request time.
+_LOAN_IN_PROTECTED = frozenset({'loan_in_id', 'loan_number', 'approved_by', 'approval_date', 'approved_at', 'status'})
+# Loan out status changes go through the workflow action endpoints.
+_LOAN_OUT_PROTECTED = frozenset({'loan_out_id', 'loan_number', 'approved_by', 'approval_date', 'approved_at', 'status'})
+
+
+def _protected(base: frozenset[str], entity_type: str, organization_id, auth: AuthContext, db: Session) -> set[str]:
+    return set(base) | get_write_restricted_fields(
+        entity_type, str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override
+    )
 
 
 # ============================================================================
@@ -90,6 +99,8 @@ def create_loan_in(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(LoanIn, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, LoanIn, data)
 
     # Create via the shared service — the same code the draft applier runs. It
     # owns the LI number and the loan_in/create approval gate.
@@ -99,6 +110,8 @@ def create_loan_in(
 
     try:
         loan = _create_loan_in(db, organization_id, data, auth.user_id, open_approval=True)
+        # Every other form field, through the same path as update.
+        apply_record_fields(loan, LoanIn, data, _protected(_LOAN_IN_PROTECTED, 'loan_in', organization_id, auth, db))
         db.commit()
     except Exception:
         db.rollback()
@@ -222,27 +235,20 @@ def update_loan_in(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(LoanIn, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, LoanIn, data, current=loan)
 
     old_status = loan.status
 
     # Optimistic concurrency — reject stale updates
-    from app.services.coerce import coerce_value_for_column, check_version
+    from app.services.coerce import check_version
     check_version(loan, data)
 
     old_status = loan.status
     new_status = data.pop('status', None)
 
-    protected_fields = {
-        'loan_in_id', 'organization_id', 'loan_number', 'created_at', 'created_by',
-        'updated_by', 'approved_by', 'approval_date', 'approved_at', 'version',
-    }
-    protected_fields |= get_write_restricted_fields('loan_in', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
-    for key, value in data.items():
-        if hasattr(loan, key) and key not in protected_fields:
-            if key.endswith('_id') and value:
-                setattr(loan, key, UUID(value))
-            else:
-                setattr(loan, key, coerce_value_for_column(LoanIn, key, value))
+    protected_fields = _protected(_LOAN_IN_PROTECTED, 'loan_in', organization_id, auth, db)
+    apply_record_fields(loan, LoanIn, data, protected_fields)
 
     if new_status and new_status != old_status:
         from app.services.workflow_definitions import WORKFLOW_DEFINITIONS
@@ -741,12 +747,12 @@ def add_loan_in_object_entry(
             "created_at": link.created_at.isoformat() if link.created_at else None,
         }
 
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail={
+        raise integrity_http_error(exc, {
             "code": "conflict",
             "message": "Entry is already linked to this loan",
-        })
+        }) from None
 
 
 @router.delete("/api/organizations/{organization_id}/collections/loans-in/{loan_id}/object-entries/{loan_in_entry_id}", summary="Unlink entry from loan in")
@@ -822,6 +828,8 @@ def create_loan_out(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(LoanOut, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, LoanOut, data)
 
     # Create via the shared service — the same code the draft applier runs. It
     # owns the LO number and the loan_out/create approval gate.
@@ -831,6 +839,8 @@ def create_loan_out(
 
     try:
         loan = _create_loan_out(db, organization_id, data, auth.user_id, open_approval=True)
+        # Every other form field, through the same path as update.
+        apply_record_fields(loan, LoanOut, data, _protected(_LOAN_OUT_PROTECTED, 'loan_out', organization_id, auth, db))
         db.commit()
     except Exception:
         db.rollback()
@@ -985,25 +995,17 @@ def update_loan_out(
 
     from app.services.collections.field_enums import validate_enum_fields
     validate_enum_fields(LoanOut, data)
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, organization_id, LoanOut, data, current=loan)
 
     old_status = loan.status
 
     # Optimistic concurrency — reject stale updates
-    from app.services.coerce import coerce_value_for_column, check_version
+    from app.services.coerce import check_version
     check_version(loan, data)
 
-    protected_fields = {
-        'loan_out_id', 'organization_id', 'loan_number', 'created_at', 'created_by',
-        'updated_by', 'approved_by', 'approval_date', 'approved_at', 'version',
-        'status',  # status changes must go through workflow action endpoints
-    }
-    protected_fields |= get_write_restricted_fields('loan_out', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
-    for key, value in data.items():
-        if hasattr(loan, key) and key not in protected_fields:
-            if key.endswith('_id') and value:
-                setattr(loan, key, UUID(value))
-            else:
-                setattr(loan, key, coerce_value_for_column(LoanOut, key, value))
+    protected_fields = _protected(_LOAN_OUT_PROTECTED, 'loan_out', organization_id, auth, db)
+    apply_record_fields(loan, LoanOut, data, protected_fields)
 
     loan.updated_by = auth.user_id
     loan.updated_at = datetime.now(timezone.utc)

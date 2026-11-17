@@ -197,11 +197,17 @@ export function PhysicalSection({
               isEditing={isEditing}
               onChange={(v) => updateField('catalog_level', v)}
               options={[
+                { value: 'collection', label: 'Collection' },
+                { value: 'subcollection', label: 'Sub-collection' },
+                { value: 'series', label: 'Series' },
+                { value: 'subseries', label: 'Sub-series' },
+                { value: 'file', label: 'File' },
+                { value: 'box', label: 'Box' },
+                { value: 'folder', label: 'Folder' },
                 { value: 'item', label: 'Item' },
                 { value: 'volume', label: 'Volume' },
                 { value: 'group', label: 'Group' },
-                { value: 'subgroup', label: 'Subgroup' },
-                { value: 'set', label: 'Set' },
+                { value: 'component', label: 'Component' },
               ]}
               placeholder="Select..."
             />

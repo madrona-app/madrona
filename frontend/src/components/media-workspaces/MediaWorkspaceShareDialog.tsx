@@ -8,7 +8,7 @@
  * - View and manage existing shares
  */
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useId, useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Search, UserPlus, Users, Trash2, Check, ChevronDown } from 'lucide-react';
 import { useOrganization } from '../../contexts/useOrganization';
@@ -66,6 +66,21 @@ export default function MediaWorkspaceShareDialog({
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const permissionButtonRef = useRef<HTMLButtonElement>(null);
+  const fid = useId();
+
+  // Escape closes the permission dropdown (not the whole dialog) and returns focus to its trigger.
+  // Capture phase so it runs before the dialog's own Escape handler.
+  useEffect(() => {
+    if (!showPermissionDropdown) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.stopImmediatePropagation();
+      setShowPermissionDropdown(false);
+      permissionButtonRef.current?.focus();
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [showPermissionDropdown]);
 
   // Calculate dropdown position when showing
   useEffect(() => {
@@ -182,15 +197,14 @@ export default function MediaWorkspaceShareDialog({
 
   return (
     <ModalPortal>
-    <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
-      onClick={handleClose}
-    >
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50">
+      <div aria-hidden="true" className="absolute inset-0" onClick={handleClose} />
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation only: keeps dialog clicks from bubbling to React ancestors through the portal */}
       <div
         ref={modalRef}
         {...getModalAriaProps(titleId, descriptionId)}
         onClick={(e) => e.stopPropagation()}
-        className="bg-parchment rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col"
+        className="relative bg-parchment rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col"
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-lichen">
@@ -224,7 +238,7 @@ export default function MediaWorkspaceShareDialog({
 
           {/* Add new share section */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-ink mb-1">
+            <label htmlFor={`${fid}-search`} className="block text-sm font-medium text-ink mb-1">
               Add people
             </label>
 
@@ -236,6 +250,7 @@ export default function MediaWorkspaceShareDialog({
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-archive"
                 />
                 <input
+                  id={`${fid}-search`}
                   type="text"
                   placeholder="Search by name or email..."
                   value={searchQuery}
@@ -251,6 +266,10 @@ export default function MediaWorkspaceShareDialog({
               <div className="relative">
                 <button
                   ref={permissionButtonRef}
+                  type="button"
+                  aria-expanded={showPermissionDropdown}
+                  aria-controls={showPermissionDropdown ? `${fid}-permissions` : undefined}
+                  aria-label={`Permission: ${permissionLabels[selectedPermission].label}`}
                   onClick={() => setShowPermissionDropdown(!showPermissionDropdown)}
                   className="flex items-center gap-1 px-3 py-2 border border-lichen rounded-sm text-sm hover:border-bark/30"
                 >
@@ -260,16 +279,22 @@ export default function MediaWorkspaceShareDialog({
                 {showPermissionDropdown && (
                   <>
                     <div
+                      aria-hidden="true"
                       className="fixed inset-0 z-[1010]"
                       onClick={() => setShowPermissionDropdown(false)}
                     />
                     <div
+                      id={`${fid}-permissions`}
+                      role="group"
+                      aria-label="Permission level"
                       className="fixed w-48 bg-parchment border border-lichen rounded-sm shadow-lg z-[1020]"
                       style={{ top: dropdownPosition.top, left: dropdownPosition.left }}
                     >
                       {(Object.keys(permissionLabels) as PermissionLevel[]).map((perm) => (
                         <button
                           key={perm}
+                          type="button"
+                          aria-pressed={selectedPermission === perm}
                           onClick={() => {
                             setSelectedPermission(perm);
                             setShowPermissionDropdown(false);

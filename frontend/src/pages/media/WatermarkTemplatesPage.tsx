@@ -6,6 +6,8 @@ import { getWatermarkTemplates, deleteWatermarkTemplate } from '../../lib/api';
 import { WatermarkTemplateModal } from '../../components/dam';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import type { WatermarkTemplate } from '../../lib/schemas';
+import { useActionMenu } from '../../components/dam/useActionMenu';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 
 /**
  * Watermark Templates management page for Media / DAM.
@@ -19,6 +21,7 @@ export default function WatermarkTemplatesPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<WatermarkTemplate | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const actionMenu = useActionMenu(openMenuId, () => setOpenMenuId(null));
 
   // Fetch templates
   const { data, isLoading, error } = useQuery({
@@ -124,7 +127,7 @@ export default function WatermarkTemplatesPage() {
                     <div className="flex items-center gap-2">
                       <h3 className="font-medium">{template.name}</h3>
                       {template.is_default && (
-                        <Star className="h-4 w-4 text-semantic-warning fill-semantic-warning" />
+                        <Star className="h-4 w-4 text-semantic-warning fill-semantic-warning" aria-label="Default template" />
                       )}
                     </div>
                     <p className="text-sm text-archive capitalize">
@@ -132,8 +135,20 @@ export default function WatermarkTemplatesPage() {
                     </p>
                   </div>
                 </div>
-                <div className="relative">
+                <div className="relative flex items-center gap-1">
+                  <RecordHistoryButton
+                    organizationId={orgId!}
+                    entityType="watermark_template"
+                    entityId={template.template_id}
+                    recordName={template.name}
+                    showLabel={false}
+                  />
                   <button
+                    ref={openMenuId === template.template_id ? actionMenu.triggerRef : undefined}
+                    type="button"
+                    aria-haspopup="menu"
+                    aria-expanded={openMenuId === template.template_id}
+                    aria-label={`Options for ${template.name}`}
                     onClick={() => setOpenMenuId(openMenuId === template.template_id ? null : template.template_id)}
                     className="p-1 hover:bg-stone rounded"
                   >
@@ -143,12 +158,22 @@ export default function WatermarkTemplatesPage() {
                     <>
                       {/* Backdrop */}
                       <div
+                        aria-hidden="true"
                         className="fixed inset-0 z-10"
                         onClick={() => setOpenMenuId(null)}
                       />
                       {/* Menu */}
-                      <div className="absolute right-0 top-8 z-20 bg-parchment border rounded-lg shadow-lg py-1 w-40">
+                      <div
+                        ref={actionMenu.menuRef}
+                        role="menu"
+                        tabIndex={-1}
+                        aria-label={`Options for ${template.name}`}
+                        onKeyDown={actionMenu.onMenuKeyDown}
+                        className="absolute right-0 top-8 z-20 bg-parchment border rounded-lg shadow-lg py-1 w-40"
+                      >
                         <button
+                          type="button"
+                          role="menuitem"
                           onClick={() => handleDelete(template)}
                           className="w-full px-3 py-2 text-left text-sm hover:bg-stone flex items-center gap-2 text-semantic-error"
                         >

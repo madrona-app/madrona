@@ -59,7 +59,12 @@ export const ConstituentsPage = React.lazy(() => import('../pages/collections/Co
 export const CratesPage = React.lazy(() => import('../pages/collections/CratesPage'));
 export const DeaccessionsPage = React.lazy(() => import('../pages/collections/DeaccessionsPage'));
 export const DiscoverSettingsPage = React.lazy(() => import('../pages/collections/DiscoverSettingsPage'));
+export const PublicFieldsSettingsPage = React.lazy(() => import('../pages/collections/PublicFieldsSettingsPage'));
 export const ProcedureEnforcementSettingsPage = React.lazy(() => import('../pages/collections/ProcedureEnforcementSettingsPage'));
+export const RecordRulesSettingsPage = React.lazy(() => import('../pages/collections/RecordRulesSettingsPage'));
+export const EadImportPage = React.lazy(() => import('../pages/collections/EadImportPage'));
+export const CustomFieldsSettingsPage = React.lazy(() => import('../pages/collections/CustomFieldsSettingsPage'));
+export const VocabularyValidationSettingsPage = React.lazy(() => import('../pages/collections/VocabularyValidationSettingsPage'));
 export const MediaRightsEnforcementSettingsPage = React.lazy(() => import('../pages/media/MediaRightsEnforcementSettingsPage'));
 export const DocumentationPlansPage = React.lazy(() => import('../pages/collections/DocumentationPlansPage'));
 export const EmergencyPlansPage = React.lazy(() => import('../pages/collections/EmergencyPlansPage'));
@@ -79,6 +84,10 @@ export const RightsPage = React.lazy(() => import('../pages/collections/RightsPa
 export const RiskOverviewPage = React.lazy(() => import('../pages/collections/RiskOverviewPage'));
 export const ShipmentsPage = React.lazy(() => import('../pages/collections/ShipmentsPage'));
 export const UseRequestsPage = React.lazy(() => import('../pages/collections/UseRequestsPage'));
+export const ResearchVisitsPage = React.lazy(() => import('../pages/collections/ResearchVisitsPage'));
+export const ResearchVisitPage = React.lazy(() => import('../pages/collections/ResearchVisitPage'));
+export const LibraryRecordsPage = React.lazy(() => import('../pages/collections/LibraryRecordsPage'));
+export const LibraryRecordPage = React.lazy(() => import('../pages/collections/LibraryRecordPage'));
 export const ValuationsPage = React.lazy(() => import('../pages/collections/ValuationsPage'));
 export const VocabularyExplorerPage = React.lazy(() => import('../pages/collections/VocabularyExplorerPage'));
 
@@ -165,6 +174,10 @@ export const ContentPage = React.lazy(() => import('../pages/discover/ContentPag
 export const DiscoverObjectPage = React.lazy(() => import('../pages/discover/DiscoverObjectPage').then(m => ({ default: m.DiscoverObjectPage })));
 export const GuideStandalonePage = React.lazy(() => import('../pages/discover/GuideStandalonePage'));
 export const DiscoverPage = React.lazy(() => import('../pages/discover/DiscoverPage').then(m => ({ default: m.DiscoverPage })));
+export const MemberSignInPage = React.lazy(() => import('../pages/discover/members/MemberSignInPage'));
+export const MemberWelcomePage = React.lazy(() => import('../pages/discover/members/MemberWelcomePage'));
+export const MyCollectionsPage = React.lazy(() => import('../pages/discover/members/MyCollectionsPage'));
+export const MemberCollectionPage = React.lazy(() => import('../pages/discover/members/MemberCollectionPage'));
 export const EventDetailPublicPage = React.lazy(() => import('../pages/discover/EventDetailPage'));
 export const EventListPublicPage = React.lazy(() => import('../pages/discover/EventListPage'));
 export const ExhibitionDetailPublicPage = React.lazy(() => import('../pages/discover/ExhibitionDetailPage'));
@@ -211,6 +224,8 @@ export const AppSubscriptionsPage = React.lazy(() => import('../pages/admin/AppS
 export const BulkUserImportPage = React.lazy(() => import('../pages/admin/BulkUserImportPage'));
 export const DepartmentManagementPage = React.lazy(() => import('../pages/admin/DepartmentManagementPage'));
 export const EntityAuditPage = React.lazy(() => import('../pages/admin/EntityAuditPage'));
+export const SecurityChangesPage = React.lazy(() => import('../pages/admin/ConfigurationChangeLogPage').then((m) => ({ default: m.SecurityChangesPage })));
+export const SettingsChangesPage = React.lazy(() => import('../pages/admin/ConfigurationChangeLogPage').then((m) => ({ default: m.SettingsChangesPage })));
 export const LogsPage = React.lazy(() => import('../pages/admin/LogsPage'));
 export const OrganizationsPage = React.lazy(() => import('../pages/admin/OrganizationsPage'));
 export const OrganizationUsersPage = React.lazy(() => import('../pages/admin/OrganizationUsersPage'));

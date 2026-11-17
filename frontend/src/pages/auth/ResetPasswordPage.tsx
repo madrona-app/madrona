@@ -131,7 +131,6 @@ export default function ResetPasswordPage() {
           required
           disabled={isLoading}
           autoComplete="new-password"
-          autoFocus
         />
 
         <AuthInput

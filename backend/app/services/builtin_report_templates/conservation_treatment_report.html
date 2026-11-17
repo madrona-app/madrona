@@ -78,13 +78,13 @@
     page-break-after: avoid;
   }
 
-  table.field-grid {
+  .field-grid {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 6pt;
   }
 
-  table.field-grid td.field {
+  .field-grid .field {
     width: 50%;
     padding: 0 8pt 6pt 0;
     vertical-align: top;
@@ -114,7 +114,7 @@
     white-space: pre-wrap;
   }
 
-  table.record-info {
+  .record-info {
     width: 100%;
     border-collapse: collapse;
     margin-top: 14pt;
@@ -123,7 +123,7 @@
     color: var(--archive);
   }
 
-  table.record-info td {
+  .record-info .row > div {
     padding: 4pt 0;
     width: 50%;
   }
@@ -131,6 +131,16 @@
   .keep-together {
     break-inside: avoid;
   }
+
+  /* Layout rows (divs, not tables, so tagged PDF has no false data tables) */
+  .field-grid > .row, .ident-layout > .row, .record-info > .row, .signature-block > .row {
+    display: flex;
+  }
+  .field-grid > .row > div, .record-info > .row > div, .signature-block > .row > div {
+    flex: 1 1 0;
+  }
+  .ident-layout .ident-fields { flex: 1 1 auto; }
+  .ident-layout .ident-image { flex: 0 0 2.5in; }
 </style>
 </head>
 <body>
@@ -152,114 +162,114 @@
 
 {# ── Treatment Details ── #}
 <h2 class="section-header">Treatment Details</h2>
-<table class="field-grid">
+<div class="field-grid">
   {% if treatment_number or treatment_type %}
-  <tr>
+  <div class="row">
     {% if treatment_number %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Treatment Number</div>
       <div class="field-value">{{ treatment_number }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if treatment_type %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Treatment Type</div>
       <div class="field-value">{{ treatment_type }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if conservator_name or conservator_institution %}
-  <tr>
+  <div class="row">
     {% if conservator_name %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Conservator</div>
       <div class="field-value">{{ conservator_name }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if conservator_institution %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Institution</div>
       <div class="field-value">{{ conservator_institution }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if status or assigned_to_name %}
-  <tr>
+  <div class="row">
     {% if status %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Status</div>
       <div class="field-value">{{ status }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if assigned_to_name %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Assigned To</div>
       <div class="field-value">{{ assigned_to_name }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
-</table>
+</div>
 
 {# ── Dates ── #}
 <h2 class="section-header">Dates</h2>
-<table class="field-grid">
+<div class="field-grid">
   {% if proposal_date or start_date %}
-  <tr>
+  <div class="row">
     {% if proposal_date %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Proposal Date</div>
       <div class="field-value">{{ proposal_date }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if start_date %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Start Date</div>
       <div class="field-value">{{ start_date }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if end_date or actual_duration_days %}
-  <tr>
+  <div class="row">
     {% if end_date %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">End Date</div>
       <div class="field-value">{{ end_date }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if actual_duration_days %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Duration (days)</div>
       <div class="field-value">{{ actual_duration_days }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
-</table>
+</div>
 
 {# ── Costs ── #}
 {% if estimated_cost or actual_cost %}
 <div class="keep-together">
   <h2 class="section-header">Costs</h2>
-  <table class="field-grid">
-    <tr>
+  <div class="field-grid">
+    <div class="row">
       {% if estimated_cost %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Estimated Cost</div>
         <div class="field-value">{{ estimated_cost }}</div>
-      </td>
+      </div>
       {% endif %}
       {% if actual_cost %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Actual Cost</div>
         <div class="field-value">{{ actual_cost }}</div>
-      </td>
+      </div>
       {% endif %}
-    </tr>
-  </table>
+    </div>
+  </div>
 </div>
 {% endif %}
 
@@ -327,14 +337,14 @@
 {% endif %}
 
 {# ── Record Information ── #}
-<table class="record-info">
-  <tr>
+<div class="record-info">
+  <div class="row">
     {% if created_at %}
-    <td>Created: {{ created_at }}</td>
+    <div>Created: {{ created_at }}</div>
     {% endif %}
-    <td></td>
-  </tr>
-</table>
+    <div></div>
+  </div>
+</div>
 
 </body>
 </html>

@@ -11,6 +11,7 @@ import {
   PlayCircle,
   Search,
   History,
+  ListChecks,
 } from 'lucide-react';
 import {
   WorkspaceHeader,
@@ -34,6 +35,9 @@ import {
   STATUS_STYLES,
 } from './types';
 import { MadronaLoader } from '../../../components/ui/MadronaLoader';
+import { AuditCheckList } from './AuditCheckList';
+import { AuditBulkUpdate } from './AuditBulkUpdate';
+import { ComplianceActionsHistoryList } from '../../../components/collections/ComplianceActionsHistoryList';
 
 /**
  * Outer wrapper that provides section order context.
@@ -128,6 +132,9 @@ function AuditCampaignWorkspacePageContent() {
     findings: {
       findings_summary: formData.findings_summary,
       remedial_actions: formData.remedial_actions,
+    },
+    checklist: {
+      check_list_generated_at: campaign?.check_list_generated_at,
     },
     history: {},
   };
@@ -418,6 +425,31 @@ function AuditCampaignWorkspacePageContent() {
           </div>
         </WorkspaceSection>
 
+        {/* === INVENTORY GROUP === */}
+        {useNewLayout && !isCreateMode && <SectionGroupDivider label="Inventory" icon={ListChecks} />}
+
+        {!isCreateMode && campaign && orgId && (
+          <WorkspaceSection
+            id="checklist"
+            title="Check List"
+            icon={<ListChecks size={18} />}
+            isExpanded={expandedSections.checklist}
+            onToggle={() => toggleSection('checklist')}
+            isEditing={isEditing}
+            order={getSectionOrder('checklist')}
+            isEmpty={false}
+          >
+            <AuditCheckList
+              orgId={orgId}
+              campaign={campaign}
+              canEdit={canEdit}
+              renderSelectionToolbar={canEdit
+                ? (ctx) => <AuditBulkUpdate orgId={orgId} campaignId={campaign.audit_id} {...ctx} />
+                : undefined}
+            />
+          </WorkspaceSection>
+        )}
+
         {/* === OUTCOME GROUP === */}
         {useNewLayout && <SectionGroupDivider label="Outcome" icon={CheckSquare} />}
 
@@ -460,8 +492,16 @@ function AuditCampaignWorkspacePageContent() {
                 onChange={(v) => updateField('remedial_actions', v)}
                 multiline
                 rows={4}
+                helpText="One action per line. Each line is tracked as its own action."
                 placeholder="Actions to address discrepancies..."
               />
+              {orgId && (
+                <ComplianceActionsHistoryList
+                  organizationId={orgId}
+                  actions={campaign?.remedial_actions}
+                  title="Remedial action history"
+                />
+              )}
             </div>
           </WorkspaceSection>
         )}

@@ -157,6 +157,7 @@ export function ObjectsSection({
               <dd className="text-ink">{loan?.renewal_count || 0}</dd>
             </div>
             <EditableField
+              name="max_renewals"
               value={formData.max_renewals}
               label="Maximum Renewals Allowed"
               isEditing={isEditing}

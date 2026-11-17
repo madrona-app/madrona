@@ -4,7 +4,7 @@
  * Displays the user's tasks, scoped to the active product (Collections or Media).
  */
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import Checkbox from '../../components/Checkbox';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -32,9 +32,11 @@ import {
   type TaskStatus,
 } from '../../lib/api';
 import { useContext } from 'react';
+import { useMenuNavigation } from '../../components/workspace/useMenuNavigation';
 import { AuthContext } from '../../contexts/AuthContext';
 import { CreateTaskSlideOver } from '../../components/work/CreateTaskSlideOver';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ErrorState } from '../../components/ui/ErrorState';
@@ -63,6 +65,13 @@ export default function GlobalWorkPage() {
 }
 
 // Status icon component
+const STATUS_LABELS: Record<string, string> = {
+  todo: 'To Do',
+  in_progress: 'In Progress',
+  blocked: 'Blocked',
+  done: 'Done',
+};
+
 function StatusIcon({ status }: { status: TaskStatus }) {
   switch (status) {
     case 'done':
@@ -148,6 +157,24 @@ function TasksTab({ orgId, activeProductId }: { orgId?: string; activeProductId:
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [openStatusId, setOpenStatusId] = useState<string | null>(null);
+  const statusTriggerRef = useRef<HTMLButtonElement>(null);
+  const statusMenuRef = useRef<HTMLDivElement>(null);
+  const closeStatusMenu = useCallback(() => setOpenStatusId(null), []);
+  const { onKeyDown: onStatusMenuKeyDown } = useMenuNavigation({
+    isOpen: openStatusId !== null,
+    menuRef: statusMenuRef,
+    triggerRef: statusTriggerRef,
+    onClose: closeStatusMenu,
+  });
+  const actionsTriggerRef = useRef<HTMLButtonElement>(null);
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
+  const closeActionsMenu = useCallback(() => setOpenMenuId(null), []);
+  const { onKeyDown: onActionsMenuKeyDown } = useMenuNavigation({
+    isOpen: openMenuId !== null,
+    menuRef: actionsMenuRef,
+    triggerRef: actionsTriggerRef,
+    onClose: closeActionsMenu,
+  });
   const [deletingTask, setDeletingTask] = useState<Task | null>(null);
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -227,8 +254,9 @@ function TasksTab({ orgId, activeProductId }: { orgId?: string; activeProductId:
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <span className="text-sm text-archive">{tasks.length} task{tasks.length !== 1 ? 's' : ''}</span>
-            <label className="flex items-center gap-2 text-sm text-archive cursor-pointer">
+            <label htmlFor="global-work-show-completed" className="flex items-center gap-2 text-sm text-archive cursor-pointer">
               <Checkbox
+                id="global-work-show-completed"
                 checked={showCompleted}
                 onChange={(e) => setShowCompleted(e.target.checked)}
               />
@@ -267,17 +295,29 @@ function TasksTab({ orgId, activeProductId }: { orgId?: string; activeProductId:
                 {/* Status dropdown */}
                 <div className="relative mt-0.5 flex-shrink-0">
                   <button
+                    ref={openStatusId === task.task_id ? statusTriggerRef : undefined}
+                    type="button"
                     onClick={() => setOpenStatusId(openStatusId === task.task_id ? null : task.task_id)}
-                    className="hover:opacity-70 transition-opacity"
+                    className="hover:opacity-70 transition-opacity rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                     disabled={updateTaskMutation.isPending}
                     title="Change status"
+                    aria-label={`Status: ${STATUS_LABELS[task.status] ?? task.status}. Change status of ${task.title}`}
+                    aria-haspopup="menu"
+                    aria-expanded={openStatusId === task.task_id}
                   >
                     <StatusIcon status={task.status} />
                   </button>
                   {openStatusId === task.task_id && (
                     <>
-                      <div className="fixed inset-0 z-10" onClick={() => setOpenStatusId(null)} />
-                      <div className="absolute left-0 top-6 z-20 bg-parchment border border-lichen rounded-lg shadow-lg py-1 min-w-[140px]">
+                      <div aria-hidden="true" className="fixed inset-0 z-10" onClick={() => setOpenStatusId(null)} />
+                      <div
+                        ref={statusMenuRef}
+                        role="menu"
+                        aria-label={`Status of ${task.title}`}
+                        tabIndex={-1}
+                        onKeyDown={onStatusMenuKeyDown}
+                        className="absolute left-0 top-6 z-20 bg-parchment border border-lichen rounded-lg shadow-lg py-1 min-w-[140px]"
+                      >
                         {[
                           { value: 'todo', label: 'To Do', icon: Circle },
                           { value: 'in_progress', label: 'In Progress', icon: PlayCircle },
@@ -286,13 +326,17 @@ function TasksTab({ orgId, activeProductId }: { orgId?: string; activeProductId:
                         ].map(({ value, label, icon: Icon }) => (
                           <button
                             key={value}
+                            type="button"
+                            role="menuitemradio"
+                            aria-checked={task.status === value}
+                            tabIndex={-1}
                             onClick={() => handleStatusChange(task, value as TaskStatus)}
                             className={cn(
-                              'w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-parchment/50',
+                              'w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-parchment/50 focus-visible:outline-none focus-visible:bg-stone/30',
                               task.status === value && 'bg-parchment/30 font-medium'
                             )}
                           >
-                            <Icon size={14} className={task.status === value ? 'text-bark' : 'text-archive'} />
+                            <Icon size={14} aria-hidden="true" className={task.status === value ? 'text-bark' : 'text-archive'} />
                             {label}
                           </button>
                         ))}
@@ -336,43 +380,72 @@ function TasksTab({ orgId, activeProductId }: { orgId?: string; activeProductId:
                   </div>
                 </div>
 
+                {orgId && (
+                  <RecordHistoryButton
+                    organizationId={orgId}
+                    entityType="task"
+                    entityId={task.task_id}
+                    recordName={task.title}
+                    showLabel={false}
+                    className="flex-shrink-0"
+                  />
+                )}
+
                 {/* Actions menu */}
                 <div className="relative flex-shrink-0">
                   <button
+                    ref={openMenuId === task.task_id ? actionsTriggerRef : undefined}
+                    type="button"
                     onClick={() => setOpenMenuId(openMenuId === task.task_id ? null : task.task_id)}
-                    className="p-1 text-archive hover:text-ink rounded transition-colors"
+                    aria-label={`Actions for ${task.title}`}
+                    aria-haspopup="menu"
+                    aria-expanded={openMenuId === task.task_id}
+                    className="p-1 text-archive hover:text-ink rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                   >
-                    <MoreHorizontal size={16} />
+                    <MoreHorizontal size={16} aria-hidden="true" />
                   </button>
                   {openMenuId === task.task_id && (
                     <>
-                      <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
-                      <div className="absolute right-0 top-6 z-20 bg-parchment border border-lichen rounded-lg shadow-lg py-1 min-w-[160px]">
+                      <div aria-hidden="true" className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
+                      <div
+                        ref={actionsMenuRef}
+                        role="menu"
+                        aria-label={`Actions for ${task.title}`}
+                        tabIndex={-1}
+                        onKeyDown={onActionsMenuKeyDown}
+                        className="absolute right-0 top-6 z-20 bg-parchment border border-lichen rounded-lg shadow-lg py-1 min-w-[160px]"
+                      >
                         <button
                           onClick={() => {
                             setEditingTask(task);
                             setOpenMenuId(null);
                           }}
-                          className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-parchment/50"
+                          role="menuitem"
+                          tabIndex={-1}
+                          className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-parchment/50 focus-visible:outline-none focus-visible:bg-stone/30"
                         >
-                          <Pencil size={14} className="text-archive" />
+                          <Pencil size={14} className="text-archive" aria-hidden="true" />
                           Edit
                         </button>
                         {!task.assigned_user_id && (
                           <button
                             onClick={() => handleAssignToMe(task)}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-parchment/50"
+                            role="menuitem"
+                          tabIndex={-1}
+                          className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-parchment/50 focus-visible:outline-none focus-visible:bg-stone/30"
                           >
-                            <UserPlus size={14} className="text-archive" />
+                            <UserPlus size={14} className="text-archive" aria-hidden="true" />
                             Assign to me
                           </button>
                         )}
                         {task.assigned_user_id && task.assigned_user_id === user?.user_id && (
                           <button
                             onClick={() => handleUnassign(task)}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-parchment/50"
+                            role="menuitem"
+                          tabIndex={-1}
+                          className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-parchment/50 focus-visible:outline-none focus-visible:bg-stone/30"
                           >
-                            <UserPlus size={14} className="text-archive" />
+                            <UserPlus size={14} className="text-archive" aria-hidden="true" />
                             Unassign
                           </button>
                         )}
@@ -381,18 +454,23 @@ function TasksTab({ orgId, activeProductId }: { orgId?: string; activeProductId:
                           return isCreator ? (
                             <button
                               onClick={() => handleDelete(task)}
-                              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left text-semantic-error hover:bg-semantic-error/5"
+                              role="menuitem"
+                              tabIndex={-1}
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left text-semantic-error hover:bg-semantic-error/5 focus-visible:outline-none focus-visible:bg-semantic-error/5"
                             >
-                              <Trash2 size={14} />
+                              <Trash2 size={14} aria-hidden="true" />
                               Delete
                             </button>
                           ) : (
                             <div title={`Created by ${task.created_by_name || 'another user'}`}>
                               <button
+                                type="button"
+                                role="menuitem"
+                                aria-disabled="true"
                                 disabled
                                 className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left text-archive/50 cursor-not-allowed pointer-events-none"
                               >
-                                <Trash2 size={14} />
+                                <Trash2 size={14} aria-hidden="true" />
                                 Delete
                               </button>
                             </div>

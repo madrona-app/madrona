@@ -273,6 +273,8 @@ class GCSStorageBackend(StorageBackend):
         content_type: Optional[str] = None,
         metadata: Optional[dict[str, str]] = None,
         cache_control: Optional[str] = None,
+        tags: Optional[dict[str, str]] = None,
+        content_disposition: Optional[str] = None,
     ) -> StorageObject:
         """Synchronous version of put_object."""
         try:
@@ -283,6 +285,8 @@ class GCSStorageBackend(StorageBackend):
                 blob.content_type = content_type
             if cache_control:
                 blob.cache_control = cache_control
+            if content_disposition:
+                blob.content_disposition = content_disposition
             if metadata:
                 blob.metadata = metadata
 

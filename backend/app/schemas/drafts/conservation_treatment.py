@@ -2,20 +2,20 @@
 
 The proposable subset of the live ConservationTreatment create shape
 (`app/models/objects.py::ConservationTreatment`). `treatment_type` is a
-`Literal` mirroring the live CHECK. `extra='forbid'` rejects anything else.
+lookup key checked against the organization's lookup values. `extra='forbid'` rejects anything else.
 """
 
 from decimal import Decimal
-from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-TreatmentType = Literal[
-    "preventive", "remedial", "restoration", "analysis", "stabilization",
-    "cleaning", "repair", "documentation", "mount_making", "rehousing",
-    "pest_treatment", "other",
-]
+from app.schemas.drafts.base import LookupKey
+
+# Lookup-backed (organizations add values): checked against the org's
+# active lookup values when the draft is proposed or edited
+# (app/services/lookup_fields.check_draft_lookup_values), not a fixed list.
+TreatmentType = LookupKey
 
 
 class ConservationTreatmentDraftPayload(BaseModel):

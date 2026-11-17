@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
+import { RecordAuditHistory } from '../../components/workspace/RecordAuditHistory';
 import { useParams, useNavigate } from 'react-router-dom';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -33,6 +34,7 @@ import {
 import type { MediaDownloadRequest, MediaDownloadRequestItem } from '../../lib/schemas';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
 import { formatDateTime, formatDateShort } from '@/lib/formatters';
+import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
 
 export default function DownloadRequestWorkspacePage() {
   const { orgId, requestId } = useParams<{ orgId: string; requestId: string }>();
@@ -155,10 +157,12 @@ export default function DownloadRequestWorkspacePage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
+            type="button"
             onClick={() => navigate(-1)}
-            className="p-2 hover:bg-stone-100 rounded-md transition-colors"
+            aria-label="Back to download requests"
+            className="p-2 min-h-[44px] min-w-[44px] hover:bg-stone-100 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
           >
-            <ArrowLeft size={20} className="text-stone-600" />
+            <ArrowLeft size={20} className="text-stone-600" aria-hidden="true" />
           </button>
           <div>
             <div className="flex items-center gap-3">
@@ -379,15 +383,25 @@ export default function DownloadRequestWorkspacePage() {
         </div>
       </div>
 
+      {/* Change history: review, approval, fulfilment and item decisions */}
+      <div className="bg-parchment border border-stone-200 rounded-lg p-4 mt-6">
+        <RecordAuditHistory
+          organizationId={orgId}
+          entityType="media_download_request"
+          entityId={requestId}
+          headingLevel={2}
+        />
+      </div>
+
       {/* Deny Modal */}
       {showDenyModal && (
-        <Modal onClose={() => setShowDenyModal(false)}>
-          <h3 className="text-lg font-semibold text-stone-900 mb-4">Deny Request</h3>
+        <Modal title="Deny Request" onClose={() => setShowDenyModal(false)}>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-stone-700 mb-2">
+            <label htmlFor="deny-reason" className="block text-sm font-medium text-stone-700 mb-2">
               Reason for Denial <span className="text-semantic-error">*</span>
             </label>
             <textarea
+              id="deny-reason"
               value={denialReason}
               onChange={(e) => setDenialReason(e.target.value)}
               placeholder="Explain why this request cannot be approved..."
@@ -415,13 +429,13 @@ export default function DownloadRequestWorkspacePage() {
 
       {/* Approve Modal */}
       {showApproveModal && (
-        <Modal onClose={() => setShowApproveModal(false)}>
-          <h3 className="text-lg font-semibold text-stone-900 mb-4">Approve Request</h3>
+        <Modal title="Approve Request" onClose={() => setShowApproveModal(false)}>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-stone-700 mb-2">
+            <label htmlFor="approve-conditions" className="block text-sm font-medium text-stone-700 mb-2">
               Conditions (Optional)
             </label>
             <textarea
+              id="approve-conditions"
               value={conditions}
               onChange={(e) => setConditions(e.target.value)}
               placeholder="e.g., Credit required in publication, low-res only for web..."
@@ -449,16 +463,16 @@ export default function DownloadRequestWorkspacePage() {
 
       {/* Fulfill Modal */}
       {showFulfillModal && (
-        <Modal onClose={() => setShowFulfillModal(false)}>
-          <h3 className="text-lg font-semibold text-stone-900 mb-4">Fulfill Request</h3>
+        <Modal title="Fulfill Request" onClose={() => setShowFulfillModal(false)}>
           <p className="text-sm text-stone-600 mb-4">
             Generate a secure download link for the requester.
           </p>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-stone-700 mb-2">
+            <label htmlFor="fulfill-expires" className="block text-sm font-medium text-stone-700 mb-2">
               Link Expiration
             </label>
             <select
+              id="fulfill-expires"
               value={expiresDays}
               onChange={(e) => setExpiresDays(Number(e.target.value))}
               className="w-full px-3 py-2 border border-stone-300 rounded-md text-sm focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-forest"
@@ -509,16 +523,25 @@ export default function DownloadRequestWorkspacePage() {
 }
 
 function Modal({
+  title,
   children,
   onClose,
 }: {
+  title: string;
   children: React.ReactNode;
   onClose: () => void;
 }) {
+  const prefix = useId();
+  const { modalRef, titleId } = useAccessibleModal({ isOpen: true, onClose, titlePrefix: prefix });
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-ink/50" onClick={onClose} />
-      <div className="relative bg-parchment rounded-lg shadow-xl w-full max-w-md p-6">
+      <div aria-hidden="true" className="absolute inset-0 bg-ink/50" onClick={onClose} />
+      <div
+        ref={modalRef}
+        {...getModalAriaProps(titleId)}
+        className="relative bg-parchment rounded-lg shadow-xl w-full max-w-md p-6"
+      >
+        <h3 id={titleId} className="text-lg font-semibold text-stone-900 mb-4">{title}</h3>
         {children}
       </div>
     </div>

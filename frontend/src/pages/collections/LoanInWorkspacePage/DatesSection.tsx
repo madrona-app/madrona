@@ -47,20 +47,23 @@ export function DatesSection({
     >
       <div className="grid grid-cols-2 gap-6">
         <EditableField
+          name="request_date"
           value={formData.request_date}
           label="Request Date"
           isEditing={isEditing}
           onChange={(v) => updateField('request_date', v)}
           type="date"
         />
+        {/* Set by the Approve action; not editable. */}
         <EditableField
           value={formData.approval_date}
           label="Approval Date"
-          isEditing={isEditing}
-          onChange={(v) => updateField('approval_date', v)}
-          type="date"
+          isEditing={false}
+          onChange={() => {}}
+          emptyText="Set when the loan is approved"
         />
         <EditableField
+          name="loan_start_date"
           value={formData.loan_start_date}
           label="Loan Start Date"
           isEditing={isEditing}
@@ -68,6 +71,7 @@ export function DatesSection({
           type="date"
         />
         <EditableField
+          name="loan_end_date"
           value={formData.loan_end_date}
           label="Loan End Date"
           isEditing={isEditing}

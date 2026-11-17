@@ -48,6 +48,8 @@ import { getAlternatives, lockMedia, unlockMedia } from '../../../lib/api/media-
 import { AlternativeFilesTab } from '../../../components/dam/AlternativeFilesTab';
 import { SimilarMediaPanel } from '../../../components/dam/SimilarMediaPanel';
 import { EmbedCodeGenerator } from '../../../components/dam/EmbedCodeGenerator';
+import { useActionMenu } from '../../../components/dam/useActionMenu';
+import { useAccessibleModal, getModalAriaProps } from '../../../hooks/useAccessibleModal';
 import AudioWaveformPlayer from '../../../components/media/AudioWaveformPlayer';
 import VideoPlayer from '../../../components/media/VideoPlayer';
 import PDFViewer from '../../../components/media/PDFViewer';
@@ -70,6 +72,7 @@ import { StartProcedure } from '../../../components/studio/StartProcedure';
 import { useMediaTabNavigation } from './useMediaTabNavigation';
 import { computeRightsStatus, DERIVATIVE_PURPOSE } from './types';
 import { resolveMediaBackLink } from './backLink';
+import { PublicDownloadSetting } from './PublicDownloadSetting';
 import type { MediaDetailOutletContext } from './types';
 
 const MEDIA_TYPE_ICONS = {
@@ -92,10 +95,12 @@ export default function MediaDetailPage() {
   const dropZoneRef = useRef<HTMLDivElement>(null);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState<Partial<{ title: string; description: string; alt_text: string; caption: string; credit: string; copyright_notice: string }>>({});
+  const [editForm, setEditForm] = useState<Partial<{ title: string; description: string; alt_text: string; caption: string; credit: string; preferred_citation: string; copyright_notice: string }>>({});
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const closeQuickActions = useCallback(() => setShowQuickActions(false), []);
+  const quickActionsMenu = useActionMenu(showQuickActions, closeQuickActions);
   const [showAddToWorkspace, setShowAddToWorkspace] = useState(false);
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [showDownloadRequest, setShowDownloadRequest] = useState(false);
@@ -175,7 +180,7 @@ export default function MediaDetailPage() {
 
   // --- Mutations ---
   const updateMutation = useMutation({
-    mutationFn: (updates: Partial<{ title?: string; description?: string; alt_text?: string; caption?: string; credit?: string; copyright_notice?: string; metadata?: Record<string, any>; iptc_metadata?: Record<string, string | null>; dublin_core?: Record<string, string | null> }>) => updateMedia(orgId!, mediaId!, updates),
+    mutationFn: (updates: Partial<{ title?: string; description?: string; alt_text?: string; caption?: string; credit?: string; preferred_citation?: string; copyright_notice?: string; metadata?: Record<string, any>; iptc_metadata?: Record<string, string | null>; dublin_core?: Record<string, string | null> }>) => updateMedia(orgId!, mediaId!, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['media', orgId, mediaId] });
       setIsEditing(false);
@@ -310,7 +315,7 @@ export default function MediaDetailPage() {
   }, [showToast, goToTab]);
 
   const handleEdit = () => {
-    setEditForm({ title: media?.title || '', description: media?.description || '', alt_text: media?.alt_text || '', caption: media?.caption || '', credit: media?.credit || '', copyright_notice: media?.copyright_notice || '' });
+    setEditForm({ title: media?.title || '', description: media?.description || '', alt_text: media?.alt_text || '', caption: media?.caption || '', credit: media?.credit || '', preferred_citation: media?.preferred_citation || '', copyright_notice: media?.copyright_notice || '' });
     setIsEditing(true);
   };
   const handleSave = () => { updateMutation.mutate(editForm); };
@@ -388,10 +393,10 @@ export default function MediaDetailPage() {
         )}
 
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm">
+        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm">
           <Link to={backHref} className="text-archive hover:text-bark transition-colors">{backLabel}</Link>
           <ChevronRight size={14} className="text-archive" />
-          <span className="text-ink font-medium truncate max-w-[300px]">{media.title || media.filename}</span>
+          <span aria-current="page" className="text-ink font-medium truncate max-w-[300px]">{media.title || media.filename}</span>
         </nav>
 
         {/* Header */}
@@ -431,24 +436,31 @@ export default function MediaDetailPage() {
                 <Lock size={14} />Locked by you
               </button>
             ) : (
-              <button onClick={() => { if (canAdmin) lockMutation.mutate(); }} disabled={!canAdmin || lockMutation.isPending} title={!canAdmin ? "You don't have permission" : "Lock for editing"} className={`flex items-center gap-1.5 px-3 py-2 text-sm border border-lichen rounded-lg hover:bg-stone/30 transition-colors ${!canAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}>
+              <button onClick={() => { if (canAdmin) lockMutation.mutate(); }} disabled={!canAdmin || lockMutation.isPending} title={!canAdmin ? "You don't have permission" : "Lock for editing"} aria-label="Lock for editing" className={`flex items-center gap-1.5 px-3 py-2 text-sm border border-lichen rounded-lg hover:bg-stone/30 transition-colors ${!canAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}>
                 <Unlock size={14} className="text-archive" />
               </button>
             )}
 
             {/* Quick Actions */}
             <div className="relative">
-              <button onClick={() => setShowQuickActions(!showQuickActions)} className="flex items-center gap-2 px-3 py-2 text-sm border border-lichen rounded-lg hover:bg-stone/30 transition-colors">
+              <button ref={quickActionsMenu.triggerRef} type="button" aria-haspopup="menu" aria-expanded={showQuickActions} onClick={() => setShowQuickActions(!showQuickActions)} className="flex items-center gap-2 px-3 py-2 text-sm border border-lichen rounded-lg hover:bg-stone/30 transition-colors">
                 <MoreHorizontal size={16} />Actions
               </button>
               {showQuickActions && (
                 <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowQuickActions(false)} />
-                  <div className="absolute right-0 top-full mt-1 w-56 bg-parchment border border-lichen rounded-lg shadow-lg py-1 z-20">
-                    <button onClick={() => { setShowQuickActions(false); setShowAddToWorkspace(true); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-left hover:bg-stone/30">
+                  <div aria-hidden="true" className="fixed inset-0 z-10" onClick={() => setShowQuickActions(false)} />
+                  <div
+                    ref={quickActionsMenu.menuRef}
+                    role="menu"
+                    tabIndex={-1}
+                    aria-label="Media actions"
+                    onKeyDown={quickActionsMenu.onMenuKeyDown}
+                    className="absolute right-0 top-full mt-1 w-56 bg-parchment border border-lichen rounded-lg shadow-lg py-1 z-20"
+                  >
+                    <button type="button" role="menuitem" onClick={() => { setShowQuickActions(false); setShowAddToWorkspace(true); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-left hover:bg-stone/30">
                       <FolderPlus size={16} className="text-archive" />Add to Work Set
                     </button>
-                    <button onClick={() => { setShowQuickActions(false); setShowCreateTask(true); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-left hover:bg-stone/30">
+                    <button type="button" role="menuitem" onClick={() => { setShowQuickActions(false); setShowCreateTask(true); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-left hover:bg-stone/30">
                       <ListChecks size={16} className="text-archive" />Create Task
                     </button>
                     {/* Copy Direct Link hands out media.url — a presigned URL
@@ -460,16 +472,16 @@ export default function MediaDetailPage() {
                         one whose rights are expired. */}
                     {media.url && canDownloadOriginal && media.download_access === 'direct' && (
                       <>
-                        <button onClick={() => { copyToClipboard(media.url!, 'Direct link'); setShowQuickActions(false); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-left hover:bg-stone/30">
+                        <button type="button" role="menuitem" onClick={() => { copyToClipboard(media.url!, 'Direct link'); setShowQuickActions(false); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-left hover:bg-stone/30">
                           <LinkIcon size={16} className="text-archive" />Copy Direct Link
                         </button>
-                        <button onClick={() => { setShowEmbedPanel(true); setShowQuickActions(false); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-left hover:bg-stone/30">
+                        <button type="button" role="menuitem" onClick={() => { setShowEmbedPanel(true); setShowQuickActions(false); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-left hover:bg-stone/30">
                           <Code size={16} className="text-archive" />Embed Code
                         </button>
                       </>
                     )}
-                    <div className="border-t border-lichen my-1" />
-                    <button
+                    <div role="separator" className="border-t border-lichen my-1" />
+                    <button type="button" role="menuitem"
                       onClick={() => { if (canEdit) { goToTab('history'); setShowQuickActions(false); } }}
                       disabled={!canEdit}
                       title={!canEdit ? "You don't have permission" : undefined}
@@ -477,8 +489,8 @@ export default function MediaDetailPage() {
                     >
                       <Upload size={16} className="text-archive" />Upload New Version
                     </button>
-                    <div className="border-t border-lichen my-1" />
-                    <button
+                    <div role="separator" className="border-t border-lichen my-1" />
+                    <button type="button" role="menuitem"
                       onClick={() => { if (canEdit) { reprocessMutation.mutate(); setShowQuickActions(false); } }}
                       disabled={!canEdit || reprocessMutation.isPending || media?.processing_status === 'processing'}
                       title={!canEdit ? "You don't have permission" : undefined}
@@ -489,8 +501,8 @@ export default function MediaDetailPage() {
                     </button>
                     {canDelete && (
                       <>
-                        <div className="border-t border-lichen my-1" />
-                        <button onClick={() => { setShowDeleteDialog(true); setShowQuickActions(false); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-left text-semantic-error hover:bg-semantic-error/10">
+                        <div role="separator" className="border-t border-lichen my-1" />
+                        <button type="button" role="menuitem" onClick={() => { setShowDeleteDialog(true); setShowQuickActions(false); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-left text-semantic-error hover:bg-semantic-error/10">
                           <Trash2 size={16} />Delete Asset
                         </button>
                       </>
@@ -675,12 +687,13 @@ export default function MediaDetailPage() {
                         {isEditing ? (
                           <div className="bg-stone/20 rounded-lg p-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-                              <div className="sm:col-span-2"><label className="block text-xs font-medium text-archive mb-1">Title</label><input type="text" value={editForm.title || ''} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" /></div>
-                              <div className="sm:col-span-2"><label className="block text-xs font-medium text-archive mb-1">Description</label><textarea value={editForm.description || ''} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} rows={2} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" /></div>
-                              <div className="sm:col-span-2"><label className="block text-xs font-medium text-archive mb-1">Alt Text</label><input type="text" value={editForm.alt_text || ''} onChange={(e) => setEditForm({ ...editForm, alt_text: e.target.value })} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" placeholder="Describe image for accessibility" /></div>
-                              <div><label className="block text-xs font-medium text-archive mb-1">Caption</label><input type="text" value={editForm.caption || ''} onChange={(e) => setEditForm({ ...editForm, caption: e.target.value })} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" /></div>
-                              <div><label className="block text-xs font-medium text-archive mb-1">Credit</label><input type="text" value={editForm.credit || ''} onChange={(e) => setEditForm({ ...editForm, credit: e.target.value })} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" placeholder="Photographer or source" /></div>
-                              <div className="sm:col-span-2"><label className="block text-xs font-medium text-archive mb-1">Copyright Notice</label><input type="text" value={editForm.copyright_notice || ''} onChange={(e) => setEditForm({ ...editForm, copyright_notice: e.target.value })} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" placeholder="© 2024 Organization Name" /></div>
+                              <div className="sm:col-span-2"><label htmlFor="media-edit-title" className="block text-xs font-medium text-archive mb-1">Title</label><input type="text" id="media-edit-title" value={editForm.title || ''} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" /></div>
+                              <div className="sm:col-span-2"><label htmlFor="media-edit-description" className="block text-xs font-medium text-archive mb-1">Description</label><textarea id="media-edit-description" value={editForm.description || ''} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} rows={2} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" /></div>
+                              <div className="sm:col-span-2"><label htmlFor="media-edit-alt_text" className="block text-xs font-medium text-archive mb-1">Alt Text</label><input type="text" id="media-edit-alt_text" value={editForm.alt_text || ''} onChange={(e) => setEditForm({ ...editForm, alt_text: e.target.value })} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" placeholder="Describe image for accessibility" /></div>
+                              <div><label htmlFor="media-edit-caption" className="block text-xs font-medium text-archive mb-1">Caption</label><input type="text" id="media-edit-caption" value={editForm.caption || ''} onChange={(e) => setEditForm({ ...editForm, caption: e.target.value })} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" /></div>
+                              <div><label htmlFor="media-edit-credit" className="block text-xs font-medium text-archive mb-1">Credit</label><input type="text" id="media-edit-credit" value={editForm.credit || ''} onChange={(e) => setEditForm({ ...editForm, credit: e.target.value })} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" placeholder="Photographer or source" /></div>
+                              <div className="sm:col-span-2"><label htmlFor="media-edit-copyright_notice" className="block text-xs font-medium text-archive mb-1">Copyright Notice</label><input type="text" id="media-edit-copyright_notice" value={editForm.copyright_notice || ''} onChange={(e) => setEditForm({ ...editForm, copyright_notice: e.target.value })} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" placeholder="© 2024 Organization Name" /></div>
+                              <div className="sm:col-span-2"><label htmlFor="media-edit-preferred_citation" className="block text-xs font-medium text-archive mb-1">Preferred Citation</label><textarea id="media-edit-preferred_citation" aria-describedby="media-edit-preferred_citation-hint" value={editForm.preferred_citation || ''} onChange={(e) => setEditForm({ ...editForm, preferred_citation: e.target.value })} rows={2} className="w-full px-3 py-1.5 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark bg-parchment" /><p id="media-edit-preferred_citation-hint" className="mt-1 text-xs text-accessible-gray">How researchers should cite this file.</p></div>
                             </div>
                           </div>
                         ) : (
@@ -691,12 +704,21 @@ export default function MediaDetailPage() {
                             {media.caption && <div><dt className="text-archive">Caption</dt><dd className="text-ink mt-0.5">{media.caption}</dd></div>}
                             {media.credit && <div><dt className="text-archive">Credit</dt><dd className="text-ink mt-0.5">{media.credit}</dd></div>}
                             {media.copyright_notice && <div className="sm:col-span-2"><dt className="text-archive">Copyright</dt><dd className="text-ink mt-0.5">{media.copyright_notice}</dd></div>}
-                            {!media.title && !media.description && !media.alt_text && !media.caption && !media.credit && !media.copyright_notice && (
+                            {media.preferred_citation && <div className="sm:col-span-2"><dt className="text-archive">Preferred Citation</dt><dd className="text-ink mt-0.5">{media.preferred_citation}</dd></div>}
+                            {!media.title && !media.description && !media.alt_text && !media.caption && !media.credit && !media.preferred_citation && !media.copyright_notice && (
                               <div className="sm:col-span-2 text-archive text-xs py-2">No details added yet. Click Edit to add title, description, and more.</div>
                             )}
                           </dl>
                         )}
                       </div>
+
+                      <PublicDownloadSetting
+                        orgId={orgId!}
+                        mediaId={mediaId!}
+                        mediaType={media.media_type}
+                        value={media.public_download_level}
+                        canEdit={canEdit}
+                      />
 
                       {/* AI descriptions (Cooper Hewitt three-tier pattern) — images only */}
                       {media.media_type === 'image' && (
@@ -813,7 +835,9 @@ export default function MediaDetailPage() {
                         return (
                           <div key={d.derivative_id} className="flex items-center gap-3 p-3 bg-stone/20 rounded-lg border border-transparent hover:border-lichen transition-colors">
                             <div className="w-14 h-14 bg-parchment rounded-lg overflow-hidden flex-shrink-0 border border-lichen">
-                              {d.format && ['mp4', 'webm', 'mov'].includes(d.format.toLowerCase()) ? (
+                              {d.format?.toLowerCase() === 'pdf' ? (
+                                <div className="w-full h-full flex items-center justify-center bg-ink/5"><FileText size={20} className="text-archive" aria-hidden="true" /></div>
+                              ) : d.format && ['mp4', 'webm', 'mov'].includes(d.format.toLowerCase()) ? (
                                 media.thumbnail_url ? <img src={media.thumbnail_url} alt={d.derivative_type} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-ink/5"><Film size={20} className="text-archive" /></div>
                               ) : d.s3_key && d.url ? (
                                 <img src={d.url} alt={d.derivative_type} className="w-full h-full object-cover" />
@@ -927,19 +951,27 @@ export default function MediaDetailPage() {
       )}
 
       {showEmbedPanel && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50" onClick={() => setShowEmbedPanel(false)}>
-          <div className="bg-parchment rounded-lg shadow-xl w-full max-w-lg p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-ink flex items-center gap-2"><Code size={18} className="text-bark" />Embed Code</h2>
-              <button onClick={() => setShowEmbedPanel(false)} className="text-archive hover:text-ink"><X size={20} /></button>
-            </div>
-            <EmbedCodeGenerator organizationId={orgId!} mediaId={mediaId!} />
-            <div className="mt-4 flex justify-end"><button onClick={() => setShowEmbedPanel(false)} className="btn btn-secondary">Close</button></div>
-          </div>
-        </div>
+        <EmbedCodeDialog organizationId={orgId!} mediaId={mediaId!} onClose={() => setShowEmbedPanel(false)} />
       )}
 
       <ConfirmDialog isOpen={showDeleteDialog} onClose={() => setShowDeleteDialog(false)} onConfirm={() => deleteMutation.mutate()} title="Delete Media" message="Are you sure you want to delete this media? This action cannot be undone." confirmText="Delete" confirmStyle="danger" />
     </>
+  );
+}
+
+function EmbedCodeDialog({ organizationId, mediaId, onClose }: { organizationId: string; mediaId: string; onClose: () => void }) {
+  const { modalRef, titleId } = useAccessibleModal({ isOpen: true, onClose, titlePrefix: 'embed-code-dialog' });
+  return (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50">
+      <div aria-hidden="true" className="absolute inset-0" onClick={onClose} />
+      <div ref={modalRef} {...getModalAriaProps(titleId)} className="relative bg-parchment rounded-lg shadow-xl w-full max-w-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 id={titleId} className="text-lg font-semibold text-ink flex items-center gap-2"><Code size={18} className="text-bark" />Embed Code</h2>
+          <button type="button" onClick={onClose} aria-label="Close" className="text-archive hover:text-ink"><X size={20} /></button>
+        </div>
+        <EmbedCodeGenerator organizationId={organizationId} mediaId={mediaId} />
+        <div className="mt-4 flex justify-end"><button type="button" onClick={onClose} className="btn btn-secondary">Close</button></div>
+      </div>
+    </div>
   );
 }

@@ -90,6 +90,48 @@
       "permission": "org.manage_roles"
     },
     {
+      "id": "admin:security-changes",
+      "product": "admin",
+      "label": "Security Changes",
+      "pathPattern": "/organizations/:orgId/admin/security-changes",
+      "breadcrumb": [
+        "Admin",
+        "Security Changes"
+      ],
+      "keywords": [
+        "admin",
+        "api key changes",
+        "changes",
+        "permission changes",
+        "role changes",
+        "security",
+        "security changes",
+        "security log",
+        "sso changes"
+      ],
+      "permission": "org.view_audit_logs"
+    },
+    {
+      "id": "admin:settings-changes",
+      "product": "admin",
+      "label": "Settings Changes",
+      "pathPattern": "/organizations/:orgId/admin/settings-changes",
+      "breadcrumb": [
+        "Admin",
+        "Settings Changes"
+      ],
+      "keywords": [
+        "admin",
+        "changes",
+        "configuration changes",
+        "settings",
+        "settings changes",
+        "settings history",
+        "settings log"
+      ],
+      "permission": "org.view_audit_logs"
+    },
+    {
       "id": "admin:users",
       "product": "admin",
       "label": "Users",
@@ -420,6 +462,27 @@
       "appKey": "collections"
     },
     {
+      "id": "collections:ead-import",
+      "product": "collections",
+      "label": "Import Finding Aid (EAD)",
+      "pathPattern": "/organizations/:orgId/collections/ead-import",
+      "breadcrumb": [
+        "Collection",
+        "Import Finding Aid (EAD)"
+      ],
+      "keywords": [
+        "aid",
+        "collection",
+        "collections",
+        "ead",
+        "finding",
+        "import",
+        "import finding aid (ead)"
+      ],
+      "permission": "collections.create",
+      "appKey": "collections"
+    },
+    {
       "id": "collections:emergency-plans",
       "product": "collections",
       "label": "Emergency Plans",
@@ -587,6 +650,31 @@
       "appKey": "collections"
     },
     {
+      "id": "collections:library-catalog",
+      "product": "collections",
+      "label": "Library",
+      "pathPattern": "/organizations/:orgId/collections/library",
+      "breadcrumb": [
+        "Collection",
+        "Library"
+      ],
+      "keywords": [
+        "audio books",
+        "barcodes",
+        "bibliographic records",
+        "books",
+        "braille",
+        "collection",
+        "collections",
+        "holdings",
+        "large print",
+        "library",
+        "serials"
+      ],
+      "permission": "collections.view",
+      "appKey": "collections"
+    },
+    {
       "id": "collections:loans-in",
       "product": "collections",
       "label": "Loans In",
@@ -732,6 +820,31 @@
         "rights & reproduction"
       ],
       "permission": "reproduction_requests.view",
+      "appKey": "collections"
+    },
+    {
+      "id": "collections:research-visits",
+      "product": "collections",
+      "label": "Research Visits",
+      "pathPattern": "/organizations/:orgId/collections/research-visits",
+      "breadcrumb": [
+        "Rights & Reproduction",
+        "Research Visits"
+      ],
+      "keywords": [
+        "collections",
+        "object handling",
+        "reading room",
+        "reproduction",
+        "research",
+        "research visits",
+        "researcher",
+        "rights",
+        "rights & reproduction",
+        "visit log",
+        "visits"
+      ],
+      "permission": "use_requests.view",
       "appKey": "collections"
     },
     {

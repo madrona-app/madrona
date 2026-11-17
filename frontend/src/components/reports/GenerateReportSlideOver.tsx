@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { FileSpreadsheet, FileText, Download, AlertCircle, History } from 'lucide-react';
+import { FileSpreadsheet, FileText, FileCode, FileType, Download, AlertCircle, History } from 'lucide-react';
 import { SlideOver } from '../ui/SlideOver';
 import { MadronaLoader } from '../ui/MadronaLoader';
 import { useOrganization } from '../../contexts/useOrganization';
@@ -8,6 +8,8 @@ import { useToast } from '../../contexts/ToastContext';
 import {
   getAvailableReports,
   generateReport,
+  REPORT_FORMATS,
+  sortReportFormats,
 } from '../../lib/api/on-demand-reports';
 import type {
   ReportContextType,
@@ -32,10 +34,13 @@ const CONTEXT_LABELS: Record<ReportContextType, string> = {
   record: 'this record',
 };
 
-const FORMAT_LABELS: Record<ReportFormat, { label: string; icon: typeof FileSpreadsheet }> = {
-  csv: { label: 'CSV', icon: FileSpreadsheet },
-  excel: { label: 'Excel', icon: FileSpreadsheet },
-  pdf: { label: 'PDF', icon: FileText },
+const FORMAT_ICONS: Record<ReportFormat, typeof FileSpreadsheet> = {
+  html: FileCode,
+  docx: FileText,
+  txt: FileType,
+  csv: FileSpreadsheet,
+  excel: FileSpreadsheet,
+  pdf: FileText,
 };
 
 export function GenerateReportSlideOver({
@@ -181,25 +186,27 @@ export function GenerateReportSlideOver({
         <button
           type="button"
           onClick={() => setActiveTab('generate')}
+          aria-pressed={activeTab === 'generate'}
           className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'generate'
               ? 'border-bark text-bark'
               : 'border-transparent text-archive hover:text-ink'
           }`}
         >
-          <FileSpreadsheet size={14} />
+          <FileSpreadsheet size={14} aria-hidden="true" />
           Generate
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('history')}
+          aria-pressed={activeTab === 'history'}
           className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'history'
               ? 'border-bark text-bark'
               : 'border-transparent text-archive hover:text-ink'
           }`}
         >
-          <History size={14} />
+          <History size={14} aria-hidden="true" />
           Your Reports
         </button>
       </div>
@@ -254,6 +261,7 @@ export function GenerateReportSlideOver({
                     type="button"
                     onClick={() => handleSelectReport(report)}
                     disabled={generateMutation.isPending}
+                    aria-pressed={selectedReport?.report_key === report.report_key}
                     className={`w-full text-left p-3 rounded-institutional border transition-colors focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                       selectedReport?.report_key === report.report_key
                         ? 'border-bark bg-bark/5'
@@ -291,37 +299,67 @@ export function GenerateReportSlideOver({
             </div>
           ))}
 
-          {/* Format Selection */}
+          {/* Format Selection — a native radio group: the chosen format is
+              announced as "checked", not conveyed by colour alone. */}
           {selectedReport && (
-            <div>
-              <h3 className="text-xs font-semibold text-archive uppercase tracking-wider mb-2">
-                Export Format
-              </h3>
-              <div className="flex gap-2">
-                {selectedReport.supported_formats.map((format) => {
-                  const { label, icon: Icon } = FORMAT_LABELS[format as ReportFormat] || {
-                    label: format.toUpperCase(),
-                    icon: FileSpreadsheet,
-                  };
+            <fieldset>
+              <legend className="text-xs font-semibold text-archive uppercase tracking-wider mb-2">
+                Export format
+              </legend>
+              <div className="space-y-2">
+                {sortReportFormats(selectedReport.supported_formats).map((format) => {
+                  const info = REPORT_FORMATS.find((f) => f.format === format);
+                  const label = info?.label ?? format.toUpperCase();
+                  const Icon = FORMAT_ICONS[format as ReportFormat] ?? FileSpreadsheet;
+                  const id = `report-format-${format}`;
+                  const checked = selectedFormat === format;
                   return (
-                    <button
-                      key={format}
-                      type="button"
-                      onClick={() => setSelectedFormat(format as ReportFormat)}
-                      disabled={generateMutation.isPending}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-institutional border text-sm transition-colors focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-                        selectedFormat === format
-                          ? 'border-bark bg-bark/5 text-bark font-medium'
-                          : 'border-lichen text-ink hover:border-stone hover:bg-stone/30'
-                      }`}
-                    >
-                      <Icon size={14} />
-                      {label}
-                    </button>
+                    <div key={format}>
+                      <input
+                        type="radio"
+                        id={id}
+                        name="report-format"
+                        value={format}
+                        checked={checked}
+                        onChange={() => setSelectedFormat(format as ReportFormat)}
+                        disabled={generateMutation.isPending}
+                        aria-labelledby={`${id}-name`}
+                        aria-describedby={info ? `${id}-desc` : undefined}
+                        className="peer sr-only"
+                      />
+                      <label
+                        htmlFor={id}
+                        className={`flex min-h-[44px] cursor-pointer items-start gap-3 rounded-institutional border px-3 py-2 text-sm transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-bark/30 peer-focus-visible:ring-offset-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 ${
+                          checked
+                            ? 'border-bark bg-bark/5 text-bark'
+                            : 'border-lichen text-ink hover:border-stone hover:bg-stone/30'
+                        }`}
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={`mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border-2 ${
+                            checked ? 'border-bark' : 'border-archive'
+                          }`}
+                        >
+                          {checked && <span className="h-2 w-2 rounded-full bg-bark" />}
+                        </span>
+                        <Icon size={16} aria-hidden="true" className="mt-0.5 flex-shrink-0" />
+                        <span className="min-w-0">
+                          <span id={`${id}-name`} className={`block ${checked ? 'font-medium' : ''}`}>
+                            {label}
+                          </span>
+                          {info && (
+                            <span id={`${id}-desc`} className="block text-xs text-accessible-gray">
+                              {info.description}
+                            </span>
+                          )}
+                        </span>
+                      </label>
+                    </div>
                   );
                 })}
               </div>
-            </div>
+            </fieldset>
           )}
       </div>
     );

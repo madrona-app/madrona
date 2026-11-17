@@ -25,6 +25,7 @@ export const MediaSchema = z.object({
   ai_descriptions_model: z.string().nullable().optional(),
   caption: z.string().nullable().optional(),
   credit: z.string().nullable().optional(),
+  preferred_citation: z.string().nullable().optional(),
   copyright_notice: z.string().nullable().optional(),
   preview_url: z.string().nullable().optional(),
   creator: z.string().nullable().optional(),
@@ -49,6 +50,8 @@ export const MediaSchema = z.object({
   published_at: z.string().nullable().optional(),
   published_url: z.string().nullable().optional(),
   published_by: z.string().nullable().optional(),
+  // Per-file public download level; null = not set (public site: no downloads)
+  public_download_level: z.enum(['none', 'derivatives', 'originals']).nullable().optional(),
   // Metadata review status
   metadata_reviewed: z.boolean().nullable().optional(),
   metadata_reviewed_at: z.string().nullable().optional(),
@@ -100,6 +103,7 @@ export const MediaEmbeddedSchema = z.object({
   ai_descriptions_model: z.string().nullable().optional(),
   caption: z.string().nullable().optional(),
   credit: z.string().nullable().optional(),
+  preferred_citation: z.string().nullable().optional(),
   copyright_notice: z.string().nullable().optional(),
   preview_url: z.string().nullable().optional(),
   creator: z.string().nullable().optional(),

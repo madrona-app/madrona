@@ -22,6 +22,7 @@ from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import DocumentationPlan, EmergencyPlan
@@ -57,6 +58,36 @@ _EMERGENCY_PLAN_API_TO_MODEL = {
 
 
 # ============================================================================
+# PLAN TYPE / REVIEW FREQUENCY / ACTIONS
+# ============================================================================
+
+def _save_plan_actions(db: Session, plan: DocumentationPlan, body: dict, user_id) -> None:
+    """Write the plan's actions and milestones as compliance_actions rows.
+
+    Rows are matched and updated in place (child_rows.reconcile_rows), so an
+    unchanged save writes nothing and the audit trail records real changes
+    only. Keys absent from the body leave that list untouched.
+    """
+    from app.services.compliance_actions import action_items, milestone_items, save_actions
+
+    for key, action_type, parse in (
+        ("actions", "plan_action", action_items),
+        ("milestones", "milestone", milestone_items),
+    ):
+        if key not in body:
+            continue
+        save_actions(
+            db,
+            organization_id=plan.organization_id,
+            entity_type="documentation_plan",
+            entity_id=plan.plan_id,
+            action_type=action_type,
+            desired=parse(body.get(key)),
+            user_id=user_id,
+        )
+
+
+# ============================================================================
 # SERIALIZERS
 # ============================================================================
 
@@ -81,6 +112,7 @@ def _get_plan_actions(dp: DocumentationPlan) -> list[dict]:
         .filter(
             ComplianceAction.entity_type == "documentation_plan",
             ComplianceAction.entity_id == dp.plan_id,
+            ComplianceAction.action_type != "milestone",
         )
         .order_by(ComplianceAction.display_order)
         .all()
@@ -101,6 +133,34 @@ def _get_plan_actions(dp: DocumentationPlan) -> list[dict]:
     ]
 
 
+def _get_plan_milestones(dp: DocumentationPlan) -> list[dict]:
+    from sqlalchemy.orm import object_session
+
+    from app.models.compliance import ComplianceAction
+
+    db = object_session(dp)
+    if not db:
+        return []
+    rows = (
+        db.query(ComplianceAction)
+        .filter(
+            ComplianceAction.entity_type == "documentation_plan",
+            ComplianceAction.entity_id == dp.plan_id,
+            ComplianceAction.action_type == "milestone",
+        )
+        .order_by(ComplianceAction.display_order)
+        .all()
+    )
+    return [
+        {
+            "action_id": str(m.action_id),
+            "date": m.due_date.isoformat() if m.due_date else "",
+            "description": m.title,
+        }
+        for m in rows
+    ]
+
+
 def _serialize_documentation_plan(dp: DocumentationPlan) -> dict:
     return {
         "plan_id": str(dp.plan_id),
@@ -115,11 +175,9 @@ def _serialize_documentation_plan(dp: DocumentationPlan) -> dict:
         "objectives": dp.objectives,
         "measurable_results": dp.measurable_results,
         "actions": _get_plan_actions(dp),
-        # "milestones" is gone with dp.milestones: no column or table in the
-        # schema provides it, so reading it returned 500 on every call to this
-        # endpoint. Nothing can depend on the key, because it never answered.
-        # If milestones are wanted they belong in compliance_actions beside the
-        # actions above, under their own action_type.
+        # Milestones live in compliance_actions beside the actions, under
+        # action_type "milestone", in the {date, description} shape the form uses.
+        "milestones": _get_plan_milestones(dp),
         "resources_required": dp.resources_needed,
         "start_date": dp.start_date.isoformat() if dp.start_date else None,
         "end_date": dp.end_date.isoformat() if dp.end_date else None,
@@ -321,20 +379,22 @@ def create_documentation_plan(
         plan_number = next_sequential_number(db, org_id, 'DP', include_year=False, separator='-')
 
     user_uuid = auth.user_id
+    # plan_type and review_frequency are lookup-backed (organizations add
+    # their own values); app/services/lookup_fields.py checks them.
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, DocumentationPlan, {**body, "plan_type": body.get("plan_type") or "documentation_policy"})
 
     plan = DocumentationPlan(
         organization_id=org_id,
         plan_number=plan_number,
         title=body["title"],
-        plan_type=body.get("plan_type", "collection_wide"),
+        plan_type=body.get("plan_type") or "documentation_policy",
         scope_description=body.get("scope_description"),
         target_collections=body.get("target_collections"),
         target_object_types=body.get("target_object_types"),
         priority_criteria=body.get("priority_criteria"),
         objectives=body.get("objectives", ""),
         measurable_results=body.get("measurable_results"),
-        actions=body.get("actions"),
-        milestones=body.get("milestones"),
         resources_needed=body.get("resources_required"),
         start_date=body.get("start_date"),
         end_date=body.get("end_date"),
@@ -349,10 +409,12 @@ def create_documentation_plan(
 
     db.add(plan)
     try:
-        db.commit()
-    except IntegrityError:
+        db.flush()
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="A plan with this number may already exist")
+        raise integrity_http_error(exc, "A plan with this number already exists") from None
+    _save_plan_actions(db, plan, body, user_uuid)
+    db.commit()
 
     db.refresh(plan)
     return _serialize_documentation_plan(plan)
@@ -392,13 +454,21 @@ def update_documentation_plan(
     if not plan:
         raise HTTPException(status_code=404, detail="Documentation plan not found")
 
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, DocumentationPlan, body, current=plan)
+    if "plan_type" in body and not body["plan_type"]:
+        raise HTTPException(status_code=400, detail="plan_type cannot be empty")
+
     protected = {"plan_id", "organization_id", "created_at", "created_by", "updated_by", "approved_by", "approved_at", "approval_date"}
     for key, value in body.items():
-        if key in protected:
+        if key in protected or key in ("actions", "milestones"):
             continue
         model_key = _DOC_PLAN_API_TO_MODEL.get(key, key)
         if hasattr(plan, model_key):
+            if model_key == "review_frequency" and value == "":
+                value = None
             setattr(plan, model_key, value)
+    _save_plan_actions(db, plan, body, auth.user_id)
 
     plan.updated_by = auth.user_id
     plan.updated_at = datetime.now(timezone.utc)
@@ -549,9 +619,9 @@ def create_emergency_plan(
     db.add(plan)
     try:
         db.flush()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="A plan with this number may already exist")
+        raise integrity_http_error(exc, "A plan with this number may already exist") from None
 
     # Create child records from request body
     from app.models import (EmergencyRiskAssessment, EmergencyPlanContact,

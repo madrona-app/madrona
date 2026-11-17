@@ -164,6 +164,70 @@ ENTITY_TYPE_PERMISSIONS: dict[str, Permission] = {
     "person_authority": Permission.DATA_VIEW,
     "citation": Permission.DATA_VIEW,
     "media": Permission.DATA_VIEW,
+    "media_collection": Permission.MEDIA_VIEW,
+    "media_rights": Permission.MEDIA_VIEW,
+    "media_consent": Permission.MEDIA_VIEW,
+    "watermark_template": Permission.MEDIA_VIEW,
+    "media_tag_definition": Permission.MEDIA_VIEW,
+    "media_folder": Permission.MEDIA_VIEW,
+    "bib_record": Permission.COLLECTIONS_VIEW,
+    "research_visit": Permission.USE_REQUESTS_VIEW,
+    "insurance": Permission.INSURANCE_VIEW,
+    "indemnity_arrangement": Permission.INSURANCE_VIEW,
+    "insurance_claim": Permission.INSURANCE_VIEW,
+    "exhibition": Permission.EXHIBIT_VIEW,
+    "crate": Permission.COLLECTIONS_VIEW,
+    "shipment": Permission.COLLECTIONS_VIEW,
+    "event": Permission.EVENTS_VIEW,
+    "place_authority": Permission.PLACE_AUTHORITIES_VIEW,
+    "subject_authority": Permission.SUBJECT_AUTHORITIES_VIEW,
+    "style_period_authority": Permission.STYLE_PERIOD_AUTHORITIES_VIEW,
+    "venue": Permission.VENUES_VIEW,
+    "label_template": Permission.LABELS_VIEW,
+    "frame_style": Permission.EXHIBIT_VIEW,
+    "mount_config": Permission.EXHIBIT_VIEW,
+    "info_request_template": Permission.EXHIBIT_VIEW,
+    "checklist_template": Permission.EXHIBIT_VIEW,
+    "lookup_value": Permission.LOOKUPS_VIEW,
+    "vocabulary_term": Permission.LOOKUPS_VIEW,
+    "other_number_type": Permission.LOOKUPS_VIEW,
+    "critical_response": Permission.CRITICAL_RESPONSES_VIEW,
+    "nagpra_action": Permission.NAGPRA_VIEW,
+    "compliance_action": Permission.DATA_VIEW,
+    "task": Permission.TASKS_VIEW,
+    "department": Permission.DEPARTMENTS_VIEW,
+    "record_flag_definition": Permission.COLLECTIONS_VIEW,
+    "completeness_rule": Permission.COLLECTIONS_VIEW,
+    "custom_field_definition": Permission.COLLECTIONS_VIEW,
+    "preservation_policy": Permission.MEDIA_VIEW,
+    "metadata_template": Permission.MEDIA_VIEW,
+    "page": Permission.CONTENT_VIEW,
+    "menu": Permission.CONTENT_VIEW,
+    "redirect": Permission.CONTENT_VIEW,
+    "content_category": Permission.CONTENT_VIEW,
+    "discover_config": Permission.DISCOVER_PUBLISH,
+    "publish_schedule": Permission.DISCOVER_PUBLISH,
+    "portal_member": Permission.ORG_MANAGE_SETTINGS,
+    # Security configuration: the same permission as the admin audit logs.
+    "role": Permission.ORG_VIEW_AUDIT_LOGS,
+    "app_role_assignment": Permission.ORG_VIEW_AUDIT_LOGS,
+    "sso_configuration": Permission.ORG_VIEW_AUDIT_LOGS,
+    "api_key": Permission.ORG_VIEW_AUDIT_LOGS,
+    # Organization settings: the permission that edits them.
+    "organization": Permission.ORG_MANAGE_SETTINGS,
+    "organization_branding": Permission.ORG_MANAGE_SETTINGS,
+    "organization_collection_profile": Permission.ORG_MANAGE_SETTINGS,
+    "organization_storage_config": Permission.ORG_MANAGE_SETTINGS,
+    "media_ai_config": Permission.MEDIA_ADMIN,
+    "media_ai_tag_mapping": Permission.MEDIA_ADMIN,
+    "derivative_size_config": Permission.MEDIA_ADMIN,
+    "media_field_inheritance_config": Permission.MEDIA_ADMIN,
+    "vocabulary_mapping": Permission.LOOKUPS_VIEW,
+    "sla_policy": Permission.ORG_MANAGE_SETTINGS,
+    "approval_rule": Permission.ORG_MANAGE_SETTINGS,
+    "document_template": Permission.DOCUMENTS_TEMPLATES_VIEW,
+    "org_scoped_doc": Permission.ORG_MANAGE_SETTINGS,
+    "media_download_request": Permission.DOWNLOAD_REQUESTS_VIEW,
 }
 
 
@@ -231,6 +295,9 @@ def get_entity_audit_history(
             "changed_fields": e.changed_fields or [],
             "summary": e.summary,
             "request_method": e.request_method,
+            "child_entity_type": e.child_entity_type,
+            "child_entity_id": str(e.child_entity_id) if e.child_entity_id else None,
+            "child_display_key": e.child_display_key,
         }
 
         if include_diffs:
@@ -303,6 +370,17 @@ def toggle_object_discoverable(
                 "consent and cannot be made publicly discoverable."
             ),
         })
+
+    # Completeness rules the organization marked as required for publication.
+    if new_val:
+        from app.services.record_workflow import publication_blockers
+        blockers = publication_blockers(db, organization_id, obj)
+        if blockers:
+            raise HTTPException(status_code=409, detail={
+                "code": "incomplete_for_publication",
+                "message": "This record does not yet meet the rules required for publication. " + " ".join(blockers),
+                "blockers": blockers,
+            })
 
     obj.is_discoverable = new_val
 
@@ -383,6 +461,11 @@ def bulk_toggle_discoverable(
                 for oid in restricted_ids
             ]
             objects = [o for o in objects if o.object_id not in restricted_ids]
+        from app.services.record_workflow import incomplete_for_publication_ids
+        incomplete = incomplete_for_publication_ids(db, organization_id, [o.object_id for o in objects])
+        if incomplete:
+            skipped += [{"object_id": str(oid), "reason": "incomplete_for_publication"} for oid in incomplete]
+            objects = [o for o in objects if o.object_id not in incomplete]
 
     now = datetime.now(timezone.utc)
 
@@ -427,6 +510,7 @@ def get_discover_config(
 
     if not config:
         return {
+            "config_id": None,
             "hero_media_id": None,
             "page_title": None,
             "page_subtitle": None,
@@ -460,6 +544,7 @@ def get_discover_config(
         }
 
     return {
+        "config_id": str(config.config_id),
         "hero_media_id": str(config.hero_media_id) if config.hero_media_id else None,
         "page_title": config.page_title,
         "page_subtitle": config.page_subtitle,
@@ -725,6 +810,7 @@ def update_discover_config(
     invalidate_org_cache_by_id(org_id_str)
 
     return {
+        "config_id": str(config.config_id),
         "hero_media_id": str(config.hero_media_id) if config.hero_media_id else None,
         "page_title": config.page_title,
         "page_subtitle": config.page_subtitle,
@@ -906,6 +992,7 @@ def get_discover_preview(
                 "height": media.height,
                 "alt_text": media.alt_text,
                 "credit": media.credit,
+                "preferred_citation": media.preferred_citation,
                 "is_primary": link.is_primary,
                 "caption": link.caption_override,
             })
@@ -991,7 +1078,10 @@ def get_discover_preview(
         "preview_warnings": preview_warnings,
     }
 
-    return result
+    # Show only what the public record shows (Discover settings > Public fields).
+    from app.services import public_object_fields as pof
+
+    return pof.redact(result, pof.get_public_field_keys(db, organization_id))
 
 
 # ============================================================================
@@ -1129,6 +1219,11 @@ def publish_by_criteria(
         if restricted_ids:
             skipped_restricted = len(restricted_ids)
             objects = [o for o in objects if o.object_id not in restricted_ids]
+        from app.services.record_workflow import incomplete_for_publication_ids
+        incomplete = incomplete_for_publication_ids(db, organization_id, [o.object_id for o in objects])
+        if incomplete:
+            skipped_restricted += len(incomplete)
+            objects = [o for o in objects if o.object_id not in incomplete]
 
     updated_count = 0
 

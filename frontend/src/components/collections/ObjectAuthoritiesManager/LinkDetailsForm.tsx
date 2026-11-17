@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { ROLE_OPTIONS, QUALIFIER_SUGGESTIONS, CERTAINTY_OPTIONS } from './constants';
 
 interface LinkDetailsFormProps {
@@ -31,16 +32,17 @@ export function LinkDetailsForm({
   onNotesChange,
   idPrefix = '',
 }: LinkDetailsFormProps) {
+  const fid = useId();
   const datalistId = `${idPrefix}qualifier-suggestions`;
 
   return (
     <>
       {/* Role */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-ink mb-1.5">
+        <label htmlFor={`${fid}-role`} className="block text-sm font-medium text-ink mb-1.5">
           Role <span className="text-semantic-error">*</span>
         </label>
-        <select value={role} onChange={(e) => onRoleChange(e.target.value)} className="input w-full">
+        <select id={`${fid}-role`} value={role} onChange={(e) => onRoleChange(e.target.value)} className="input w-full">
           {ROLE_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
@@ -50,10 +52,11 @@ export function LinkDetailsForm({
       {/* Role Qualifier */}
       {role === 'creator' && (
         <div className="mb-4">
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fid}-attribution-qualifier`} className="block text-sm font-medium text-ink mb-1.5">
             Attribution Qualifier
           </label>
           <input
+            id={`${fid}-attribution-qualifier`}
             type="text"
             value={roleQualifier}
             onChange={(e) => onRoleQualifierChange(e.target.value)}
@@ -72,10 +75,10 @@ export function LinkDetailsForm({
       {/* Certainty */}
       {role === 'creator' && (
         <div className="mb-4">
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fid}-attribution-certainty`} className="block text-sm font-medium text-ink mb-1.5">
             Attribution Certainty
           </label>
-          <select value={certainty} onChange={(e) => onCertaintyChange(e.target.value)} className="input w-full">
+          <select id={`${fid}-attribution-certainty`} value={certainty} onChange={(e) => onCertaintyChange(e.target.value)} className="input w-full">
             {CERTAINTY_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
@@ -85,10 +88,11 @@ export function LinkDetailsForm({
 
       {/* Display Name Override */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-ink mb-1.5">
+        <label htmlFor={`${fid}-display-name-override`} className="block text-sm font-medium text-ink mb-1.5">
           Display Name Override
         </label>
         <input
+          id={`${fid}-display-name-override`}
           type="text"
           value={displayNameOverride}
           onChange={(e) => onDisplayNameOverrideChange(e.target.value)}
@@ -99,8 +103,9 @@ export function LinkDetailsForm({
 
       {/* Notes */}
       <div>
-        <label className="block text-sm font-medium text-ink mb-1.5">Notes</label>
+        <label htmlFor={`${fid}-notes`} className="block text-sm font-medium text-ink mb-1.5">Notes</label>
         <textarea
+          id={`${fid}-notes`}
           value={notes}
           onChange={(e) => onNotesChange(e.target.value)}
           rows={2}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -55,6 +55,7 @@ export default function MediaFieldInheritanceSettingsPage() {
   const { orgId } = useParams<{ orgId: string }>();
   const queryClient = useQueryClient();
 
+  const fid = useId();
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmState, setConfirmState] = useState<{action: () => void; title: string; message: string; confirmStyle: 'danger' | 'primary'} | null>(null);
@@ -233,8 +234,9 @@ export default function MediaFieldInheritanceSettingsPage() {
               <div className="p-4 bg-semantic-info/10 border-b border-semantic-info/30">
                 <div className="grid grid-cols-12 gap-4 items-end">
                   <div className="col-span-3">
-                    <label className="block text-xs text-stone-600 mb-1">Source Field</label>
+                    <label htmlFor={`${fid}-source-field`} className="block text-xs text-stone-600 mb-1">Source Field</label>
                     <select
+                      id={`${fid}-source-field`}
                       value={newConfig.source_field}
                       onChange={(e) => {
                         const field = AVAILABLE_SOURCE_FIELDS.find((f) => f.value === e.target.value);
@@ -255,8 +257,9 @@ export default function MediaFieldInheritanceSettingsPage() {
                     </select>
                   </div>
                   <div className="col-span-3">
-                    <label className="block text-xs text-stone-600 mb-1">Display Label</label>
+                    <label htmlFor={`${fid}-display-label`} className="block text-xs text-stone-600 mb-1">Display Label</label>
                     <input
+                      id={`${fid}-display-label`}
                       type="text"
                       value={newConfig.display_label}
                       onChange={(e) => setNewConfig({ ...newConfig, display_label: e.target.value })}
@@ -265,8 +268,9 @@ export default function MediaFieldInheritanceSettingsPage() {
                     />
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-xs text-stone-600 mb-1">Show In</label>
+                    <label htmlFor={`${fid}-display-context`} className="block text-xs text-stone-600 mb-1">Show In</label>
                     <select
+                      id={`${fid}-display-context`}
                       value={newConfig.display_context}
                       onChange={(e) =>
                         setNewConfig({ ...newConfig, display_context: e.target.value as 'detail' | 'list' | 'both' })
@@ -281,8 +285,9 @@ export default function MediaFieldInheritanceSettingsPage() {
                     </select>
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-xs text-stone-600 mb-1">Transform</label>
+                    <label htmlFor={`${fid}-transform`} className="block text-xs text-stone-600 mb-1">Transform</label>
                     <select
+                      id={`${fid}-transform`}
                       value={newConfig.transform_type || ''}
                       onChange={(e) =>
                         setNewConfig({
@@ -373,6 +378,7 @@ function ConfigRow({
   setEditingId,
   updateMutation,
 }: ConfigRowProps) {
+  const fid = useId();
   const isEditing = editingId === config.config_id;
   const [editData, setEditData] = useState({
     display_label: config.display_label,
@@ -401,14 +407,15 @@ function ConfigRow({
       <div className="p-4 bg-semantic-warning/10 border-b border-semantic-warning/30">
         <div className="grid grid-cols-12 gap-4 items-end">
           <div className="col-span-3">
-            <label className="block text-xs text-stone-600 mb-1">Source Field</label>
+            <span className="block text-xs text-stone-600 mb-1">Source Field</span>
             <div className="px-2 py-1.5 bg-stone-100 border border-stone-200 rounded text-sm text-stone-600">
               {config.source_field}
             </div>
           </div>
           <div className="col-span-3">
-            <label className="block text-xs text-stone-600 mb-1">Display Label</label>
+            <label htmlFor={`${fid}-edit-label`} className="block text-xs text-stone-600 mb-1">Display Label</label>
             <input
+              id={`${fid}-edit-label`}
               type="text"
               value={editData.display_label}
               onChange={(e) => setEditData({ ...editData, display_label: e.target.value })}
@@ -416,8 +423,9 @@ function ConfigRow({
             />
           </div>
           <div className="col-span-2">
-            <label className="block text-xs text-stone-600 mb-1">Show In</label>
+            <label htmlFor={`${fid}-edit-context`} className="block text-xs text-stone-600 mb-1">Show In</label>
             <select
+              id={`${fid}-edit-context`}
               value={editData.display_context}
               onChange={(e) =>
                 setEditData({ ...editData, display_context: e.target.value as 'detail' | 'list' | 'both' })
@@ -432,8 +440,9 @@ function ConfigRow({
             </select>
           </div>
           <div className="col-span-2">
-            <label className="block text-xs text-stone-600 mb-1">Transform</label>
+            <label htmlFor={`${fid}-edit-transform`} className="block text-xs text-stone-600 mb-1">Transform</label>
             <select
+              id={`${fid}-edit-transform`}
               value={editData.transform_type || ''}
               onChange={(e) =>
                 setEditData({ ...editData, transform_type: (e.target.value || null) as "array_first" | "array_join" | "array_concat_field" | null })
@@ -497,6 +506,10 @@ function ConfigRow({
         </div>
         <div className="col-span-2 flex items-center justify-end gap-2">
           <button
+            type="button"
+            role="switch"
+            aria-checked={config.is_active}
+            aria-label={`${config.display_label} active`}
             onClick={() => onToggleActive(config)}
             className={`p-1.5 rounded transition-colors ${
               config.is_active
@@ -518,6 +531,7 @@ function ConfigRow({
             }}
             className="p-1.5 text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded transition-colors"
             title="Edit"
+            aria-label={`Edit ${config.display_label}`}
           >
             <Edit2 size={14} />
           </button>
@@ -525,6 +539,7 @@ function ConfigRow({
             onClick={() => onDelete(config.config_id)}
             className="p-1.5 text-semantic-error hover:text-semantic-error hover:bg-semantic-error/10 rounded transition-colors"
             title="Delete"
+            aria-label={`Delete ${config.display_label}`}
           >
             <Trash2 size={14} />
           </button>

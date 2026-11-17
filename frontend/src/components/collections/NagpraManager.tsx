@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import Checkbox from '../Checkbox';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -29,6 +29,7 @@ import {
 } from '../../lib/api/collections';
 import type { NagpraConsultationEvent } from '../../lib/schemas';
 import ConfirmDialog from '../ConfirmDialog';
+import { RecordHistoryButton } from '../audit/RecordHistoryButton';
 
 interface NagpraManagerProps {
   organizationId: string;
@@ -118,6 +119,7 @@ const DIRECTION_LABELS: Record<string, string> = {
 };
 
 export function NagpraManager({ organizationId, objectId, readOnly }: NagpraManagerProps) {
+  const fid = useId();
   const queryClient = useQueryClient();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showEventForm, setShowEventForm] = useState(false);
@@ -230,15 +232,24 @@ export function NagpraManager({ organizationId, objectId, readOnly }: NagpraMana
             </span>
           )}
         </div>
+        <div className="flex items-center gap-1">
+        <RecordHistoryButton
+          organizationId={organizationId}
+          entityType="nagpra_action"
+          entityId={action.action_id}
+          recordName={action.action_number}
+        />
         {!readOnly && (
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="text-archive hover:text-semantic-error transition-colors p-1"
+            className="text-archive hover:text-semantic-error transition-colors p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 rounded"
             title="Delete NAGPRA action"
+            aria-label={`Delete NAGPRA action ${action.action_number}`}
           >
-            <Trash2 size={16} />
+            <Trash2 size={16} aria-hidden="true" />
           </button>
         )}
+        </div>
       </div>
 
       {/* Key fields grid */}
@@ -265,8 +276,9 @@ export function NagpraManager({ organizationId, objectId, readOnly }: NagpraMana
       {!readOnly && (
         <div className="border-t border-lichen pt-3">
           <div className="flex items-center gap-2">
-            <label className="text-xs text-archive">Status:</label>
+            <label htmlFor={`${fid}-status`} className="text-xs text-archive">Status:</label>
             <select
+              id={`${fid}-status`}
               value={action.status}
               onChange={(e) => updateMutation.mutate({ status: e.target.value })}
               className="text-xs border border-lichen rounded px-2 py-1 bg-parchment text-ink focus-visible:ring-2 ring-bark/30 ring-offset-2"
@@ -275,8 +287,9 @@ export function NagpraManager({ organizationId, objectId, readOnly }: NagpraMana
                 <option key={value} value={value}>{label}</option>
               ))}
             </select>
-            <label className="text-xs text-archive ml-4">Hold:</label>
+            <span className="text-xs text-archive ml-4">Hold:</span>
             <button
+              type="button"
               onClick={() => updateMutation.mutate({ hold_active: !action.hold_active })}
               className={`text-xs px-2 py-1 rounded border transition-colors ${
                 action.hold_active
@@ -434,10 +447,11 @@ function ConsultationEventCard({
       {!readOnly && (
         <button
           onClick={onDelete}
-          className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-archive hover:text-semantic-error transition-all p-1"
+          className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-archive hover:text-semantic-error transition-all p-1 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 rounded"
           title="Delete event"
+          aria-label={`Delete event ${event.subject}`}
         >
-          <Trash2 size={14} />
+          <Trash2 size={14} aria-hidden="true" />
         </button>
       )}
     </div>
@@ -453,6 +467,7 @@ function CreateActionForm({
   onCancel: () => void;
   isSubmitting: boolean;
 }) {
+  const fid = useId();
   const [originType, setOriginType] = useState('staff_review');
   const [category, setCategory] = useState('undetermined');
   const [note, setNote] = useState('');
@@ -463,8 +478,9 @@ function CreateActionForm({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label className="text-xs text-archive block mb-1">Origin Type</label>
+          <label htmlFor={`${fid}-origin-type`} className="text-xs text-archive block mb-1">Origin Type</label>
           <select
+            id={`${fid}-origin-type`}
             value={originType}
             onChange={(e) => setOriginType(e.target.value)}
             className="w-full text-sm border border-lichen rounded px-2 py-1.5 bg-parchment text-ink focus-visible:ring-2 ring-bark/30 ring-offset-2"
@@ -476,8 +492,9 @@ function CreateActionForm({
         </div>
 
         <div>
-          <label className="text-xs text-archive block mb-1">Category</label>
+          <label htmlFor={`${fid}-category`} className="text-xs text-archive block mb-1">Category</label>
           <select
+            id={`${fid}-category`}
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             className="w-full text-sm border border-lichen rounded px-2 py-1.5 bg-parchment text-ink focus-visible:ring-2 ring-bark/30 ring-offset-2"
@@ -490,8 +507,9 @@ function CreateActionForm({
       </div>
 
       <div>
-        <label className="text-xs text-archive block mb-1">Notes (optional)</label>
+        <label htmlFor={`${fid}-notes-optional`} className="text-xs text-archive block mb-1">Notes (optional)</label>
         <textarea
+          id={`${fid}-notes-optional`}
           value={note}
           onChange={(e) => setNote(e.target.value)}
           rows={2}
@@ -524,6 +542,7 @@ function CreateEventForm({
   onCancel: () => void;
   isSubmitting: boolean;
 }) {
+  const fid = useId();
   const [eventDate, setEventDate] = useState(new Date().toISOString().split('T')[0]);
   const [eventType, setEventType] = useState('meeting');
   const [direction, setDirection] = useState('outgoing');
@@ -538,8 +557,9 @@ function CreateEventForm({
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div>
-          <label className="text-xs text-archive block mb-1">Date</label>
+          <label htmlFor={`${fid}-date`} className="text-xs text-archive block mb-1">Date</label>
           <input
+            id={`${fid}-date`}
             type="date"
             value={eventDate}
             onChange={(e) => setEventDate(e.target.value)}
@@ -547,8 +567,9 @@ function CreateEventForm({
           />
         </div>
         <div>
-          <label className="text-xs text-archive block mb-1">Type</label>
+          <label htmlFor={`${fid}-type`} className="text-xs text-archive block mb-1">Type</label>
           <select
+            id={`${fid}-type`}
             value={eventType}
             onChange={(e) => setEventType(e.target.value)}
             className="w-full text-sm border border-lichen rounded px-2 py-1.5 bg-parchment text-ink focus-visible:ring-2 ring-bark/30 ring-offset-2"
@@ -559,8 +580,9 @@ function CreateEventForm({
           </select>
         </div>
         <div>
-          <label className="text-xs text-archive block mb-1">Direction</label>
+          <label htmlFor={`${fid}-direction`} className="text-xs text-archive block mb-1">Direction</label>
           <select
+            id={`${fid}-direction`}
             value={direction}
             onChange={(e) => setDirection(e.target.value)}
             className="w-full text-sm border border-lichen rounded px-2 py-1.5 bg-parchment text-ink focus-visible:ring-2 ring-bark/30 ring-offset-2"
@@ -573,8 +595,9 @@ function CreateEventForm({
       </div>
 
       <div>
-        <label className="text-xs text-archive block mb-1">Consulting Party</label>
+        <label htmlFor={`${fid}-consulting-party`} className="text-xs text-archive block mb-1">Consulting Party</label>
         <input
+          id={`${fid}-consulting-party`}
           type="text"
           value={partyName}
           onChange={(e) => setPartyName(e.target.value)}
@@ -584,8 +607,9 @@ function CreateEventForm({
       </div>
 
       <div>
-        <label className="text-xs text-archive block mb-1">Subject</label>
+        <label htmlFor={`${fid}-subject`} className="text-xs text-archive block mb-1">Subject</label>
         <input
+          id={`${fid}-subject`}
           type="text"
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
@@ -595,8 +619,9 @@ function CreateEventForm({
       </div>
 
       <div>
-        <label className="text-xs text-archive block mb-1">Description (optional)</label>
+        <label htmlFor={`${fid}-description-optional`} className="text-xs text-archive block mb-1">Description (optional)</label>
         <textarea
+          id={`${fid}-description-optional`}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={2}
@@ -604,8 +629,9 @@ function CreateEventForm({
         />
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-ink">
+      <label htmlFor={`${fid}-follow-up-required`} className="flex items-center gap-2 text-sm text-ink">
         <Checkbox
+          id={`${fid}-follow-up-required`}
           checked={followUp}
           onChange={(e) => setFollowUp(e.target.checked)}
         />

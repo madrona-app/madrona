@@ -32,7 +32,7 @@ from app.models import (
     Redirect,
     Venue,
 )
-from app.services.uploads import get_org_media_url
+from app.services.discover_media import sign_public_image
 
 logger = logging.getLogger(__name__)
 
@@ -140,27 +140,31 @@ def _get_org_by_slug(db: Session, slug: str) -> Organization | None:
 
 
 def _get_primary_image_url(db: Session, object_id: UUID, organization_id: UUID) -> str | None:
-    row = (
-        db.query(Media.s3_key)
+    """og:image for a record: the first published image's rendition.
+
+    Never the uploaded master (unless that file's public download level
+    allows originals): these tags are served to anyone who asks.
+    """
+    media_rows = (
+        db.query(Media)
         .join(CollectionObjectMedia, CollectionObjectMedia.media_id == Media.media_id)
         .filter(
             CollectionObjectMedia.object_id == object_id,
+            Media.organization_id == organization_id,
             Media.is_published == True,
         )
         .order_by(
             CollectionObjectMedia.is_primary.desc(),
             CollectionObjectMedia.sort_order,
         )
-        .first()
+        .limit(10)
+        .all()
     )
-    if not row or not row.s3_key:
-        return None
-    try:
-        return get_org_media_url(
-            row.s3_key, organization_id=str(organization_id), db_session=db, expiry_seconds=3600,
-        )
-    except Exception:
-        return None
+    for media in media_rows:
+        url = sign_public_image(media, db, organization_id=organization_id)
+        if url:
+            return url
+    return None
 
 
 def _get_display_title(title_links):
@@ -187,37 +191,21 @@ def _extract_creators_list(creators):
 
 
 def _resolve_object(db: Session, org: Organization, identifier: str) -> CollectionObject | None:
-    try:
-        obj_uuid = UUID(identifier)
-        obj = db.query(CollectionObject).filter(
-            CollectionObject.object_id == obj_uuid,
-            CollectionObject.organization_id == org.organization_id,
-            CollectionObject.is_discoverable == True,
-        ).first()
-        if obj:
-            return obj
-    except ValueError:
-        pass
+    # The Discover record lookup: discoverable, not deleted, not hidden as
+    # deaccessioned.
+    from app.services.discovery_service import resolve_discover_object
 
-    return db.query(CollectionObject).filter(
-        CollectionObject.organization_id == org.organization_id,
-        CollectionObject.object_number == identifier,
-        CollectionObject.is_discoverable == True,
-    ).first()
+    return resolve_discover_object(db, org, identifier)
 
 
 def _get_ssr_media_url(db: Session, media_id, organization_id):
     if not media_id:
         return None
-    media = db.query(Media).filter(Media.media_id == media_id).first()
-    if not media or not media.s3_key:
-        return None
-    try:
-        return get_org_media_url(
-            media.s3_key, organization_id=str(organization_id), db_session=db, expiry_seconds=3600,
-        )
-    except Exception:
-        return None
+    media = db.query(Media).filter(
+        Media.media_id == media_id,
+        Media.organization_id == organization_id,
+    ).first()
+    return sign_public_image(media, db, organization_id=organization_id)
 
 
 def _check_redirect(db: Session, path: str):
@@ -284,16 +272,10 @@ def discover_collection_page(
     if config and config.hero_media_id:
         media = db.query(Media).filter(
             Media.media_id == config.hero_media_id,
+            Media.organization_id == org.organization_id,
             Media.is_published == True,
         ).first()
-        if media and media.s3_key:
-            try:
-                image_url = get_org_media_url(
-                    media.s3_key, organization_id=str(org.organization_id),
-                    db_session=db, expiry_seconds=3600,
-                )
-            except Exception:
-                pass
+        image_url = sign_public_image(media, db, organization_id=org.organization_id)
 
     tags = {
         "title": title,
@@ -335,8 +317,11 @@ def discover_object_page(
     if not obj:
         return _serve_404(html)
 
+    from app.services import public_object_fields as pof
+
+    public_keys = pof.get_public_field_keys(db, org.organization_id)
     obj_title = _get_display_title(obj.title_links) or "Untitled"
-    creators = _extract_creators_list(obj.creators)
+    creators = _extract_creators_list(obj.creators) if pof.is_public("creators", public_keys) else []
     creator_str = ", ".join(creators) if creators else ""
 
     title_parts = [obj_title]
@@ -348,9 +333,9 @@ def discover_object_page(
     desc_parts = []
     if creator_str:
         desc_parts.append(creator_str)
-    if obj.creation_date_display:
+    if obj.creation_date_display and pof.is_public("creation_date", public_keys):
         desc_parts.append(obj.creation_date_display)
-    if obj.brief_description:
+    if obj.brief_description and pof.is_public("brief_description", public_keys):
         desc_parts.append(obj.brief_description)
     description = " — ".join(desc_parts)[:200] if desc_parts else f"View this object from {org.name}"
 
@@ -410,15 +395,11 @@ def discover_cms_page(
 
     image_url = None
     if page.featured_image_media_id:
-        media = db.query(Media).filter(Media.media_id == page.featured_image_media_id).first()
-        if media and media.s3_key:
-            try:
-                image_url = get_org_media_url(
-                    media.s3_key, organization_id=str(org.organization_id),
-                    db_session=db, expiry_seconds=3600,
-                )
-            except Exception:
-                pass
+        media = db.query(Media).filter(
+            Media.media_id == page.featured_image_media_id,
+            Media.organization_id == org.organization_id,
+        ).first()
+        image_url = sign_public_image(media, db, organization_id=org.organization_id)
 
     tags = {
         "title": f"{title} | {org.name}",
@@ -471,15 +452,11 @@ def discover_blog_post(
 
     image_url = None
     if post.featured_image_media_id:
-        media = db.query(Media).filter(Media.media_id == post.featured_image_media_id).first()
-        if media and media.s3_key:
-            try:
-                image_url = get_org_media_url(
-                    media.s3_key, organization_id=str(org.organization_id),
-                    db_session=db, expiry_seconds=3600,
-                )
-            except Exception:
-                pass
+        media = db.query(Media).filter(
+            Media.media_id == post.featured_image_media_id,
+            Media.organization_id == org.organization_id,
+        ).first()
+        image_url = sign_public_image(media, db, organization_id=org.organization_id)
 
     tags = {
         "title": f"{title} | {org.name}",
@@ -636,9 +613,12 @@ def discover_exhibition_detail(
     if not org:
         return _serve_404(html)
 
+    # Same gate as the Discover exhibition API: only public exhibitions get
+    # a title and description in the preview tags.
     exhibition = db.query(Exhibition).filter(
         Exhibition.organization_id == org.organization_id,
         Exhibition.public_url_slug == slug,
+        Exhibition.is_public == True,
     ).first()
 
     if not exhibition:

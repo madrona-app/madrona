@@ -111,6 +111,17 @@ class DiscoverConfig(Base):
     #   "distribution_id": "..." (cloudfront only) }
     cdn_config = mapped_column(JSONB, nullable=True)
 
+    # Saved personal collections for approved portal members. Off by default;
+    # while off, every member endpoint answers 404.
+    member_collections_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+
+    # Which standard object fields the public surfaces publish: a JSON list of
+    # field keys from app.services.public_object_fields.FIELD_CATALOG. NULL
+    # means the defaults (the set published before this setting existed).
+    public_object_fields = mapped_column(JSONB, nullable=True)
+
     # Audit
     created_at: Mapped[datetime] = timestamp_now()
     updated_at: Mapped[datetime] = timestamp_updated()

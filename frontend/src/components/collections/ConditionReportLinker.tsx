@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, ClipboardCheck, ExternalLink, Loader2 } from 'lucide-react';
@@ -127,10 +127,11 @@ export function ConditionReportLinker({
                 )}
                 <Link
                   to={`/organizations/${organizationId}/collections/condition-reports/${report.report_id}`}
-                  className="text-bark hover:text-copper-dark p-1"
+                  className="text-bark hover:text-copper-dark p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 rounded"
                   title="View condition report"
+                  aria-label={`View condition report ${report.report_number}`}
                 >
-                  <ExternalLink size={14} />
+                  <ExternalLink size={14} aria-hidden="true" />
                 </Link>
               </div>
             </div>
@@ -169,6 +170,7 @@ function AddConditionReportSlideOver({
   onClose,
   onSuccess,
 }: AddConditionReportSlideOverProps) {
+  const fid = useId();
   const navigate = useNavigate();
   const [reportType, setReportType] = useState('periodic');
   const [overallCondition, setOverallCondition] = useState('');
@@ -237,10 +239,11 @@ function AddConditionReportSlideOver({
 
         {/* Report Type */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fid}-report-type`} className="block text-sm font-medium text-ink mb-1.5">
             Report Type <span className="text-semantic-error">*</span>
           </label>
           <select
+            id={`${fid}-report-type`}
             value={reportType}
             onChange={(e) => setReportType(e.target.value)}
             className="input w-full"
@@ -255,10 +258,11 @@ function AddConditionReportSlideOver({
 
         {/* Report Date */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fid}-report-date`} className="block text-sm font-medium text-ink mb-1.5">
             Report Date
           </label>
           <input
+            id={`${fid}-report-date`}
             type="date"
             value={reportDate}
             onChange={(e) => setReportDate(e.target.value)}
@@ -268,10 +272,11 @@ function AddConditionReportSlideOver({
 
         {/* Overall Condition */}
         <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+          <label htmlFor={`${fid}-overall-condition`} className="block text-sm font-medium text-ink mb-1.5">
             Overall Condition
           </label>
           <select
+            id={`${fid}-overall-condition`}
             value={overallCondition}
             onChange={(e) => setOverallCondition(e.target.value)}
             className="input w-full"

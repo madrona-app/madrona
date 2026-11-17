@@ -18,9 +18,10 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response
+from pydantic import Field
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.database import get_admin_db, get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import (
     Organization,
@@ -49,6 +50,10 @@ from app.services.jsonld_export import (
     map_object_to_jsonld,
     map_objects_to_jsonld_collection,
     JSONLD_CONTEXT,
+)
+from app.fastapi_app.routers.collections_export import (
+    ObjectExportScope,
+    resolve_object_scope,
 )
 from app.services.uri_persistence import (
     URIStatus,
@@ -93,6 +98,111 @@ def _object_to_dict(obj: CollectionObject) -> dict:
             if isinstance(value, UUID):
                 value = str(value)
             data[column.name] = value
+    return data
+
+
+# Field-level access for staff exports. Restricted paths are serializer keys
+# (e.g. "provenance", "measurements"); the JSON-LD mappers read ORM
+# attributes, so collection-shaped keys map to their relationship names.
+_FIELD_PATH_TO_ATTR = {
+    "titles": "title_links",
+    "measurements": "measurement_links",
+    "inscriptions": "inscription_links",
+    "other_numbers": "other_number_links",
+    "classifications": "classification_links",
+    "media": "media_links",
+}
+# Identity fields the export cannot be built without.
+_NEVER_HIDDEN = {"object_id", "object_number", "organization_id", "object_type"}
+
+
+def _restricted_object_fields(db: Session, auth: AuthContext, org_uuid: UUID) -> set[str]:
+    from app.services.field_access_service import get_restricted_fields
+    restricted = get_restricted_fields(
+        db, org_uuid, UUID(str(auth.user_id)), "collection_object",
+        role_override=getattr(auth, "role_override", None),
+    )
+    return {p for p in restricted if p not in _NEVER_HIDDEN}
+
+
+class _RestrictedObjectView:
+    """Read-only view of an object that hides restricted fields.
+
+    Wrapping (rather than blanking attributes on the ORM instance) keeps the
+    session clean: nothing is marked dirty, so nothing can be flushed.
+    """
+
+    def __init__(self, obj, hidden: set[str], overrides: dict | None = None):
+        self._obj = obj
+        self._hidden_attrs = {_FIELD_PATH_TO_ATTR.get(p, p) for p in hidden}
+        # Attribute values served instead of the ORM's (e.g. the media links
+        # an export may include), without assigning them to the instance.
+        self._overrides = dict(overrides or {})
+
+    def __getattr__(self, name):
+        if name in self._hidden_attrs:
+            return [] if name.endswith("_links") else None
+        if name in self._overrides:
+            return self._overrides[name]
+        return getattr(self._obj, name)
+
+    def __setattr__(self, name, value):
+        if name in ("_obj", "_hidden_attrs", "_overrides"):
+            object.__setattr__(self, name, value)
+        else:
+            setattr(self._obj, name, value)
+
+
+# Object attributes map_object_to_jsonld reads -> the public field key that
+# governs each (services/public_object_fields). Attributes mapped to None are
+# never public (not in the public field catalog).
+_PUBLIC_JSONLD_ATTRS: dict[str, str | None] = {
+    "object_name": "object_name",
+    "brief_description": "brief_description",
+    "full_description": "full_description",
+    "classification_links": "classification",
+    "creators": "creators",
+    "creation_date_display": "creation_date",
+    "creation_date_earliest": "creation_date",
+    "creation_date_latest": "creation_date",
+    "creation_place": "creation_place",
+    "creation_place_details": "creation_place",
+    "depicted_places": "subjects",
+    "materials": "materials",
+    "techniques": "techniques",
+    "measurement_links": "measurements",
+    "provenance": "provenance",
+    "credit_line": "credit_line",
+    "other_number_links": None,
+    "acquisition_method": None,
+}
+
+
+def _public_jsonld_view(db: Session, obj, media_links: list):
+    """The object as the public may see it, for map_object_to_jsonld.
+
+    Applies the organization's public field set; the preferred title stays
+    (it is locked public) but other titles follow the "titles" field.
+    """
+    from app.services import public_object_fields as pof
+
+    keys = pof.get_public_field_keys(db, obj.organization_id)
+    hidden = {
+        attr for attr, field_key in _PUBLIC_JSONLD_ATTRS.items()
+        if field_key is None or not pof.is_public(field_key, keys)
+    }
+    overrides = {"media_links": media_links}
+    if not pof.is_public("titles", keys):
+        titles = list(obj.title_links or [])
+        preferred = next((t for t in titles if t.is_preferred), titles[0] if titles else None)
+        overrides["title_links"] = [preferred] if preferred else []
+    return _RestrictedObjectView(obj, hidden, overrides)
+
+
+def _strip_restricted(data: dict, hidden: set[str]) -> dict:
+    for path in hidden:
+        data.pop(path, None)
+        data.pop(_FIELD_PATH_TO_ATTR.get(path, path), None)
     return data
 
 
@@ -403,7 +513,7 @@ def export_object_with_profile(
     if not obj:
         raise HTTPException(status_code=404, detail="Object not found")
 
-    obj_data = _object_to_dict(obj)
+    obj_data = _strip_restricted(_object_to_dict(obj), _restricted_object_fields(db, auth, org_uuid))
     base_url = str(request.base_url).rstrip("/")
     exported = apply_export_profile(obj_data, export_profile, base_url)
     exported["@id"] = f"{base_url}/org/{org_id}/object/{obj.object_number or object_id}"
@@ -443,7 +553,7 @@ def export_objects_batch(
     base_url = str(request.base_url).rstrip("/")
     exported_objects = []
     for obj in objects:
-        obj_data = _object_to_dict(obj)
+        obj_data = _strip_restricted(_object_to_dict(obj), _restricted_object_fields(db, auth, org_uuid))
         exported = apply_export_profile(obj_data, export_profile, base_url)
         exported["@id"] = f"{base_url}/org/{org_id}/object/{obj.object_number or str(obj.object_id)}"
         exported["@type"] = "VisualArtwork"
@@ -478,7 +588,7 @@ def export_collection_with_profile(
     base_url = str(request.base_url).rstrip("/")
     exported_objects = []
     for obj in objects:
-        obj_data = _object_to_dict(obj)
+        obj_data = _strip_restricted(_object_to_dict(obj), _restricted_object_fields(db, auth, org_uuid))
         exported = apply_export_profile(obj_data, export_profile, base_url)
         exported["@id"] = f"{base_url}/org/{org_id}/object/{obj.object_number or str(obj.object_id)}"
         exported["@type"] = "VisualArtwork"
@@ -535,13 +645,25 @@ def export_object_jsonld(
         obj.media_links = media_links
 
     org_slug = org.slug or str(org_uuid)[:8]
-    jsonld = map_object_to_jsonld(obj=obj, org_slug=org_slug, include_media=include_media, include_context=include_context)
+    hidden = _restricted_object_fields(db, auth, org_uuid)
+    view = _RestrictedObjectView(obj, hidden) if hidden else obj
+    jsonld = map_object_to_jsonld(obj=view, org_slug=org_slug, include_media=include_media, include_context=include_context)
 
     return JSONResponse(content=jsonld, headers={"Content-Type": "application/ld+json"})
 
 
-@router.get("/api/organizations/{org_id}/collections/objects/{object_id}.jsonld", summary="Export object jsonld extension")
-async def export_object_jsonld_extension(
+# The ``.jsonld`` URL lives on its own router, included before the
+# collections objects router: GET .../objects/{object_id} matches
+# ``<uuid>.jsonld`` first and answers 422 (not a UUID), so on the main router
+# this route was unreachable.
+jsonld_extension_router = APIRouter(tags=["lod-exports"])
+
+
+@jsonld_extension_router.get(
+    "/api/organizations/{org_id}/collections/objects/{object_id}.jsonld",
+    summary="Export object jsonld extension",
+)
+def export_object_jsonld_extension(
     org_id: str,
     object_id: str,
     include_media: bool = Query(True),
@@ -550,7 +672,7 @@ async def export_object_jsonld_extension(
     db: Session = Depends(get_db),
 ):
     """Export object as JSON-LD (file extension style URL)."""
-    return await export_object_jsonld(org_id, object_id, include_media, include_context, auth, db)
+    return export_object_jsonld(org_id, object_id, include_media, include_context, auth, db)
 
 
 @router.get("/api/organizations/{org_id}/collections/export/jsonld", summary="Export objects jsonld bulk")
@@ -564,6 +686,49 @@ def export_objects_jsonld_bulk(
     db: Session = Depends(get_db),
 ):
     """Export multiple collection objects as a JSON-LD Collection."""
+    return _bulk_jsonld_response(
+        db, org_id, limit=limit, offset=offset,
+        classification=classification, object_type=object_type, auth=auth,
+    )
+
+
+class JsonLdBulkExportBody(ObjectExportScope):
+    """Scope (selection / work set / current search) plus paging."""
+
+    limit: int = Field(1000, ge=1, le=1000)
+    offset: int = Field(0, ge=0)
+
+
+@router.post("/api/organizations/{org_id}/collections/export/jsonld", summary="Export scoped objects jsonld")
+def export_objects_jsonld_scoped(
+    org_id: UUID,
+    body: JsonLdBulkExportBody,
+    auth: AuthContext = Depends(require_permission(Permission.COLLECTIONS_VIEW)),
+    db: Session = Depends(get_db),
+):
+    """Export a selection, a work set, or the current search as JSON-LD.
+
+    The POST form of the bulk export, for scopes too large for a query
+    string (a staff list's current search or selection). Pages of up to
+    1,000 objects, like the GET form.
+    """
+    ids = resolve_object_scope(db, auth, org_id, body)
+    return _bulk_jsonld_response(
+        db, str(org_id), limit=body.limit, offset=body.offset, object_ids=ids, auth=auth,
+    )
+
+
+def _bulk_jsonld_response(
+    db: Session,
+    org_id: str,
+    *,
+    limit: int,
+    offset: int,
+    classification: str | None = None,
+    object_type: str | None = None,
+    object_ids: list[UUID] | None = None,
+    auth: AuthContext | None = None,
+) -> JSONResponse:
     set_rls_context_for_session(db, org_id)
     org_uuid = UUID(org_id)
 
@@ -574,6 +739,9 @@ def export_objects_jsonld_bulk(
     query = db.query(CollectionObject).filter(
         CollectionObject.organization_id == org_uuid,
     ).order_by(CollectionObject.object_number)
+
+    if object_ids is not None:
+        query = query.filter(CollectionObject.object_id.in_(object_ids))
 
     if classification:
         query = query.filter(
@@ -586,6 +754,7 @@ def export_objects_jsonld_bulk(
     if object_type:
         query = query.filter(CollectionObject.object_type == object_type)
 
+    scoped_total = query.count() if object_ids is not None else None
     objects = query.offset(offset).limit(limit).all()
 
     for obj in objects:
@@ -606,13 +775,21 @@ def export_objects_jsonld_bulk(
     org_slug = org.slug or str(org_uuid)[:8]
     collection_title = f"{org.name} Collection Export"
 
+    hidden = _restricted_object_fields(db, auth, org_uuid) if auth is not None else set()
+    if hidden:
+        objects = [_RestrictedObjectView(o, hidden) for o in objects]
     jsonld = map_objects_to_jsonld_collection(objects=objects, org_slug=org_slug, collection_title=collection_title)
-    jsonld["view"] = {
-        "@type": "PartialCollectionView",
-        "first": f"/api/organizations/{org_id}/collections/export/jsonld?limit={limit}&offset=0",
-    }
-    if len(objects) == limit:
-        jsonld["view"]["next"] = f"/api/organizations/{org_id}/collections/export/jsonld?limit={limit}&offset={offset + limit}"
+    if object_ids is None:
+        jsonld["view"] = {
+            "@type": "PartialCollectionView",
+            "first": f"/api/organizations/{org_id}/collections/export/jsonld?limit={limit}&offset=0",
+        }
+        if len(objects) == limit:
+            jsonld["view"]["next"] = f"/api/organizations/{org_id}/collections/export/jsonld?limit={limit}&offset={offset + limit}"
+    else:
+        # A scoped export (POST) cannot be paged by GET links; report the
+        # scope size so a client can request further pages with offset.
+        jsonld["totalItems"] = scoped_total
 
     return JSONResponse(content=jsonld, headers={"Content-Type": "application/ld+json"})
 
@@ -651,17 +828,39 @@ def get_simple_object_frame():
     )
 
 
+# ============================================================================
+# PUBLIC (ANONYMOUS) ROUTES
+# ============================================================================
+#
+# These used to take `get_db`: the app role (NOBYPASSRLS) with no org context,
+# because an anonymous request has no user and so no org. Every org-scoped
+# read came back empty, so in production they returned 404 for public records
+# as well; only the superuser test connection made them look working. They now
+# use the owner session like the other anonymous surfaces (Discover, /iiif/3/),
+# which makes the code-level gates below the access control: the organization
+# comes from the URL and scopes every lookup, objects must pass the Discover
+# gates, media must be published and linked to a public object, and entity
+# types without a public rule are not served. tests/test_lod_routes_app_role.py
+# runs these routes under the production roles.
+
+
 @router.get("/api/public/v1/organizations/{org_id}/objects/{object_id}/jsonld", summary="Export object jsonld public")
 def export_object_jsonld_public(
     org_id: str,
     object_id: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_admin_db),
 ):
     """Export a collection object as JSON-LD (public endpoint)."""
-    org_uuid = UUID(org_id)
-    obj_uuid = UUID(object_id)
+    try:
+        org_uuid = UUID(org_id)
+        obj_uuid = UUID(object_id)
+    except (ValueError, AttributeError):
+        raise HTTPException(status_code=404, detail="Object not found or not published")
 
-    org = db.query(Organization).filter(Organization.organization_id == org_uuid).first()
+    org = db.query(Organization).filter(
+        Organization.organization_id == org_uuid,
+        Organization.status == "active",
+    ).first()
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -670,30 +869,35 @@ def export_object_jsonld_public(
     # is_discoverable is the flag the Discover routes gate public visibility on,
     # which is the intent here. (Media does have is_published — hence the sibling
     # filters below, which are correct.)
+    from app.services.discover_media import public_object_clauses
+
     obj = db.query(CollectionObject).filter(
         CollectionObject.object_id == obj_uuid,
         CollectionObject.organization_id == org_uuid,
-        CollectionObject.is_discoverable == True,  # noqa: E712
+        *public_object_clauses(db, org_uuid),
     ).first()
     if not obj:
         raise HTTPException(status_code=404, detail="Object not found or not published")
 
-    media_links = db.query(CollectionObjectMedia).filter(
-        CollectionObjectMedia.object_id == obj_uuid,
-    ).order_by(CollectionObjectMedia.is_primary.desc(), CollectionObjectMedia.sort_order).all()
-    published_links = []
-    for link in media_links:
-        media = db.query(Media).filter(
-            Media.media_id == link.media_id,
+    # Published media of this organization only. The list is handed to the
+    # mapper through a view: assigning it to obj.media_links (as this did)
+    # orphans the unpublished links, and that relationship cascades
+    # delete-orphan, so a flush would have deleted them.
+    published_links = (
+        db.query(CollectionObjectMedia)
+        .join(Media, Media.media_id == CollectionObjectMedia.media_id)
+        .filter(
+            CollectionObjectMedia.object_id == obj_uuid,
+            Media.organization_id == org_uuid,
             Media.is_published == True,  # noqa: E712
-        ).first()
-        if media:
-            link.media = media
-            published_links.append(link)
-    obj.media_links = published_links
+        )
+        .order_by(CollectionObjectMedia.is_primary.desc(), CollectionObjectMedia.sort_order)
+        .all()
+    )
 
     org_slug = org.slug or str(org_uuid)[:8]
-    jsonld = map_object_to_jsonld(obj=obj, org_slug=org_slug, include_media=True, include_context=True)
+    view = _public_jsonld_view(db, obj, published_links)
+    jsonld = map_object_to_jsonld(obj=view, org_slug=org_slug, include_media=True, include_context=True)
 
     return JSONResponse(
         content=jsonld,
@@ -718,28 +922,62 @@ def _get_preferred_content_type(request: Request) -> str:
     return "text/html"
 
 
+def _find_uri_record(db: Session, org_slug: str, entity_type: str, public_id: str):
+    """(org, registry record) for a stable URI, scoped to the URL's org.
+
+    None when the organization (active) or the record does not exist. The
+    fallback lookup by public id used to ignore the organization entirely, so
+    one organization's URL could resolve another organization's record.
+    """
+    from app.services.uri_persistence import URL_SEGMENT_TO_ENTITY
+
+    org = db.query(Organization).filter(
+        Organization.slug == org_slug,
+        Organization.status == "active",
+    ).first()
+    if not org:
+        return None, None
+
+    full_uri = f"{BASE_URI}/org/{org_slug}/{entity_type}/{public_id}"
+    record = db.query(URIRegistry).filter(
+        URIRegistry.full_uri == full_uri,
+        URIRegistry.organization_id == org.organization_id,
+    ).first()
+    if not record:
+        internal_type = URL_SEGMENT_TO_ENTITY.get(entity_type, entity_type)
+        record = db.query(URIRegistry).filter(
+            URIRegistry.public_id == public_id,
+            URIRegistry.entity_type == internal_type,
+            URIRegistry.organization_id == org.organization_id,
+        ).first()
+    return org, record
+
+
+def _public_entity(db: Session, org, record, content_type: str = "application/json") -> dict | None:
+    """The entity's public representation, or None when it is not public.
+
+    Entity types without a loader (and person authorities, whose loader has
+    no public rule) are never public.
+    """
+    from app.serializers.uri_resolution import ENTITY_LOADERS
+
+    loader = ENTITY_LOADERS.get(record.entity_type)
+    if loader is None:
+        return None
+    return loader(record.entity_id, content_type, org.slug, db=db, organization_id=org.organization_id)
+
+
 @router.get("/org/{org_slug}/{entity_type}/{public_id}", summary="Resolve uri")
 def resolve_uri(
     org_slug: str,
     entity_type: str,
     public_id: str,
     request: Request,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_admin_db),
 ):
     """Resolve a stable URI to entity data."""
     try:
-        full_uri = f"{BASE_URI}/org/{org_slug}/{entity_type}/{public_id}"
-
-        record = db.query(URIRegistry).filter(URIRegistry.full_uri == full_uri).first()
-
-        if not record:
-            from app.services.uri_persistence import URL_SEGMENT_TO_ENTITY
-            internal_type = URL_SEGMENT_TO_ENTITY.get(entity_type, entity_type)
-            record = db.query(URIRegistry).filter(
-                URIRegistry.public_id == public_id,
-                URIRegistry.entity_type == internal_type,
-            ).first()
-
+        org, record = _find_uri_record(db, org_slug, entity_type, public_id)
         if not record:
             raise HTTPException(status_code=404, detail="URI not found")
 
@@ -760,19 +998,17 @@ def resolve_uri(
 
         content_type = _get_preferred_content_type(request)
 
+        # Gate before any representation, the HTML redirect included: it
+        # names the internal id.
+        entity_data = _public_entity(
+            db, org, record, "application/json" if content_type == "text/html" else content_type,
+        )
+        if not entity_data:
+            raise HTTPException(status_code=404, detail="Entity not found")
+
         if content_type == "text/html":
             ui_url = f"/organizations/{org_slug}/collections/{entity_type}s/{record.entity_id}"
             return RedirectResponse(url=ui_url, status_code=303)
-
-        # Import entity loaders from uri_resolution module
-        from app.serializers.uri_resolution import ENTITY_LOADERS
-        loader = ENTITY_LOADERS.get(record.entity_type)
-        if not loader:
-            raise HTTPException(status_code=500, detail=f"Unknown entity type: {record.entity_type}")
-
-        entity_data = loader(record.entity_id, content_type, org_slug)
-        if not entity_data:
-            raise HTTPException(status_code=404, detail="Entity not found")
 
         return JSONResponse(
             content=entity_data,
@@ -793,22 +1029,15 @@ def head_uri(
     org_slug: str,
     entity_type: str,
     public_id: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_admin_db),
 ):
-    """HEAD request for URI — check if it exists without returning body."""
+    """HEAD request for URI — check if it exists without returning body.
+
+    200 only for what GET would serve; a non-public entity is a 404, so HEAD
+    does not confirm that a private record exists.
+    """
     try:
-        full_uri = f"{BASE_URI}/org/{org_slug}/{entity_type}/{public_id}"
-
-        record = db.query(URIRegistry).filter(URIRegistry.full_uri == full_uri).first()
-
-        if not record:
-            from app.services.uri_persistence import URL_SEGMENT_TO_ENTITY
-            internal_type = URL_SEGMENT_TO_ENTITY.get(entity_type, entity_type)
-            record = db.query(URIRegistry).filter(
-                URIRegistry.public_id == public_id,
-                URIRegistry.entity_type == internal_type,
-            ).first()
-
+        org, record = _find_uri_record(db, org_slug, entity_type, public_id)
         if not record:
             return Response(status_code=404)
 
@@ -819,6 +1048,8 @@ def head_uri(
         if record.status == URIStatus.TOMBSTONE.value:
             return Response(status_code=410)
 
+        if not _public_entity(db, org, record):
+            return Response(status_code=404)
         return Response(status_code=200)
     except Exception as e:
         logger.error(f"Error in HEAD request for URI: {e}")
@@ -830,25 +1061,27 @@ def get_uri_history(
     org_slug: str,
     entity_type: str,
     public_id: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_admin_db),
 ):
-    """Get the history of a URI."""
+    """Get the history of a URI (this organization's, for a public entity)."""
     try:
         from app.services.uri_persistence import URL_SEGMENT_TO_ENTITY
         internal_type = URL_SEGMENT_TO_ENTITY.get(entity_type, entity_type)
 
-        record = db.query(URIRegistry).filter(
-            URIRegistry.public_id == public_id,
-            URIRegistry.entity_type == internal_type,
-        ).first()
-
-        if not record:
+        org, record = _find_uri_record(db, org_slug, entity_type, public_id)
+        if not record or record.entity_type != internal_type:
             raise HTTPException(status_code=404, detail="URI not found")
 
         all_records = db.query(URIRegistry).filter(
             URIRegistry.entity_id == record.entity_id,
             URIRegistry.entity_type == internal_type,
+            URIRegistry.organization_id == org.organization_id,
         ).order_by(URIRegistry.created_at).all()
+
+        # A live entity's history is public only when the entity is; a
+        # merged or deleted one keeps its redirect/tombstone trail.
+        if any(r.status == URIStatus.ACTIVE.value for r in all_records) and not _public_entity(db, org, record):
+            raise HTTPException(status_code=404, detail="URI not found")
 
         history = []
         for r in all_records:

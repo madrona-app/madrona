@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { RefreshCw, AlertCircle, CheckCircle, Database, Search, MapPin, Globe } from 'lucide-react';
@@ -6,8 +6,10 @@ import { MadronaLoader } from '../../components/ui/MadronaLoader';
 import { reindexCollections, type ReindexResult } from '../../lib/api';
 import { useOrganization } from '../../contexts/useOrganization';
 import useGeo from '../../hooks/useGeo';
+import { DeaccessionedSearchSetting } from './settings/DeaccessionedSearchSetting';
 
 export default function CollectionsGeneralSettingsPage() {
+  const uid = useId();
   const { orgId } = useParams<{ orgId: string }>();
   const { activeOrganizationId } = useOrganization();
   const organizationId = orgId || activeOrganizationId;
@@ -167,6 +169,8 @@ export default function CollectionsGeneralSettingsPage() {
         </div>
       </section>
 
+      {organizationId && <DeaccessionedSearchSetting organizationId={organizationId} />}
+
       {/* Organization Headquarters Location */}
       <section className="bg-parchment rounded-lg border border-lichen shadow-sm mt-6">
         <div className="px-6 py-4 border-b border-lichen">
@@ -193,11 +197,12 @@ export default function CollectionsGeneralSettingsPage() {
 
             {/* Geocoding from address */}
             <div className="ml-6">
-              <label className="block text-sm font-medium text-ink mb-1">
+              <label htmlFor={`${uid}-find-from-address`} className="block text-sm font-medium text-ink mb-1">
                 Find from address
               </label>
               <div className="flex gap-2">
                 <input
+                  id={`${uid}-find-from-address`}
                   type="text"
                   value={hqAddress}
                   onChange={(e) => setHqAddress(e.target.value)}
@@ -217,10 +222,11 @@ export default function CollectionsGeneralSettingsPage() {
             {/* Coordinate fields */}
             <div className="ml-6 grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">
+                <label htmlFor={`${uid}-latitude`} className="block text-sm font-medium text-ink mb-1">
                   Latitude
                 </label>
                 <input
+                  id={`${uid}-latitude`}
                   type="number"
                   step="any"
                   value={hqLatitude}
@@ -230,10 +236,11 @@ export default function CollectionsGeneralSettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">
+                <label htmlFor={`${uid}-longitude`} className="block text-sm font-medium text-ink mb-1">
                   Longitude
                 </label>
                 <input
+                  id={`${uid}-longitude`}
                   type="number"
                   step="any"
                   value={hqLongitude}

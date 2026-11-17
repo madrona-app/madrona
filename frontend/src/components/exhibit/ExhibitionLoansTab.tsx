@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useId } from 'react';
 import Checkbox from '../Checkbox';
 import {
   Plus,
@@ -126,6 +126,7 @@ const STATUS_OPTIONS: Array<{ value: LoanStatus; label: string }> = [
 
 // === Component ===
 export function ExhibitionLoansTab({ organizationId, exhibitionId, isEditing }: Props) {
+  const fieldId = useId();
   const [loans, setLoans] = useState<Loan[]>([]);
   const [summary, setSummary] = useState<LoanSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -461,19 +462,21 @@ export function ExhibitionLoansTab({ organizationId, exhibitionId, isEditing }: 
           )}
         </div>
       ) : (
-        <div className="bg-parchment border border-lichen rounded-lg overflow-hidden">
+        <div role="table" aria-label="Exhibition loans" className="bg-parchment border border-lichen rounded-lg overflow-hidden">
           {/* Table Header */}
-          <div className="grid grid-cols-[1fr_180px_100px_100px_120px_48px] gap-4 px-4 py-3 bg-stone/30 border-b border-lichen text-sm font-medium text-ink/70">
-            <div>Lender / Borrower</div>
-            <div>Status</div>
-            <div className="text-center">Agreement</div>
-            <div className="text-center">Insurance</div>
-            <div>Dates</div>
-            <div></div>
+          <div role="rowgroup">
+          <div role="row" className="grid grid-cols-[1fr_180px_100px_100px_120px_48px] gap-4 px-4 py-3 bg-stone/30 border-b border-lichen text-sm font-medium text-ink/70">
+            <div role="columnheader">Lender / Borrower</div>
+            <div role="columnheader">Status</div>
+            <div role="columnheader" className="text-center">Agreement</div>
+            <div role="columnheader" className="text-center">Insurance</div>
+            <div role="columnheader">Dates</div>
+            <div role="columnheader"><span className="sr-only">Open</span></div>
+          </div>
           </div>
 
           {/* Table Body */}
-          <div className="divide-y divide-lichen">
+          <div role="rowgroup" className="divide-y divide-lichen">
             {loans.map((loan) => {
               const TypeIcon = loan.loan_type === 'loan_in' ? ArrowDownLeft : ArrowUpRight;
               const typeColor = loan.loan_type === 'loan_in' ? 'text-semantic-success' : 'text-semantic-info';
@@ -482,18 +485,23 @@ export function ExhibitionLoansTab({ organizationId, exhibitionId, isEditing }: 
               return (
                 <div
                   key={loan.link_id}
-                  className={`grid grid-cols-[1fr_180px_100px_100px_120px_48px] gap-4 px-4 py-3 items-center hover:bg-stone cursor-pointer ${
+                  role="row"
+                  className={`relative grid grid-cols-[1fr_180px_100px_100px_120px_48px] gap-4 px-4 py-3 items-center hover:bg-stone cursor-pointer ${
                     loan.needs_attention ? 'bg-semantic-warning/10' : ''
                   }`}
-                  onClick={() => openLoanDrawer(loan)}
                 >
-                  {/* Party */}
-                  <div className="flex items-center gap-3">
-                    <TypeIcon className={`w-4 h-4 ${typeColor} flex-shrink-0`} />
+                  {/* Party (the button's ::after stretches over the row so the whole row stays clickable) */}
+                  <div role="cell" className="flex items-center gap-3">
+                    <TypeIcon className={`w-4 h-4 ${typeColor} flex-shrink-0`} aria-hidden="true" />
+                    <span className="sr-only">{loan.loan_type === 'loan_in' ? 'Loan in:' : 'Loan out:'}</span>
                     <div className="min-w-0">
-                      <div className="font-medium text-ink truncate">
+                      <button
+                        type="button"
+                        onClick={() => openLoanDrawer(loan)}
+                        className="block max-w-full text-left font-medium text-ink truncate rounded after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+                      >
                         {loan.party_name || 'Unknown party'}
-                      </div>
+                      </button>
                       {loan.loan_number && (
                         <div className="text-xs text-ink/50">{loan.loan_number}</div>
                       )}
@@ -501,36 +509,36 @@ export function ExhibitionLoansTab({ organizationId, exhibitionId, isEditing }: 
                   </div>
 
                   {/* Status */}
-                  <div>
+                  <div role="cell">
                     <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${statusConfig.bg} ${statusConfig.text}`}>
                       {loan.status_label}
                     </span>
                   </div>
 
                   {/* Agreement */}
-                  <div className="text-center">
+                  <div role="cell" className="text-center">
                     {loan.agreement_signed ? (
-                      <CheckCircle2 className="w-5 h-5 text-semantic-success mx-auto" />
+                      <><CheckCircle2 className="w-5 h-5 text-semantic-success mx-auto" aria-hidden="true" /><span className="sr-only">Signed</span></>
                     ) : loan.is_active ? (
-                      <AlertCircle className="w-5 h-5 text-semantic-warning mx-auto" />
+                      <><AlertCircle className="w-5 h-5 text-semantic-warning mx-auto" aria-hidden="true" /><span className="sr-only">Not signed</span></>
                     ) : (
-                      <span className="text-ink/30">—</span>
+                      <span className="text-ink/30"><span aria-hidden="true">—</span><span className="sr-only">Not applicable</span></span>
                     )}
                   </div>
 
                   {/* Insurance */}
-                  <div className="text-center">
+                  <div role="cell" className="text-center">
                     {loan.insurance_confirmed ? (
-                      <CheckCircle2 className="w-5 h-5 text-semantic-success mx-auto" />
+                      <><CheckCircle2 className="w-5 h-5 text-semantic-success mx-auto" aria-hidden="true" /><span className="sr-only">Confirmed</span></>
                     ) : loan.is_active ? (
-                      <AlertCircle className="w-5 h-5 text-semantic-warning mx-auto" />
+                      <><AlertCircle className="w-5 h-5 text-semantic-warning mx-auto" aria-hidden="true" /><span className="sr-only">Not confirmed</span></>
                     ) : (
-                      <span className="text-ink/30">—</span>
+                      <span className="text-ink/30"><span aria-hidden="true">—</span><span className="sr-only">Not applicable</span></span>
                     )}
                   </div>
 
                   {/* Dates */}
-                  <div className="text-sm text-ink/60">
+                  <div role="cell" className="text-sm text-ink/60">
                     {loan.loan_start_date && loan.loan_end_date ? (
                       <div>
                         <div>{formatDateShort(loan.loan_start_date)}</div>
@@ -542,8 +550,8 @@ export function ExhibitionLoansTab({ organizationId, exhibitionId, isEditing }: 
                   </div>
 
                   {/* Arrow */}
-                  <div className="flex justify-end">
-                    <ChevronRight className="w-4 h-4 text-ink/40" />
+                  <div role="cell" className="flex justify-end">
+                    <ChevronRight className="w-4 h-4 text-ink/40" aria-hidden="true" />
                   </div>
                 </div>
               );
@@ -771,10 +779,11 @@ export function ExhibitionLoansTab({ organizationId, exhibitionId, isEditing }: 
           <div className="space-y-4">
             {/* Loan Type */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">Loan Type</label>
-              <div className="flex gap-2">
+              <span id={`${fieldId}-loan-type-group`} className="block text-sm font-medium text-ink mb-1">Loan Type</span>
+              <div role="group" aria-labelledby={`${fieldId}-loan-type-group`} className="flex gap-2">
                 <button
                   type="button"
+                  aria-pressed={editingLoan.loan_type === 'loan_in'}
                   onClick={() => setEditingLoan({ ...editingLoan, loan_type: 'loan_in' })}
                   className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
                     editingLoan.loan_type === 'loan_in'
@@ -787,6 +796,7 @@ export function ExhibitionLoansTab({ organizationId, exhibitionId, isEditing }: 
                 </button>
                 <button
                   type="button"
+                  aria-pressed={editingLoan.loan_type === 'loan_out'}
                   onClick={() => setEditingLoan({ ...editingLoan, loan_type: 'loan_out' })}
                   className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
                     editingLoan.loan_type === 'loan_out'
@@ -815,8 +825,8 @@ export function ExhibitionLoansTab({ organizationId, exhibitionId, isEditing }: 
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">Contact</label>
-              <input
+              <label htmlFor={`${fieldId}-contact`} className="block text-sm font-medium text-ink mb-1">Contact</label>
+              <input id={`${fieldId}-contact`}
                 type="text"
                 value={editingLoan.party_contact || ''}
                 onChange={(e) => setEditingLoan({ ...editingLoan, party_contact: e.target.value })}
@@ -826,8 +836,8 @@ export function ExhibitionLoansTab({ organizationId, exhibitionId, isEditing }: 
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">Loan Number</label>
-              <input
+              <label htmlFor={`${fieldId}-loan-number`} className="block text-sm font-medium text-ink mb-1">Loan Number</label>
+              <input id={`${fieldId}-loan-number`}
                 type="text"
                 value={editingLoan.loan_number || ''}
                 onChange={(e) => setEditingLoan({ ...editingLoan, loan_number: e.target.value })}
@@ -839,8 +849,8 @@ export function ExhibitionLoansTab({ organizationId, exhibitionId, isEditing }: 
             {/* Dates */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Loan Start</label>
-                <input
+                <label htmlFor={`${fieldId}-loan-start`} className="block text-sm font-medium text-ink mb-1">Loan Start</label>
+                <input id={`${fieldId}-loan-start`}
                   type="date"
                   value={editingLoan.loan_start_date || ''}
                   onChange={(e) => setEditingLoan({ ...editingLoan, loan_start_date: e.target.value })}
@@ -848,8 +858,8 @@ export function ExhibitionLoansTab({ organizationId, exhibitionId, isEditing }: 
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Loan End</label>
-                <input
+                <label htmlFor={`${fieldId}-loan-end`} className="block text-sm font-medium text-ink mb-1">Loan End</label>
+                <input id={`${fieldId}-loan-end`}
                   type="date"
                   value={editingLoan.loan_end_date || ''}
                   onChange={(e) => setEditingLoan({ ...editingLoan, loan_end_date: e.target.value })}
@@ -885,8 +895,8 @@ export function ExhibitionLoansTab({ organizationId, exhibitionId, isEditing }: 
             {editingLoan.insurance_confirmed && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">Policy Number</label>
-                  <input
+                  <label htmlFor={`${fieldId}-policy-number`} className="block text-sm font-medium text-ink mb-1">Policy Number</label>
+                  <input id={`${fieldId}-policy-number`}
                     type="text"
                     value={editingLoan.insurance_policy || ''}
                     onChange={(e) => setEditingLoan({ ...editingLoan, insurance_policy: e.target.value })}
@@ -894,8 +904,8 @@ export function ExhibitionLoansTab({ organizationId, exhibitionId, isEditing }: 
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">Coverage Value</label>
-                  <input
+                  <label htmlFor={`${fieldId}-coverage-value`} className="block text-sm font-medium text-ink mb-1">Coverage Value</label>
+                  <input id={`${fieldId}-coverage-value`}
                     type="text"
                     value={editingLoan.insurance_value || ''}
                     onChange={(e) => setEditingLoan({ ...editingLoan, insurance_value: e.target.value })}
@@ -908,8 +918,8 @@ export function ExhibitionLoansTab({ organizationId, exhibitionId, isEditing }: 
 
             {/* Object Count */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">Objects</label>
-              <input
+              <label htmlFor={`${fieldId}-objects`} className="block text-sm font-medium text-ink mb-1">Objects</label>
+              <input id={`${fieldId}-objects`}
                 type="text"
                 value={editingLoan.object_count || ''}
                 onChange={(e) => setEditingLoan({ ...editingLoan, object_count: e.target.value })}
@@ -920,8 +930,8 @@ export function ExhibitionLoansTab({ organizationId, exhibitionId, isEditing }: 
 
             {/* Notes */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">Notes</label>
-              <textarea
+              <label htmlFor={`${fieldId}-notes`} className="block text-sm font-medium text-ink mb-1">Notes</label>
+              <textarea id={`${fieldId}-notes`}
                 value={editingLoan.notes || ''}
                 onChange={(e) => setEditingLoan({ ...editingLoan, notes: e.target.value })}
                 rows={3}

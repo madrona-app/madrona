@@ -2,7 +2,9 @@
  * Public Discover / Gallery API
  */
 import { apiFetch, buildQueryString, validate } from './_utils';
+import { API_BASE_URL } from '../apiClient';
 import { z } from 'zod';
+import { DiscoverDocumentTextOutSchema, type DiscoverDocumentTextOut } from '../schemas/generated';
 import {
   DiscoverCollectionInfoSchema,
   DiscoverSearchResponseSchema,
@@ -53,6 +55,16 @@ export async function getDiscoverObject(
 ): Promise<DiscoverObjectDetail> {
   const data = await apiFetch(`/discover/${orgSlug}/objects/${encodeURIComponent(objectId)}`, { skipAuth: true });
   return validate(DiscoverObjectDetailSchema, data) as unknown as DiscoverObjectDetail;
+}
+
+/**
+ * The text of a public document (page by page for PDFs), from the `text_url`
+ * a Discover media item carries. Backs the record page's text view.
+ */
+export async function getDiscoverDocumentText(textUrl: string): Promise<DiscoverDocumentTextOut> {
+  const path = textUrl.replace(/^\/api(?=\/)/, '');
+  const data = await apiFetch(path, { skipAuth: true });
+  return validate(DiscoverDocumentTextOutSchema, data);
 }
 
 export async function getFeaturedObjects(
@@ -234,4 +246,41 @@ export async function getPublicVenueDetail(
 ): Promise<{ data: import('../../types/discover').PublicVenue & { upcoming_exhibitions?: Array<{ exhibition_id: string; title: string; subtitle: string | null; public_url_slug: string | null; planned_start_date: string | null; planned_end_date: string | null; short_description: string | null; thumbnail_url: string | null }> } }> {
   const data = await apiFetch(`/discover/${orgSlug}/venues/${encodeURIComponent(venueSlug)}`, { skipAuth: true });
   return validate(z.object({ data: PublicVenueSchema }).passthrough(), data) as any;
+}
+
+// ── Exports (plain download links, not fetched) ─────────────────────────────
+
+export type DiscoverExportFormat = 'csv' | 'json';
+
+function discoverExportUrl(path: string, query: string, format: DiscoverExportFormat): string {
+  const base = API_BASE_URL.replace(/\/$/, '');
+  const qs = new URLSearchParams(query.replace(/^\?/, ''));
+  qs.delete('page'); // an export is the whole result set, not one page
+  qs.set('format', format);
+  return `${base}${path}?${qs.toString()}`;
+}
+
+/**
+ * Download URL for the current search results. `canonicalQuery` is the
+ * results permalink query (see pages/discover/searchUrl.ts).
+ */
+export function getDiscoverSearchExportUrl(
+  orgSlug: string,
+  canonicalQuery: string,
+  format: DiscoverExportFormat,
+): string {
+  return discoverExportUrl(`/discover/${encodeURIComponent(orgSlug)}/search/export`, canonicalQuery, format);
+}
+
+/** Download URL for a public exhibition's objects. */
+export function getExhibitionExportUrl(
+  orgSlug: string,
+  exhibitionSlug: string,
+  format: DiscoverExportFormat,
+): string {
+  return discoverExportUrl(
+    `/discover/${encodeURIComponent(orgSlug)}/exhibitions/${encodeURIComponent(exhibitionSlug)}/export`,
+    '',
+    format,
+  );
 }

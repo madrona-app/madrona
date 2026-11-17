@@ -18,7 +18,7 @@ from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import CollectionObject, CollectionObjectMedia, Media
 from app.permissions import Permission
-from app.services.uploads import get_org_media_url, detect_media_type, upload_org_media, StorageLimitExceeded
+from app.services.uploads import get_org_media_url, detect_media_type, normalize_upload_content_type, upload_org_media, StorageLimitExceeded
 from app.services.api_security import sanitize_error_message
 from app.fastapi_app.serializers.collections import _serialize_collection_object_media
 from app.fastapi_app.serializers.collections_helpers import _index_collection_object, _reindex_linked_media
@@ -85,6 +85,22 @@ router = APIRouter(tags=["collections-media"])
 # ============================================================================
 # LIST OBJECT MEDIA
 # ============================================================================
+
+def _clear_primary(db: Session, object_id: UUID, keep_media_id: UUID | None = None) -> None:
+    """Unset is_primary on the object's other media links.
+
+    Done row by row through the ORM (an object has a handful of links) so
+    each change is recorded on the object's history.
+    """
+    q = db.query(CollectionObjectMedia).filter(
+        CollectionObjectMedia.object_id == object_id,
+        CollectionObjectMedia.is_primary == True,  # noqa: E712
+    )
+    if keep_media_id is not None:
+        q = q.filter(CollectionObjectMedia.media_id != keep_media_id)
+    for other in q.all():
+        other.is_primary = False
+
 
 @router.get("/api/organizations/{org_id}/collections/objects/{object_id}/media", response_model=ObjectMediaListResponse, summary="List object media")
 def list_object_media(
@@ -157,6 +173,7 @@ def upload_and_link_media_to_object(
         raise HTTPException(status_code=400, detail={"code": "bad_request", "message": "No filename provided"})
 
     content_type = file.content_type or 'application/octet-stream'
+    content_type = normalize_upload_content_type(content_type, file.filename)
     media_type = detect_media_type(content_type)
     if not media_type:
         raise HTTPException(status_code=400, detail={"code": "bad_request", "message": f"Unsupported file type: {content_type}"})
@@ -217,10 +234,7 @@ def upload_and_link_media_to_object(
         is_primary = True
 
     if is_primary:
-        db.query(CollectionObjectMedia).filter(
-            CollectionObjectMedia.object_id == object_id,
-            CollectionObjectMedia.is_primary == True,
-        ).update({'is_primary': False})
+        _clear_primary(db, object_id)
 
     link = CollectionObjectMedia(
         object_id=object_id,
@@ -265,11 +279,7 @@ async def update_object_media_link(
     data = await request.json()
 
     if 'is_primary' in data and data['is_primary']:
-        db.query(CollectionObjectMedia).filter(
-            CollectionObjectMedia.object_id == object_id,
-            CollectionObjectMedia.media_id != media_id,
-            CollectionObjectMedia.is_primary == True,
-        ).update({'is_primary': False})
+        _clear_primary(db, object_id, keep_media_id=media_id)
         link.is_primary = True
     elif 'is_primary' in data:
         link.is_primary = data['is_primary']
@@ -334,10 +344,7 @@ def set_primary_media(
     """Set a media item as the primary image for an object."""
     link = _org_scoped_link(db, org_id, object_id, media_id)
 
-    db.query(CollectionObjectMedia).filter(
-        CollectionObjectMedia.object_id == object_id,
-        CollectionObjectMedia.is_primary == True,
-    ).update({'is_primary': False})
+    _clear_primary(db, object_id, keep_media_id=media_id)
 
     link.is_primary = True
     db.commit()

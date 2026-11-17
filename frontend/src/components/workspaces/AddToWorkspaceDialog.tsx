@@ -7,7 +7,7 @@
  * - Add single or multiple objects at once
  */
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Layers, Plus, Check, Search, Lock, Users, Globe } from 'lucide-react';
 import { useOrganization } from '../../contexts/useOrganization';
@@ -15,6 +15,8 @@ import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessible
 import { cn } from '../../lib/utils';
 import { listWorkspaces, addWorkspaceItems, createWorkspace } from '../../lib/api';
 import { ModalPortal } from '../ModalPortal';
+import { useFocusWhen } from '../workspace/useFocusWhen';
+import { useStableCallback } from '../workspace/useStableCallback';
 
 interface AddToWorkspaceDialogProps {
   isOpen: boolean;
@@ -33,9 +35,10 @@ export default function AddToWorkspaceDialog({
   const orgId = activeOrganization?.organization_id;
   const queryClient = useQueryClient();
 
+  const stableOnClose = useStableCallback(onClose);
   const { modalRef, titleId, descriptionId } = useAccessibleModal({
     isOpen,
-    onClose,
+    onClose: stableOnClose,
     titlePrefix: 'add-to-workspace-dialog',
   });
 
@@ -45,6 +48,8 @@ export default function AddToWorkspaceDialog({
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const newNameInputRef = useRef<HTMLInputElement>(null);
+  useFocusWhen(newNameInputRef, isOpen && showCreateNew);
 
   // Fetch user's workspaces
   const { data: workspacesData, isLoading } = useQuery({
@@ -148,14 +153,14 @@ export default function AddToWorkspaceDialog({
   return (
     <ModalPortal>
     <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
-      onClick={handleClose}
+      className="fixed inset-0 z-[1000] flex items-center justify-center"
     >
+      {/* Backdrop: mouse dismiss only; Escape closes the dialog */}
+      <div aria-hidden="true" className="absolute inset-0 bg-ink/50" onClick={handleClose} />
       <div
         ref={modalRef}
         {...getModalAriaProps(titleId, descriptionId)}
-        onClick={(e) => e.stopPropagation()}
-        className="bg-parchment rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col"
+        className="relative bg-parchment rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col"
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-lichen">
@@ -170,10 +175,12 @@ export default function AddToWorkspaceDialog({
               </div>
             </div>
             <button
+              type="button"
               onClick={handleClose}
-              className="p-1 text-archive hover:text-ink rounded"
+              aria-label="Close"
+              className="p-1 text-archive hover:text-ink rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             >
-              <X size={20} />
+              <X size={20} aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -190,7 +197,7 @@ export default function AddToWorkspaceDialog({
           ) : (
             <>
               {error && (
-                <div className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-sm text-sm text-semantic-error">
+                <div role="alert" className="p-3 bg-semantic-error/10 border border-semantic-error/30 rounded-sm text-sm text-semantic-error">
                   {error}
                 </div>
               )}
@@ -201,10 +208,12 @@ export default function AddToWorkspaceDialog({
                   <div className="relative">
                     <Search
                       size={16}
+                      aria-hidden="true"
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-archive"
                     />
                     <input
-                      type="text"
+                      type="search"
+                      aria-label="Search workspaces"
                       placeholder="Search workspaces..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
@@ -218,7 +227,7 @@ export default function AddToWorkspaceDialog({
                     className="w-full flex items-center gap-3 p-3 border border-dashed border-lichen rounded-sm hover:border-bark/30 hover:bg-stone/30"
                   >
                     <div className="p-2 bg-bark/10 rounded-sm">
-                      <Plus size={16} className="text-bark" />
+                      <Plus size={16} className="text-bark" aria-hidden="true" />
                     </div>
                     <span className="text-sm font-medium text-ink">Create new workspace</span>
                   </button>
@@ -239,7 +248,9 @@ export default function AddToWorkspaceDialog({
                       filteredWorkspaces.map((ws) => (
                         <button
                           key={ws.workspace_id}
+                          type="button"
                           onClick={() => setSelectedWorkspaceId(ws.workspace_id)}
+                          aria-pressed={selectedWorkspaceId === ws.workspace_id}
                           className={cn(
                             'w-full flex items-center gap-3 p-3 border rounded-sm text-left transition-colors',
                             selectedWorkspaceId === ws.workspace_id
@@ -301,13 +312,13 @@ export default function AddToWorkspaceDialog({
                       Workspace Name
                     </label>
                     <input
+                      ref={newNameInputRef}
                       id="workspace-name"
                       type="text"
                       value={newWorkspaceName}
                       onChange={(e) => setNewWorkspaceName(e.target.value)}
                       placeholder="e.g., Q1 Loan Exhibition Objects"
                       className="w-full px-3 py-2 border border-lichen rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
-                      autoFocus
                     />
                   </div>
 

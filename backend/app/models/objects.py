@@ -129,6 +129,19 @@ class CollectionObject(Base):
     # Catalog Level (CDWA 1.1)
     catalog_level: Mapped[str | None] = mapped_column(String(20), nullable=True, default="item")
 
+    # Archival hierarchy: collection > series > box > folder > item (and the
+    # intermediate levels in check_catalog_level). Real parent/child records;
+    # invariants (same org, no cycles, items have no children) are enforced in
+    # app.services.archival_hierarchy. RESTRICT: a record with children cannot
+    # be hard-deleted out from under them.
+    parent_object_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("collections.collection_objects.object_id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+    # Order among siblings (folder 1, 2, 3...). NULL sorts after numbered ones.
+    sibling_order: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     # Orientation/Arrangement (CDWA 12)
     orientation: Mapped[str | None] = mapped_column(String(50), nullable=True)
     arrangement: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -243,6 +256,12 @@ class CollectionObject(Base):
 
     object_status: Mapped[str] = mapped_column(String(50), nullable=False, default="pending")
 
+    # Cataloguing workflow status, separate from the object's lifecycle status.
+    # 'pending_review' ("In review") is entered and left only through the review
+    # workflow (app.services.record_review), which notifies the assigned reviewer
+    # and documents the decision on an approval request (approval_service).
+    cataloging_status: Mapped[str | None] = mapped_column(String(30), nullable=True)
+
     # ══════════════════════════════════════════════════════════════════════
     # BARCODE & INVENTORY
     # ══════════════════════════════════════════════════════════════════════
@@ -306,6 +325,15 @@ class CollectionObject(Base):
     # Watermarks (CDWA 7.8) - For works on paper
     # Array of {identification, description, date_earliest, date_latest, briquet_number, location_on_work}
     watermarks: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True)
+
+    # Links to outside sources about this object, such as a Wikipedia page.
+    # Array of {url, label, link_type}; url is http(s) only, validated in
+    # app.services.external_links on every write.
+    external_links: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True)
+
+    # Values of the organization's user-defined fields, keyed by field key
+    # (collections.custom_field_definitions); validated in app.services.custom_fields.
+    custom_fields: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
     # Free-form key/value store for facts that have no column of their own —
     # bulk-action outputs such as cataloging status, loan availability and the
@@ -474,6 +502,13 @@ class CollectionObject(Base):
             "object_status IN ('pending', 'accessioned', 'on_loan', 'deaccessioned', 'missing', 'destroyed')",
             name="check_object_status",
         ),
+        Index("ix_objects_parent_order", "organization_id", "parent_object_id", "sibling_order"),
+        Index("ix_objects_custom_fields", "custom_fields", postgresql_using="gin"),
+        CheckConstraint(
+            "cataloging_status IS NULL OR cataloging_status IN "
+            "('not_started', 'in_progress', 'pending_review', 'needs_research', 'cataloged')",
+            name="check_cataloging_status",
+        ),
         CheckConstraint(
             "conservation_priority IS NULL OR conservation_priority IN ('urgent', 'high', 'medium', 'low', 'none')",
             name="check_conservation_priority",
@@ -491,7 +526,7 @@ class CollectionObject(Base):
             name="check_acquisition_method",
         ),
         CheckConstraint(
-            "catalog_level IS NULL OR catalog_level IN ('item', 'group', 'collection', 'series', 'component', 'volume')",
+            "catalog_level IS NULL OR catalog_level IN ('collection', 'subcollection', 'series', 'subseries', 'file', 'box', 'folder', 'item', 'group', 'component', 'volume')",
             name="check_catalog_level",
         ),
         CheckConstraint(
@@ -677,11 +712,7 @@ class ConditionReport(Base):
         Index("ix_condition_reports_object", "object_id"),
         Index("ix_condition_reports_org_dept", "organization_id", "department_id"),
         Index("ix_condition_reports_org_status", "organization_id", "status"),
-        CheckConstraint(
-            "report_type IN ('intake', 'loan_out', 'loan_in', 'loan_return', "
-            "'periodic', 'conservation', 'incident', 'pre_treatment', 'post_treatment')",
-            name="check_report_type",
-        ),
+        # report_type: lookup-backed (app/services/lookup_fields.py), no CHECK.
         CheckConstraint(
             "overall_condition IS NULL OR overall_condition IN ('excellent', 'good', 'fair', 'poor', 'unacceptable')",
             name="check_report_overall_condition",
@@ -922,13 +953,7 @@ class Citation(Base):
         Index("ix_citations_object", "object_id"),
         Index("ix_citations_type", "organization_id", "citation_type"),
         Index("ix_citations_year", "organization_id", "publication_year"),
-        CheckConstraint(
-            "citation_type IN ('book', 'monograph', 'article', 'journal_article', "
-            "'exhibition_catalog', 'collection_catalog', 'auction_catalog', "
-            "'dissertation', 'thesis', 'website', 'database', 'unpublished', "
-            "'correspondence', 'archival', 'newspaper', 'magazine', 'other')",
-            name="check_citation_type",
-        ),
+        # citation_type: lookup-backed (app/services/lookup_fields.py), no CHECK.
         {"schema": "collections"},
     )
 
@@ -1038,6 +1063,11 @@ class ObjectRight(Base):
     rights_holder_contact_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("collections.constituents.constituent_id", ondelete="SET NULL"), nullable=True
     )
+    # Agent acting for the rights holder (licensing agency, estate agent, etc.)
+    # - the party to contact for permissions on the holder's behalf.
+    rights_holder_agent_contact_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("collections.constituents.constituent_id", ondelete="SET NULL"), nullable=True
+    )
 
     # Status
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="unknown")
@@ -1107,6 +1137,10 @@ class ObjectRight(Base):
         "Constituent",
         foreign_keys=[rights_holder_contact_id],
     )
+    rights_holder_agent_contact: Mapped["Constituent | None"] = relationship(
+        "Constituent",
+        foreign_keys=[rights_holder_agent_contact_id],
+    )
 
     __table_args__ = (
         Index("ix_rights_org", "organization_id"),
@@ -1114,10 +1148,8 @@ class ObjectRight(Base):
         Index("ix_rights_type", "organization_id", "right_type"),
         Index("ix_rights_status", "organization_id", "status"),
         Index("ix_rights_holder_contact", "rights_holder_contact_id"),
-        CheckConstraint(
-            "right_type IN ('copyright', 'reproduction', 'exhibition', 'publication', 'broadcast', 'performance', 'adaptation', 'distribution', 'moral_rights', 'database_rights', 'trademark', 'other')",
-            name="check_right_type",
-        ),
+        Index("ix_rights_holder_agent_contact", "rights_holder_agent_contact_id"),
+        # right_type: lookup-backed (app/services/lookup_fields.py), no CHECK.
         CheckConstraint(
             "status IN ('unknown', 'public_domain', 'owned', 'licensed', 'granted', 'requested', 'denied', 'expired', 'orphan', 'disputed')",
             name="check_right_status",
@@ -1272,10 +1304,7 @@ class UseRequest(Base):
         Index("ix_use_requests_org_status", "organization_id", "status"),
         Index("ix_use_requests_org_type", "organization_id", "use_type"),
         Index("ix_use_requests_requester", "requester_user_id"),
-        CheckConstraint(
-            "use_type IN ('research', 'exhibition', 'reproduction', 'education', 'publication', 'broadcast', 'commercial', 'conservation', 'loan', 'digitization', 'other')",
-            name="check_use_type",
-        ),
+        # use_type: lookup-backed (app/services/lookup_fields.py), no CHECK.
         CheckConstraint(
             "status IN ('submitted', 'under_review', 'approved', 'denied', 'in_progress', 'completed', 'cancelled', 'withdrawn')",
             name="check_use_request_status",
@@ -1450,14 +1479,8 @@ class Valuation(Base):
         Index("ix_valuations_object", "object_id"),
         Index("ix_valuations_org_type", "organization_id", "valuation_type"),
         Index("ix_valuations_org_current", "organization_id", "is_current"),
-        CheckConstraint(
-            "valuation_type IN ('insurance', 'market', 'replacement', 'probate', 'donation', 'internal')",
-            name="check_valuation_type",
-        ),
-        CheckConstraint(
-            "valuation_method IS NULL OR valuation_method IN ('comparable_sales', 'replacement_cost', 'income_approach', 'expert_opinion', 'formula', 'hybrid')",
-            name="check_valuation_method",
-        ),
+        # valuation_type: lookup-backed (app/services/lookup_fields.py), no CHECK.
+        # valuation_method: lookup-backed (app/services/lookup_fields.py), no CHECK.
         {"schema": "collections"},
     )
 
@@ -1586,10 +1609,7 @@ class ReproductionRequest(Base):
         Index("ix_reproduction_req_object", "object_id"),
         Index("ix_reproduction_req_org_status", "organization_id", "status"),
         UniqueConstraint("organization_id", "request_number", name="uq_reproduction_req_number"),
-        CheckConstraint(
-            "reproduction_type IN ('photograph', 'scan', 'cast', '3d_print', 'digital_copy', 'film', 'video', 'other')",
-            name="check_reproduction_type",
-        ),
+        # reproduction_type: lookup-backed (app/services/lookup_fields.py), no CHECK.
         CheckConstraint(
             "status IN ('submitted', 'rights_review', 'approved', 'denied', 'in_production', 'delivered', 'completed', 'cancelled')",
             name="check_reproduction_status",

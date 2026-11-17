@@ -68,6 +68,7 @@ const SYNONYMS: Record<string, string[]> = {
     'artifacts',
     'items',
   ],
+  'library-catalog': ['books', 'bibliographic records', 'holdings', 'barcodes', 'braille', 'large print', 'audio books', 'serials'],
 
   // Transactions
   entries: ['object entry', 'incoming', 'receipt', 'intake'],
@@ -96,6 +97,7 @@ const SYNONYMS: Record<string, string[]> = {
   // Rights & reproduction
   rights: ['ip', 'copyright', 'intellectual property', 'permissions'],
   'use-requests': ['use request', 'permission request'],
+  'research-visits': ['researcher', 'reading room', 'visit log', 'object handling'],
   'reproduction-requests': ['repro', 'reproduction', 'image request'],
 
   // People & programs
@@ -131,6 +133,8 @@ const SYNONYMS: Record<string, string[]> = {
   roles: ['role management', 'permissions', 'rbac'],
   departments: ['org units', 'teams'],
   'entity-audit': ['change history', 'audit log', 'history'],
+  'security-changes': ['security log', 'role changes', 'permission changes', 'sso changes', 'api key changes'],
+  'settings-changes': ['settings log', 'configuration changes', 'settings history'],
   'api-keys': ['api tokens', 'api key'],
 };
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X } from 'lucide-react';
+import { X, ChevronUp, ChevronDown } from 'lucide-react';
 import type { Dataset } from '../lib/schemas';
 import { useBreakpoint } from '../hooks/useBreakpoint';
 import { useAccessibleModal, getModalAriaProps } from '../hooks/useAccessibleModal';
@@ -61,6 +61,18 @@ export function DatasetVisibilityModal({
     });
   }, []);
 
+  // Keyboard/pointer alternative to drag-to-reorder (WCAG 2.5.7).
+  const moveDataset = useCallback((datasetId: string, delta: -1 | 1) => {
+    setOrder((prev) => {
+      const from = prev.indexOf(datasetId);
+      const to = from + delta;
+      if (from < 0 || to < 0 || to >= prev.length) return prev;
+      const next = [...prev];
+      [next[from], next[to]] = [next[to], next[from]];
+      return next;
+    });
+  }, []);
+
   const handleClear = useCallback(() => {
     setSelectedIds(new Set());
   }, []);
@@ -81,7 +93,7 @@ export function DatasetVisibilityModal({
 
   return (
     <ModalPortal>
-    { }
+    {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- backdrop click-to-dismiss; Escape closes via useAccessibleModal */}
     <div
       className="fixed inset-0 z-[1000] flex items-center justify-center bg-ink/50"
       onClick={onClose}
@@ -118,7 +130,7 @@ export function DatasetVisibilityModal({
             className="p-2 bg-transparent border-none cursor-pointer text-archive hover:text-ink transition-colors"
             aria-label="Close"
           >
-            <X size={20} />
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
 
@@ -136,7 +148,8 @@ export function DatasetVisibilityModal({
               {order
                 .map((datasetId) => datasets.find((d) => d.dataset_id === datasetId))
                 .filter((dataset): dataset is Dataset => dataset !== undefined)
-                .map((dataset, index) => {
+                .map((dataset, index, visible) => {
+                  const nameId = `dataset-visibility-name-${dataset.dataset_id}`;
                   const isSelected = selectedIds.has(dataset.dataset_id);
                   const isDragging = draggedIndex === index;
 
@@ -169,13 +182,10 @@ export function DatasetVisibilityModal({
                       } ${isSelected ? 'bg-parchment' : 'bg-transparent'} ${
                         isDragging ? 'opacity-50' : 'opacity-100'
                       } ${isMobile ? 'cursor-pointer' : 'cursor-grab'}`}
-                      onClick={isMobile ? () => handleToggleVisibility(dataset.dataset_id) : undefined}
-                      role={isMobile ? 'button' : undefined}
-                      tabIndex={isMobile ? -1 : undefined}
                     >
                       {/* Drag handle - hidden on mobile */}
                       {!isMobile && (
-                        <div className="flex flex-col gap-[3px] cursor-grab opacity-40 flex-shrink-0">
+                        <div className="flex flex-col gap-[3px] cursor-grab opacity-40 flex-shrink-0" aria-hidden="true">
                           <div className="w-3 h-0.5 bg-archive rounded-sm" />
                           <div className="w-3 h-0.5 bg-archive rounded-sm" />
                           <div className="w-3 h-0.5 bg-archive rounded-sm" />
@@ -184,10 +194,7 @@ export function DatasetVisibilityModal({
 
                       {/* Checkbox for visibility */}
                       <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleVisibility(dataset.dataset_id);
-                        }}
+                        onClick={() => handleToggleVisibility(dataset.dataset_id)}
                         className={`flex items-center justify-center flex-shrink-0 rounded-sm cursor-pointer border-2 transition-colors ${
                           isMobile ? 'w-6 h-6' : 'w-4 h-4'
                         } ${
@@ -197,6 +204,7 @@ export function DatasetVisibilityModal({
                         }`}
                         role="checkbox"
                         aria-checked={isSelected}
+                        aria-labelledby={nameId}
                         tabIndex={0}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
@@ -206,7 +214,7 @@ export function DatasetVisibilityModal({
                         }}
                       >
                         {isSelected && (
-                          <svg width={isMobile ? '14' : '10'} height={isMobile ? '14' : '10'} viewBox="0 0 10 10" fill="none">
+                          <svg width={isMobile ? '14' : '10'} height={isMobile ? '14' : '10'} viewBox="0 0 10 10" fill="none" aria-hidden="true">
                             <path
                               d="M2 5L4 7L8 3"
                               stroke="white"
@@ -220,12 +228,33 @@ export function DatasetVisibilityModal({
 
                       {/* Dataset info */}
                       <div className="flex-1">
-                        <div className="text-sm text-ink font-medium">
+                        <div id={nameId} className="text-sm text-ink font-medium">
                           {dataset.name}
                         </div>
                         <div className="text-xs text-archive mt-0.5">
                           {formatNumber(dataset.entity_count || 0)} entities
                         </div>
+                      </div>
+
+                      <div className="flex flex-shrink-0 gap-1">
+                        <button
+                          type="button"
+                          onClick={() => moveDataset(dataset.dataset_id, -1)}
+                          disabled={index === 0}
+                          aria-label={`Move ${dataset.name} up`}
+                          className="p-1 rounded-sm text-archive hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed focus-visible:ring-2 ring-bark/30 ring-offset-2"
+                        >
+                          <ChevronUp size={14} aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveDataset(dataset.dataset_id, 1)}
+                          disabled={index === visible.length - 1}
+                          aria-label={`Move ${dataset.name} down`}
+                          className="p-1 rounded-sm text-archive hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed focus-visible:ring-2 ring-bark/30 ring-offset-2"
+                        >
+                          <ChevronDown size={14} aria-hidden="true" />
+                        </button>
                       </div>
 
                     </div>

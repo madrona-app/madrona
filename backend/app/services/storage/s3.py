@@ -174,6 +174,7 @@ class S3StorageBackend(StorageBackend):
         metadata: Optional[dict[str, str]] = None,
         cache_control: Optional[str] = None,
         tags: Optional[dict[str, str]] = None,
+        content_disposition: Optional[str] = None,
     ) -> StorageObject:
         """Upload an object to S3."""
         # Convert file-like to bytes if needed
@@ -194,6 +195,8 @@ class S3StorageBackend(StorageBackend):
             put_params["Metadata"] = metadata
         if cache_control:
             put_params["CacheControl"] = cache_control
+        if content_disposition:
+            put_params["ContentDisposition"] = content_disposition
         if tags:
             # S3 tags are URL-encoded key=value pairs separated by &
             tag_string = "&".join(f"{quote(k)}={quote(v)}" for k, v in tags.items())
@@ -515,6 +518,7 @@ class S3StorageBackend(StorageBackend):
         metadata: Optional[dict[str, str]] = None,
         cache_control: Optional[str] = None,
         tags: Optional[dict[str, str]] = None,
+        content_disposition: Optional[str] = None,
     ) -> StorageObject:
         """Synchronous version of put_object for use in non-async contexts."""
         # Convert file-like to bytes if needed
@@ -535,6 +539,8 @@ class S3StorageBackend(StorageBackend):
             put_params["Metadata"] = metadata
         if cache_control:
             put_params["CacheControl"] = cache_control
+        if content_disposition:
+            put_params["ContentDisposition"] = content_disposition
         if tags:
             tag_string = "&".join(f"{quote(k)}={quote(v)}" for k, v in tags.items())
             put_params["Tagging"] = tag_string

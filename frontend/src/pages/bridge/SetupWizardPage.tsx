@@ -17,6 +17,7 @@ import {
 import { apiFetch } from '../../lib/apiClient';
 import { useOrganization } from '../../contexts/useOrganization';
 import { useState, useEffect, useMemo } from 'react';
+import FileSourceWizard from '../../components/FileSourceWizard';
 
 interface WizardStep {
   id: string;
@@ -52,6 +53,7 @@ export default function SetupWizardPage() {
     config: '{}',
   });
   const [connectorErrors, setConnectorErrors] = useState<Record<string, string>>({});
+  const [fileWizardOpen, setFileWizardOpen] = useState(false);
 
   // Pipeline form state
   const [pipelineForm, setPipelineForm] = useState({
@@ -114,12 +116,17 @@ export default function SetupWizardPage() {
 
   const isLoading = datasetsLoading || definitionsLoading || connectorsLoading || pipelinesLoading || runsLoading || entitiesLoading;
 
+  const selectedConnectorDefinition = connectorDefinitions?.find(
+    (d) => d.connector_definition_id === connectorForm.connector_definition_id,
+  );
+
   // Category display labels
   const categoryLabels: Record<string, string> = {
     database: 'Databases',
     api: 'APIs',
-    file: 'File Systems',
+    file: 'Files',
     cloud: 'Cloud Services',
+    madrona: 'Madrona',
   };
 
   // Group definitions by category
@@ -474,7 +481,7 @@ export default function SetupWizardPage() {
               to={`/organizations/${organizationId}/bridge/setup/datasets`}
               className="p-4 border border-lichen rounded-md hover:bg-stone transition-colors"
             >
-              <FaDatabase className="h-6 w-6 text-forest mb-2" />
+              <FaDatabase className="h-6 w-6 text-forest mb-2" aria-hidden="true" />
               <div className="font-medium text-ink">Review Datasets</div>
               <div className="text-sm text-archive">{datasets?.length || 0} configured</div>
             </Link>
@@ -522,7 +529,7 @@ export default function SetupWizardPage() {
               }}
               className="p-4 border-2 border-lichen rounded-md hover:border-bark hover:bg-bark/5 transition-colors text-left"
             >
-              <FaDatabase className="h-6 w-6 text-forest mb-2" />
+              <FaDatabase className="h-6 w-6 text-forest mb-2" aria-hidden="true" />
               <div className="font-medium text-ink mb-1">Create a dataset</div>
               <div className="text-sm text-archive">Define a new canonical entity collection</div>
             </button>
@@ -615,7 +622,7 @@ export default function SetupWizardPage() {
             </p>
             <ul className="space-y-2 mb-6">
               <li className="flex items-start">
-                <FaDatabase className="h-5 w-5 text-forest mr-3 mt-0.5" />
+                <FaDatabase className="h-5 w-5 text-forest mr-3 mt-0.5" aria-hidden="true" />
                 <div>
                   <span className="font-medium">Dataset</span> - Where your data will be organized
                 </div>
@@ -802,12 +809,18 @@ export default function SetupWizardPage() {
                 </p>
                 
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-2">
-                    Connector Type <span className="text-semantic-error">*</span>
-                  </label>
-                  <div className={`space-y-4 ${
+                  <span id="setup-connector-type-label" className="block text-sm font-medium text-ink mb-2">
+                    Connector Type <span className="text-semantic-error" aria-hidden="true">*</span>
+                    <span className="sr-only"> (required)</span>
+                  </span>
+                  <div
+                    role="group"
+                    aria-labelledby="setup-connector-type-label"
+                    aria-describedby={connectorErrors.connector_definition_id ? 'setup-connector-type-error' : undefined}
+                    className={`space-y-4 ${
                     connectorErrors.connector_definition_id ? 'ring-2 ring-semantic-error ring-offset-2 rounded-lg p-2' : ''
-                  }`}>
+                  }`}
+                  >
                     {Object.entries(groupedDefinitions).map(([category, defs]) => (
                       <div key={category}>
                         <h4 className="text-sm font-medium text-archive mb-2">
@@ -818,6 +831,7 @@ export default function SetupWizardPage() {
                             <button
                               key={def.connector_definition_id}
                               type="button"
+                              aria-pressed={connectorForm.connector_definition_id === def.connector_definition_id}
                               onClick={() => setConnectorForm({ ...connectorForm, connector_definition_id: def.connector_definition_id })}
                               className={`flex items-center gap-3 p-3 border rounded-lg text-left transition-all ${
                                 connectorForm.connector_definition_id === def.connector_definition_id
@@ -825,7 +839,7 @@ export default function SetupWizardPage() {
                                   : 'border-lichen hover:border-lichen hover:bg-stone'
                               }`}
                             >
-                              <ConnectorIcon connectorKey={def.key} category={def.category ?? undefined} size={24} className="flex-shrink-0 text-archive" />
+                              <span aria-hidden="true" className="contents"><ConnectorIcon connectorKey={def.key} category={def.category ?? undefined} size={24} className="flex-shrink-0 text-archive" /></span>
                               <div className="min-w-0">
                                 <div className="font-medium text-ink truncate">{def.display_name}</div>
                                 <div className="text-xs text-archive">{def.direction}</div>
@@ -837,10 +851,25 @@ export default function SetupWizardPage() {
                     ))}
                   </div>
                   {connectorErrors.connector_definition_id && (
-                    <p className="text-sm text-semantic-error mt-2">{connectorErrors.connector_definition_id}</p>
+                    <p id="setup-connector-type-error" className="text-sm text-semantic-error mt-2">{connectorErrors.connector_definition_id}</p>
                   )}
                 </div>
 
+                {selectedConnectorDefinition?.category === 'file' ? (
+                  <div className="space-y-2">
+                    <p className="text-sm text-archive">
+                      Upload a CSV or Excel file, check the preview, and choose which columns hold the object number and title.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setFileWizardOpen(true)}
+                      className="btn-primary w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+                    >
+                      Upload a spreadsheet
+                    </button>
+                  </div>
+                ) : (
+                <>
                 <div>
                   <label htmlFor="connector-name" className="block text-sm font-medium text-ink mb-1">
                     Name <span className="text-semantic-error">*</span>
@@ -895,6 +924,8 @@ export default function SetupWizardPage() {
                 >
                   {createConnectorMutation.isPending ? 'Creating...' : 'Create Connector'}
                 </button>
+                </>
+                )}
               </div>
             )}
           </div>
@@ -1078,12 +1109,13 @@ export default function SetupWizardPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-ink mb-2">Run Type</label>
+                <fieldset aria-describedby="setup-run-type-help">
+                  <legend className="block text-sm font-medium text-ink mb-2">Run Type</legend>
                   <div className="space-y-2">
                     <label className="flex items-center">
                       <input
                         type="radio"
+                        name="setup-run-type"
                         value="test"
                         checked={runType === 'test'}
                         onChange={(e) => setRunType(e.target.value as 'test' | 'full')}
@@ -1096,6 +1128,7 @@ export default function SetupWizardPage() {
                     <label className="flex items-center">
                       <input
                         type="radio"
+                        name="setup-run-type"
                         value="full"
                         checked={runType === 'full'}
                         onChange={(e) => setRunType(e.target.value as 'test' | 'full')}
@@ -1106,8 +1139,8 @@ export default function SetupWizardPage() {
                       <span>Full Run (all records)</span>
                     </label>
                   </div>
-                  <p className="text-sm text-archive mt-2">Test mode limits the record count. Full mode extracts all available data into the dataset.</p>
-                </div>
+                  <p id="setup-run-type-help" className="text-sm text-archive mt-2">Test mode limits the record count. Full mode extracts all available data into the dataset.</p>
+                </fieldset>
 
                 {runStatus === 'running' && (
                   <div className="bg-semantic-info/10 border border-semantic-info/20 rounded-md p-4">
@@ -1168,6 +1201,20 @@ export default function SetupWizardPage() {
           )}
         </div>
       </div>
+
+      {fileWizardOpen && selectedConnectorDefinition && organizationId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4">
+          <FileSourceWizard
+            definition={selectedConnectorDefinition}
+            organizationId={organizationId}
+            onComplete={() => {
+              setFileWizardOpen(false);
+              queryClient.invalidateQueries({ queryKey: ['connector-instances'] });
+            }}
+            onCancel={() => setFileWizardOpen(false)}
+          />
+        </div>
+      )}
     </div>
   );
 }

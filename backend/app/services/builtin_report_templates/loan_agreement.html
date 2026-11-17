@@ -84,13 +84,13 @@
     margin: 10pt 0 4pt 0;
   }
 
-  table.field-grid {
+  .field-grid {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 6pt;
   }
 
-  table.field-grid td.field {
+  .field-grid .field {
     width: 50%;
     padding: 0 8pt 6pt 0;
     vertical-align: top;
@@ -136,6 +136,12 @@
     font-size: 8pt;
   }
 
+  table.data-table caption {
+    text-align: left;
+    font-weight: bold;
+    padding-bottom: 3pt;
+  }
+
   table.data-table tbody td {
     padding: 4pt 6pt;
     border-bottom: 0.5pt solid var(--stone);
@@ -147,13 +153,13 @@
   }
 
   /* Signature block */
-  table.signature-block {
+  .signature-block {
     width: 100%;
     border-collapse: collapse;
     margin-top: 24pt;
   }
 
-  table.signature-block td {
+  .signature-block .row > div {
     width: 50%;
     vertical-align: top;
     padding: 0 16pt 0 0;
@@ -182,7 +188,7 @@
     margin-bottom: 20pt;
   }
 
-  table.record-info {
+  .record-info {
     width: 100%;
     border-collapse: collapse;
     margin-top: 14pt;
@@ -191,7 +197,7 @@
     color: var(--archive);
   }
 
-  table.record-info td {
+  .record-info .row > div {
     padding: 4pt 0;
     width: 50%;
   }
@@ -199,6 +205,16 @@
   .keep-together {
     break-inside: avoid;
   }
+
+  /* Layout rows (divs, not tables, so tagged PDF has no false data tables) */
+  .field-grid > .row, .ident-layout > .row, .record-info > .row, .signature-block > .row {
+    display: flex;
+  }
+  .field-grid > .row > div, .record-info > .row > div, .signature-block > .row > div {
+    flex: 1 1 0;
+  }
+  .ident-layout .ident-fields { flex: 1 1 auto; }
+  .ident-layout .ident-image { flex: 0 0 2.5in; }
 </style>
 </head>
 <body>
@@ -210,183 +226,183 @@
 
 {# ── Parties ── #}
 <h2 class="section-header">Parties</h2>
-<table class="field-grid">
+<div class="field-grid">
   {% if is_loan_in %}
   {% if lender_name or loan_purpose %}
-  <tr>
+  <div class="row">
     {% if lender_name %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Lender</div>
       <div class="field-value">{{ lender_name }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if loan_purpose %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Purpose</div>
       <div class="field-value">{{ loan_purpose }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if exhibition_name or exhibition_venue %}
-  <tr>
+  <div class="row">
     {% if exhibition_name %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Exhibition</div>
       <div class="field-value">{{ exhibition_name }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if exhibition_venue %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Venue</div>
       <div class="field-value">{{ exhibition_venue }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% else %}
   {% if borrower_name or loan_purpose %}
-  <tr>
+  <div class="row">
     {% if borrower_name %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Borrower</div>
       <div class="field-value">{{ borrower_name }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if loan_purpose %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Purpose</div>
       <div class="field-value">{{ loan_purpose }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if exhibition_title or venue_name %}
-  <tr>
+  <div class="row">
     {% if exhibition_title %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Exhibition</div>
       <div class="field-value">{{ exhibition_title }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if venue_name %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Venue</div>
       <div class="field-value">{{ venue_name }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% endif %}
   {% if status %}
-  <tr>
-    <td class="field">
+  <div class="row">
+    <div class="field">
       <div class="field-label">Status</div>
       <div class="field-value">{{ status }}</div>
-    </td>
-    <td></td>
-  </tr>
+    </div>
+    <div></div>
+  </div>
   {% endif %}
-</table>
+</div>
 
 {# ── Dates ── #}
 <h2 class="section-header">Dates</h2>
-<table class="field-grid">
+<div class="field-grid">
   {% if request_date or approval_date %}
-  <tr>
+  <div class="row">
     {% if request_date %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Request Date</div>
       <div class="field-value">{{ request_date }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if approval_date %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Approval Date</div>
       <div class="field-value">{{ approval_date }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if loan_start_date or loan_end_date %}
-  <tr>
+  <div class="row">
     {% if loan_start_date %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Start Date</div>
       <div class="field-value">{{ loan_start_date }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if loan_end_date %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">End Date</div>
       <div class="field-value">{{ loan_end_date }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if received_dispatched_date or actual_return_date %}
-  <tr>
+  <div class="row">
     {% if received_dispatched_date %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">{{ received_dispatched_label }}</div>
       <div class="field-value">{{ received_dispatched_date }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if actual_return_date %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Returned</div>
       <div class="field-value">{{ actual_return_date }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
-</table>
+</div>
 
 {# ── Insurance & Shipping ── #}
 <h2 class="section-header">Insurance &amp; Shipping</h2>
-<table class="field-grid">
+<div class="field-grid">
   {% if insurance_value or insurance_currency %}
-  <tr>
+  <div class="row">
     {% if insurance_value %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Insurance Value</div>
       <div class="field-value">{{ insurance_value }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if insurance_currency %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Currency</div>
       <div class="field-value">{{ insurance_currency }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if shipping_method or courier_required %}
-  <tr>
+  <div class="row">
     {% if shipping_method %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Shipping Method</div>
       <div class="field-value">{{ shipping_method }}</div>
-    </td>
+    </div>
     {% endif %}
     {% if courier_required %}
-    <td class="field">
+    <div class="field">
       <div class="field-label">Courier Required</div>
       <div class="field-value">{{ courier_required }}</div>
-    </td>
+    </div>
     {% endif %}
-  </tr>
+  </div>
   {% endif %}
   {% if assigned_to_name %}
-  <tr>
-    <td class="field">
+  <div class="row">
+    <div class="field">
       <div class="field-label">Assigned To</div>
       <div class="field-value">{{ assigned_to_name }}</div>
-    </td>
-    <td></td>
-  </tr>
+    </div>
+    <div></div>
+  </div>
   {% endif %}
-</table>
+</div>
 
 {# ── Conditions & Requirements ── #}
 {% if loan_conditions or special_requirements or display_requirements or photography_restrictions %}
@@ -424,14 +440,15 @@
 <h2 class="section-header">Objects on Loan</h2>
 {% if is_loan_in %}
 <table class="data-table">
+  <caption>Objects on loan</caption>
   <thead>
     <tr>
-      <th>Title / Description</th>
-      <th>Lender No.</th>
-      <th>Artist / Maker</th>
-      <th>Medium</th>
-      <th>Dimensions</th>
-      <th>Insurance Value</th>
+      <th scope="col">Title / Description</th>
+      <th scope="col">Lender No.</th>
+      <th scope="col">Artist / Maker</th>
+      <th scope="col">Medium</th>
+      <th scope="col">Dimensions</th>
+      <th scope="col">Insurance Value</th>
     </tr>
   </thead>
   <tbody>
@@ -449,12 +466,13 @@
 </table>
 {% else %}
 <table class="data-table">
+  <caption>Objects on loan</caption>
   <thead>
     <tr>
-      <th>Object No.</th>
-      <th>Name</th>
-      <th>Insurance Value</th>
-      <th>Credit Line</th>
+      <th scope="col">Object No.</th>
+      <th scope="col">Name</th>
+      <th scope="col">Insurance Value</th>
+      <th scope="col">Credit Line</th>
     </tr>
   </thead>
   <tbody>
@@ -475,31 +493,31 @@
 {% if loan_agreement_reference or loan_agreement_date %}
 <div class="keep-together">
   <h2 class="section-header">Agreement</h2>
-  <table class="field-grid">
-    <tr>
+  <div class="field-grid">
+    <div class="row">
       {% if loan_agreement_reference %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Agreement Reference</div>
         <div class="field-value">{{ loan_agreement_reference }}</div>
-      </td>
+      </div>
       {% endif %}
       {% if loan_agreement_date %}
-      <td class="field">
+      <div class="field">
         <div class="field-label">Agreement Date</div>
         <div class="field-value">{{ loan_agreement_date }}</div>
-      </td>
+      </div>
       {% endif %}
-    </tr>
+    </div>
     {% if loan_agreement_signed_date %}
-    <tr>
-      <td class="field">
+    <div class="row">
+      <div class="field">
         <div class="field-label">Signed Date</div>
         <div class="field-value">{{ loan_agreement_signed_date }}</div>
-      </td>
-      <td></td>
-    </tr>
+      </div>
+      <div></div>
+    </div>
     {% endif %}
-  </table>
+  </div>
 </div>
 {% endif %}
 
@@ -516,26 +534,26 @@
 {# ── Signatures ── #}
 <hr class="section-divider" style="margin-top: 24pt;">
 <h2 class="section-header">Signatures</h2>
-<table class="signature-block">
-  <tr>
-    <td>
+<div class="signature-block">
+  <div class="row">
+    <div>
       <div class="sig-role">{{ sig_party_1_role }}</div>
       <div class="sig-name">{{ sig_party_1_name }}</div>
       <div class="sig-line"></div>
       <div class="sig-label">Signature</div>
       <div class="sig-line"></div>
       <div class="sig-label">Date</div>
-    </td>
-    <td>
+    </div>
+    <div>
       <div class="sig-role">{{ sig_party_2_role }}</div>
       <div class="sig-name">{{ sig_party_2_name }}</div>
       <div class="sig-line"></div>
       <div class="sig-label">Signature</div>
       <div class="sig-line"></div>
       <div class="sig-label">Date</div>
-    </td>
-  </tr>
-</table>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>

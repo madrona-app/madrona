@@ -5,7 +5,7 @@
  * Renderer: fetches from Discover search API and renders a mini object grid.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useId } from 'react';
 import Checkbox from '../../../../components/Checkbox';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -60,6 +60,7 @@ const COLUMN_OPTIONS = [2, 3, 4] as const;
 // =============================================================================
 
 export function CollectionGridEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const filters = (content.filters as Filters) || {};
   const limit = (content.limit as number) ?? 12;
   const columns = (content.columns as number) ?? 3;
@@ -118,10 +119,10 @@ export function CollectionGridEditor({ content, onChange }: BlockEditorComponent
       {/* Display settings */}
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-max-objects`} className="block text-sm font-medium text-ink mb-1">
             Max Objects
           </label>
-          <input
+          <input id={`${fieldId}-max-objects`}
             type="number"
             min={1}
             max={100}
@@ -133,14 +134,15 @@ export function CollectionGridEditor({ content, onChange }: BlockEditorComponent
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <span id={`${fieldId}-columns-group`} className="block text-sm font-medium text-ink mb-1">
             Columns
-          </label>
-          <div className="flex gap-2">
+          </span>
+          <div role="group" aria-labelledby={`${fieldId}-columns-group`} className="flex gap-2">
             {COLUMN_OPTIONS.map((n) => (
               <button
                 key={n}
                 type="button"
+                aria-pressed={columns === n}
                 onClick={() => onChange({ ...content, columns: n })}
                 className={cn(
                   'px-3 py-1.5 text-sm rounded-lg border transition-colors',
@@ -155,8 +157,8 @@ export function CollectionGridEditor({ content, onChange }: BlockEditorComponent
           </div>
         </div>
         <div>
-          <label className="flex items-center gap-2 text-sm text-ink cursor-pointer mt-6">
-            <Checkbox
+          <label htmlFor={`${fieldId}-show-facets`} className="flex items-center gap-2 text-sm text-ink cursor-pointer mt-6">
+            <Checkbox id={`${fieldId}-show-facets`}
               checked={showFacets}
               onChange={(e) => onChange({ ...content, show_facets: e.target.checked })}
             />

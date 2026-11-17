@@ -32,6 +32,7 @@ from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.fastapi_app.integrity_errors import integrity_http_error
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_permission
 from app.models import CollectionObject, Valuation, ReproductionRequest
@@ -214,6 +215,9 @@ def create_valuation(
     if not body.get("valuation_date"):
         raise HTTPException(status_code=400, detail="Missing: valuation_date")
 
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, Valuation, body)
+
     object_uuid = parse_uuid_or_raise(body["object_id"])
 
     obj = db.query(CollectionObject).filter(
@@ -242,9 +246,9 @@ def create_valuation(
             db, org_id, body, auth.user_id, open_approval=True
         )
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="This valuation may already exist")
+        raise integrity_http_error(exc, "This valuation may already exist") from None
 
     db.refresh(valuation)
     return _serialize_valuation(
@@ -294,6 +298,9 @@ def update_valuation(
     ).first()
     if not valuation:
         raise HTTPException(status_code=404, detail="Valuation not found")
+
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, Valuation, body, current=valuation)
 
     updatable = {
         "valuation_type", "valuation_currency", "valuation_date",
@@ -432,6 +439,9 @@ def create_reproduction_request(
     if not body.get("reproduction_type"):
         raise HTTPException(status_code=400, detail="Missing: reproduction_type")
 
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, ReproductionRequest, body)
+
     # Validate optional UUID inputs up front so a malformed id is a 400, not a
     # 500 from the create path (parity with prior behavior).
     if body.get("use_request_id"):
@@ -447,9 +457,9 @@ def create_reproduction_request(
     try:
         rr = _create_reproduction_request(db, org_id, body, auth.user_id, open_approval=True)
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="A request with this number may already exist")
+        raise integrity_http_error(exc, "A request with this number may already exist") from None
 
     db.refresh(rr)
     return _serialize_reproduction_request(rr)
@@ -488,6 +498,9 @@ def update_reproduction_request(
     ).first()
     if not rr:
         raise HTTPException(status_code=404, detail="Reproduction request not found")
+
+    from app.services.lookup_fields import check_lookup_values
+    check_lookup_values(db, org_id, ReproductionRequest, body, current=rr)
 
     updatable = {
         "requester_name", "requester_institution", "requester_email", "requester_phone",

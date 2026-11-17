@@ -27,7 +27,7 @@ export default function AuthLayout({ children, title, subtitle }: AuthLayoutProp
   }, []);
 
   return (
-    <div className="min-h-screen bg-stone/40 flex items-center justify-center px-4 py-12">
+    <main className="min-h-screen bg-stone/40 flex items-center justify-center px-4 py-12">
       <div className="max-w-md w-full">
         {/* Madrona wordmark */}
         <div className="text-center mb-8">
@@ -45,7 +45,7 @@ export default function AuthLayout({ children, title, subtitle }: AuthLayoutProp
           {children}
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -62,7 +62,6 @@ export function AuthInput({
   required,
   disabled,
   autoComplete,
-  autoFocus,
   readOnly,
   maxLength,
   minLength,
@@ -76,7 +75,6 @@ export function AuthInput({
   required?: boolean;
   disabled?: boolean;
   autoComplete?: string;
-  autoFocus?: boolean;
   readOnly?: boolean;
   maxLength?: number;
   minLength?: number;
@@ -98,7 +96,6 @@ export function AuthInput({
         required={required}
         disabled={disabled}
         autoComplete={autoComplete}
-        autoFocus={autoFocus}
         readOnly={readOnly}
         maxLength={maxLength}
         minLength={minLength}
@@ -170,8 +167,9 @@ export function AuthLink({
  * Error message display for auth forms.
  */
 export function AuthError({ message }: { message: string }) {
+  // role="alert" so the error is announced when it appears after a submit.
   return (
-    <div className="bg-semantic-error/10 border border-semantic-error/30 text-semantic-error px-4 py-3 rounded-institutional text-sm">
+    <div role="alert" className="bg-semantic-error/10 border border-semantic-error/30 text-semantic-error px-4 py-3 rounded-institutional text-sm">
       {message}
     </div>
   );
@@ -182,7 +180,7 @@ export function AuthError({ message }: { message: string }) {
  */
 export function AuthSuccess({ message }: { message: string }) {
   return (
-    <div className="bg-semantic-success/10 border border-semantic-success/30 text-semantic-success px-4 py-3 rounded-institutional text-sm">
+    <div role="status" className="bg-semantic-success/10 border border-semantic-success/30 text-semantic-success px-4 py-3 rounded-institutional text-sm">
       {message}
     </div>
   );

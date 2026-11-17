@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useId, useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -51,10 +51,11 @@ function Toggle({
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
           disabled={disabled}
-          className="sr-only"
+          role="switch"
+          className="sr-only peer"
         />
         <div
-          className={`w-10 h-6 rounded-full transition-colors ${
+          className={`w-10 h-6 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-bark/30 peer-focus-visible:ring-offset-2 ${
             checked ? 'bg-forest' : 'bg-lichen'
           } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
@@ -114,6 +115,7 @@ export default function MediaAIConfigPage() {
   const { orgId } = useParams<{ orgId: string }>();
   const { activeOrganizationId } = useOrganization();
   const organizationId = orgId || activeOrganizationId;
+  const fid = useId();
   const queryClient = useQueryClient();
   const { hasPermission } = usePermissions();
   const canEdit = hasPermission('media.admin');
@@ -436,11 +438,12 @@ export default function MediaAIConfigPage() {
           </div>
           <div className="px-6 py-5 space-y-5">
             <div>
-              <label className="block text-sm font-medium text-ink mb-2">
+              <label htmlFor={`${fid}-min-label-confidence`} className="block text-sm font-medium text-ink mb-2">
                 Minimum Label Confidence
               </label>
               <div className="flex items-center gap-4">
                 <input
+                  id={`${fid}-min-label-confidence`}
                   type="range"
                   min="0.5"
                   max="0.99"
@@ -462,11 +465,12 @@ export default function MediaAIConfigPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-ink mb-2">
+              <label htmlFor={`${fid}-min-text-confidence`} className="block text-sm font-medium text-ink mb-2">
                 Minimum Text Confidence
               </label>
               <div className="flex items-center gap-4">
                 <input
+                  id={`${fid}-min-text-confidence`}
                   type="range"
                   min="0.5"
                   max="0.99"
@@ -485,10 +489,11 @@ export default function MediaAIConfigPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-ink mb-2">
+              <label htmlFor={`${fid}-max-labels`} className="block text-sm font-medium text-ink mb-2">
                 Max Labels per Image
               </label>
               <input
+                id={`${fid}-max-labels`}
                 type="number"
                 min="10"
                 max="100"
@@ -521,12 +526,13 @@ export default function MediaAIConfigPage() {
           </div>
           <div className="px-6 py-5 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-ink mb-2">
+              <label htmlFor={`${fid}-monthly-budget`} className="block text-sm font-medium text-ink mb-2">
                 Monthly Budget (USD)
               </label>
               <div className="flex items-center gap-2">
                 <span className="text-accessible-gray">$</span>
                 <input
+                  id={`${fid}-monthly-budget`}
                   type="number"
                   min="0"
                   step="1"

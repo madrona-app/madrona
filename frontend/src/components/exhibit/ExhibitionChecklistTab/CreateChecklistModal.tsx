@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { Loader2, ClipboardList } from 'lucide-react';
 import { apiFetch } from '../../../lib/apiClient';
 import type { ChecklistTemplate } from './types';
 import { logger } from '../../../lib/logger';
 import { MadronaLoader } from '../../ui/MadronaLoader';
 import { ModalPortal } from '../../ModalPortal';
+import { useAccessibleModal, getModalAriaProps } from '../../../hooks/useAccessibleModal';
 
 interface CreateChecklistModalProps {
   isOpen: boolean;
@@ -21,11 +22,17 @@ export function CreateChecklistModal({
   onCreateBlank,
   organizationId,
 }: CreateChecklistModalProps) {
+  const fieldId = useId();
   const [templates, setTemplates] = useState<ChecklistTemplate[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [blankName, setBlankName] = useState('');
   const [mode, setMode] = useState<'template' | 'blank'>('template');
+  const { modalRef, titleId } = useAccessibleModal({
+    isOpen,
+    onClose,
+    titlePrefix: 'create-checklist',
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -69,16 +76,23 @@ export function CreateChecklistModal({
     <ModalPortal>
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="fixed inset-0 bg-ink/30" onClick={onClose} />
-        <div className="relative bg-parchment rounded-lg shadow-xl w-full max-w-lg">
+        {/* Backdrop: mouse dismiss; Escape closes via useAccessibleModal */}
+        <div className="fixed inset-0 bg-ink/30" aria-hidden="true" onClick={onClose} />
+        <div
+          ref={modalRef}
+          {...getModalAriaProps(titleId)}
+          className="relative bg-parchment rounded-lg shadow-xl w-full max-w-lg"
+        >
           <div className="px-6 py-4 border-b border-lichen">
-            <h2 className="text-lg font-semibold text-ink">Create Checklist</h2>
+            <h2 id={titleId} className="text-lg font-semibold text-ink">Create Checklist</h2>
           </div>
 
           <div className="p-6">
             {/* Mode toggle */}
             <div className="flex gap-2 mb-6">
               <button
+                type="button"
+                aria-pressed={mode === 'template'}
                 onClick={() => setMode('template')}
                 className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg border ${
                   mode === 'template'
@@ -89,6 +103,8 @@ export function CreateChecklistModal({
                 From Template
               </button>
               <button
+                type="button"
+                aria-pressed={mode === 'blank'}
                 onClick={() => setMode('blank')}
                 className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg border ${
                   mode === 'blank'
@@ -127,7 +143,7 @@ export function CreateChecklistModal({
                   </div>
                 ) : (
                   <div className="text-center py-8 text-archive">
-                    <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-50" aria-hidden="true" />
                     <p>No published templates available.</p>
                     <p className="text-sm mt-1">Create a blank checklist or add templates first.</p>
                   </div>
@@ -137,10 +153,10 @@ export function CreateChecklistModal({
 
             {mode === 'blank' && (
               <div>
-                <label className="block text-sm font-medium text-ink mb-2">
+                <label htmlFor={`${fieldId}-checklist-name`} className="block text-sm font-medium text-ink mb-2">
                   Checklist Name
                 </label>
-                <input
+                <input id={`${fieldId}-checklist-name`}
                   type="text"
                   value={blankName}
                   onChange={(e) => setBlankName(e.target.value)}
@@ -152,7 +168,7 @@ export function CreateChecklistModal({
                   disabled={creating}
                   className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 bg-bark text-parchment rounded-lg hover:bg-copper-dark hover:text-parchment disabled:opacity-50"
                 >
-                  {creating && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {creating && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
                   Create Checklist
                 </button>
               </div>

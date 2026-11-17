@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useAccessibleModal, getModalAriaProps } from '../../hooks/useAccessibleModal';
 import Checkbox from '../../components/Checkbox';
 import { useParams, Navigate } from 'react-router-dom';
 import { Users, UserPlus, Mail, Shield, Ban, RotateCcw, X, AlertTriangle, Settings2 } from 'lucide-react';
@@ -73,6 +74,12 @@ export default function OrganizationUsersPage() {
 
   // Modals
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const closeInviteModal = useCallback(() => setShowInviteModal(false), []);
+  const { modalRef: inviteModalRef, titleId: inviteModalTitleId } = useAccessibleModal({
+    isOpen: showInviteModal,
+    onClose: closeInviteModal,
+    titlePrefix: 'invite-user',
+  });
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [showReactivateModal, setShowReactivateModal] = useState(false);
@@ -527,11 +534,15 @@ export default function OrganizationUsersPage() {
       {/* Invite User Modal */}
       {showInviteModal && (
         <div className="fixed inset-0 bg-ink/50 flex items-center justify-center z-50">
-          <div className="bg-parchment rounded-lg border border-lichen p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div
+            ref={inviteModalRef}
+            {...getModalAriaProps(inviteModalTitleId)}
+            className="bg-parchment rounded-lg border border-lichen p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto"
+          >
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-serif font-bold text-ink">Invite User</h2>
-              <button onClick={() => setShowInviteModal(false)} className="text-archive hover:text-archive" aria-label="Close invite modal">
-                <X size={24} />
+              <h2 id={inviteModalTitleId} className="text-xl font-serif font-bold text-ink">Invite User</h2>
+              <button type="button" onClick={() => setShowInviteModal(false)} className="text-archive hover:text-archive" aria-label="Close invite modal">
+                <X size={24} aria-hidden="true" />
               </button>
             </div>
             <form onSubmit={handleInviteUser}>
@@ -568,8 +579,9 @@ export default function OrganizationUsersPage() {
 
                 {/* Organization Admin Toggle */}
                 <div className="border border-semantic-warning/30 bg-semantic-warning/10 rounded-lg p-4">
-                  <label className="flex items-center gap-3 cursor-pointer">
+                  <label htmlFor="organization-users-organization-administrator-full-access" className="flex items-center gap-3 cursor-pointer">
                     <Checkbox
+                      id="organization-users-organization-administrator-full-access"
                       checked={inviteForm.is_admin}
                       onChange={(e) =>
                         setInviteForm({
@@ -579,25 +591,25 @@ export default function OrganizationUsersPage() {
                         })
                       }
                     />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <Shield size={18} className="text-semantic-warning" />
+                    <span>
+                      <span className="flex items-center gap-2">
+                        <Shield size={18} className="text-semantic-warning" aria-hidden="true" />
                         <span className="font-medium text-semantic-warning">Organization Administrator</span>
-                      </div>
-                      <p className="text-xs text-semantic-warning mt-0.5">
+                      </span>
+                      <span className="block text-xs text-semantic-warning mt-0.5">
                         Full access to all apps and organization settings
-                      </p>
-                    </div>
+                      </span>
+                    </span>
                   </label>
                 </div>
 
                 {/* App-specific Roles */}
                 {!inviteForm.is_admin && (
-                  <div>
-                    <label className="block text-sm font-medium text-ink mb-2">
+                  <fieldset aria-describedby="invite-app-roles-hint">
+                    <legend className="block text-sm font-medium text-ink mb-2">
                       App Access & Roles
-                    </label>
-                    <p className="text-xs text-archive mb-3">
+                    </legend>
+                    <p id="invite-app-roles-hint" className="text-xs text-archive mb-3">
                       Select which apps this user can access and their role in each
                     </p>
                     <div className="space-y-2">
@@ -613,11 +625,15 @@ export default function OrganizationUsersPage() {
                             className="flex items-center gap-3 p-3 border border-lichen rounded-lg"
                           >
                             <div className="flex-1">
-                              <span className="font-medium text-ink capitalize">
+                              <label
+                                htmlFor={`invite-app-role-${appKey}`}
+                                className="font-medium text-ink capitalize"
+                              >
                                 {appKey}
-                              </span>
+                              </label>
                             </div>
                             <select
+                              id={`invite-app-role-${appKey}`}
                               value={currentRoleId}
                               onChange={(e) => {
                                 const newAppRoles = { ...inviteForm.app_roles };
@@ -641,7 +657,7 @@ export default function OrganizationUsersPage() {
                         );
                       })}
                     </div>
-                  </div>
+                  </fieldset>
                 )}
 
                 <div className="bg-semantic-info/10 border border-semantic-info/30 rounded-lg p-3 text-sm text-semantic-info">

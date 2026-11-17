@@ -564,7 +564,6 @@ def _get_constituent_fk_columns():
         (LoanOut, "borrower_id"),
         (ConservationTreatment, "conservator_id"),
         (ObjectExit, "recipient_id"),
-        (ObjectExit, "courier_id"),
         (Shipment, "ship_from_contact_id"),
         (Shipment, "ship_to_contact_id"),
         (ShipmentLeg, "carrier_id"),
@@ -939,8 +938,19 @@ class ConstituentService:
         # ------------------------------------------------------------------
         # 2. Re-point direct FK columns on procedure tables
         # ------------------------------------------------------------------
+        # The UPDATE bypasses the audit listener, so tracked records get their
+        # "<role> changed from <secondary> to <primary>" event written first.
+        from app.services.entity_audit import TRACKED_ENTITIES
+        from app.services.entity_audit_bulk import record_entity_updates
+
         for model_class, column_name in _get_constituent_fk_columns():
             col = getattr(model_class, column_name)
+            if model_class.__name__ in TRACKED_ENTITIES:
+                affected = self.session.query(model_class).filter(col == secondary_id).all()
+                record_entity_updates(
+                    self.session, model_class.__name__,
+                    [(row, [(column_name, secondary.name, primary.name)]) for row in affected],
+                )
             self.session.query(model_class).filter(
                 col == secondary_id,
             ).update({column_name: primary_id}, synchronize_session="fetch")

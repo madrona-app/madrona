@@ -257,6 +257,20 @@ export const products: Product[] = [
             icon: BookOpen,
             requiresPermission: 'collections.view',
           },
+          {
+            id: 'library-catalog',
+            label: 'Library',
+            path: '/organizations/:orgId/collections/library',
+            icon: Library,
+            requiresPermission: 'collections.view',
+          },
+          {
+            id: 'ead-import',
+            label: 'Import Finding Aid (EAD)',
+            path: '/organizations/:orgId/collections/ead-import',
+            icon: BookOpen,
+            requiresPermission: 'collections.create',
+          },
         ],
       },
       // ============================================================================
@@ -436,6 +450,13 @@ export const products: Product[] = [
             label: 'Use Requests',
             path: '/organizations/:orgId/collections/use-requests',
             icon: FileQuestion,
+            requiresPermission: 'use_requests.view',
+          },
+          {
+            id: 'research-visits',
+            label: 'Research Visits',
+            path: '/organizations/:orgId/collections/research-visits',
+            icon: BookOpen,
             requiresPermission: 'use_requests.view',
           },
           {
@@ -872,6 +893,20 @@ export const adminItems: AdminItem[] = [
     label: 'Change History',
     path: '/organizations/:orgId/admin/entity-audit',
     icon: History,
+    requiresPermission: 'org.view_audit_logs',
+  },
+  {
+    id: 'security-changes',
+    label: 'Security Changes',
+    path: '/organizations/:orgId/admin/security-changes',
+    icon: ShieldCheck,
+    requiresPermission: 'org.view_audit_logs',
+  },
+  {
+    id: 'settings-changes',
+    label: 'Settings Changes',
+    path: '/organizations/:orgId/admin/settings-changes',
+    icon: Settings,
     requiresPermission: 'org.view_audit_logs',
   },
   {

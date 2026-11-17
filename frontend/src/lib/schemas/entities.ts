@@ -68,7 +68,7 @@ export const CollectionObjectSchema = z.object({
     term: z.string().nullish(),
     value_key: z.string().nullish(),
   })).nullish(),
-  object_status: z.string().default('active'),
+  object_status: z.string().default('pending'),
   is_discoverable: z.boolean().nullable().optional().default(false),
   discoverable_at: z.string().nullable().optional(),
 
@@ -126,6 +126,10 @@ export const CollectionObjectSchema = z.object({
   technical_attributes: z.any().nullable().optional(),
   facture_description: z.string().nullable().optional(),
   watermarks: z.any().nullable().optional(),
+  parent_object_id: z.string().nullable().optional(),
+  sibling_order: z.number().nullable().optional(),
+  cataloging_status: z.string().nullable().optional(),
+  external_links: z.array(z.object({ url: z.string(), label: z.string().optional().default(''), link_type: z.string().optional() })).nullable().optional(),
   components: z.any().nullable().optional(),
   condition_rating: z.string().nullable().optional(),  // derived from latest condition report
   condition_date: z.string().nullable().optional(),    // derived from latest condition report
@@ -668,6 +672,8 @@ export const CollectionsSearchRequestSchema = z.object({
   include_facets: z.boolean().nullable().optional(),
   facet_size: z.number().nullable().optional(),
   highlight: z.boolean().nullable().optional(),
+  /** Include deaccessioned records when the organization hides them from search. */
+  include_deaccessioned: z.boolean().nullable().optional(),
 });
 
 export type CollectionsSearchRequest = z.infer<typeof CollectionsSearchRequestSchema>;

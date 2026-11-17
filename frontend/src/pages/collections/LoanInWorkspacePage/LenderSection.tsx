@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Building2, CheckCircle, Search, User, X } from 'lucide-react';
 import {
   WorkspaceSection,
@@ -7,6 +8,8 @@ import {
 import { SectionCompletionBadge } from '../../../components/collections/SectionCompletionBadge';
 import type { SectionCompletion } from '../../../lib/procedureValidation';
 import type { FormData } from './types';
+import { useRequiredField } from '../../../components/workspace/requiredFields';
+import { RequiredFieldMessage } from '../../../components/workspace/RequiredFieldsContext';
 
 interface LenderSectionProps {
   formData: FormData;
@@ -43,6 +46,10 @@ export function LenderSection({
   setShowAuthorizerSelector,
   isRestricted,
 }: LenderSectionProps) {
+  const uid = useId();
+  const { register: lenderAuthorizerRegister, error: lenderAuthorizerError } = useRequiredField('lender_authorizer_id', false, 'lender-authorization', formData.lender_authorizer_id);
+  const { register: lenderContactRegister, error: lenderContactError } = useRequiredField('lender_contact_id', false, 'lender', formData.lender_contact_id);
+  const { register: lenderRegister, error: lenderError } = useRequiredField('lender_id', false, 'lender', formData.lender_id);
   return (
     <>
       {/* Lender Information */}
@@ -61,10 +68,10 @@ export function LenderSection({
         {isRestricted('lender_contact') ? (
           <RestrictedFieldPlaceholder label="Lender" />
         ) : (
-          <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">
+          <div role="group" aria-labelledby={`${uid}-lender`}>
+            <span id={`${uid}-lender`} className="block text-sm font-medium text-ink mb-1.5">
               Lender <span className="text-semantic-error">*</span>
-            </label>
+            </span>
             {isEditing ? (
               <div className="flex items-center gap-2">
                 {formData.lender_id && lenderContact ? (
@@ -78,13 +85,16 @@ export function LenderSection({
                       type="button"
                       onClick={() => updateField('lender_id', '')}
                       className="ml-auto p-1 text-archive hover:text-semantic-error"
+                      aria-label="Clear lender"
                     >
-                      <X size={14} />
+                      <X size={14} aria-hidden="true" />
                     </button>
                   </div>
                 ) : (
                   <button
                     type="button"
+                    ref={lenderRegister}
+                    aria-describedby={lenderError?.id}
                     onClick={() => setShowLenderSelector(true)}
                     className="flex-1 flex items-center gap-2 px-3 py-2 border border-dashed border-lichen rounded-lg text-sm text-archive hover:border-bark hover:text-bark transition-colors"
                   >
@@ -95,8 +105,11 @@ export function LenderSection({
                 {formData.lender_id && (
                   <button
                     type="button"
+                    ref={lenderRegister}
+                    aria-describedby={lenderError?.id}
                     onClick={() => setShowLenderSelector(true)}
                     className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
+                    aria-label="Change lender"
                   >
                     Change
                   </button>
@@ -116,6 +129,7 @@ export function LenderSection({
                 )}
               </div>
             )}
+            {lenderError && <RequiredFieldMessage error={lenderError} />}
           </div>
         )}
 
@@ -123,10 +137,10 @@ export function LenderSection({
         {isRestricted('lender_contact') ? (
           <RestrictedFieldPlaceholder label="Lender's Contact Person" />
         ) : (
-          <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">
+          <div role="group" aria-labelledby={`${uid}-lender-s-contact-person`}>
+            <span id={`${uid}-lender-s-contact-person`} className="block text-sm font-medium text-ink mb-1.5">
               Lender's Contact Person
-            </label>
+            </span>
             {isEditing ? (
               <div className="flex items-center gap-2">
                 {formData.lender_contact_id && lenderContactPerson ? (
@@ -140,13 +154,16 @@ export function LenderSection({
                       type="button"
                       onClick={() => updateField('lender_contact_id', '')}
                       className="ml-auto p-1 text-archive hover:text-semantic-error"
+                      aria-label="Clear lender's contact person"
                     >
-                      <X size={14} />
+                      <X size={14} aria-hidden="true" />
                     </button>
                   </div>
                 ) : (
                   <button
                     type="button"
+                    ref={lenderContactRegister}
+                    aria-describedby={lenderContactError?.id}
                     onClick={() => setShowLenderContactSelector(true)}
                     className="flex-1 flex items-center gap-2 px-3 py-2 border border-dashed border-lichen rounded-lg text-sm text-archive hover:border-bark hover:text-bark transition-colors"
                   >
@@ -157,8 +174,11 @@ export function LenderSection({
                 {formData.lender_contact_id && (
                   <button
                     type="button"
+                    ref={lenderContactRegister}
+                    aria-describedby={lenderContactError?.id}
                     onClick={() => setShowLenderContactSelector(true)}
                     className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
+                    aria-label="Change lender's contact person"
                   >
                     Change
                   </button>
@@ -178,6 +198,7 @@ export function LenderSection({
                 )}
               </div>
             )}
+            {lenderContactError && <RequiredFieldMessage error={lenderContactError} />}
           </div>
         )}
       </WorkspaceSection>
@@ -200,10 +221,10 @@ export function LenderSection({
           </p>
         </div>
         <div className="grid grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-ink mb-1.5">
+          <div role="group" aria-labelledby={`${uid}-authorizer`}>
+            <span id={`${uid}-authorizer`} className="block text-sm font-medium text-ink mb-1.5">
               Authorizer
-            </label>
+            </span>
             {isEditing ? (
               <div className="flex items-center gap-2">
                 {formData.lender_authorizer_id && authorizerContact ? (
@@ -217,13 +238,16 @@ export function LenderSection({
                       type="button"
                       onClick={() => updateField('lender_authorizer_id', '')}
                       className="ml-auto p-1 text-archive hover:text-semantic-error"
+                      aria-label="Clear authorizer"
                     >
-                      <X size={14} />
+                      <X size={14} aria-hidden="true" />
                     </button>
                   </div>
                 ) : (
                   <button
                     type="button"
+                    ref={lenderAuthorizerRegister}
+                    aria-describedby={lenderAuthorizerError?.id}
                     onClick={() => setShowAuthorizerSelector(true)}
                     className="flex-1 flex items-center gap-2 px-3 py-2 border border-dashed border-lichen rounded-lg text-sm text-archive hover:border-bark hover:text-bark transition-colors"
                   >
@@ -234,8 +258,11 @@ export function LenderSection({
                 {formData.lender_authorizer_id && (
                   <button
                     type="button"
+                    ref={lenderAuthorizerRegister}
+                    aria-describedby={lenderAuthorizerError?.id}
                     onClick={() => setShowAuthorizerSelector(true)}
                     className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
+                    aria-label="Change authorizer"
                   >
                     Change
                   </button>
@@ -255,8 +282,10 @@ export function LenderSection({
                 )}
               </div>
             )}
+            {lenderAuthorizerError && <RequiredFieldMessage error={lenderAuthorizerError} />}
           </div>
           <EditableField
+            name="lender_authorization_date"
             value={formData.lender_authorization_date}
             label="Authorization Date"
             isEditing={isEditing}

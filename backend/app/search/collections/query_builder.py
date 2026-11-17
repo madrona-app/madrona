@@ -293,6 +293,9 @@ class CollectionsQueryBuilder:
         if filters.object_status:
             clauses.append({"terms": {"object_status": filters.object_status}})
 
+        if filters.exclude_object_status:
+            clauses.append({"bool": {"must_not": [{"terms": {"object_status": filters.exclude_object_status}}]}})
+
         if filters.location_id:
             clauses.append({"terms": {"current_location.location_id": filters.location_id}})
 

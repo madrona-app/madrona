@@ -1,5 +1,8 @@
+import { useId } from 'react';
 import { ShieldCheck, User, Search, X } from 'lucide-react';
 import { WorkspaceSection, EditableField } from '../workspace';
+import { useRequiredField } from '../workspace/requiredFields';
+import { RequiredFieldMessage } from '../workspace/RequiredFieldsContext';
 
 interface AuthorizationSectionProps {
   /** Current authorizer constituent ID (empty string = not set) */
@@ -51,6 +54,8 @@ export function AuthorizationSection({
   title = 'Authorization',
   sectionId = 'authorization',
 }: AuthorizationSectionProps) {
+  const authorizerLabelId = useId();
+  const { register: authorizerRegister, error: authorizerError } = useRequiredField('authorizer_id', false, sectionId, authorizerId || undefined);
   return (
     <WorkspaceSection
       id={sectionId}
@@ -63,15 +68,15 @@ export function AuthorizationSection({
     >
       <div className="space-y-4">
         {/* Authorizer — constituent selector */}
-        <div>
-          <label className="block text-sm font-medium text-ink mb-1.5">
+        <div role="group" aria-labelledby={authorizerLabelId}>
+          <span id={authorizerLabelId} className="block text-sm font-medium text-ink mb-1.5">
             Authorizer
-          </label>
+          </span>
           {isEditing ? (
             <div className="flex items-center gap-2">
               {authorizerId && authorizerContact ? (
                 <div className="flex-1 flex items-center gap-2 px-3 py-2 border border-lichen rounded-lg bg-parchment">
-                  <User size={16} className="text-archive flex-shrink-0" />
+                  <User size={16} className="text-archive flex-shrink-0" aria-hidden="true" />
                   <span className="text-sm text-ink">{authorizerContact.name}</span>
                   {authorizerContact.organization_name && (
                     <span className="text-xs text-archive">({authorizerContact.organization_name})</span>
@@ -79,25 +84,31 @@ export function AuthorizationSection({
                   <button
                     type="button"
                     onClick={() => onUpdateField('authorizer_id', '')}
-                    className="ml-auto p-1 text-archive hover:text-semantic-error"
+                    aria-label={`Remove authorizer ${authorizerContact.name}`}
+                    className="ml-auto p-1 rounded text-archive hover:text-semantic-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                   >
-                    <X size={14} />
+                    <X size={14} aria-hidden="true" />
                   </button>
                 </div>
               ) : (
                 <button
                   type="button"
+                  ref={authorizerRegister}
+                  aria-describedby={authorizerError?.id}
                   onClick={onOpenAuthorizerSelector}
                   className="flex-1 flex items-center gap-2 px-3 py-2 border border-dashed border-lichen rounded-lg text-sm text-archive hover:border-bark hover:text-bark transition-colors"
                 >
-                  <Search size={16} />
+                  <Search size={16} aria-hidden="true" />
                   Search or create authorizer...
                 </button>
               )}
               {authorizerId && (
                 <button
                   type="button"
+                  ref={authorizerRegister}
+                  aria-describedby={authorizerError?.id}
                   onClick={onOpenAuthorizerSelector}
+                  aria-label="Change authorizer"
                   className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
                 >
                   Change
@@ -118,10 +129,12 @@ export function AuthorizationSection({
               )}
             </div>
           )}
+          {authorizerError && <RequiredFieldMessage error={authorizerError} />}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <EditableField
+            name="authorization_date"
             label="Authorization date"
             value={authorizationDate}
             isEditing={isEditing}
@@ -132,6 +145,7 @@ export function AuthorizationSection({
         </div>
 
         <EditableField
+          name="authorization_note"
           label="Authorization notes"
           value={authorizationNote}
           isEditing={isEditing}

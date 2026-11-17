@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Plus, X } from 'lucide-react';
 
 export function InscriptionsField({
@@ -13,6 +14,7 @@ export function InscriptionsField({
   onAdd: () => void;
   onSave: () => void;
 }) {
+  const groupLabelId = useId();
   if (!isEditing) {
     if (inscriptions.length === 0) return null;
     return (
@@ -28,11 +30,11 @@ export function InscriptionsField({
   }
 
   return (
-    <div>
+    <div role="group" aria-labelledby={groupLabelId}>
       <div className="flex items-center justify-between mb-2">
-        <label className="text-sm font-medium text-ink">Inscriptions</label>
+        <span id={groupLabelId} className="text-sm font-medium text-ink">Inscriptions</span>
         <button type="button" onClick={onAdd} className="text-sm text-bark hover:text-copper-dark flex items-center gap-1">
-          <Plus size={14} />
+          <Plus size={14} aria-hidden="true" />
           Add inscription
         </button>
       </div>
@@ -40,6 +42,7 @@ export function InscriptionsField({
         {inscriptions.map((text, i) => (
           <div key={i} className="flex items-start gap-2">
             <textarea
+              aria-label={`Inscription ${i + 1}`}
               value={text}
               onChange={(e) => {
                 const updated = [...inscriptions];
@@ -57,9 +60,10 @@ export function InscriptionsField({
                 onChange(inscriptions.filter((_, idx) => idx !== i));
                 onSave();
               }}
-              className="p-1 text-archive hover:text-semantic-error mt-1"
+              aria-label={`Remove inscription ${i + 1}`}
+              className="p-1 rounded text-archive hover:text-semantic-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 mt-1"
             >
-              <X size={16} />
+              <X size={16} aria-hidden="true" />
             </button>
           </div>
         ))}

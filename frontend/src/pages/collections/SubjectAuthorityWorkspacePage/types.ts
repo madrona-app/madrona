@@ -14,6 +14,7 @@ export interface FormData {
   aat_id: string;
   iconclass_id: string;
   wikidata_id: string;
+  lcsh_id: string;
   broader_subject_id: string | null;
   description: string;
   notes: string;
@@ -27,6 +28,7 @@ export const defaultFormData: FormData = {
   aat_id: '',
   iconclass_id: '',
   wikidata_id: '',
+  lcsh_id: '',
   broader_subject_id: null,
   description: '',
   notes: '',

@@ -6,7 +6,7 @@
  * type-specific inline editor component.
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect, useId } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -388,6 +388,8 @@ function SortableBlock({
   const config = BLOCK_TYPES[block.block_type];
   const Editor = EDITORS[block.block_type];
   const Icon = config.icon;
+  const panelId = useId();
+  const blockName = `${config.label} block ${index + 1}`;
 
   return (
     <div
@@ -400,19 +402,21 @@ function SortableBlock({
     >
       {/* Block header */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-lichen bg-stone/20">
-        {/* Drag handle */}
+        {/* Drag handle (pointer, or Space + arrow keys via the dnd-kit keyboard sensor;
+            the move up/down buttons below are the simpler keyboard alternative) */}
         <button
           type="button"
           className="shrink-0 cursor-grab active:cursor-grabbing text-archive hover:text-ink touch-none"
           {...attributes}
           {...listeners}
+          aria-label={`Drag to reorder ${blockName}`}
         >
-          <GripVertical size={16} />
+          <GripVertical size={16} aria-hidden="true" />
         </button>
 
         {/* Type indicator */}
         <div className="flex items-center gap-1.5 min-w-0">
-          <Icon size={14} className="shrink-0 text-bark" />
+          <Icon size={14} className="shrink-0 text-bark" aria-hidden="true" />
           <span className="text-sm font-medium text-ink truncate">
             {config.label}
           </span>
@@ -429,9 +433,13 @@ function SortableBlock({
           onClick={onToggleExpand}
           className="p-1 text-archive hover:text-ink rounded transition-colors"
           title={isExpanded ? 'Collapse block' : 'Expand block'}
+          aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${blockName}`}
+          aria-expanded={isExpanded}
+          aria-controls={isExpanded ? panelId : undefined}
         >
           <ChevronRight
             size={14}
+            aria-hidden="true"
             className={cn(
               'transition-transform',
               isExpanded && 'rotate-90',
@@ -446,8 +454,9 @@ function SortableBlock({
           disabled={index === 0}
           className="p-1 text-archive hover:text-ink rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           title="Move up"
+          aria-label={`Move ${blockName} up`}
         >
-          <ChevronUp size={14} />
+          <ChevronUp size={14} aria-hidden="true" />
         </button>
         <button
           type="button"
@@ -455,8 +464,9 @@ function SortableBlock({
           disabled={index === totalBlocks - 1}
           className="p-1 text-archive hover:text-ink rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           title="Move down"
+          aria-label={`Move ${blockName} down`}
         >
-          <ChevronDown size={14} />
+          <ChevronDown size={14} aria-hidden="true" />
         </button>
 
         {/* Delete */}
@@ -465,14 +475,15 @@ function SortableBlock({
           onClick={onDelete}
           className="p-1 text-archive hover:text-semantic-error rounded transition-colors"
           title="Delete block"
+          aria-label={`Delete ${blockName}`}
         >
-          <Trash2 size={14} />
+          <Trash2 size={14} aria-hidden="true" />
         </button>
       </div>
 
       {/* Block editor content */}
       {isExpanded && Editor && (
-        <div className="p-4">
+        <div id={panelId} className="p-4">
           <Editor content={block.content} onChange={onContentChange} organizationId={organizationId} />
         </div>
       )}
@@ -491,60 +502,82 @@ interface AddBlockDropdownProps {
 function AddBlockDropdown({ onSelect }: AddBlockDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const listId = useId();
 
   const handleSelect = useCallback(
     (blockType: BlockType) => {
       onSelect(blockType);
       setIsOpen(false);
+      triggerRef.current?.focus();
     },
     [onSelect],
   );
 
-  // Close on click outside
-  const handleBlur = useCallback((e: React.FocusEvent) => {
-    if (dropdownRef.current && !dropdownRef.current.contains(e.relatedTarget as Node)) {
-      setIsOpen(false);
-    }
-  }, []);
+  // Close when focus leaves the dropdown; Escape closes and returns focus.
+  useEffect(() => {
+    const el = dropdownRef.current;
+    if (!el || !isOpen) return;
+    const onFocusOut = (e: FocusEvent) => {
+      if (!el.contains(e.relatedTarget as Node | null)) setIsOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        setIsOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
+    el.addEventListener('focusout', onFocusOut);
+    el.addEventListener('keydown', onKeyDown);
+    return () => {
+      el.removeEventListener('focusout', onFocusOut);
+      el.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isOpen]);
 
   const blockTypes = Object.entries(BLOCK_TYPES) as [BlockType, BlockTypeConfig][];
 
   return (
-    <div className="relative" ref={dropdownRef} onBlur={handleBlur}>
+    <div className="relative" ref={dropdownRef}>
       <button
+        ref={triggerRef}
         type="button"
+        aria-expanded={isOpen}
+        aria-controls={isOpen ? listId : undefined}
         onClick={() => setIsOpen((prev) => !prev)}
         className="flex items-center gap-2 px-4 py-2.5 w-full border border-dashed border-lichen text-archive rounded-lg hover:border-bark hover:text-bark transition-colors"
       >
-        <Plus size={16} />
+        <Plus size={16} aria-hidden="true" />
         <span className="text-sm">Add Block</span>
       </button>
 
       {isOpen && (
-        <div className="absolute z-40 mt-1 w-full bg-parchment border border-lichen rounded-lg shadow-lg overflow-hidden">
-          <div className="max-h-80 overflow-y-auto">
+        <div id={listId} className="absolute z-40 mt-1 w-full bg-parchment border border-lichen rounded-lg shadow-lg overflow-hidden">
+          <ul className="max-h-80 overflow-y-auto" aria-label="Block types">
             {blockTypes.map(([type, config]) => {
               const Icon = config.icon;
               return (
+                <li key={type}>
                 <button
-                  key={type}
                   type="button"
                   onClick={() => handleSelect(type)}
                   className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-stone/50 transition-colors"
                 >
-                  <Icon size={18} className="shrink-0 text-bark" />
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-ink">
+                  <Icon size={18} className="shrink-0 text-bark" aria-hidden="true" />
+                  <span className="block min-w-0">
+                    <span className="block text-sm font-medium text-ink">
                       {config.label}
-                    </div>
-                    <div className="text-xs text-archive truncate">
+                    </span>
+                    <span className="block text-xs text-archive truncate">
                       {config.description}
-                    </div>
-                  </div>
+                    </span>
+                  </span>
                 </button>
+                </li>
               );
             })}
-          </div>
+          </ul>
         </div>
       )}
     </div>
@@ -671,7 +704,7 @@ export function BlockEditor({ blocks, onChange, organizationId }: BlockEditorPro
     <div className="space-y-3">
       {sortedBlocks.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-archive border border-dashed border-lichen rounded-lg">
-          <Type size={32} className="mb-3 text-archive/50" />
+          <Type size={32} className="mb-3 text-archive/50" aria-hidden="true" />
           <p className="text-sm font-medium mb-1">No content blocks yet</p>
           <p className="text-xs">Add a block below to start building your page</p>
         </div>

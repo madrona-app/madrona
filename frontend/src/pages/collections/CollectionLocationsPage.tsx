@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useId } from 'react';
 import Checkbox from '../../components/Checkbox';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -23,6 +23,7 @@ import { formatNumber } from '@/lib/formatters';
 import type { Location } from '../../lib/schemas';
 import { usePermissions } from '../../hooks/usePermissions';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { RecordHistoryButton } from '../../components/audit/RecordHistoryButton';
 
 const LOCATION_TYPE_ICONS: Record<string, React.ReactNode> = {
   building: <Building2 size={16} />,
@@ -277,6 +278,7 @@ export default function CollectionLocationsPage() {
             />
           ) : selectedLocation ? (
             <LocationDetail
+              organizationId={orgId!}
               location={selectedLocation}
               onUpdate={(data) => updateMutation.mutate({ id: selectedLocation.location_id, data })}
               onDelete={handleDelete}
@@ -334,56 +336,65 @@ function LocationTreeNode({
   return (
     <div>
       <div
-        className={`flex items-center gap-2 px-2 py-1.5 rounded-institutional cursor-pointer group
+        className={`flex items-center gap-2 px-2 py-1.5 rounded-institutional group
                    ${isSelected
                      ? 'bg-azurite/10 text-azurite'
                      : 'hover:bg-stone'
                    }`}
         style={{ paddingLeft: `${depth * 20 + 8}px` }}
-        onClick={() => onSelect(location)}
       >
         {/* Expand/Collapse */}
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleExpanded(location.location_id);
-          }}
-          className={`p-0.5 rounded-institutional hover:bg-lichen ${
+          type="button"
+          onClick={() => toggleExpanded(location.location_id)}
+          aria-expanded={hasChildren ? isExpanded : undefined}
+          aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${location.name}`}
+          tabIndex={hasChildren ? undefined : -1}
+          aria-hidden={hasChildren ? undefined : true}
+          className={`p-0.5 rounded-institutional hover:bg-lichen focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 ${
             hasChildren ? 'visible' : 'invisible'
           }`}
         >
-          {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          {isExpanded ? <ChevronDown size={14} aria-hidden="true" /> : <ChevronRight size={14} aria-hidden="true" />}
         </button>
 
-        {/* Icon */}
-        <span className="text-archive">
-          {LOCATION_TYPE_ICONS[location.location_type] || <MapPin size={16} />}
-        </span>
-
-        {/* Name */}
-        <span className={`flex-1 text-sm ${location.status !== 'active' ? 'text-archive line-through' : 'text-ink'}`}>
-          {location.name}
-        </span>
-
-        {/* Object count */}
-        {location.current_count != null && location.current_count > 0 && (
-          <span className="text-xs text-archive flex items-center gap-1">
-            <Package size={12} />
-            {location.current_count}
+        <button
+          type="button"
+          onClick={() => onSelect(location)}
+          aria-current={isSelected ? 'true' : undefined}
+          className="flex-1 flex items-center gap-2 min-w-0 text-left rounded-institutional cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+        >
+          {/* Icon */}
+          <span className="text-archive" aria-hidden="true">
+            {LOCATION_TYPE_ICONS[location.location_type] || <MapPin size={16} />}
           </span>
-        )}
+
+          {/* Name */}
+          <span className={`flex-1 text-sm ${location.status !== 'active' ? 'text-archive line-through' : 'text-ink'}`}>
+            {location.name}
+            {location.status !== 'active' && <span className="sr-only"> ({location.status})</span>}
+          </span>
+
+          {/* Object count */}
+          {location.current_count != null && location.current_count > 0 && (
+            <span className="text-xs text-archive flex items-center gap-1">
+              <Package size={12} aria-hidden="true" />
+              {location.current_count}
+              <span className="sr-only"> {location.current_count === 1 ? 'object' : 'objects'}</span>
+            </span>
+          )}
+        </button>
 
         {/* Add child button */}
         {canEdit && (
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onAddChild(location.location_id, location.location_type);
-            }}
-            className="opacity-0 group-hover:opacity-100 p-1 text-archive hover:text-ink"
+            type="button"
+            onClick={() => onAddChild(location.location_id, location.location_type)}
+            className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 p-1 text-archive hover:text-ink rounded-institutional focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             title="Add child location"
+            aria-label={`Add child location to ${location.name}`}
           >
-            <Plus size={14} />
+            <Plus size={14} aria-hidden="true" />
           </button>
         )}
       </div>
@@ -412,6 +423,7 @@ function LocationTreeNode({
 
 // Location Detail Component
 function LocationDetail({
+  organizationId,
   location,
   onUpdate,
   onDelete,
@@ -420,6 +432,7 @@ function LocationDetail({
   isUpdating,
   isDeleting,
 }: {
+  organizationId: string;
   location: Location;
   onUpdate: (data: Partial<Location>) => void;
   onDelete: () => void;
@@ -453,6 +466,13 @@ function LocationDetail({
           </span>
           <h3 className="font-serif font-medium text-forest">{location.name}</h3>
         </div>
+        <div className="flex items-center gap-2">
+        <RecordHistoryButton
+          organizationId={organizationId}
+          entityType="location"
+          entityId={location.location_id}
+          recordName={location.name}
+        />
         {canEdit && (
           <div className="flex gap-2">
             <button
@@ -472,6 +492,7 @@ function LocationDetail({
             </button>
           </div>
         )}
+        </div>
       </div>
 
       <dl className="space-y-3 text-sm">
@@ -570,6 +591,7 @@ function LocationForm({
   onCancel: () => void;
   isLoading: boolean;
 }) {
+  const uid = useId();
   // Calculate default type: use initial data, or derive from parent, or empty
   const defaultType = initialData?.location_type || getChildLocationType(parentType || null);
 
@@ -614,10 +636,11 @@ function LocationForm({
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${uid}-name`} className="block text-sm font-medium text-ink mb-1">
             Name *
           </label>
           <input
+            id={`${uid}-name`}
             type="text"
             value={formData.name}
             onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
@@ -627,10 +650,11 @@ function LocationForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${uid}-type`} className="block text-sm font-medium text-ink mb-1">
             Type *
           </label>
           <select
+            id={`${uid}-type`}
             value={formData.location_type}
             onChange={(e) => setFormData(prev => ({ ...prev, location_type: e.target.value as LocationType | '' }))}
             required
@@ -648,10 +672,11 @@ function LocationForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${uid}-security-level`} className="block text-sm font-medium text-ink mb-1">
             Security Level
           </label>
           <input
+            id={`${uid}-security-level`}
             type="text"
             value={formData.security_level}
             onChange={(e) => setFormData(prev => ({ ...prev, security_level: e.target.value }))}
@@ -661,10 +686,11 @@ function LocationForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${uid}-capacity`} className="block text-sm font-medium text-ink mb-1">
             Capacity
           </label>
           <input
+            id={`${uid}-capacity`}
             type="number"
             value={formData.capacity}
             onChange={(e) => setFormData(prev => ({ ...prev, capacity: e.target.value }))}
@@ -697,10 +723,11 @@ function LocationForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${uid}-notes`} className="block text-sm font-medium text-ink mb-1">
             Notes
           </label>
           <textarea
+            id={`${uid}-notes`}
             value={formData.note}
             onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
             rows={3}

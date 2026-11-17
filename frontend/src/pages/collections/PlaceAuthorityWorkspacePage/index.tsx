@@ -1,4 +1,4 @@
-import { useState, useCallback, lazy, Suspense } from 'react';
+import { useState, useCallback, lazy, Suspense, useId } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useWorkspacePage } from '../../../hooks/useWorkspacePage';
@@ -56,6 +56,7 @@ export default function PlaceAuthorityWorkspacePage() {
 }
 
 function PlaceAuthorityWorkspacePageContent() {
+  const uid = useId();
   const { orgId, placeAuthorityId } = useParams<{ orgId: string; placeAuthorityId?: string }>();
 
   const [variantNameInput, setVariantNameInput] = useState('');
@@ -270,11 +271,12 @@ function PlaceAuthorityWorkspacePageContent() {
             {/* Variant Names */}
             {isEditing ? (
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-ink mb-1.5">
+                <label htmlFor={`${uid}-variant-names`} className="block text-sm font-medium text-ink mb-1.5">
                   Variant Names
                 </label>
                 <div className="flex gap-2 mb-2">
                   <input
+                    id={`${uid}-variant-names`}
                     type="text"
                     value={variantNameInput}
                     onChange={(e) => setVariantNameInput(e.target.value)}
@@ -290,9 +292,10 @@ function PlaceAuthorityWorkspacePageContent() {
                   <button
                     type="button"
                     onClick={handleAddVariantName}
+                    aria-label="Add variant name"
                     className="px-3 py-2 border border-lichen rounded-lg text-ink hover:bg-stone transition-colors"
                   >
-                    <Plus size={16} />
+                    <Plus size={16} aria-hidden="true" />
                   </button>
                 </div>
                 {formData.variant_names && formData.variant_names.length > 0 && (
@@ -303,9 +306,10 @@ function PlaceAuthorityWorkspacePageContent() {
                         <button
                           type="button"
                           onClick={() => handleRemoveVariantName(name)}
+                          aria-label={`Remove variant name ${name}`}
                           className="text-archive hover:text-ink"
                         >
-                          <X size={12} />
+                          <X size={12} aria-hidden="true" />
                         </button>
                       </span>
                     ))}
@@ -314,9 +318,9 @@ function PlaceAuthorityWorkspacePageContent() {
               </div>
             ) : formData.variant_names && formData.variant_names.length > 0 ? (
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-archive mb-1.5">
+                <span className="block text-sm font-medium text-archive mb-1.5">
                   Variant Names
-                </label>
+                </span>
                 <div className="flex flex-wrap gap-2">
                   {formData.variant_names.map((name, i) => (
                     <span key={i} className="px-2 py-0.5 text-xs bg-stone rounded-full text-ink">{name}</span>

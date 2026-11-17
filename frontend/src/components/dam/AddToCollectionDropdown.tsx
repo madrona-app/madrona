@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useId, useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FolderPlus, Plus, Loader2, X } from 'lucide-react';
@@ -22,6 +22,16 @@ export function AddToCollectionDropdown({
   const [addingTo, setAddingTo] = useState<string | null>(null);
   const [addingAfterCreate, setAddingAfterCreate] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+
+  // Move focus into the picker when it opens; return it to the trigger on close
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    dropdownRef.current?.focus();
+    return () => {
+      if (previous && typeof previous.focus === 'function') previous.focus();
+    };
+  }, []);
 
   const { data: collectionsData, isLoading } = useQuery({
     queryKey: ['media-collections', organizationId],
@@ -116,19 +126,24 @@ export function AddToCollectionDropdown({
       />
 
       {/* Dropdown - centered modal style for reliability */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- stopPropagation only: keeps picker clicks from bubbling to React ancestors through the portal */}
       <div
         ref={dropdownRef}
-        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[1001] w-80 bg-parchment border border-lichen rounded-lg shadow-xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[1001] w-80 bg-parchment border border-lichen rounded-lg shadow-xl focus:outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-4 py-3 border-b border-lichen flex items-center justify-between">
-          <p className="text-sm font-semibold text-ink">Add to Lightbox</p>
+          <h2 id={titleId} className="text-sm font-semibold text-ink">Add to Lightbox</h2>
           <button
             onClick={() => onClose?.()}
             className="p-1 text-archive hover:text-ink rounded transition-colors"
             aria-label="Close"
           >
-            <X size={16} />
+            <X size={16} aria-hidden="true" />
           </button>
         </div>
 

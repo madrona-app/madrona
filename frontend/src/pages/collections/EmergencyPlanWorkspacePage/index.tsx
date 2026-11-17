@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useWorkspacePage } from '../../../hooks/useWorkspacePage';
@@ -51,6 +52,7 @@ export default function EmergencyPlanWorkspacePage() {
 }
 
 function EmergencyPlanWorkspacePageContent() {
+  const uid = useId();
   const { orgId, planId } = useParams<{ orgId: string; planId?: string }>();
 
   // Fetch plan data (disabled in create mode)
@@ -346,8 +348,8 @@ function EmergencyPlanWorkspacePageContent() {
                 {isEditing ? (
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-archive mb-1">Name</label>
-                      <input
+                      <label htmlFor={`${uid}-name-${index}`} className="block text-xs font-medium text-archive mb-1">Name</label>
+                      <input id={`${uid}-name-${index}`}
                         type="text"
                         value={contact.name}
                         onChange={(e) => updateContact(index, 'name', e.target.value)}
@@ -355,8 +357,8 @@ function EmergencyPlanWorkspacePageContent() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-archive mb-1">Role</label>
-                      <input
+                      <label htmlFor={`${uid}-role-${index}`} className="block text-xs font-medium text-archive mb-1">Role</label>
+                      <input id={`${uid}-role-${index}`}
                         type="text"
                         value={contact.role}
                         onChange={(e) => updateContact(index, 'role', e.target.value)}
@@ -364,8 +366,8 @@ function EmergencyPlanWorkspacePageContent() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-archive mb-1">Phone</label>
-                      <input
+                      <label htmlFor={`${uid}-phone-${index}`} className="block text-xs font-medium text-archive mb-1">Phone</label>
+                      <input id={`${uid}-phone-${index}`}
                         type="text"
                         value={contact.phone}
                         onChange={(e) => updateContact(index, 'phone', e.target.value)}
@@ -373,8 +375,8 @@ function EmergencyPlanWorkspacePageContent() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-archive mb-1">Email</label>
-                      <input
+                      <label htmlFor={`${uid}-email-${index}`} className="block text-xs font-medium text-archive mb-1">Email</label>
+                      <input id={`${uid}-email-${index}`}
                         type="email"
                         value={contact.email}
                         onChange={(e) => updateContact(index, 'email', e.target.value)}
@@ -460,8 +462,8 @@ function EmergencyPlanWorkspacePageContent() {
                   <>
                     <div className="grid grid-cols-3 gap-3">
                       <div>
-                        <label className="block text-xs font-medium text-archive mb-1">Hazard Type</label>
-                        <input
+                        <label htmlFor={`${uid}-hazard-type-${index}`} className="block text-xs font-medium text-archive mb-1">Hazard Type</label>
+                        <input id={`${uid}-hazard-type-${index}`}
                           type="text"
                           value={risk.hazard_type}
                           onChange={(e) => updateRiskAssessment(index, 'hazard_type', e.target.value)}
@@ -470,8 +472,8 @@ function EmergencyPlanWorkspacePageContent() {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-archive mb-1">Likelihood</label>
-                        <select
+                        <label htmlFor={`${uid}-likelihood-${index}`} className="block text-xs font-medium text-archive mb-1">Likelihood</label>
+                        <select id={`${uid}-likelihood-${index}`}
                           value={risk.likelihood}
                           onChange={(e) => updateRiskAssessment(index, 'likelihood', e.target.value)}
                           className="w-full px-3 py-2 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -485,8 +487,8 @@ function EmergencyPlanWorkspacePageContent() {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-archive mb-1">Impact</label>
-                        <select
+                        <label htmlFor={`${uid}-impact-${index}`} className="block text-xs font-medium text-archive mb-1">Impact</label>
+                        <select id={`${uid}-impact-${index}`}
                           value={risk.impact}
                           onChange={(e) => updateRiskAssessment(index, 'impact', e.target.value)}
                           className="w-full px-3 py-2 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
@@ -501,8 +503,8 @@ function EmergencyPlanWorkspacePageContent() {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-archive mb-1">Mitigation Measures</label>
-                      <textarea
+                      <label htmlFor={`${uid}-mitigation-measures-${index}`} className="block text-xs font-medium text-archive mb-1">Mitigation Measures</label>
+                      <textarea id={`${uid}-mitigation-measures-${index}`}
                         value={risk.mitigation_measures}
                         onChange={(e) => updateRiskAssessment(index, 'mitigation_measures', e.target.value)}
                         className="w-full px-3 py-2 text-sm border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"

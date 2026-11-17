@@ -21,10 +21,11 @@ import {
   Tag,
   ExternalLink,
   } from 'lucide-react';
-import { getDiscoverInfo } from '../../lib/api/discover';
+import { getDiscoverInfo, getExhibitionExportUrl } from '../../lib/api/discover';
 import type { PublicExhibition } from '../../types/discover';
 import { CollectionSiteShell } from './components/CollectionSiteShell';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
+import { ResultsActions } from './components/ResultsActions';
 
 import { formatDateLong } from '@/lib/formatters';
 
@@ -332,6 +333,27 @@ export default function ExhibitionDetailPage() {
                   {exhibition.description}
                 </div>
               </div>
+            )}
+
+            {/* Objects in this exhibition — downloadable group */}
+            {!!exhibition.public_object_count && exhibition.public_object_count > 0 && exhibition.public_url_slug && (
+              <section aria-labelledby="exhibition-objects-heading" className="mb-8">
+                <h2 id="exhibition-objects-heading" className="text-xs font-medium text-archive uppercase tracking-wide mb-3">
+                  Objects in this exhibition
+                </h2>
+                <p className="text-sm text-ink mb-3">
+                  {exhibition.public_object_count === 1
+                    ? '1 object from this exhibition is in the online collection.'
+                    : `${exhibition.public_object_count} objects from this exhibition are in the online collection.`}
+                </p>
+                <ResultsActions
+                  idPrefix="exhibition"
+                  total={exhibition.public_object_count}
+                  noun={['object', 'objects']}
+                  csvUrl={getExhibitionExportUrl(orgSlug!, exhibition.public_url_slug, 'csv')}
+                  jsonUrl={getExhibitionExportUrl(orgSlug!, exhibition.public_url_slug, 'json')}
+                />
+              </section>
             )}
 
             {/* Credits */}

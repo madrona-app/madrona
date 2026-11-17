@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, lazy, Suspense, type MouseEvent, type ReactNode } from 'react';
+import { useState, useCallback, useMemo, useId, useRef, lazy, Suspense, type MouseEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import Checkbox from '../../components/Checkbox';
 import { useListState } from '../../hooks/useListState';
 import { useParams, useNavigate, Link } from 'react-router-dom';
@@ -31,6 +31,7 @@ import {
   Globe2,
 } from 'lucide-react';
 import { searchCollections, getActiveContext } from '../../lib/api';
+import { getHideDeaccessioned, hideDeaccessionedQueryKey } from '../../lib/api/searchSettings';
 import { LocationPickerButton } from '../../components/collections/LocationPickerModal';
 import { useGeo } from '../../hooks/useGeo';
 
@@ -51,6 +52,7 @@ import { logger } from '../../lib/logger';
 import { sanitizeHighlight } from '../../lib/sanitize';
 import { formatNumber } from '@/lib/formatters';
 import { MadronaLoader } from '../../components/ui/MadronaLoader';
+import { ObjectListExportControls } from '../../components/collections/ObjectExportControls';
 
 const SCROLL_KEY = 'collection-objects-scroll';
 
@@ -80,6 +82,7 @@ export default function CollectionObjectsPage() {
   const [showBulkActionDialog, setShowBulkActionDialog] = useState(false);
   const [showSaveAsWorkSetDialog, setShowSaveAsWorkSetDialog] = useState(false);
   const [searchMode, setSearchMode] = useState<SearchMode>('text');
+  const [includeDeaccessioned, setIncludeDeaccessioned] = useState(false);
   const [mapSearchResults, setMapSearchResults] = useState<{
     objects: Array<{
       object_id: string;
@@ -100,7 +103,17 @@ export default function CollectionObjectsPage() {
     offset,
     include_facets: true,
     highlight: true,
+    ...(includeDeaccessioned ? { include_deaccessioned: true } : {}),
   };
+
+  // Whether the organization hides deaccessioned records from search (on by
+  // default). Assume it does until the setting has loaded.
+  const { data: hideDeaccessioned = true } = useQuery({
+    queryKey: hideDeaccessionedQueryKey(orgId),
+    queryFn: () => getHideDeaccessioned(orgId!),
+    enabled: !!orgId,
+    staleTime: 5 * 60 * 1000,
+  });
 
   // OpenSearch handles all listing — faster than DB and supports facets/relevance
   const {
@@ -256,9 +269,11 @@ export default function CollectionObjectsPage() {
       <div className="bg-parchment border border-lichen rounded-lg px-6 py-4 mb-6 shadow-sm">
         {/* Search Mode Toggle */}
         <div className="flex items-center gap-2 mb-4">
-          <span className="text-sm text-archive">Search by:</span>
-          <div className="flex border border-lichen rounded-lg overflow-hidden">
+          <span className="text-sm text-archive" id="objects-search-mode-label">Search by:</span>
+          <div className="flex border border-lichen rounded-lg overflow-hidden" role="group" aria-labelledby="objects-search-mode-label">
             <button
+              type="button"
+              aria-pressed={searchMode === 'text'}
               onClick={() => setSearchMode('text')}
               className={cn(
                 'flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors',
@@ -267,10 +282,12 @@ export default function CollectionObjectsPage() {
                   : 'bg-parchment text-ink hover:bg-stone'
               )}
             >
-              <Search size={14} />
+              <Search size={14} aria-hidden="true" />
               Text
             </button>
             <button
+              type="button"
+              aria-pressed={searchMode === 'map'}
               onClick={() => setSearchMode('map')}
               className={cn(
                 'flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors',
@@ -279,10 +296,12 @@ export default function CollectionObjectsPage() {
                   : 'bg-parchment text-ink hover:bg-stone'
               )}
             >
-              <Map size={14} />
+              <Map size={14} aria-hidden="true" />
               Map
             </button>
             <button
+              type="button"
+              aria-pressed={searchMode === 'origins'}
               onClick={() => setSearchMode('origins')}
               className={cn(
                 'flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors',
@@ -291,7 +310,7 @@ export default function CollectionObjectsPage() {
                   : 'bg-parchment text-ink hover:bg-stone'
               )}
             >
-              <Globe size={14} />
+              <Globe size={14} aria-hidden="true" />
               Origins
             </button>
           </div>
@@ -305,20 +324,24 @@ export default function CollectionObjectsPage() {
             <Search
               size={20}
               className="absolute left-4 top-1/2 -translate-y-1/2 text-archive"
+              aria-hidden="true"
             />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Search collection objects"
               placeholder="Search by title, artist, object number, description..."
               className="input w-full pl-12 pr-4 py-3 text-lg"
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => setSearchQuery('')}
+                aria-label="Clear search"
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-archive hover:text-ink"
               >
-                <X size={18} />
+                <X size={18} aria-hidden="true" />
               </button>
             )}
           </div>
@@ -326,22 +349,27 @@ export default function CollectionObjectsPage() {
           <div className="flex gap-3">
             {/* Filter Toggle - Compact */}
             <button
+              type="button"
               onClick={() => setShowFilters(!showFilters)}
+              aria-expanded={showFilters}
+              aria-controls="objects-filter-panel"
+              aria-label={activeFilterCount > 0 ? `Filters, ${activeFilterCount} active` : 'Filters'}
               className={`flex items-center gap-2 px-4 py-3 border rounded-institutional transition-all
                          ${showFilters || activeFilterCount > 0
                            ? 'border-bark text-bark bg-bark/5'
                            : 'border-lichen text-ink hover:bg-stone hover:border-archive'
                          }`}
             >
-              <Filter size={18} />
+              <Filter size={18} aria-hidden="true" />
               <span className="hidden sm:inline">Filters</span>
               {activeFilterCount > 0 && (
-                <span className="bg-bark text-parchment text-xs px-2 py-0.5 rounded-full font-medium">
+                <span aria-hidden="true" className="bg-bark text-parchment text-xs px-2 py-0.5 rounded-full font-medium">
                   {activeFilterCount}
                 </span>
               )}
               <ChevronDown
                 size={16}
+                aria-hidden="true"
                 className={`transition-transform duration-200 ${showFilters ? 'rotate-180' : ''}`}
               />
             </button>
@@ -349,11 +377,13 @@ export default function CollectionObjectsPage() {
             {/* Save as Work Set - visible when search or filters are active */}
             {(debouncedQuery || activeFilterCount > 0) && (
               <button
+                type="button"
                 onClick={() => setShowSaveAsWorkSetDialog(true)}
+                aria-label="Save as Work Set"
                 className="flex items-center gap-2 px-4 py-3 border border-lichen text-ink rounded-institutional hover:border-bark hover:text-bark transition-all"
                 title="Save this search as a dynamic Work Set"
               >
-                <Layers size={18} />
+                <Layers size={18} aria-hidden="true" />
                 <span className="hidden sm:inline">Save as Work Set</span>
               </button>
             )}
@@ -361,6 +391,7 @@ export default function CollectionObjectsPage() {
             {/* View Mode Toggle */}
             <div className="flex border border-lichen rounded-institutional overflow-hidden" role="group" aria-label="View mode">
               <button
+                type="button"
                 onClick={() => setViewMode('grid')}
                 className={`p-3 transition-colors ${viewMode === 'grid'
                   ? 'bg-azurite text-parchment ring-2 ring-inset ring-azurite/50'
@@ -373,6 +404,7 @@ export default function CollectionObjectsPage() {
                 <span className="sr-only">Gallery view</span>
               </button>
               <button
+                type="button"
                 onClick={() => setViewMode('list')}
                 className={`p-3 transition-colors ${viewMode === 'list'
                   ? 'bg-azurite text-parchment ring-2 ring-inset ring-azurite/50'
@@ -388,8 +420,40 @@ export default function CollectionObjectsPage() {
           </div>
         </div>
 
+        {/* Deaccessioned records are left out of search by an organization
+            setting; this brings them back for this search. */}
+        <div className="mt-3 flex items-start gap-2">
+          <input
+            id="objects-include-deaccessioned"
+            type="checkbox"
+            checked={includeDeaccessioned || !hideDeaccessioned}
+            disabled={!hideDeaccessioned}
+            onChange={(e) => {
+              setIncludeDeaccessioned(e.target.checked);
+              setOffset(0);
+            }}
+            aria-describedby="objects-include-deaccessioned-desc"
+            className="mt-0.5 h-5 w-5 shrink-0 accent-bark cursor-pointer disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+          />
+          <div>
+            <label htmlFor="objects-include-deaccessioned" className="text-sm text-ink cursor-pointer">
+              Include deaccessioned records
+            </label>
+            <p id="objects-include-deaccessioned-desc" className="text-xs text-archive">
+              {hideDeaccessioned
+                ? 'Deaccessioned records are left out of search results unless this is checked.'
+                : 'Your organization shows deaccessioned records in search, so they are always included.'}
+            </p>
+          </div>
+        </div>
+
         {/* Collapsible Filter Panel with smooth animation */}
-        <div className={`overflow-hidden transition-all duration-300 ease-in-out
+        <div
+          id="objects-filter-panel"
+          role="region"
+          aria-label="Search filters"
+          inert={!showFilters}
+          className={`overflow-hidden transition-all duration-300 ease-in-out
                         ${showFilters ? 'max-h-[500px] opacity-100 mt-6 pt-6 border-t border-lichen' : 'max-h-0 opacity-0'}`}>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Object Type Filter */}
@@ -417,11 +481,12 @@ export default function CollectionObjectsPage() {
               />
 
               {/* Location Filter */}
-              <div>
-                <label className="block text-sm font-medium text-ink mb-1">
+              <div role="group" aria-labelledby="objects-filter-location-label">
+                <span id="objects-filter-location-label" className="block text-sm font-medium text-ink mb-1">
                   Location
-                </label>
+                </span>
                 <LocationPickerButton
+                      labelId="objects-filter-location-label"
                   organizationId={orgId!}
                   value={filters.location_id?.[0] || null}
                   onChange={(locationId) => handleFilterChange('location_id', locationId ? [locationId] : undefined)}
@@ -431,10 +496,11 @@ export default function CollectionObjectsPage() {
 
               {/* On Display Filter */}
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">
+                <label htmlFor="objects-filter-display" className="block text-sm font-medium text-ink mb-1">
                   Display Status
                 </label>
                 <select
+                  id="objects-filter-display"
                   value={filters.on_display == null ? '' : filters.on_display.toString()}
                   onChange={(e) => handleFilterChange('on_display', e.target.value === '' ? undefined : e.target.value === 'true')}
                   className="input w-full"
@@ -447,10 +513,11 @@ export default function CollectionObjectsPage() {
 
               {/* Creator Filter */}
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">
+                <label htmlFor="objects-filter-creator" className="block text-sm font-medium text-ink mb-1">
                   Creator
                 </label>
                 <input
+                  id="objects-filter-creator"
                   type="text"
                   value={filters.creator_name || ''}
                   onChange={(e) => handleFilterChange('creator_name', e.target.value || undefined)}
@@ -461,10 +528,11 @@ export default function CollectionObjectsPage() {
 
               {/* Material Filter */}
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">
+                <label htmlFor="objects-filter-material" className="block text-sm font-medium text-ink mb-1">
                   Material
                 </label>
                 <input
+                  id="objects-filter-material"
                   type="text"
                   value={filters.material || ''}
                   onChange={(e) => handleFilterChange('material', e.target.value || undefined)}
@@ -474,13 +542,14 @@ export default function CollectionObjectsPage() {
               </div>
 
               {/* Date Range */}
-              <div>
-                <label className="block text-sm font-medium text-ink mb-1">
+              <fieldset>
+                <legend className="block text-sm font-medium text-ink mb-1">
                   Date Range
-                </label>
+                </legend>
                 <div className="flex gap-2">
                   <input
                     type="text"
+                    aria-label="Date from"
                     value={filters.date_from || ''}
                     onChange={(e) => handleFilterChange('date_from', e.target.value || undefined)}
                     placeholder="From"
@@ -488,13 +557,14 @@ export default function CollectionObjectsPage() {
                   />
                   <input
                     type="text"
+                    aria-label="Date to"
                     value={filters.date_to || ''}
                     onChange={(e) => handleFilterChange('date_to', e.target.value || undefined)}
                     placeholder="To"
                     className="input w-1/2 text-sm"
                   />
                 </div>
-              </div>
+              </fieldset>
             </div>
 
             {/* Discoverable filter — one of the few relationship filters
@@ -509,7 +579,7 @@ export default function CollectionObjectsPage() {
                     label="Discoverable"
                     isActive={filters.is_discoverable === true}
                     onChange={(value) => handleFilterChange('is_discoverable', value ? true : undefined)}
-                    icon={<Globe2 size={14} />}
+                    icon={<Globe2 size={14} aria-hidden="true" />}
                   />
                 </div>
               </div>
@@ -518,6 +588,7 @@ export default function CollectionObjectsPage() {
             {activeFilterCount > 0 && (
               <div className="mt-4 flex justify-end">
                 <button
+                  type="button"
                   onClick={clearFilters}
                   className="text-sm text-bark hover:text-copper-dark hover:underline"
                 >
@@ -575,13 +646,14 @@ export default function CollectionObjectsPage() {
             {mapSearchResults && !isMapSearching && (
               <div className="mt-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-medium text-ink">
+                  <h2 className="text-sm font-medium text-ink">
                     {mapSearchResults.total === 0
                       ? 'No objects found in selected area'
                       : `Found ${mapSearchResults.total} object${mapSearchResults.total !== 1 ? 's' : ''} in selected area`}
-                  </h3>
+                  </h2>
                   {mapSearchResults.total > 0 && (
                     <button
+                      type="button"
                       onClick={() => setMapSearchResults(null)}
                       className="text-xs text-archive hover:text-ink"
                     >
@@ -590,12 +662,12 @@ export default function CollectionObjectsPage() {
                   )}
                 </div>
                 {mapSearchResults.objects.length > 0 && (
-                  <div className="bg-parchment border border-lichen rounded-lg divide-y divide-lichen max-h-[300px] overflow-y-auto">
+                  <ul aria-label="Objects in selected area" className="bg-parchment border border-lichen rounded-lg divide-y divide-lichen max-h-[300px] overflow-y-auto">
                     {mapSearchResults.objects.map((obj) => (
-                      <div
-                        key={obj.object_id}
-                        className="p-3 hover:bg-stone/30 cursor-pointer flex items-center justify-between"
-                        onClick={() => navigate(`/organizations/${orgId}/collections/objects/${obj.object_id}`)}
+                      <li key={obj.object_id}>
+                      <Link
+                        to={`/organizations/${orgId}/collections/objects/${obj.object_id}`}
+                        className="p-3 hover:bg-stone/30 cursor-pointer flex items-center justify-between no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bark/30"
                       >
                         <div>
                           <div className="text-sm font-medium text-ink">{obj.title || 'Untitled'}</div>
@@ -603,10 +675,11 @@ export default function CollectionObjectsPage() {
                             {obj.object_number} • {obj.place_name} ({obj.place_role.replace('_', ' ')})
                           </div>
                         </div>
-                        <ChevronDown size={16} className="text-archive -rotate-90" />
-                      </div>
+                        <ChevronDown size={16} className="text-archive -rotate-90" aria-hidden="true" />
+                      </Link>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 )}
               </div>
             )}
@@ -637,7 +710,19 @@ export default function CollectionObjectsPage() {
         ) : null}
       </div>
 
+      {/* Export (CSV / Excel / JSON-LD) of the current results or active work set */}
+      {searchMode === 'text' && orgId && hasPermission('collections.view') && (effectiveResults?.total ?? 0) > 0 && (
+        <ObjectListExportControls
+          organizationId={orgId}
+          searchQuery={debouncedQuery || undefined}
+          filters={Object.keys(filters).length > 0 ? filters : undefined}
+          resultCount={effectiveResults?.total}
+          activeWorkspace={activeWorkspace}
+        />
+      )}
+
       {/* Results */}
+      <h2 className="sr-only">Search results</h2>
       {error ? (
         <div className="text-center py-12 text-semantic-error">
           Error loading objects: {(error as Error).message}
@@ -660,7 +745,7 @@ export default function CollectionObjectsPage() {
             <ObjectCard
               key={hit.object_id}
               hit={hit as CollectionsSearchHit}
-              onClick={() => handleObjectClick(hit.object_id)}
+              href={`/organizations/${orgId}/collections/objects/${hit.object_id}`}
               onQuickMove={() => {
                 // Navigate directly to movement creation with object pre-selected
                 navigate(`/organizations/${orgId}/collections/movements/create?object_id=${hit.object_id}`);
@@ -680,14 +765,14 @@ export default function CollectionObjectsPage() {
           <table className="w-full" aria-label="Collection objects">
             <thead className="bg-stone/50">
               <tr>
-                <th scope="col" className="w-12 px-4 py-3"></th>
+                <th scope="col" className="w-12 px-4 py-3"><span className="sr-only">Image</span></th>
                 <th scope="col" className="px-4 py-3 text-left text-sm font-medium text-ink">Object</th>
                 <th scope="col" className="px-4 py-3 text-left text-sm font-medium text-ink">Type</th>
                 <th scope="col" className="px-4 py-3 text-left text-sm font-medium text-ink">Creator</th>
                 <th scope="col" className="px-4 py-3 text-left text-sm font-medium text-ink">Location</th>
                 <th scope="col" className="px-4 py-3 text-center text-sm font-medium text-ink">Relationships</th>
                 <th scope="col" className="px-4 py-3 text-left text-sm font-medium text-ink">Status</th>
-                <th scope="col" className="w-10 px-4 py-3"></th>
+                <th scope="col" className="w-10 px-4 py-3"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-lichen">
@@ -695,6 +780,7 @@ export default function CollectionObjectsPage() {
                 <ObjectRow
                   key={hit.object_id}
                   hit={hit as CollectionsSearchHit}
+                  href={`/organizations/${orgId}/collections/objects/${hit.object_id}`}
                   onClick={() => handleObjectClick(hit.object_id)}
                   onEdit={() => {
                     sessionStorage.setItem(SCROLL_KEY, String((document.querySelector('.app-shell-content')?.scrollTop ?? 0)));
@@ -776,18 +862,17 @@ export default function CollectionObjectsPage() {
 // Object Card Component (Grid View) - Gallery Style with Relationship Preview
 function ObjectCard({
   hit,
-  onClick,
+  href,
   onQuickMove,
   onAddToWorkspace,
   hasDiscoverApp,
 }: {
   hit: CollectionsSearchHit;
-  onClick: () => void;
+  href: string;
   onQuickMove?: () => void;
   onAddToWorkspace?: () => void;
   hasDiscoverApp?: boolean;
 }) {
-  const [isHovered, setIsHovered] = useState(false);
   const typeColor = getObjectTypeColor(hit.object_type);
 
   // Relationship preview data from search results
@@ -817,6 +902,8 @@ function ObjectCard({
   const completeness = completenessItems.filter(Boolean).length;
   const isComplete = completeness === completenessItems.length;
 
+  const objectLabel = hit.object_number || hit.title || hit.object_name || 'object';
+
   const handleQuickAction = (e: MouseEvent, action: () => void) => {
     e.stopPropagation();
     action();
@@ -836,15 +923,15 @@ function ObjectCard({
   }, []);
 
   return (
+    // The title link is stretched over the whole card (after:absolute inset-0), so
+    // a click anywhere on the card opens the object while keyboard and screen
+    // reader users get one named link per card. Quick actions sit above it (z-10).
     <div
       draggable
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      onClick={onClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       className={cn(
-        'card overflow-hidden text-left group transition-all duration-300 cursor-pointer',
+        'card relative overflow-hidden text-left group transition-all duration-300 cursor-pointer focus-within:ring-2 focus-within:ring-bark/30 focus-within:ring-offset-2',
         'hover:shadow-archival-md hover:-translate-y-1 border-l-2',
         typeColor.border
       )}
@@ -857,7 +944,7 @@ function ObjectCard({
             alt={hit.title || hit.object_name || 'Collection object'}
             className={cn(
               'w-full h-full object-cover transition-transform duration-500',
-              isHovered ? 'scale-105' : 'scale-100'
+              'scale-100 group-hover:scale-105'
             )}
           />
         ) : (
@@ -878,27 +965,30 @@ function ObjectCard({
         {/* Relationship Preview Indicators - Top Right */}
         <div className={cn(
           'absolute top-2 right-2 flex gap-1.5 transition-opacity duration-300',
-          isHovered ? 'opacity-0' : 'opacity-100'
+          'opacity-100 group-hover:opacity-0'
         )}>
           {/* Completeness indicator — only shown when fully complete */}
           {isComplete && (
-            <span className="flex items-center gap-1 px-2 py-1 bg-semantic-success/80 text-parchment text-xs rounded-full backdrop-blur-sm">
-              <CheckCircle2 size={12} />
+            <span className="flex items-center gap-1 px-2 py-1 bg-semantic-success/80 text-parchment text-xs rounded-full backdrop-blur-sm" title="Record complete">
+              <CheckCircle2 size={12} aria-hidden="true" />
+              <span className="sr-only">Record complete</span>
             </span>
           )}
 
           {/* Discoverable indicator */}
           {hasDiscoverApp && hit.is_discoverable && (
             <span className="flex items-center gap-1 px-2 py-1 bg-bark/80 text-parchment text-xs rounded-full backdrop-blur-sm" title="Publicly discoverable">
-              <Globe2 size={12} />
+              <Globe2 size={12} aria-hidden="true" />
+              <span className="sr-only">Publicly discoverable</span>
             </span>
           )}
 
           {/* Active procedures warning */}
           {previewData.activeProcedures > 0 && (
             <span className="flex items-center gap-1 px-2 py-1 bg-semantic-warning/80 text-parchment text-xs rounded-full backdrop-blur-sm">
-              <FileText size={12} />
+              <FileText size={12} aria-hidden="true" />
               {previewData.activeProcedures}
+              <span className="sr-only"> active {previewData.activeProcedures === 1 ? 'procedure' : 'procedures'}</span>
             </span>
           )}
         </div>
@@ -906,27 +996,31 @@ function ObjectCard({
         {/* Hover Overlay with Quick Actions */}
         <div className={cn(
           'absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/60 to-ink/30',
-          'flex flex-col justify-between p-4 transition-opacity duration-300',
-          isHovered ? 'opacity-100' : 'opacity-0'
+          'z-10 pointer-events-none flex flex-col justify-between p-4 transition-opacity duration-300 focus-within:opacity-100',
+          'opacity-0 group-hover:opacity-100'
         )}>
           {/* Quick Actions - Top */}
-          <div className="flex justify-end gap-2">
+          <div className="pointer-events-auto flex justify-end gap-2">
             {onQuickMove && (
               <button
+                type="button"
                 onClick={(e) => handleQuickAction(e, onQuickMove)}
-                className="p-1.5 bg-parchment/90 text-ink rounded-lg hover:bg-parchment transition-colors shadow-sm"
+                className="p-1.5 bg-parchment/90 text-ink rounded-lg hover:bg-parchment transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                 title="Move object"
+                aria-label={`Move ${objectLabel}`}
               >
-                <ArrowRightLeft size={14} />
+                <ArrowRightLeft size={14} aria-hidden="true" />
               </button>
             )}
             {onAddToWorkspace && (
               <button
+                type="button"
                 onClick={(e) => handleQuickAction(e, onAddToWorkspace)}
-                className="p-1.5 bg-parchment/90 text-ink rounded-lg hover:bg-parchment transition-colors shadow-sm"
+                className="p-1.5 bg-parchment/90 text-ink rounded-lg hover:bg-parchment transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
                 title="Add to workspace"
+                aria-label={`Add ${objectLabel} to workspace`}
               >
-                <Layers size={14} />
+                <Layers size={14} aria-hidden="true" />
               </button>
             )}
           </div>
@@ -936,7 +1030,7 @@ function ObjectCard({
             <div className="flex flex-wrap gap-1.5 mb-2">
               {previewData.hasLocation && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-parchment/20 text-xs rounded-full">
-                  <MapPin size={10} /> {hit.current_location?.name}
+                  <MapPin size={10} aria-hidden="true" /> {hit.current_location?.name}
                 </span>
               )}
             </div>
@@ -952,16 +1046,18 @@ function ObjectCard({
         <p className="text-xs text-archive mb-2 tracking-wide uppercase">
           {hit.object_number}
         </p>
-        {hit.highlights?.title?.[0] ? (
-          <h3
-            className="font-serif text-lg font-medium text-forest line-clamp-2 mb-2"
-            ref={(el) => { if (el) el.innerHTML = sanitizeHighlight(hit.highlights!.title![0]); }}
-          />
-        ) : (
-          <h3 className="font-serif text-lg font-medium text-forest line-clamp-2 mb-2">
-            {hit.title || hit.object_name || 'Untitled'}
-          </h3>
-        )}
+        <h3 className="font-serif text-lg font-medium text-forest line-clamp-2 mb-2">
+          <Link
+            to={href}
+            className="text-forest no-underline after:absolute after:inset-0 focus-visible:outline-none"
+          >
+            {hit.highlights?.title?.[0] ? (
+              <span ref={(el) => { if (el) el.innerHTML = sanitizeHighlight(hit.highlights!.title![0]); }} />
+            ) : (
+              hit.title || hit.object_name || 'Untitled'
+            )}
+          </Link>
+        </h3>
         {hit.creators && hit.creators.length > 0 && (
           <p className="text-sm text-accessible-gray">
             {hit.creators.map(c => c.name).join(', ')}
@@ -976,7 +1072,7 @@ function ObjectCard({
         {/* Location shown subtly when present */}
         {previewData.hasLocation && hit.current_location?.name && (
           <p className="text-xs text-archive mt-3 pt-3 border-t border-lichen/50 flex items-center gap-1">
-            <MapPin size={10} /> {hit.current_location.name}
+            <MapPin size={10} aria-hidden="true" /> {hit.current_location.name}
           </p>
         )}
       </div>
@@ -987,12 +1083,14 @@ function ObjectCard({
 // Object Row Component (List View) - Dense, operational, relational
 function ObjectRow({
   hit,
+  href,
   onClick,
   onEdit,
   onAddToWorkspace,
   hasDiscoverApp,
 }: {
   hit: CollectionsSearchHit;
+  href: string;
   onClick: () => void;
   onEdit: () => void;
   onAddToWorkspace?: () => void;
@@ -1064,7 +1162,7 @@ function ObjectRow({
             />
           ) : (
             <div className={cn('w-full h-full flex items-center justify-center', typeColor.bg)}>
-              <Package size={16} className={typeColor.text} />
+              <Package size={16} className={typeColor.text} aria-hidden="true" />
             </div>
           )}
         </div>
@@ -1074,23 +1172,28 @@ function ObjectRow({
       <td className="px-4 py-3">
         <div>
           <p className="text-xs text-archive">{hit.object_number}</p>
-          {hit.highlights?.title?.[0] ? (
-            <p
-              className="font-medium text-ink line-clamp-1"
-              ref={(el) => { if (el) el.innerHTML = sanitizeHighlight(hit.highlights!.title![0]); }}
-            />
-          ) : (
-            <p className="font-medium text-ink line-clamp-1">
-              {hit.title || hit.object_name || 'Untitled'}
-            </p>
-          )}
+          {/* The row is also clickable with the mouse; this link is the keyboard and
+              screen reader route to the object. */}
+          <p className="font-medium text-ink line-clamp-1">
+            <Link
+              to={href}
+              onClick={(e) => e.stopPropagation()}
+              className="text-ink no-underline hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+            >
+              {hit.highlights?.title?.[0] ? (
+                <span ref={(el) => { if (el) el.innerHTML = sanitizeHighlight(hit.highlights!.title![0]); }} />
+              ) : (
+                hit.title || hit.object_name || 'Untitled'
+              )}
+            </Link>
+          </p>
         </div>
       </td>
 
       {/* Type with color dot */}
       <td className="px-4 py-3">
         <span className="flex items-center gap-1.5">
-          <span className={cn('w-2 h-2 rounded-full', typeColor.accent)} />
+          <span className={cn('w-2 h-2 rounded-full', typeColor.accent)} aria-hidden="true" />
           <span className="text-ink text-sm capitalize">
             {hit.object_type || '-'}
           </span>
@@ -1106,7 +1209,7 @@ function ObjectRow({
       <td className="px-4 py-3">
         {hit.current_location ? (
           <span className="flex items-center gap-1.5 text-sm text-ink">
-            <MapPin size={14} className="text-archive" />
+            <MapPin size={14} className="text-archive" aria-hidden="true" />
             {hit.current_location.name}
           </span>
         ) : (
@@ -1145,7 +1248,8 @@ function ObjectRow({
               className="flex items-center gap-0.5 px-1.5 py-0.5 bg-azurite/10 text-azurite rounded text-xs"
               title="Publicly discoverable"
             >
-              <Globe2 size={12} />
+              <Globe2 size={12} aria-hidden="true" />
+              <span className="sr-only">Publicly discoverable</span>
             </span>
           )}
 
@@ -1155,8 +1259,9 @@ function ObjectRow({
               className="flex items-center gap-0.5 px-1.5 py-0.5 bg-semantic-warning/10 text-semantic-warning rounded text-xs"
               title={`${previewData.activeProcedures} active procedure(s)`}
             >
-              <FileText size={12} />
+              <FileText size={12} aria-hidden="true" />
               {previewData.activeProcedures}
+              <span className="sr-only"> active {previewData.activeProcedures === 1 ? 'procedure' : 'procedures'}</span>
             </span>
           )}
         </div>
@@ -1166,33 +1271,37 @@ function ObjectRow({
       <td className="px-4 py-3">
         <span className={cn(
           'inline-flex px-2 py-0.5 text-xs font-medium rounded-full',
-          hit.object_status === 'active' ? 'bg-semantic-success/10 text-semantic-success' : 'bg-stone text-ink'
+          hit.object_status === 'accessioned' ? 'bg-semantic-success/10 text-semantic-success' : 'bg-stone text-ink'
         )}>
-          {hit.object_status || 'active'}
+          {hit.object_status || 'pending'}
         </span>
       </td>
 
       {/* Quick actions */}
       <td className="px-4 py-3">
         <div className={cn(
-          'flex items-center gap-1 transition-all',
+          'flex items-center gap-1 transition-all focus-within:opacity-100',
           isHovered ? 'opacity-100' : 'opacity-0'
         )}>
           {onAddToWorkspace && (
             <button
+              type="button"
               onClick={handleAddToWorkspace}
-              className="p-1.5 rounded-lg bg-stone hover:bg-lichen"
+              className="p-1.5 rounded-lg bg-stone hover:bg-lichen focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
               title="Add to workspace"
+              aria-label={`Add ${hit.object_number || hit.title || 'object'} to workspace`}
             >
-              <Layers size={14} className="text-archive" />
+              <Layers size={14} className="text-archive" aria-hidden="true" />
             </button>
           )}
           <button
+            type="button"
             onClick={handleEdit}
-            className="p-1.5 rounded-lg bg-stone hover:bg-lichen"
+            className="p-1.5 rounded-lg bg-stone hover:bg-lichen focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
             title="Edit object"
+            aria-label={`Edit ${hit.object_number || hit.title || 'object'}`}
           >
-            <Edit size={14} className="text-archive" />
+            <Edit size={14} className="text-archive" aria-hidden="true" />
           </button>
         </div>
       </td>
@@ -1222,8 +1331,13 @@ function RelationshipIndicator({
       )}
       title={present ? `Has ${label}` : `No ${label}`}
     >
-      {icon}
-      {count !== undefined && count > 0 && <span>{count}</span>}
+      <span aria-hidden="true" className="flex items-center">{icon}</span>
+      {count !== undefined && count > 0 && <span aria-hidden="true">{count}</span>}
+      <span className="sr-only">
+        {present
+          ? count !== undefined && count > 0 ? `${count} ${label}` : `Has ${label}`
+          : `No ${label}`}
+      </span>
     </span>
   );
 }
@@ -1242,6 +1356,19 @@ function FacetFilter({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const selectedCount = value?.length || 0;
+  const baseId = useId();
+  const labelId = `${baseId}-label`;
+  const valueId = `${baseId}-value`;
+  const panelId = `${baseId}-panel`;
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const handlePanelKeyDown = (e: ReactKeyboardEvent<HTMLInputElement | HTMLButtonElement>) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setIsOpen(false);
+      buttonRef.current?.focus();
+    }
+  };
 
   const toggleValue = (key: string) => {
     const current = value || [];
@@ -1255,21 +1382,32 @@ function FacetFilter({
 
   return (
     <div className="relative">
-      <label className="block text-sm font-medium text-ink mb-1">
+      <span id={labelId} className="block text-sm font-medium text-ink mb-1">
         {label}
-      </label>
+      </span>
       <button
+        ref={buttonRef}
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
+        onKeyDown={isOpen ? handlePanelKeyDown : undefined}
+        aria-expanded={isOpen}
+        aria-controls={isOpen && facet ? panelId : undefined}
+        aria-labelledby={`${labelId} ${valueId}`}
         className="input w-full flex items-center justify-between text-left"
       >
-        <span className={selectedCount > 0 ? 'text-bark' : 'text-archive'}>
+        <span id={valueId} className={selectedCount > 0 ? 'text-bark' : 'text-archive'}>
           {selectedCount > 0 ? `${selectedCount} selected` : `All ${label}`}
         </span>
-        <ChevronDown size={16} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown size={16} aria-hidden="true" className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && facet && (
-        <div className="absolute z-10 mt-1 w-full bg-parchment border border-lichen rounded-institutional shadow-archival-md max-h-60 overflow-auto">
+        <div
+          id={panelId}
+          role="group"
+          aria-labelledby={labelId}
+          className="absolute z-10 mt-1 w-full bg-parchment border border-lichen rounded-institutional shadow-archival-md max-h-60 overflow-auto"
+        >
           {facet.buckets.map(bucket => (
             <label
               key={bucket.key}
@@ -1278,12 +1416,14 @@ function FacetFilter({
               <Checkbox
                 checked={value?.includes(bucket.key) || false}
                 onChange={() => toggleValue(bucket.key)}
+                onKeyDown={handlePanelKeyDown}
               />
               <span className="flex-1 text-sm text-ink">
                 {bucket.key}
               </span>
               <span className="text-xs text-archive">
                 {bucket.doc_count}
+                <span className="sr-only"> {bucket.doc_count === 1 ? 'object' : 'objects'}</span>
               </span>
             </label>
           ))}
@@ -1309,7 +1449,9 @@ function RelationshipFilterChip({
 }) {
   return (
     <button
+      type="button"
       onClick={() => onChange(!isActive)}
+      aria-pressed={!!isActive}
       className={cn(
         'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full border transition-all',
         isActive

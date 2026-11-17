@@ -349,11 +349,12 @@ export default function SSOConfigurationPage() {
 
       {/* Organization Selector */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-ink mb-2">
+        <label htmlFor="sso-config-organization" className="block text-sm font-medium text-ink mb-2">
           <Building2 className="w-4 h-4 inline mr-2" />
           Organization
         </label>
         <select
+          id="sso-config-organization"
           value={selectedOrgId}
           onChange={(e) => setSelectedOrgId(e.target.value)}
           className="w-full max-w-md px-3 py-2 border border-lichen rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-forest"
@@ -431,34 +432,38 @@ export default function SSOConfigurationPage() {
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   <div className="flex-1">
-                    <label className="text-xs text-ink/50 block mb-1">Entity ID (Issuer)</label>
+                    <h4 className="text-xs text-ink/50 block mb-1">Entity ID (Issuer)</h4>
                     <div className="flex items-center gap-2">
                       <code className="text-sm bg-parchment px-2 py-1 rounded border border-lichen flex-1 break-all">
                         {spMetadata.entity_id}
                       </code>
                       <button
+                        type="button"
                         onClick={() => copyToClipboard(spMetadata.entity_id)}
                         className="p-1 hover:bg-lichen rounded"
                         title="Copy"
+                        aria-label="Copy Entity ID"
                       >
-                        <Copy className="w-4 h-4 text-ink/50" />
+                        <Copy className="w-4 h-4 text-ink/50" aria-hidden="true" />
                       </button>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="flex-1">
-                    <label className="text-xs text-ink/50 block mb-1">ACS URL (Reply URL)</label>
+                    <h4 className="text-xs text-ink/50 block mb-1">ACS URL (Reply URL)</h4>
                     <div className="flex items-center gap-2">
                       <code className="text-sm bg-parchment px-2 py-1 rounded border border-lichen flex-1 break-all">
                         {spMetadata.acs_url}
                       </code>
                       <button
+                        type="button"
                         onClick={() => copyToClipboard(spMetadata.acs_url)}
                         className="p-1 hover:bg-lichen rounded"
                         title="Copy"
+                        aria-label="Copy ACS URL"
                       >
-                        <Copy className="w-4 h-4 text-ink/50" />
+                        <Copy className="w-4 h-4 text-ink/50" aria-hidden="true" />
                       </button>
                     </div>
                   </div>
@@ -477,10 +482,11 @@ export default function SSOConfigurationPage() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <label htmlFor="sso-config-idp-entity-id" className="block text-sm font-medium text-ink mb-1">
                     IdP Entity ID *
                   </label>
                   <input
+                    id="sso-config-idp-entity-id"
                     type="text"
                     value={idpEntityId}
                     onChange={(e) => setIdpEntityId(e.target.value)}
@@ -493,10 +499,11 @@ export default function SSOConfigurationPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <label htmlFor="sso-config-idp-sso-url" className="block text-sm font-medium text-ink mb-1">
                     IdP SSO URL *
                   </label>
                   <input
+                    id="sso-config-idp-sso-url"
                     type="url"
                     value={idpSsoUrl}
                     onChange={(e) => setIdpSsoUrl(e.target.value)}
@@ -509,10 +516,11 @@ export default function SSOConfigurationPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <label htmlFor="sso-config-idp-certificate-pem-format" className="block text-sm font-medium text-ink mb-1">
                     IdP Certificate (PEM format) *
                   </label>
                   <textarea
+                    id="sso-config-idp-certificate-pem-format"
                     value={idpCertificate}
                     onChange={(e) => setIdpCertificate(e.target.value)}
                     placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----"
@@ -560,27 +568,30 @@ export default function SSOConfigurationPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-ink mb-2">
+                <h4 id="sso-default-roles-heading" className="block text-sm font-medium text-ink mb-2">
                   Default Roles for New Users (per App)
-                </label>
+                </h4>
                 <p className="text-xs text-ink/50 mb-3">
                   Set the default role for each enabled application. Users provisioned via SSO will receive these roles.
                 </p>
                 {enabledApps.length > 0 ? (
                   <div className="border border-lichen rounded-lg overflow-hidden">
-                    <table className="w-full">
+                    <table className="w-full" aria-labelledby="sso-default-roles-heading">
                       <thead className="bg-parchment">
                         <tr>
-                          <th className="px-4 py-2 text-left text-sm font-medium text-ink">Application</th>
-                          <th className="px-4 py-2 text-left text-sm font-medium text-ink">Default Role</th>
+                          <th scope="col" className="px-4 py-2 text-left text-sm font-medium text-ink">Application</th>
+                          <th scope="col" className="px-4 py-2 text-left text-sm font-medium text-ink">Default Role</th>
                         </tr>
                       </thead>
                       <tbody>
                         {enabledApps.map((app) => (
                           <tr key={app.app_key} className="border-t border-lichen">
-                            <td className="px-4 py-3 text-sm text-ink">{app.display_name}</td>
+                            <th scope="row" className="px-4 py-3 text-left text-sm font-normal text-ink">
+                              <label htmlFor={`sso-default-role-${app.app_key}`}>{app.display_name}</label>
+                            </th>
                             <td className="px-4 py-2">
                               <select
+                                id={`sso-default-role-${app.app_key}`}
                                 value={defaultAppRoles[app.app_key] || ''}
                                 onChange={(e) =>
                                   setDefaultAppRoles((prev) => ({
@@ -611,10 +622,10 @@ export default function SSOConfigurationPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">
+                <label htmlFor="sso-new-domain" className="block text-sm font-medium text-ink mb-1">
                   Allowed Email Domains
                 </label>
-                <p className="text-xs text-ink/50 mb-2">
+                <p id="sso-domains-hint" className="text-xs text-ink/50 mb-2">
                   Only users with email addresses from these domains can sign in via SSO
                 </p>
                 <div className="flex flex-wrap gap-2 mb-2">
@@ -625,16 +636,20 @@ export default function SSOConfigurationPage() {
                     >
                       @{domain}
                       <button
+                        type="button"
                         onClick={() => removeDomain(domain)}
+                        aria-label={`Remove domain ${domain}`}
                         className="text-ink/50 hover:text-semantic-error"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="w-3 h-3" aria-hidden="true" />
                       </button>
                     </span>
                   ))}
                 </div>
                 <div className="flex gap-2">
                   <input
+                    id="sso-new-domain"
+                    aria-describedby="sso-domains-hint"
                     type="text"
                     value={newDomain}
                     onChange={(e) => setNewDomain(e.target.value)}
@@ -645,9 +660,10 @@ export default function SSOConfigurationPage() {
                   <button
                     type="button"
                     onClick={addDomain}
+                    aria-label="Add domain"
                     className="px-3 py-2 border border-lichen rounded-lg hover:bg-lichen/20"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -659,13 +675,17 @@ export default function SSOConfigurationPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-medium text-ink">Enable SSO</h3>
-                <p className="text-sm text-ink/60">
+                <p id="sso-enabled-hint" className="text-sm text-ink/60">
                   When enabled, users from allowed domains will be redirected to SSO login
                 </p>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
+              <label htmlFor="sso-enabled" className="relative inline-flex items-center cursor-pointer">
+                <span className="sr-only">Enable SSO</span>
                 <input
+                  id="sso-enabled"
                   type="checkbox"
+                  role="switch"
+                  aria-describedby="sso-enabled-hint"
                   checked={enabled}
                   onChange={(e) => setEnabled(e.target.checked)}
                   className="sr-only peer"

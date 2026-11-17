@@ -1,8 +1,11 @@
-import { useState, useRef, useEffect, memo, Component, type ReactNode, type ErrorInfo, type HTMLAttributes, type MouseEvent, type KeyboardEvent } from 'react';
+import { useState, useRef, useEffect, memo, Component, type ReactNode, type ErrorInfo, type HTMLAttributes, type MouseEvent } from 'react';
 import { AlertTriangle, RefreshCw, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useActiveSection } from '../record-detail/ActiveSectionContext';
 import { logger } from '../../lib/logger';
+import {
+  WorkspaceSectionIdContext,
+} from './requiredFields';
 
 interface WorkspaceSectionProps extends Omit<HTMLAttributes<HTMLElement>, 'id' | 'title' | 'children'> {
   /** Section ID for scroll targeting */
@@ -150,8 +153,27 @@ export const WorkspaceSection = memo(function WorkspaceSection({
     }
   }, [isExpanded, children]);
 
+  // Use compact render when empty, collapsed, and not editing
+  const useCompactRender = isEmpty && !isExpanded && !isEditing;
+
+  // The collapsed, compact and expanded headers are different buttons, so
+  // toggling unmounts the one that had focus. Move focus to the new header
+  // button when that happens, so keyboard and screen reader users keep their
+  // place.
+  const headerButtonRef = useRef<HTMLButtonElement>(null);
+  const restoreFocusRef = useRef(false);
+  useEffect(() => {
+    if (!restoreFocusRef.current) return;
+    restoreFocusRef.current = false;
+    const active = document.activeElement;
+    if (!active || active === document.body) {
+      headerButtonRef.current?.focus();
+    }
+  }, [isExpanded, useCompactRender]);
+
   // Handle click - expand/collapse and update nav highlighting
   const handleClick = () => {
+    restoreFocusRef.current = true;
     // If expanding, update active section for nav highlighting
     if (!isExpanded) {
       activeSectionContext?.setActiveSection(id);
@@ -159,8 +181,7 @@ export const WorkspaceSection = memo(function WorkspaceSection({
     onToggle();
   };
 
-  // Use compact render when empty, collapsed, and not editing
-  const useCompactRender = isEmpty && !isExpanded && !isEditing;
+  const contentId = `${id}-content`;
 
   return (
     <section
@@ -181,122 +202,134 @@ export const WorkspaceSection = memo(function WorkspaceSection({
     >
       {/* Compact collapsed state for empty sections */}
       {useCompactRender && (
-        <button
-          type="button"
-          onClick={handleClick}
-          className={cn(
-            'w-full px-3 py-2 flex items-center gap-2 text-left',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bark/30 focus-visible:ring-offset-2',
-            'text-archive hover:text-ink transition-colors'
-          )}
-          aria-expanded={false}
-          aria-controls={`${id}-content`}
-        >
-          {icon && <span className="flex-shrink-0 opacity-50">{icon}</span>}
-          <span className="text-sm">{title}</span>
-          <span className="text-xs text-bark ml-auto">+ Add</span>
-        </button>
+        <h2>
+          <button
+            ref={headerButtonRef}
+            type="button"
+            onClick={handleClick}
+            className={cn(
+              'w-full px-3 py-2 flex items-center gap-2 text-left',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bark/30 focus-visible:ring-offset-2',
+              'text-archive hover:text-ink transition-colors'
+            )}
+            aria-expanded={false}
+          >
+            {icon && <span className="flex-shrink-0 opacity-50" aria-hidden="true">{icon}</span>}
+            <span className="text-sm">{title}</span>
+            <span className="text-xs text-bark ml-auto">+ Add</span>
+          </button>
+        </h2>
       )}
 
       {/* Collapsed state - full card */}
       {!isExpanded && !useCompactRender && (
-        <button
-          type="button"
-          onClick={handleClick}
-          className={cn(
-            'w-full px-4 py-3 flex items-center gap-3 text-left',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bark/30 focus-visible:ring-offset-2'
-          )}
-          aria-expanded={false}
-          aria-controls={`${id}-content`}
-        >
-          {icon && <span className="text-archive flex-shrink-0">{icon}</span>}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-medium text-forest truncate">{title}</h2>
-              {badge && (
-                <span className="text-xs px-2 py-0.5 bg-azurite/10 text-azurite rounded-full flex-shrink-0">
-                  {badge}
-                </span>
-              )}
-              {hasChanges && (
-                <span className="w-2 h-2 bg-semantic-warning rounded-full flex-shrink-0" title="Unsaved changes" />
-              )}
-            </div>
-            {hint && (
-              <div className="text-sm text-archive mt-0.5 truncate">{hint}</div>
+        <h2>
+          <button
+            ref={headerButtonRef}
+            type="button"
+            onClick={handleClick}
+            className={cn(
+              'w-full px-4 py-3 flex items-center gap-3 text-left',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bark/30 focus-visible:ring-offset-2'
             )}
-          </div>
-        </button>
+            aria-expanded={false}
+          >
+            {icon && <span className="text-archive flex-shrink-0" aria-hidden="true">{icon}</span>}
+            <span className="block flex-1 min-w-0">
+              <span className="flex items-center gap-2">
+                <span className="text-base font-medium text-forest truncate">{title}</span>
+                {badge && (
+                  <span className="text-xs px-2 py-0.5 bg-azurite/10 text-azurite rounded-full flex-shrink-0">
+                    {badge}
+                  </span>
+                )}
+                {hasChanges && (
+                  <span className="w-2 h-2 bg-semantic-warning rounded-full flex-shrink-0" title="Unsaved changes">
+                    <span className="sr-only">Unsaved changes</span>
+                  </span>
+                )}
+              </span>
+              {hint && (
+                <span className="block text-sm text-archive mt-0.5 truncate">{hint}</span>
+              )}
+            </span>
+          </button>
+        </h2>
       )}
 
       {/* Expanded state - header */}
       {isExpanded && (
-        <button
-          type="button"
-          onClick={handleClick}
-          className={cn(
-            'w-full px-4 py-3 border-b border-lichen/60 flex items-center justify-between',
-            'cursor-pointer hover:bg-stone/30 transition-colors',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bark/30 focus-visible:ring-offset-2'
-          )}
-          aria-expanded={true}
-          aria-controls={`${id}-content`}
-        >
-          <div className="flex items-center gap-3">
-            {icon && <span className="text-bark flex-shrink-0">{icon}</span>}
-            <h2 className="text-lg font-semibold text-forest">{title}</h2>
-            {badge && (
-              <span className="text-xs px-2 py-0.5 bg-azurite/10 text-azurite rounded-full">
-                {badge}
-              </span>
+        <h2>
+          <button
+            ref={headerButtonRef}
+            type="button"
+            onClick={handleClick}
+            className={cn(
+              'w-full px-4 py-3 border-b border-lichen/60 flex items-center justify-between',
+              'cursor-pointer hover:bg-stone/30 transition-colors',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bark/30 focus-visible:ring-offset-2'
             )}
-            {hasChanges && (
-              <span className="w-2 h-2 bg-semantic-warning rounded-full" title="Unsaved changes" />
-            )}
-          </div>
-          <span className="p-1.5 rounded-md text-archive">
-            <X size={18} />
-          </span>
-        </button>
+            aria-expanded={true}
+            aria-controls={contentId}
+          >
+            <span className="flex items-center gap-3">
+              {icon && <span className="text-bark flex-shrink-0" aria-hidden="true">{icon}</span>}
+              <span className="text-lg font-semibold text-forest">{title}</span>
+              {badge && (
+                <span className="text-xs px-2 py-0.5 bg-azurite/10 text-azurite rounded-full">
+                  {badge}
+                </span>
+              )}
+              {hasChanges && (
+                <span className="w-2 h-2 bg-semantic-warning rounded-full" title="Unsaved changes">
+                  <span className="sr-only">Unsaved changes</span>
+                </span>
+              )}
+            </span>
+            <span className="p-1.5 rounded-md text-archive" aria-hidden="true">
+              <X size={18} />
+            </span>
+          </button>
+        </h2>
       )}
 
       {/* Content — only rendered when expanded */}
       {isExpanded && (
+        // Click-to-edit on the content is a mouse shortcut; keyboard and
+        // screen reader users get the "Edit" button below (shown on focus).
+        // eslint-disable-next-line jsx-a11y/click-events-have-key-events -- mouse shortcut; the Edit button is the keyboard path
         <div
-          id={`${id}-content`}
+          id={contentId}
           ref={contentRef}
           className={cn('p-4', !isEditing && 'cursor-pointer')}
-          {...(!isEditing ? {
-            tabIndex: 0,
-            role: 'button',
-            title: 'Click, Enter, or Space to edit',
-            'aria-label': 'Press Enter or Space to edit this section',
-            onClick: (e: MouseEvent<HTMLDivElement>) => {
-              const target = e.target as HTMLElement;
-              if (target.closest('a, button, input, select, textarea, [role="button"]')) return;
-              if (onEdit) {
-                onEdit();
-              } else {
-                onToggle();
-              }
-            },
-            onKeyDown: (e: KeyboardEvent<HTMLDivElement>) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                const target = e.target as HTMLElement;
-                if (target.closest('a, button, input, select, textarea, [role="button"]')) return;
-                if (onEdit) {
-                  onEdit();
-                } else {
-                  onToggle();
+          title={!isEditing && onEdit ? 'Click to edit' : undefined}
+          onClick={
+            !isEditing
+              ? (e: MouseEvent<HTMLDivElement>) => {
+                  const target = e.target as HTMLElement;
+                  if (target.closest('a, button, input, select, textarea, [role="button"]')) return;
+                  if (onEdit) {
+                    onEdit();
+                  } else {
+                    onToggle();
+                  }
                 }
-              }
-            },
-          } : {})}
+              : undefined
+          }
         >
+          {!isEditing && onEdit && (
+            <button
+              type="button"
+              onClick={onEdit}
+              className="sr-only focus-visible:not-sr-only focus-visible:inline-block focus-visible:mb-3 px-2 py-1 text-sm text-bark underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+            >
+              Edit {title}
+            </button>
+          )}
           <SectionContentErrorBoundary sectionTitle={title}>
-            {children}
+            <WorkspaceSectionIdContext.Provider value={id}>
+              {children}
+            </WorkspaceSectionIdContext.Provider>
           </SectionContentErrorBoundary>
         </div>
       )}

@@ -13,6 +13,12 @@ import {
   ReadOnlyBanner,
   PendingApprovalBanner,
 } from '../../../components/workspace';
+import {
+  RequiredFieldsProvider,
+} from '../../../components/workspace/RequiredFieldsContext';
+import {
+  useRevealSection,
+} from '../../../components/workspace/requiredFields';
 import { RecordDetailPageWrapper, SectionOrderProvider } from '../../../components/record-detail';
 import { ProcedureRequirementsCard } from '../../../components/collections/ProcedureRequirementsCard';
 import { useProcedureRequirements } from '../../../hooks/useProcedureRequirements';
@@ -49,7 +55,9 @@ import { MadronaLoader } from '../../../components/ui/MadronaLoader';
 export default function LoanInWorkspacePage() {
   return (
     <SectionOrderProvider>
-      <LoanInWorkspacePageContent />
+      <RequiredFieldsProvider procedureType="loan_in">
+        <LoanInWorkspacePageContent />
+      </RequiredFieldsProvider>
     </SectionOrderProvider>
   );
 }
@@ -145,6 +153,9 @@ function LoanInWorkspacePageContent() {
   const [showRollbackConfirm, setShowRollbackConfirm] = useState<{
     isOpen: boolean; targetStatus: string; targetStatusLabel: string;
   }>({ isOpen: false, targetStatus: '', targetStatusLabel: '' });
+
+  // Lets the required-fields error summary open a collapsed section.
+  useRevealSection(handleEnterEditMode);
 
   // Loading state
   if (!isCreateMode && isLoading) {

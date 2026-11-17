@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useId } from 'react';
 import Checkbox from '../Checkbox';
 import {
   Plus,
@@ -137,6 +137,7 @@ const STATUS_OPTIONS: Array<{ value: ShipmentStatus; label: string }> = [
 
 // === Component ===
 export function ExhibitionLogisticsTab({ organizationId, exhibitionId, isEditing }: Props) {
+  const fieldId = useId();
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [_summary, setSummary] = useState<ShipmentSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -442,21 +443,26 @@ export function ExhibitionLogisticsTab({ organizationId, exhibitionId, isEditing
             return (
               <div
                 key={shipment.shipment_id}
-                className="bg-parchment border border-lichen rounded-lg p-4 hover:border-bark/30 transition-colors cursor-pointer"
-                onClick={() => openShipmentDrawer(shipment)}
+                className="relative bg-parchment border border-lichen rounded-lg p-4 hover:border-bark/30 transition-colors cursor-pointer"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4">
                     <div className={`p-2 rounded-lg ${statusConfig?.bg || 'bg-stone'}`}>
-                      <DirectionIcon className={`w-5 h-5 ${dirConfig?.color || 'text-ink/50'}`} />
+                      <DirectionIcon className={`w-5 h-5 ${dirConfig?.color || 'text-ink/50'}`} aria-hidden="true" />
+                      {dirConfig && <span className="sr-only">{dirConfig.label}</span>}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-ink">
+                        {/* The button's ::after stretches over the card so the whole card stays clickable */}
+                        <button
+                          type="button"
+                          onClick={() => openShipmentDrawer(shipment)}
+                          className="text-left font-medium text-ink rounded after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2"
+                        >
                           {shipment.shipment_number || `Shipment ${shipment.shipment_id.slice(0, 8)}`}
-                        </span>
+                        </button>
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${statusConfig?.bg} ${statusConfig?.text}`}>
-                          <StatusIcon className="w-3 h-3" />
+                          <StatusIcon className="w-3 h-3" aria-hidden="true" />
                           {shipment.status_label}
                         </span>
                       </div>
@@ -466,7 +472,8 @@ export function ExhibitionLogisticsTab({ organizationId, exhibitionId, isEditing
                         )}
                         {shipment.estimated_dispatch_date && (
                           <span className="flex items-center gap-1">
-                            <Calendar className="w-3.5 h-3.5" />
+                            <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
+                            <span className="sr-only">Estimated dispatch:</span>
                             {formatDateShort(shipment.estimated_dispatch_date)}
                           </span>
                         )}
@@ -476,17 +483,19 @@ export function ExhibitionLogisticsTab({ organizationId, exhibitionId, isEditing
                   <div className="flex items-center gap-2 text-sm text-ink/50">
                     {(shipment.item_count || 0) > 0 && (
                       <span className="flex items-center gap-1">
-                        <Package className="w-3.5 h-3.5" />
+                        <Package className="w-3.5 h-3.5" aria-hidden="true" />
+                        <span className="sr-only">Items:</span>
                         {shipment.item_count}
                       </span>
                     )}
                     {(shipment.document_count || 0) > 0 && (
                       <span className="flex items-center gap-1">
-                        <FileText className="w-3.5 h-3.5" />
+                        <FileText className="w-3.5 h-3.5" aria-hidden="true" />
+                        <span className="sr-only">Documents:</span>
                         {shipment.document_count}
                       </span>
                     )}
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="w-4 h-4" aria-hidden="true" />
                   </div>
                 </div>
               </div>
@@ -686,10 +695,11 @@ export function ExhibitionLogisticsTab({ organizationId, exhibitionId, isEditing
           <div className="space-y-4">
             {/* Direction */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">Direction</label>
-              <div className="flex gap-2">
+              <span id={`${fieldId}-direction-group`} className="block text-sm font-medium text-ink mb-1">Direction</span>
+              <div role="group" aria-labelledby={`${fieldId}-direction-group`} className="flex gap-2">
                 <button
                   type="button"
+                  aria-pressed={editingShipment.direction === 'inbound'}
                   onClick={() => setEditingShipment({ ...editingShipment, direction: 'inbound' })}
                   className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
                     editingShipment.direction === 'inbound'
@@ -702,6 +712,7 @@ export function ExhibitionLogisticsTab({ organizationId, exhibitionId, isEditing
                 </button>
                 <button
                   type="button"
+                  aria-pressed={editingShipment.direction === 'outbound'}
                   onClick={() => setEditingShipment({ ...editingShipment, direction: 'outbound' })}
                   className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
                     editingShipment.direction === 'outbound'
@@ -718,8 +729,8 @@ export function ExhibitionLogisticsTab({ organizationId, exhibitionId, isEditing
             {/* Dates */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Est. Dispatch Date</label>
-                <input
+                <label htmlFor={`${fieldId}-est-dispatch-date`} className="block text-sm font-medium text-ink mb-1">Est. Dispatch Date</label>
+                <input id={`${fieldId}-est-dispatch-date`}
                   type="date"
                   value={editingShipment.estimated_dispatch_date || ''}
                   onChange={(e) => setEditingShipment({ ...editingShipment, estimated_dispatch_date: e.target.value })}
@@ -727,8 +738,8 @@ export function ExhibitionLogisticsTab({ organizationId, exhibitionId, isEditing
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Est. Arrival Date</label>
-                <input
+                <label htmlFor={`${fieldId}-est-arrival-date`} className="block text-sm font-medium text-ink mb-1">Est. Arrival Date</label>
+                <input id={`${fieldId}-est-arrival-date`}
                   type="date"
                   value={editingShipment.estimated_arrival_date || ''}
                   onChange={(e) => setEditingShipment({ ...editingShipment, estimated_arrival_date: e.target.value })}
@@ -739,8 +750,8 @@ export function ExhibitionLogisticsTab({ organizationId, exhibitionId, isEditing
 
             {/* Remarks */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">Remarks</label>
-              <textarea
+              <label htmlFor={`${fieldId}-remarks`} className="block text-sm font-medium text-ink mb-1">Remarks</label>
+              <textarea id={`${fieldId}-remarks`}
                 value={editingShipment.remarks || ''}
                 onChange={(e) => setEditingShipment({ ...editingShipment, remarks: e.target.value })}
                 rows={3}
@@ -751,8 +762,8 @@ export function ExhibitionLogisticsTab({ organizationId, exhibitionId, isEditing
 
             {/* Insurance */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">Insurance Value</label>
-              <input
+              <label htmlFor={`${fieldId}-insurance-value`} className="block text-sm font-medium text-ink mb-1">Insurance Value</label>
+              <input id={`${fieldId}-insurance-value`}
                 type="text"
                 value={editingShipment.insurance_value_total || ''}
                 onChange={(e) => setEditingShipment({ ...editingShipment, insurance_value_total: e.target.value })}
@@ -762,8 +773,8 @@ export function ExhibitionLogisticsTab({ organizationId, exhibitionId, isEditing
             </div>
 
             {/* Courier */}
-            <label className="flex items-center gap-2 text-sm text-ink">
-              <Checkbox
+            <label htmlFor={`${fieldId}-courier-required`} className="flex items-center gap-2 text-sm text-ink">
+              <Checkbox id={`${fieldId}-courier-required`}
                 checked={editingShipment.courier_required || false}
                 onChange={(e) => setEditingShipment({ ...editingShipment, courier_required: e.target.checked })}
               />
@@ -772,8 +783,8 @@ export function ExhibitionLogisticsTab({ organizationId, exhibitionId, isEditing
 
             {/* Internal Notes */}
             <div>
-              <label className="block text-sm font-medium text-ink mb-1">Internal Notes</label>
-              <textarea
+              <label htmlFor={`${fieldId}-internal-notes`} className="block text-sm font-medium text-ink mb-1">Internal Notes</label>
+              <textarea id={`${fieldId}-internal-notes`}
                 value={editingShipment.internal_notes || ''}
                 onChange={(e) => setEditingShipment({ ...editingShipment, internal_notes: e.target.value })}
                 rows={2}

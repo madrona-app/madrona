@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useWorkspacePage } from '../../../hooks/useWorkspacePage';
@@ -61,6 +61,7 @@ export default function SubjectAuthorityWorkspacePage() {
 }
 
 function SubjectAuthorityWorkspacePageContent() {
+  const uid = useId();
   const { orgId, authorityId } = useParams<{ orgId: string; authorityId?: string }>();
 
   const [variantTermInput, setVariantTermInput] = useState('');
@@ -133,6 +134,7 @@ function SubjectAuthorityWorkspacePageContent() {
       aat_id: formData.aat_id,
       iconclass_id: formData.iconclass_id,
       wikidata_id: formData.wikidata_id,
+      lcsh_id: formData.lcsh_id,
     },
     status: {
       status: formData.status,
@@ -268,11 +270,12 @@ function SubjectAuthorityWorkspacePageContent() {
             {/* Variant Terms */}
             {isEditing ? (
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-ink mb-1.5">
+                <label htmlFor={`${uid}-variant-terms`} className="block text-sm font-medium text-ink mb-1.5">
                   Variant Terms
                 </label>
                 <div className="flex gap-2 mb-2">
                   <input
+                    id={`${uid}-variant-terms`}
                     type="text"
                     value={variantTermInput}
                     onChange={(e) => setVariantTermInput(e.target.value)}
@@ -288,9 +291,10 @@ function SubjectAuthorityWorkspacePageContent() {
                   <button
                     type="button"
                     onClick={handleAddVariantTerm}
+                    aria-label="Add variant term"
                     className="px-3 py-2 border border-lichen rounded-lg text-ink hover:bg-stone transition-colors"
                   >
-                    <Plus size={16} />
+                    <Plus size={16} aria-hidden="true" />
                   </button>
                 </div>
                 {formData.variant_terms && formData.variant_terms.length > 0 && (
@@ -301,9 +305,10 @@ function SubjectAuthorityWorkspacePageContent() {
                         <button
                           type="button"
                           onClick={() => handleRemoveVariantTerm(term)}
+                          aria-label={`Remove variant term ${term}`}
                           className="text-archive hover:text-ink"
                         >
-                          <X size={12} />
+                          <X size={12} aria-hidden="true" />
                         </button>
                       </span>
                     ))}
@@ -312,9 +317,9 @@ function SubjectAuthorityWorkspacePageContent() {
               </div>
             ) : formData.variant_terms && formData.variant_terms.length > 0 ? (
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-archive mb-1.5">
+                <span className="block text-sm font-medium text-archive mb-1.5">
                   Variant Terms
-                </label>
+                </span>
                 <div className="flex flex-wrap gap-2">
                   {formData.variant_terms.map((term, i) => (
                     <span key={i} className="px-2 py-0.5 text-xs bg-stone rounded-full text-ink">{term}</span>
@@ -392,6 +397,13 @@ function SubjectAuthorityWorkspacePageContent() {
               isEditing={isEditing}
               onChange={(v) => updateField('wikidata_id', v)}
               placeholder="e.g., Q208267"
+            />
+            <EditableField
+              label="Library of Congress Subject Heading ID"
+              value={formData.lcsh_id || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('lcsh_id', v)}
+              placeholder="e.g., sh85015235"
             />
           </div>
         </WorkspaceSection>

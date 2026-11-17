@@ -16,6 +16,7 @@ vi.mock('../../../lib/api', async () => {
     updateInsurancePolicy: vi.fn(),
     deleteInsurancePolicy: vi.fn(),
     createInsuranceCoverage: vi.fn(),
+    getInsuranceClaims: vi.fn(),
   };
 });
 
@@ -130,6 +131,7 @@ vi.mock('../../../components/collections/ProcedureRequirementsCard', () => ({
 
 const mockGetInsurancePolicy = vi.mocked(api.getInsurancePolicy);
 const mockGetInsuranceCoverages = vi.mocked(api.getInsuranceCoverages);
+const mockGetInsuranceClaims = vi.mocked(api.getInsuranceClaims);
 
 import InsuranceWorkspacePage from '../../../pages/collections/InsuranceWorkspacePage';
 
@@ -181,6 +183,7 @@ describe('InsuranceWorkspacePage', () => {
     vi.clearAllMocks();
     mockHasPermission.mockReturnValue(true);
     mockGetInsuranceCoverages.mockResolvedValue({ coverages: [], total: 0 } as never);
+    mockGetInsuranceClaims.mockResolvedValue({ claims: [], total: 0 } as never);
   });
 
   describe('loading state', () => {
@@ -231,6 +234,23 @@ describe('InsuranceWorkspacePage', () => {
       await waitFor(() => {
         expect(screen.getByTestId('ws-section-history')).toBeInTheDocument();
       });
+    });
+
+    it('lists the policy\u2019s claims, each with a change-history disclosure', async () => {
+      mockGetInsurancePolicy.mockResolvedValue(samplePolicy as never);
+      mockGetInsuranceClaims.mockResolvedValue({
+        claims: [{
+          claim_id: 'cl-1', organization_id: 'org-1', claim_number: 'CLM-9', status: 'filed',
+          status_label: 'Filed', amount_currency: 'USD',
+        }],
+        total: 1,
+      } as never);
+      renderInsurance('/organizations/org-1/collections/insurance/policies/pol-1');
+      const section = await screen.findByTestId('ws-section-claims');
+      expect(section).toHaveAttribute('aria-label', 'Claims');
+      expect(await screen.findByRole('heading', { name: 'Claim CLM-9' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Show change history for Claim CLM-9' })).toBeInTheDocument();
+      expect(mockGetInsuranceClaims).toHaveBeenCalledWith('org-1', { policy_id: 'pol-1' });
     });
 
     it('shows the read-only banner when the user cannot edit', async () => {

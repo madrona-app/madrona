@@ -40,12 +40,23 @@ export function FacilitySection({
           onSave={onFieldBlur}
         />
         <EditableField
+          name="facility_report_date"
           label="Report Date"
           value={formData.facility_report_date}
           isEditing={isEditing}
           onChange={(v) => onUpdateField('facility_report_date', v)}
           onSave={onFieldBlur}
           type="date"
+        />
+        <EditableField
+          name="facility_report_note"
+          label="Facility Report Note"
+          value={formData.facility_report_note || ''}
+          isEditing={isEditing}
+          onChange={(v) => onUpdateField('facility_report_note', v)}
+          multiline
+          rows={2}
+          onSave={onFieldBlur}
         />
         <EditableCheckbox
           label="Report Approved"

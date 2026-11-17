@@ -2,7 +2,7 @@
  * Newsletter Signup Block — Email signup form with heading and description.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useId } from 'react';
 import { Mail, CheckCircle, Loader2 } from 'lucide-react';
 
 // =============================================================================
@@ -23,6 +23,7 @@ interface BlockRendererComponentProps {
 // =============================================================================
 
 export function NewsletterSignupEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const heading = (content.heading as string) || '';
   const description = (content.description as string) || '';
   const buttonText = (content.button_text as string) || '';
@@ -31,10 +32,10 @@ export function NewsletterSignupEditor({ content, onChange }: BlockEditorCompone
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-heading`} className="block text-sm font-medium text-ink mb-1">
           Heading
         </label>
-        <input
+        <input id={`${fieldId}-heading`}
           type="text"
           value={heading}
           onChange={(e) => onChange({ ...content, heading: e.target.value })}
@@ -44,10 +45,10 @@ export function NewsletterSignupEditor({ content, onChange }: BlockEditorCompone
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-description`} className="block text-sm font-medium text-ink mb-1">
           Description
         </label>
-        <textarea
+        <textarea id={`${fieldId}-description`}
           value={description}
           onChange={(e) => onChange({ ...content, description: e.target.value })}
           placeholder="Subscribe to our newsletter for the latest exhibitions and events."
@@ -58,10 +59,10 @@ export function NewsletterSignupEditor({ content, onChange }: BlockEditorCompone
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-button-text`} className="block text-sm font-medium text-ink mb-1">
             Button Text
           </label>
-          <input
+          <input id={`${fieldId}-button-text`}
             type="text"
             value={buttonText}
             onChange={(e) => onChange({ ...content, button_text: e.target.value })}
@@ -70,10 +71,10 @@ export function NewsletterSignupEditor({ content, onChange }: BlockEditorCompone
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-ink mb-1">
+          <label htmlFor={`${fieldId}-form-action-url`} className="block text-sm font-medium text-ink mb-1">
             Form Action URL
           </label>
-          <input
+          <input id={`${fieldId}-form-action-url`}
             type="text"
             value={formActionUrl}
             onChange={(e) => onChange({ ...content, form_action_url: e.target.value })}

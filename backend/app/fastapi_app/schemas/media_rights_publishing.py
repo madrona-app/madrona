@@ -51,6 +51,9 @@ class MediaRightsOut(BaseModel):
     rights_type: str | None = None
     rights_status: str | None = None
     rights_holder: str | None = None
+    rights_holder_agent: str | None = None
+    rights_holder_agent_contact_id: str | None = None
+    rights_holder_agent_contact_name: str | None = None
     license_type: str | None = None
     license_url: str | None = None
     rights_statement: str | None = None

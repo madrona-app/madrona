@@ -22,6 +22,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useMenuNavigation } from '../workspace/useMenuNavigation';
 
 // =============================================================================
 // TYPES
@@ -73,6 +74,7 @@ interface MenuGroupProps {
 }
 
 function MenuGroup({ group, onClose }: MenuGroupProps) {
+  const labelId = `action-menu-group-${group.id}`;
   const handleItemClick = useCallback(
     (item: ActionMenuItem) => {
       if (item.disabled) return;
@@ -83,9 +85,9 @@ function MenuGroup({ group, onClose }: MenuGroupProps) {
   );
 
   return (
-    <div className="py-1">
+    <div className="py-1" role="group" aria-labelledby={group.label ? labelId : undefined}>
       {group.label && (
-        <div className="px-3 py-1.5 text-xs font-semibold text-archive uppercase tracking-wide">
+        <div id={labelId} className="px-3 py-1.5 text-xs font-semibold text-archive uppercase tracking-wide">
           {group.label}
         </div>
       )}
@@ -94,17 +96,21 @@ function MenuGroup({ group, onClose }: MenuGroupProps) {
         return (
           <button
             key={item.id}
+            type="button"
+            role="menuitem"
+            tabIndex={-1}
             onClick={() => handleItemClick(item)}
             disabled={item.disabled}
             className={cn(
               'w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left',
+              'focus-visible:outline-none focus-visible:bg-stone',
               item.variant === 'destructive'
                 ? 'text-semantic-error hover:bg-semantic-error/10'
                 : 'text-ink hover:bg-stone',
               item.disabled && 'opacity-50 cursor-not-allowed'
             )}
           >
-            <Icon size={16} className="flex-shrink-0" />
+            <Icon size={16} className="flex-shrink-0" aria-hidden="true" />
             <span>{item.label}</span>
           </button>
         );
@@ -129,7 +135,15 @@ export function ActionMenu({
 }: ActionMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const closeMenu = useCallback(() => setIsOpen(false), []);
+  const { onKeyDown: onMenuKeyDown } = useMenuNavigation({
+    isOpen,
+    menuRef: listRef,
+    triggerRef,
+    onClose: closeMenu,
+  });
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -217,6 +231,7 @@ export function ActionMenu({
       {/* Trigger button */}
       <button
         ref={triggerRef}
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           'tap-target rounded-lg border border-lichen transition-colors',
@@ -231,12 +246,13 @@ export function ActionMenu({
         aria-label="More actions"
         title="More actions"
       >
-        <MoreHorizontal size={iconSize} className="text-archive" />
+        <MoreHorizontal size={iconSize} className="text-archive" aria-hidden="true" />
       </button>
 
       {/* Dropdown menu */}
       {isOpen && (
         <div
+          ref={listRef}
           className={cn(
             'absolute right-0 top-full mt-1 z-50',
             'min-w-[200px] max-w-[280px]',
@@ -244,11 +260,14 @@ export function ActionMenu({
             'py-1 overflow-hidden'
           )}
           role="menu"
+          aria-label="More actions"
           aria-orientation="vertical"
+          onKeyDown={onMenuKeyDown}
+          tabIndex={-1}
         >
           {groups.map((group, index) => (
             <div key={group.id}>
-              {index > 0 && <div className="border-t border-lichen my-1" />}
+              {index > 0 && <div role="separator" className="border-t border-lichen my-1" />}
               <MenuGroup group={group} onClose={handleClose} />
             </div>
           ))}

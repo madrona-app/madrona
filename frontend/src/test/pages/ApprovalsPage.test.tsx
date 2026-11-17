@@ -101,9 +101,9 @@ describe('ApprovalsPage', () => {
 
     it('renders Awaiting you, All pending, and History tabs', async () => {
       renderApprovalsPage();
-      expect(screen.getByRole('button', { name: /awaiting you/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /all pending/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /awaiting you/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /all pending/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /history/i })).toBeInTheDocument();
     });
 
     it('shows loading state initially', () => {
@@ -127,7 +127,7 @@ describe('ApprovalsPage', () => {
       await waitFor(() => {
         expect(screen.getByText('Nothing awaiting you')).toBeInTheDocument();
       });
-      fireEvent.click(screen.getByRole('button', { name: /all pending/i }));
+      fireEvent.click(screen.getByRole('tab', { name: /all pending/i }));
       await waitFor(() => {
         expect(screen.getByText('No pending approvals')).toBeInTheDocument();
       });
@@ -138,7 +138,7 @@ describe('ApprovalsPage', () => {
       await waitFor(() => {
         expect(screen.getByText('Nothing awaiting you')).toBeInTheDocument();
       });
-      fireEvent.click(screen.getByRole('button', { name: /history/i }));
+      fireEvent.click(screen.getByRole('tab', { name: /history/i }));
       await waitFor(() => {
         expect(screen.getByText('No completed approvals yet')).toBeInTheDocument();
       });
@@ -200,7 +200,7 @@ describe('ApprovalsPage', () => {
     it('shows the awaiting-you count badge', async () => {
       renderApprovalsPage();
       await waitFor(() => {
-        const mineTab = screen.getByRole('button', { name: /awaiting you/i });
+        const mineTab = screen.getByRole('tab', { name: /awaiting you/i });
         expect(mineTab.textContent).toContain('1');
       });
     });
@@ -422,7 +422,7 @@ describe('ApprovalsPage', () => {
         expect(screen.getByText('Nothing awaiting you')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByRole('button', { name: /history/i }));
+      fireEvent.click(screen.getByRole('tab', { name: /history/i }));
 
       await waitFor(() => {
         expect(screen.getByText('Approved')).toBeInTheDocument();
@@ -435,7 +435,7 @@ describe('ApprovalsPage', () => {
         expect(screen.getByText('Nothing awaiting you')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByRole('button', { name: /history/i }));
+      fireEvent.click(screen.getByRole('tab', { name: /history/i }));
 
       await waitFor(() => {
         expect(screen.getByText('by Carol Director')).toBeInTheDocument();

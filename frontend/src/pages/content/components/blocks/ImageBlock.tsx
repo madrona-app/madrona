@@ -2,7 +2,7 @@
  * Image Block — Media asset with caption, alt text, and size controls.
  */
 
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { Image as ImageIcon, FolderOpen } from 'lucide-react';
 import { MediaPickerModal } from '../../../../components/content/MediaPickerModal';
 import { ResponsiveImage } from '../../../../components/ui/ResponsiveImage';
@@ -41,6 +41,7 @@ const SIZE_CLASSES: Record<ImageSize, string> = {
 // =============================================================================
 
 export function ImageEditor({ content, onChange, organizationId }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const mediaId = (content.media_id as string) || '';
   const caption = (content.caption as string) || '';
   const alt = (content.alt as string) || '';
@@ -49,10 +50,10 @@ export function ImageEditor({ content, onChange, organizationId }: BlockEditorCo
 
   return (
     <div className="space-y-3">
-      <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+      <div role="group" aria-labelledby={`${fieldId}-image-group`}>
+        <span id={`${fieldId}-image-group`} className="block text-sm font-medium text-ink mb-1">
           Image
-        </label>
+        </span>
         {mediaId ? (
           <div className="flex items-start gap-3">
             <div className="w-24 h-24 rounded-lg overflow-hidden bg-stone/30 shrink-0">
@@ -95,10 +96,10 @@ export function ImageEditor({ content, onChange, organizationId }: BlockEditorCo
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-alt-text`} className="block text-sm font-medium text-ink mb-1">
           Alt Text
         </label>
-        <input
+        <input id={`${fieldId}-alt-text`}
           type="text"
           value={alt}
           onChange={(e) => onChange({ ...content, alt: e.target.value })}
@@ -108,10 +109,10 @@ export function ImageEditor({ content, onChange, organizationId }: BlockEditorCo
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-caption`} className="block text-sm font-medium text-ink mb-1">
           Caption
         </label>
-        <input
+        <input id={`${fieldId}-caption`}
           type="text"
           value={caption}
           onChange={(e) => onChange({ ...content, caption: e.target.value })}
@@ -121,10 +122,10 @@ export function ImageEditor({ content, onChange, organizationId }: BlockEditorCo
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-size`} className="block text-sm font-medium text-ink mb-1">
           Size
         </label>
-        <select
+        <select id={`${fieldId}-size`}
           value={size}
           onChange={(e) => onChange({ ...content, size: e.target.value })}
           className="input w-full text-sm"

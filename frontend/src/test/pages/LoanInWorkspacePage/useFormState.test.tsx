@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import React from 'react';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFormState } from '../../../pages/collections/LoanInWorkspacePage/useFormState';
@@ -173,6 +175,33 @@ describe('useFormState (LoanIn)', () => {
       // Empty strings -> null
       expect((payloadArg as Record<string, unknown>).exhibition_id).toBeNull();
       expect((payloadArg as Record<string, unknown>).loan_purpose).toBe('exhibition');
+    });
+
+    it('sends every field on the loan in form when creating', async () => {
+      // The fields the form has controls for (backend procedure_form_fields.json,
+      // kept equal to the forms by ProcedureFormFields.test.ts).
+      const listed = JSON.parse(
+        readFileSync(resolve(process.cwd(), '../backend/app/services/procedure_form_fields.json'), 'utf8'),
+      ) as Record<string, string[]>;
+      mockCreate.mockResolvedValue({ loan_in_id: 'new-loan' } as never);
+      const { result } = renderHook(
+        () => useFormState({ orgId: 'org-1', loanId: undefined, isCreateMode: true, entryId: null, loan: undefined }),
+        { wrapper: makeWrapper() }
+      );
+      const valueFor = (name: string) =>
+        name.endsWith('_date') ? '2026-01-02' : /amount|value|renewals/.test(name) ? '12' : `${name} text`;
+      act(() => {
+        for (const name of listed.loan_in) {
+          result.current.updateField(name as never, valueFor(name) as never);
+        }
+      });
+      act(() => {
+        result.current.handleCreateSave();
+      });
+      await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1));
+      const payload = mockCreate.mock.calls[0][1] as Record<string, unknown>;
+      const missing = listed.loan_in.filter((name) => payload[name] === undefined || payload[name] === null);
+      expect(missing).toEqual([]);
     });
 
     it('passes entry_id when creating from object entry', async () => {

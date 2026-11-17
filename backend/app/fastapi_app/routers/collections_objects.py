@@ -10,9 +10,11 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, text
+from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.orm import Session, joinedload, object_session, selectinload
 
+from app.services.child_rows import blank_to_none as _blank_to_none, reconcile_child_rows as _reconcile_child_rows
 from app.database import get_db
 from app.fastapi_app.dependencies.auth import AuthContext, require_auth, require_permission
 from app.models import (
@@ -86,6 +88,157 @@ from app.fastapi_app.schemas.collections_objects import (
     OtherNumberTypeDeleteResponse,
 )
 from app.fastapi_app.schemas.common import MessageResponse
+from app.services.external_links import ExternalLinkError, normalize_external_links
+
+
+# Publication state is changed only through the publish endpoints in
+# collections_discover.py, which require discover.publish and enforce the NAGPRA
+# display-consent gate. The generic create/update must never set it, or any
+# editor could publish a record (and bypass that gate) by sending the field.
+PUBLISH_CONTROLLED_FIELDS = frozenset({"is_discoverable", "discoverable_at", "discoverable_by"})
+
+
+def _reject_publish_fields(data: dict, obj=None) -> None:
+    for field in PUBLISH_CONTROLLED_FIELDS & set(data):
+        value = data.pop(field)
+        current = getattr(obj, field, None) if obj is not None else None
+        if field == "is_discoverable":
+            requested, current = bool(value), bool(current)
+        else:
+            continue  # timestamps/actors are derived; silently ignored
+        if requested != current:
+            raise HTTPException(status_code=403, detail={
+                "code": "forbidden",
+                "message": "Publishing is a separate action that requires the "
+                           "Publish to Discover permission. Use the publish control.",
+                "field": field,
+            })
+
+
+def _check_cataloging_status(data: dict, obj=None) -> None:
+    """Keep "In review" under the review workflow.
+
+    Entering review must assign and notify a reviewer, and leaving it must
+    record a decision; editing the field directly would skip both.
+    """
+    if "cataloging_status" not in data:
+        return
+    from app.services.record_workflow import CATALOGING_STATUSES, pending_review
+    new = data["cataloging_status"] or None
+    current = getattr(obj, "cataloging_status", None) if obj is not None else None
+    if new == current:
+        return
+    if new is not None and new not in CATALOGING_STATUSES:
+        raise HTTPException(status_code=422, detail={
+            "code": "validation_error", "field": "cataloging_status",
+            "message": f"Cataloguing status must be one of: {', '.join(CATALOGING_STATUSES)}",
+        })
+    if new == "pending_review":
+        raise HTTPException(status_code=422, detail={
+            "code": "validation_error", "field": "cataloging_status",
+            "message": "Use Submit for review to put a record in review, so a reviewer is assigned and notified.",
+        })
+    if obj is not None and current == "pending_review" and pending_review(obj_session(obj), obj.object_id):
+        raise HTTPException(status_code=422, detail={
+            "code": "validation_error", "field": "cataloging_status",
+            "message": "This record is in review. The reviewer approves it or requests changes, or the review can be cancelled.",
+        })
+
+
+def obj_session(obj):
+    from sqlalchemy.orm import object_session
+    return object_session(obj)
+
+
+def _sync_completeness_flags(db: Session, organization_id: UUID, obj) -> None:
+    """Set/clear completeness-rule flags on obj. Never blocks the save."""
+    try:
+        from app.services.record_workflow import sync_rule_flags
+        db.flush()
+        db.expire(obj, ["title_links", "measurement_links", "material_links", "constituent_xrefs", "media_links"])
+        sync_rule_flags(db, organization_id, obj)
+    except Exception:
+        logger.exception("Completeness rule evaluation failed for object %s", getattr(obj, "object_id", None))
+
+
+def _hierarchy_error(e):
+    raise HTTPException(status_code=e.status, detail={"code": e.code, "message": str(e),
+                                                       "field": "parent_object_id"})
+
+
+def _pop_hierarchy(data: dict, protected_fields: set) -> tuple[bool, object, object]:
+    """Take parent_object_id / sibling_order out of the payload.
+
+    They are applied through app.services.archival_hierarchy, which enforces
+    the hierarchy's invariants. Returns (parent_given, parent_id, order).
+    """
+    parent_given = "parent_object_id" in data and "parent_object_id" not in protected_fields
+    raw = data.pop("parent_object_id", None)
+    order = data.pop("sibling_order", None) if "sibling_order" not in protected_fields else None
+    if "sibling_order" in protected_fields:
+        data.pop("sibling_order", None)
+    parent_id = None
+    if parent_given and raw:
+        try:
+            parent_id = UUID(str(raw))
+        except ValueError:
+            raise HTTPException(status_code=422, detail={"code": "validation_error",
+                                                         "message": "parent_object_id is not valid",
+                                                         "field": "parent_object_id"})
+    return parent_given, parent_id, order
+
+
+def _apply_custom_fields(db, organization_id, auth, obj, data, *, creating: bool):
+    """Validate custom field values (type, choices, required, per-field role permissions)."""
+    from app.services import custom_fields as cf
+    incoming = data.pop("custom_fields", None) if "custom_fields" in data else None
+    if incoming is None and not creating:
+        return None
+    ctx = cf.role_context(db, organization_id, auth.user_id, auth.role_override)
+    try:
+        return cf.apply_values(db, organization_id, getattr(obj, "custom_fields", None) if obj else None,
+                               incoming, ctx, creating=creating)
+    except cf.CustomFieldError as e:
+        raise HTTPException(status_code=e.status, detail={"code": "validation_error", "message": str(e),
+                                                           "field": f"custom_fields.{e.field}" if e.field else "custom_fields"})
+
+
+def _filter_custom_fields(db, organization_id, auth, serialized: dict) -> dict:
+    """Hide custom fields the caller's role may not view."""
+    if serialized.get("custom_fields"):
+        from app.services import custom_fields as cf
+        ctx = cf.role_context(db, organization_id, auth.user_id, auth.role_override)
+        serialized["custom_fields"] = cf.visible_values(db, organization_id, serialized["custom_fields"], ctx)
+    return serialized
+
+
+def _parse_custom_field_filters(db, organization_id, auth, raw: list[str]) -> list[tuple[str, str, str]]:
+    """Parse ?custom_field=key:value into (key, type, value) for searchable fields the caller may view."""
+    if not raw:
+        return []
+    from app.services import custom_fields as cf
+    ctx = cf.role_context(db, organization_id, auth.user_id, auth.role_override)
+    defs = {d.key: d for d in cf.definitions(db, organization_id)}
+    out = []
+    for item in raw:
+        key, sep, value = item.partition(":")
+        d = defs.get(key.strip())
+        if not sep or d is None or not d.is_searchable or not cf.can_view(d, ctx) or not value.strip():
+            raise HTTPException(status_code=422, detail={"code": "validation_error", "field": "custom_field",
+                                                         "message": f"Cannot filter on “{key}”"})
+        out.append((d.key, d.field_type, value.strip()))
+    return out
+
+
+def _validated_external_links(value):
+    try:
+        return normalize_external_links(value)
+    except ExternalLinkError as e:
+        raise HTTPException(status_code=422, detail={
+            "code": "validation_error",
+            "message": str(e),
+            "field": "external_links",
+        })
 
 logger = logging.getLogger(__name__)
 
@@ -99,10 +252,8 @@ router = APIRouter(tags=["collections-objects"])
 def _sync_link_tables(obj, data, org_uuid, user_uuid):
     """Sync link table data from frontend payload (JSONB-shaped) into link table records.
 
-    Safety note: The clear-and-recreate pattern here is safe because the entire
-    update (including this sync) runs inside a single DB transaction that is
-    committed in the calling function. If any step fails, the transaction rolls
-    back and no data is lost.  Do NOT add intermediate commits or flushes here.
+    Rows are reconciled in place (see _reconcile_child_rows) inside the
+    caller's transaction; do NOT add intermediate commits here.
 
     Returns:
         list[str]: Warning messages for items that were silently dropped.
@@ -112,25 +263,24 @@ def _sync_link_tables(obj, data, org_uuid, user_uuid):
     warnings: list[str] = []
 
     if "titles" in data:
-        # Clear existing and recreate
-        obj.title_links.clear()
+        wanted = []
         for i, t in enumerate(data["titles"] or []):
             title_text = t.get("title", "").strip() if isinstance(t, dict) else ""
             if not title_text:
                 warnings.append(f"Title at position {i + 1} was skipped (empty title)")
                 continue
-            obj.title_links.append(ObjectTitle(
-                organization_id=org_uuid,
-                title=title_text,
-                title_type=t.get("title_type"),
-                language=t.get("language"),
-                is_preferred=bool(t.get("is_preferred", False)),
-                display_order=i,
-                created_by=user_uuid,
-            ))
+            wanted.append({
+                "title": title_text,
+                "title_type": t.get("title_type"),
+                "language": t.get("language"),
+                "is_preferred": bool(t.get("is_preferred", False)),
+            })
+        _reconcile_child_rows(obj.title_links, wanted, ObjectTitle,
+                              ("title", "title_type", "language", "is_preferred"),
+                              org_uuid, user_uuid, key_fields=("title",))
 
     if "other_numbers" in data:
-        obj.other_number_links.clear()
+        wanted = []
         for i, n in enumerate(data["other_numbers"] or []):
             num_type = n.get("type", "").strip() if isinstance(n, dict) else ""
             num_value = n.get("value", "").strip() if isinstance(n, dict) else ""
@@ -142,16 +292,13 @@ def _sync_link_tables(obj, data, org_uuid, user_uuid):
                     missing.append("value")
                 warnings.append(f"Other number at position {i + 1} was skipped (missing {', '.join(missing)})")
                 continue
-            obj.other_number_links.append(ObjectOtherNumber(
-                organization_id=org_uuid,
-                number_type=num_type,
-                number_value=num_value,
-                display_order=i,
-                created_by=user_uuid,
-            ))
+            wanted.append({"number_type": num_type, "number_value": num_value})
+        _reconcile_child_rows(obj.other_number_links, wanted, ObjectOtherNumber,
+                              ("number_type", "number_value"),
+                              org_uuid, user_uuid, key_fields=("number_type",))
 
     if "measurements" in data:
-        obj.measurement_links.clear()
+        wanted = []
         for i, m in enumerate(data["measurements"] or []):
             if not isinstance(m, dict) or not m.get("dimension") or m.get("value") is None or not m.get("unit"):
                 missing = []
@@ -165,39 +312,138 @@ def _sync_link_tables(obj, data, org_uuid, user_uuid):
                 if missing:
                     warnings.append(f"Measurement at position {i + 1} was skipped (missing {', '.join(missing)})")
                 continue
-            obj.measurement_links.append(ObjectMeasurement(
-                organization_id=org_uuid,
-                dimension=m["dimension"],
-                value=Decimal(str(m["value"])),
-                unit=m["unit"],
-                part=m.get("part"),
-                display_order=i,
-                created_by=user_uuid,
-            ))
+            wanted.append({
+                "dimension": m["dimension"],
+                "value": Decimal(str(m["value"])),
+                "unit": m["unit"],
+                "part": m.get("part"),
+            })
+        _reconcile_child_rows(obj.measurement_links, wanted, ObjectMeasurement,
+                              ("dimension", "value", "unit", "part"),
+                              org_uuid, user_uuid, key_fields=("dimension", "part"))
 
     if "inscriptions" in data:
-        obj.inscription_links.clear()
+        wanted = []
         for i, ins in enumerate(data["inscriptions"] or []):
             content = ins.strip() if isinstance(ins, str) else (ins.get("content", "").strip() if isinstance(ins, dict) else "")
             if not content:
                 warnings.append(f"Inscription at position {i + 1} was skipped (empty content)")
                 continue
-            obj.inscription_links.append(ObjectInscription(
-                organization_id=org_uuid,
-                content=content,
-                inscription_type=ins.get("inscription_type") if isinstance(ins, dict) else None,
-                location_on_object=ins.get("location_on_object") if isinstance(ins, dict) else None,
-                method=ins.get("method") if isinstance(ins, dict) else None,
-                language=ins.get("language") if isinstance(ins, dict) else None,
-                display_order=i,
-                created_by=user_uuid,
-            ))
+            wanted.append({
+                "content": content,
+                "inscription_type": ins.get("inscription_type") if isinstance(ins, dict) else None,
+                "location_on_object": ins.get("location_on_object") if isinstance(ins, dict) else None,
+                "method": ins.get("method") if isinstance(ins, dict) else None,
+                "language": ins.get("language") if isinstance(ins, dict) else None,
+            })
+        _reconcile_child_rows(obj.inscription_links, wanted, ObjectInscription,
+                              ("content", "inscription_type", "location_on_object", "method", "language"),
+                              org_uuid, user_uuid, key_fields=("location_on_object", "inscription_type"))
+
+    if "classifications" in data:
+        warnings += _sync_classifications(obj, data["classifications"] or [], org_uuid, user_uuid)
 
     return warnings
 
 
+def _sync_classifications(obj, items, org_uuid, user_uuid) -> list[str]:
+    """Replace the object's classification links from the form's list.
+
+    Classifications are stored as links to values in the 'classification'
+    lookup list. The form sends {value_id?, value_key?, term}: each item is
+    matched to the organization's (or the global) value by id, key or label,
+    and a term with no match becomes a new organization value, so a term
+    chosen in the editor is kept rather than silently dropped.
+    """
+    import re as _re
+    from sqlalchemy import func as _func, or_ as _or
+    from sqlalchemy.orm import object_session
+    from app.models import LookupCategory, LookupValue, ObjectClassification
+
+    db = object_session(obj)
+    warnings: list[str] = []
+    category = db.query(LookupCategory).filter(LookupCategory.category_key == "classification").first()
+    if category is None:
+        if items:
+            warnings.append("Classifications were not saved: the classification list is not set up")
+        return warnings
+
+    def _values():
+        return db.query(LookupValue).filter(
+            LookupValue.category_id == category.category_id,
+            _or(LookupValue.organization_id == org_uuid, LookupValue.organization_id.is_(None)),
+        )
+
+    wanted: list = []
+    for i, item in enumerate(items):
+        if not isinstance(item, dict):
+            continue
+        term = (item.get("term") or "").strip()
+        value = None
+        if item.get("value_id"):
+            try:
+                value = _values().filter(LookupValue.value_id == UUID(str(item["value_id"]))).first()
+            except ValueError:
+                value = None
+        if value is None and item.get("value_key"):
+            value = _values().filter(LookupValue.value_key == str(item["value_key"])).first()
+        if value is None and term:
+            # Prefer the organization's own value over a global one.
+            value = _values().filter(_func.lower(LookupValue.label) == term.lower()) \
+                .order_by(LookupValue.organization_id.is_(None)).first()
+        if value is None and term:
+            key = _re.sub(r"[^a-z0-9]+", "_", term.lower()).strip("_")[:100] or "term"
+            value = LookupValue(value_id=uuid4(), category_id=category.category_id, organization_id=org_uuid,
+                                value_key=key, label=term[:255], is_active=True)
+            db.add(value)
+        if value is None:
+            warnings.append(f"Classification at position {i + 1} was skipped (empty term)")
+            continue
+        if value.value_id not in wanted:
+            wanted.append(value.value_id)
+
+    # Reconcile in place: keep links whose term is still wanted, delete the
+    # rest explicitly (so the audit listener records "Removed classification")
+    # and add new ones, so an unchanged save records nothing.
+    existing = {link.value_id: link for link in obj.classification_links}
+    for value_id, link in list(existing.items()):
+        if value_id not in wanted:
+            obj.classification_links.remove(link)
+            if sa_inspect(link).persistent:
+                db.delete(link)
+    for order, value_id in enumerate(wanted):
+        link = existing.get(value_id)
+        if link is None:
+            obj.classification_links.append(ObjectClassification(
+                organization_id=org_uuid, value_id=value_id, display_order=order, created_by=user_uuid,
+            ))
+        elif link.display_order != order:
+            link.display_order = order
+    return warnings
+
+
 # Fields that are now link tables, not model columns
-_LINK_TABLE_FIELDS = {'titles', 'other_numbers', 'measurements', 'inscriptions'}
+_LINK_TABLE_FIELDS = {'titles', 'other_numbers', 'measurements', 'inscriptions', 'classifications'}
+
+
+def _enforce_strict_vocabulary(db, organization_id, data, existing_obj, protected_fields) -> None:
+    """422 when a field the org switched to strict holds an unknown value.
+
+    Write-restricted fields are skipped: they are dropped from the write
+    anyway, so they must not block the rest of the save.
+    """
+    from app.services.vocabulary_validation import (
+        VocabularyValidationError,
+        validate_strict_vocabulary,
+    )
+
+    try:
+        validate_strict_vocabulary(
+            db, organization_id, data,
+            existing_obj=existing_obj, skip_fields=set(protected_fields),
+        )
+    except VocabularyValidationError as e:
+        raise HTTPException(status_code=422, detail=e.to_detail())
 
 
 # ============================================================================
@@ -239,6 +485,18 @@ def create_collection_object(
     from app.services.coerce import coerce_value_for_column
     protected_fields = {'object_id', 'organization_id', 'created_at', 'updated_at', 'created_by', 'updated_by', 'barcode'}
     protected_fields |= get_write_restricted_fields('collection_object', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
+    _reject_publish_fields(data)
+    _check_cataloging_status(data)
+    custom_values = _apply_custom_fields(db, organization_id, auth, None, data, creating=True)
+    parent_given, parent_id, sibling_order = _pop_hierarchy(data, protected_fields)
+    from app.services import archival_hierarchy as _ah
+    try:
+        _ah.validate_parent(db, organization_id, None, parent_id, data.get("catalog_level"))
+    except _ah.HierarchyError as e:
+        _hierarchy_error(e)
+    if "external_links" in data:
+        data["external_links"] = _validated_external_links(data["external_links"])
+    _enforce_strict_vocabulary(db, organization_id, data, None, protected_fields)
     filtered_data = {}
     for k, v in data.items():
         if hasattr(CollectionObject, k) and k not in protected_fields:
@@ -252,9 +510,15 @@ def create_collection_object(
     )
 
     obj = _create_collection_object(db, organization_id, filtered_data, user_uuid, open_approval=True)
+    obj.custom_fields = custom_values
+    if parent_id is not None:
+        obj.parent_object_id = parent_id
+        obj.sibling_order = int(sibling_order) if sibling_order is not None else \
+            _ah.next_sibling_order(db, organization_id, parent_id)
 
     # Create link table records
     sync_warnings = _sync_link_tables(obj, link_data, organization_id, user_uuid)
+    _sync_completeness_flags(db, organization_id, obj)
 
     try:
         db.commit()
@@ -265,7 +529,7 @@ def create_collection_object(
         # Index in OpenSearch (async, don't fail if unavailable)
         _index_collection_object(obj)
 
-        result = _serialize_collection_object_full(obj, session=db)
+        result = _filter_custom_fields(db, organization_id, auth, _serialize_collection_object_full(obj, session=db))
         if sync_warnings:
             result["_warnings"] = sync_warnings
         return result
@@ -295,6 +559,10 @@ def list_collection_objects(
     include_location: bool = Query(False),
     sort_by: str = Query("created_at"),
     sort_order: str = Query("desc"),
+    custom_field: list[str] = Query(default=[], description="key:value filters on user-defined fields (repeatable)"),
+    include_deaccessioned: bool = Query(
+        False, description="Include deaccessioned objects when the organization hides them from search",
+    ),
     auth: AuthContext = Depends(require_permission(Permission.COLLECTIONS_VIEW)),
     db: Session = Depends(get_db),
 ):
@@ -302,12 +570,25 @@ def list_collection_objects(
     List collection objects with filtering and pagination.
 
     Uses OpenSearch for full-text search when available, falls back to database.
+    Deaccessioned objects are left out while the organization hides them from
+    search, unless ``include_deaccessioned`` or ``object_status=deaccessioned``.
     """
     if sort_order not in ("asc", "desc"):
         sort_order = "desc"
 
-    # Try OpenSearch first when search term is provided
-    if search:
+    from app.services import deaccession_visibility as dv
+
+    exclude_deaccessioned = dv.exclude_from_staff_search(
+        dv.hides_deaccessioned(db, organization_id),
+        include_deaccessioned,
+        [object_status] if object_status else None,
+    )
+
+    custom_filters = _parse_custom_field_filters(db, organization_id, auth, custom_field)
+
+    # Try OpenSearch first when search term is provided (user-defined field
+    # filters run on the database path).
+    if search and not custom_filters:
         from app.search.collections.service import (
             CollectionsSearchService,
             get_collections_search_service,
@@ -327,6 +608,7 @@ def list_collection_objects(
                     object_status=[object_status] if object_status else None,
                     location_id=[location_id] if location_id else None,
                 )
+                filters = dv.apply_to_filters(filters, exclude_deaccessioned)
 
                 # Map sort fields
                 sort_field_map = {
@@ -380,7 +662,7 @@ def list_collection_objects(
                 primary_images = _get_primary_images_bulk(obj_ids, organization_id, session=db) if obj_ids else {}
 
                 return {
-                    "objects": [
+                    "items": [
                         apply_field_access(
                             _serialize_collection_object(
                                 o,
@@ -431,8 +713,21 @@ def list_collection_objects(
     if object_status:
         query = query.filter(CollectionObject.object_status == object_status)
 
+    if exclude_deaccessioned:
+        query = query.filter(CollectionObject.object_status != dv.DEACCESSIONED)
+
     if location_id:
         query = query.filter(CollectionObject.current_location_id == UUID(location_id))
+
+    for key, field_type, value in custom_filters:
+        if field_type == "multi_select":
+            query = query.filter(CollectionObject.custom_fields.contains({key: [value]}))
+        elif field_type in ("text", "long_text", "url"):
+            query = query.filter(CollectionObject.custom_fields[key].astext.ilike(f"%{escape_ilike(value)}%", escape="\\"))
+        elif field_type == "boolean":
+            query = query.filter(CollectionObject.custom_fields.contains({key: value.lower() in ("true", "yes", "1")}))
+        else:  # select, number, date: exact (case-insensitive for text forms)
+            query = query.filter(func.lower(CollectionObject.custom_fields[key].astext) == value.lower())
 
     # Always load linked entity counts for indicators
     query = query.options(
@@ -535,7 +830,7 @@ def get_collection_object(
 
     serialized = _serialize_collection_object_full(obj, include_constituents=True, session=db)
     filtered = apply_field_access(serialized, 'collection_object', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
-    return filtered
+    return _filter_custom_fields(db, organization_id, auth, filtered)
 
 
 @router.put("/api/organizations/{organization_id}/collections/objects/{object_id}", response_model=dict, summary="Update collection object")
@@ -585,6 +880,28 @@ def update_collection_object(
     # Update allowed fields
     protected_fields = {'object_id', 'organization_id', 'created_at', 'created_by', 'updated_at', 'updated_by'}
     protected_fields |= get_write_restricted_fields('collection_object', str(organization_id), str(auth.user_id), session=db, role_override=auth.role_override)
+    _reject_publish_fields(data, obj)
+    _check_cataloging_status(data, obj)
+    if "custom_fields" in data:
+        obj.custom_fields = _apply_custom_fields(db, organization_id, auth, obj, data, creating=False)
+    parent_given, parent_id, sibling_order = _pop_hierarchy(data, protected_fields)
+    from app.services import archival_hierarchy as _ah
+    try:
+        if "catalog_level" in data and "catalog_level" not in protected_fields \
+                and data["catalog_level"] != obj.catalog_level:
+            _ah.check_level_change(db, organization_id, obj, data["catalog_level"] or None)
+        if parent_given and parent_id != obj.parent_object_id:
+            if "catalog_level" in data and "catalog_level" not in protected_fields:
+                obj.catalog_level = data["catalog_level"] or None
+            _ah.set_parent(db, organization_id, obj, parent_id, sibling_order)
+        elif sibling_order is not None and obj.parent_object_id:
+            obj.sibling_order = int(sibling_order)
+    except _ah.HierarchyError as e:
+        db.rollback()
+        _hierarchy_error(e)
+    if "external_links" in data:
+        data["external_links"] = _validated_external_links(data["external_links"])
+    _enforce_strict_vocabulary(db, organization_id, data, obj, protected_fields)
     from app.services.coerce import coerce_value_for_column
     for key, value in data.items():
         if hasattr(obj, key) and key not in protected_fields:
@@ -596,6 +913,7 @@ def update_collection_object(
 
     obj.updated_by = user_uuid
     obj.updated_at = datetime.now(timezone.utc)
+    _sync_completeness_flags(db, organization_id, obj)
 
     try:
         db.commit()
@@ -607,7 +925,7 @@ def update_collection_object(
         # Re-index linked media so denormalized object metadata stays in sync
         _reindex_linked_media(obj)
 
-        result = _serialize_collection_object_full(obj, session=db)
+        result = _filter_custom_fields(db, organization_id, auth, _serialize_collection_object_full(obj, session=db))
         if sync_warnings:
             result["_warnings"] = sync_warnings
         return result
@@ -643,6 +961,15 @@ def delete_collection_object(
         raise HTTPException(status_code=404, detail={
             "code": "not_found",
             "message": "Object not found",
+        })
+
+    from app.services.archival_hierarchy import child_counts as _child_counts
+    n_children = _child_counts(db, organization_id, [obj.object_id]).get(obj.object_id, 0)
+    if n_children:
+        raise HTTPException(status_code=409, detail={
+            "code": "has_children",
+            "message": f"This record contains {n_children} other record{'s' if n_children != 1 else ''}. "
+                       "Move or delete them first.",
         })
 
     obj.is_deleted = True

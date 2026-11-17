@@ -5,6 +5,7 @@
  * Renderer: fetches object detail from Discover API and renders a spotlight card.
  */
 
+import { useId } from 'react';
 import Checkbox from '../../../../components/Checkbox';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -32,6 +33,7 @@ type SpotlightLayout = 'horizontal' | 'vertical';
 // =============================================================================
 
 export function ObjectSpotlightEditor({ content, onChange }: BlockEditorComponentProps) {
+  const fieldId = useId();
   const objectId = (content.object_id as string) || '';
   const showDescription = (content.show_description as boolean) ?? true;
   const showCreator = (content.show_creator as boolean) ?? true;
@@ -40,10 +42,10 @@ export function ObjectSpotlightEditor({ content, onChange }: BlockEditorComponen
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${fieldId}-object-id`} className="block text-sm font-medium text-ink mb-1">
           Object ID <span className="text-semantic-error">*</span>
         </label>
-        <input
+        <input id={`${fieldId}-object-id`}
           type="text"
           value={objectId}
           onChange={(e) => onChange({ ...content, object_id: e.target.value })}
@@ -56,14 +58,15 @@ export function ObjectSpotlightEditor({ content, onChange }: BlockEditorComponen
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <span id={`${fieldId}-layout-group`} className="block text-sm font-medium text-ink mb-1">
           Layout
-        </label>
-        <div className="flex gap-2">
+        </span>
+        <div role="group" aria-labelledby={`${fieldId}-layout-group`} className="flex gap-2">
           {(['horizontal', 'vertical'] as const).map((opt) => (
             <button
               key={opt}
               type="button"
+              aria-pressed={layout === opt}
               onClick={() => onChange({ ...content, layout: opt })}
               className={cn(
                 'px-3 py-1.5 text-sm rounded-lg border capitalize transition-colors',
@@ -79,15 +82,15 @@ export function ObjectSpotlightEditor({ content, onChange }: BlockEditorComponen
       </div>
 
       <div className="flex gap-4">
-        <label className="flex items-center gap-2 text-sm text-ink cursor-pointer">
-          <Checkbox
+        <label htmlFor={`${fieldId}-show-description`} className="flex items-center gap-2 text-sm text-ink cursor-pointer">
+          <Checkbox id={`${fieldId}-show-description`}
             checked={showDescription}
             onChange={(e) => onChange({ ...content, show_description: e.target.checked })}
           />
           Show Description
         </label>
-        <label className="flex items-center gap-2 text-sm text-ink cursor-pointer">
-          <Checkbox
+        <label htmlFor={`${fieldId}-show-creator`} className="flex items-center gap-2 text-sm text-ink cursor-pointer">
+          <Checkbox id={`${fieldId}-show-creator`}
             checked={showCreator}
             onChange={(e) => onChange({ ...content, show_creator: e.target.checked })}
           />

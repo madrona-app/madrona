@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useId } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { formatDateTime } from '@/lib/formatters';
 import { useAuth } from '../../../hooks/useAuth';
@@ -44,6 +44,8 @@ import {
   ReadOnlyBanner,
   PendingApprovalBanner,
 } from '../../../components/workspace';
+import { RequiredFieldsProvider, RequiredFieldMessage } from '../../../components/workspace/RequiredFieldsContext';
+import { useRevealSection, useRequiredField } from '../../../components/workspace/requiredFields';
 import { RecordDetailPageWrapper, SectionOrderProvider } from '../../../components/record-detail';
 import { CreateTaskSlideOver } from '../../../components/work/CreateTaskSlideOver';
 import { cn } from '../../../lib/utils';
@@ -68,12 +70,15 @@ import { MadronaLoader } from '../../../components/ui/MadronaLoader';
 export default function DeaccessionWorkspacePage() {
   return (
     <SectionOrderProvider>
-      <DeaccessionWorkspacePageContent />
+      <RequiredFieldsProvider procedureType="deaccession">
+        <DeaccessionWorkspacePageContent />
+      </RequiredFieldsProvider>
     </SectionOrderProvider>
   );
 }
 
 function DeaccessionWorkspacePageContent() {
+  const uid = useId();
   const { orgId, deaccessionId } = useParams<{ orgId: string; deaccessionId?: string }>();
   const { requirementGroups, statusOrder, enforcementEnabled } = useProcedureRequirements('deaccession', orgId);
   const isCreateMode = !deaccessionId;
@@ -229,6 +234,10 @@ function DeaccessionWorkspacePageContent() {
     },
     history: {},
   };
+
+  const { register: appraiserRegister, error: appraiserError } = useRequiredField('appraiser_id', false, 'valuation', formData.appraiser_id);
+  // Lets the required-fields error summary open a collapsed section.
+  useRevealSection(handleEnterEditMode);
 
   // Loading state
   if (!isCreateMode && isLoading) {
@@ -443,6 +452,7 @@ function DeaccessionWorkspacePageContent() {
           order={getSectionOrder('linkedObject')}
         >
           <ObjectSelector
+            name="object_id"
             organizationId={orgId!}
             objectId={formData.object_id || null}
             onChange={(id) => updateField('object_id', id || '')}
@@ -468,6 +478,7 @@ function DeaccessionWorkspacePageContent() {
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <EditableField
+              name="proposal_date"
               label="Proposal Date"
               value={formData.proposal_date}
               isEditing={isEditing}
@@ -475,6 +486,7 @@ function DeaccessionWorkspacePageContent() {
               type="date"
             />
             <EditableSelect
+              name="reason"
               label="Reason"
               value={formData.reason}
               isEditing={isEditing}
@@ -483,6 +495,7 @@ function DeaccessionWorkspacePageContent() {
               required
             />
             <EditableField
+              name="reason_detail"
               label="Reason Detail"
               value={formData.reason_detail}
               isEditing={isEditing}
@@ -491,6 +504,15 @@ function DeaccessionWorkspacePageContent() {
               rows={2}
               className="md:col-span-2"
               restricted={isRestricted('reason_detail')}
+            />
+            <EditableField
+              name="justification"
+              label="Justification"
+              value={formData.justification || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('justification', v)}
+              multiline
+              rows={2}
             />
           </div>
         </WorkspaceSection>
@@ -507,6 +529,7 @@ function DeaccessionWorkspacePageContent() {
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <EditableSelect
+              name="disposal_method"
               label="Disposal Method"
               value={formData.disposal_method}
               isEditing={isEditing}
@@ -515,6 +538,7 @@ function DeaccessionWorkspacePageContent() {
               placeholder="Select method..."
             />
             <EditableField
+              name="recipient_name"
               label="Recipient Name"
               value={formData.recipient_name}
               isEditing={isEditing}
@@ -522,6 +546,7 @@ function DeaccessionWorkspacePageContent() {
               restricted={isRestricted('recipient_contact')}
             />
             <EditableField
+              name="disposal_method_detail"
               label="Disposal Method Detail"
               value={formData.disposal_method_detail}
               isEditing={isEditing}
@@ -548,6 +573,7 @@ function DeaccessionWorkspacePageContent() {
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <EditableField
+              name="committee_review_date"
               label="Review Date"
               value={formData.committee_review_date}
               isEditing={isEditing}
@@ -555,6 +581,7 @@ function DeaccessionWorkspacePageContent() {
               type="date"
             />
             <EditableSelect
+              name="committee_recommendation"
               label="Recommendation"
               value={formData.committee_recommendation}
               isEditing={isEditing}
@@ -563,6 +590,7 @@ function DeaccessionWorkspacePageContent() {
               placeholder="Select recommendation..."
             />
             <EditableField
+              name="committee_note"
               label="Committee Note"
               value={formData.committee_note}
               isEditing={isEditing}
@@ -593,6 +621,7 @@ function DeaccessionWorkspacePageContent() {
               onChange={(v) => updateField('board_approval_required', v)}
             />
             <EditableField
+              name="board_approval_date"
               label="Approval Date"
               value={formData.board_approval_date}
               isEditing={isEditing}
@@ -600,12 +629,14 @@ function DeaccessionWorkspacePageContent() {
               type="date"
             />
             <EditableField
+              name="board_approval_reference"
               label="Approval Reference"
               value={formData.board_approval_reference}
               isEditing={isEditing}
               onChange={(v) => updateField('board_approval_reference', v)}
             />
             <EditableField
+              name="board_note"
               label="Board Note"
               value={formData.board_note}
               isEditing={isEditing}
@@ -614,6 +645,13 @@ function DeaccessionWorkspacePageContent() {
               rows={2}
               className="md:col-span-2"
               restricted={isRestricted('board_note')}
+            />
+            <EditableField
+              name="board_resolution"
+              label="Board Resolution"
+              value={formData.board_resolution || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('board_resolution', v)}
             />
           </div>
           {!isCreateMode && deaccession?.deaccession_id && orgId && (
@@ -646,6 +684,7 @@ function DeaccessionWorkspacePageContent() {
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <EditableField
+              name="legal_review_date"
               label="Legal Review Date"
               value={formData.legal_review_date}
               isEditing={isEditing}
@@ -659,6 +698,7 @@ function DeaccessionWorkspacePageContent() {
               onChange={(v) => updateField('provenance_review_complete', v)}
             />
             <EditableField
+              name="legal_review_note"
               label="Legal Review Note"
               value={formData.legal_review_note}
               isEditing={isEditing}
@@ -668,6 +708,7 @@ function DeaccessionWorkspacePageContent() {
               restricted={isRestricted('legal_review_note')}
             />
             <EditableField
+              name="provenance_review_note"
               label="Provenance Review Note"
               value={formData.provenance_review_note}
               isEditing={isEditing}
@@ -675,6 +716,14 @@ function DeaccessionWorkspacePageContent() {
               multiline
               rows={2}
               restricted={isRestricted('provenance_review_note')}
+            />
+            <EditableField
+              name="provenance_review_date"
+              label="Provenance Review Date"
+              value={formData.provenance_review_date || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('provenance_review_date', v)}
+              type="date"
             />
           </div>
         </WorkspaceSection>
@@ -691,6 +740,7 @@ function DeaccessionWorkspacePageContent() {
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <EditableField
+              name="appraised_value"
               label="Appraised Value"
               value={formData.appraised_value}
               isEditing={isEditing}
@@ -700,6 +750,7 @@ function DeaccessionWorkspacePageContent() {
               restricted={isRestricted('appraised_value')}
             />
             <EditableSelect
+              name="appraised_value_currency"
               label="Currency"
               value={formData.appraised_value_currency}
               isEditing={isEditing}
@@ -707,16 +758,17 @@ function DeaccessionWorkspacePageContent() {
               options={getLookup('currency')}
             />
             <EditableField
+              name="appraised_date"
               label="Appraisal Date"
               value={formData.appraised_date}
               isEditing={isEditing}
               onChange={(v) => updateField('appraised_date', v)}
               type="date"
             />
-            <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">
+            <div role="group" aria-labelledby={`${uid}-appraiser`}>
+              <span id={`${uid}-appraiser`} className="block text-sm font-medium text-ink mb-1.5">
                 Appraiser
-              </label>
+              </span>
               {isEditing ? (
                 <div className="flex items-center gap-2">
                   {formData.appraiser_id && appraiserContact ? (
@@ -730,13 +782,16 @@ function DeaccessionWorkspacePageContent() {
                         type="button"
                         onClick={() => updateField('appraiser_id', '')}
                         className="ml-auto p-1 text-archive hover:text-semantic-error"
+                        aria-label="Clear appraiser"
                       >
-                        <X size={14} />
+                        <X size={14} aria-hidden="true" />
                       </button>
                     </div>
                   ) : (
                     <button
                       type="button"
+                      ref={appraiserRegister}
+                      aria-describedby={appraiserError?.id}
                       onClick={() => setShowAppraiserSelector(true)}
                       className="flex-1 flex items-center gap-2 px-3 py-2 border border-dashed border-lichen rounded-lg text-sm text-archive hover:border-bark hover:text-bark transition-colors"
                     >
@@ -747,8 +802,11 @@ function DeaccessionWorkspacePageContent() {
                   {formData.appraiser_id && (
                     <button
                       type="button"
+                      ref={appraiserRegister}
+                      aria-describedby={appraiserError?.id}
                       onClick={() => setShowAppraiserSelector(true)}
                       className="px-3 py-2 text-sm text-bark hover:text-copper-dark"
+                      aria-label="Change appraiser"
                     >
                       Change
                     </button>
@@ -768,10 +826,12 @@ function DeaccessionWorkspacePageContent() {
                   )}
                 </div>
               )}
+              {appraiserError && <RequiredFieldMessage error={appraiserError} />}
             </div>
             {formData.disposal_method === 'sale' && (
               <>
                 <EditableField
+                  name="sale_price"
                   label="Sale Price"
                   value={formData.sale_price}
                   isEditing={isEditing}
@@ -781,6 +841,7 @@ function DeaccessionWorkspacePageContent() {
                   restricted={isRestricted('sale_price')}
                 />
                 <EditableSelect
+                  name="sale_currency"
                   label="Sale Currency"
                   value={formData.sale_currency}
                   isEditing={isEditing}
@@ -788,6 +849,7 @@ function DeaccessionWorkspacePageContent() {
                   options={getLookup('currency')}
                 />
                 <EditableField
+                  name="proceeds_usage"
                   label="Proceeds Usage"
                   value={formData.proceeds_usage}
                   isEditing={isEditing}
@@ -795,6 +857,28 @@ function DeaccessionWorkspacePageContent() {
                   multiline
                   rows={2}
                   className="md:col-span-2"
+                />
+                <EditableField
+                  name="sale_date"
+                  label="Sale Date"
+                  value={formData.sale_date || ''}
+                  isEditing={isEditing}
+                  onChange={(v) => updateField('sale_date', v)}
+                  type="date"
+                />
+                <EditableField
+                  name="sale_method"
+                  label="Sale Method"
+                  value={formData.sale_method || ''}
+                  isEditing={isEditing}
+                  onChange={(v) => updateField('sale_method', v)}
+                />
+                <EditableField
+                  name="buyer_name"
+                  label="Buyer Name"
+                  value={formData.buyer_name || ''}
+                  isEditing={isEditing}
+                  onChange={(v) => updateField('buyer_name', v)}
                 />
               </>
             )}
@@ -819,6 +903,7 @@ function DeaccessionWorkspacePageContent() {
               onChange={(v) => updateField('public_notice_required', v)}
             />
             <EditableField
+              name="public_notice_date"
               label="Notice Date"
               value={formData.public_notice_date}
               isEditing={isEditing}
@@ -826,11 +911,27 @@ function DeaccessionWorkspacePageContent() {
               type="date"
             />
             <EditableField
+              name="public_notice_reference"
               label="Notice Reference"
               value={formData.public_notice_reference}
               isEditing={isEditing}
               onChange={(v) => updateField('public_notice_reference', v)}
               className="md:col-span-2"
+            />
+            <EditableField
+              name="public_notice_period_end"
+              label="Public Notice Period End"
+              value={formData.public_notice_period_end || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('public_notice_period_end', v)}
+              type="date"
+            />
+            <EditableField
+              name="public_notice_publication"
+              label="Public Notice Publication"
+              value={formData.public_notice_publication || ''}
+              isEditing={isEditing}
+              onChange={(v) => updateField('public_notice_publication', v)}
             />
           </div>
         </WorkspaceSection>
@@ -868,6 +969,7 @@ function DeaccessionWorkspacePageContent() {
           order={getSectionOrder('notes')}
         >
           <EditableField
+            name="deaccession_note"
             label="Deaccession Notes"
             value={formData.deaccession_note}
             isEditing={isEditing}

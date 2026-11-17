@@ -4,7 +4,8 @@
  * Lists approval requests that need review, with inline approve/reject actions.
  */
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import type { KeyboardEvent } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -25,6 +26,7 @@ import { MadronaLoader } from '../../components/ui/MadronaLoader';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { usePermissions } from '../../hooks/usePermissions';
+import { useFocusWhen } from '../../components/workspace/useFocusWhen';
 
 interface ApprovalRequest {
   request_id: string;
@@ -161,6 +163,8 @@ function entityBadgeClasses(entityType: string): string {
   }
 }
 
+const APPROVAL_VIEWS: ApprovalView[] = ['mine', 'pending', 'history'];
+
 export default function ApprovalsPage() {
   const { orgId } = useParams<{ orgId: string }>();
   const queryClient = useQueryClient();
@@ -177,6 +181,34 @@ export default function ApprovalsPage() {
 
   // Which row is being (re)assigned (inline)
   const [assigningId, setAssigningId] = useState<string | null>(null);
+
+  // Approve/Reject swap the row's buttons for a note field; move focus there
+  // so keyboard and screen reader users are not dropped to the page top.
+  const reviewNoteRef = useRef<HTMLTextAreaElement>(null);
+  useFocusWhen(reviewNoteRef, reviewingId !== null);
+
+  // Tabs (WAI-ARIA tabs pattern): roving tabindex + arrow keys.
+  const handleTabKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
+    const i = APPROVAL_VIEWS.indexOf(view);
+    let next: ApprovalView | null = null;
+    if (e.key === 'ArrowRight') next = APPROVAL_VIEWS[(i + 1) % APPROVAL_VIEWS.length];
+    else if (e.key === 'ArrowLeft') next = APPROVAL_VIEWS[(i - 1 + APPROVAL_VIEWS.length) % APPROVAL_VIEWS.length];
+    else if (e.key === 'Home') next = APPROVAL_VIEWS[0];
+    else if (e.key === 'End') next = APPROVAL_VIEWS[APPROVAL_VIEWS.length - 1];
+    if (next) {
+      e.preventDefault();
+      setView(next);
+      document.getElementById(`approvals-tab-${next}`)?.focus();
+    }
+  };
+  const tabProps = (v: ApprovalView) => ({
+    id: `approvals-tab-${v}`,
+    role: 'tab' as const,
+    'aria-selected': view === v,
+    'aria-controls': 'approvals-tabpanel',
+    tabIndex: view === v ? 0 : -1,
+    onKeyDown: handleTabKeyDown,
+  });
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['approvals', orgId, view],
@@ -279,54 +311,58 @@ export default function ApprovalsPage() {
       </div>
 
       {/* Tab bar: Awaiting you | All pending | History */}
-      <div className="mb-4 flex items-center gap-1 border-b border-lichen">
+      <div role="tablist" aria-label="Approval views" className="mb-4 flex items-center gap-1 border-b border-lichen">
         <button
           type="button"
+          {...tabProps('mine')}
           onClick={() => setView('mine')}
           className={cn(
-            'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+            'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2',
             view === 'mine'
               ? 'border-bark text-bark'
               : 'border-transparent text-archive hover:text-ink',
           )}
         >
           <span className="inline-flex items-center gap-2">
-            <ClipboardCheck size={14} />
+            <ClipboardCheck size={14} aria-hidden="true" />
             Awaiting you
             {mineCount > 0 && (
               <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[11px] rounded-full bg-semantic-error/10 text-semantic-error font-semibold">
                 {mineCount}
+                <span className="sr-only"> awaiting</span>
               </span>
             )}
           </span>
         </button>
         <button
           type="button"
+          {...tabProps('pending')}
           onClick={() => setView('pending')}
           className={cn(
-            'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+            'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2',
             view === 'pending'
               ? 'border-bark text-bark'
               : 'border-transparent text-archive hover:text-ink',
           )}
         >
           <span className="inline-flex items-center gap-2">
-            <Clock size={14} />
+            <Clock size={14} aria-hidden="true" />
             All pending
           </span>
         </button>
         <button
           type="button"
+          {...tabProps('history')}
           onClick={() => setView('history')}
           className={cn(
-            'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+            'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2',
             view === 'history'
               ? 'border-bark text-bark'
               : 'border-transparent text-archive hover:text-ink',
           )}
         >
           <span className="inline-flex items-center gap-2">
-            <HistoryIcon size={14} />
+            <HistoryIcon size={14} aria-hidden="true" />
             History
           </span>
         </button>
@@ -334,13 +370,20 @@ export default function ApprovalsPage() {
 
       {/* Error banner */}
       {reviewError && (
-        <div className="mb-4 px-4 py-3 rounded-lg bg-semantic-error/10 border border-semantic-error/30 text-semantic-error text-sm flex items-center justify-between">
+        <div role="alert" className="mb-4 px-4 py-3 rounded-lg bg-semantic-error/10 border border-semantic-error/30 text-semantic-error text-sm flex items-center justify-between">
           <span>{reviewError}</span>
-          <button onClick={() => setReviewError(null)} className="text-semantic-error hover:text-semantic-error/70">
-            <X size={14} />
+          <button
+            type="button"
+            onClick={() => setReviewError(null)}
+            aria-label="Dismiss error"
+            className="text-semantic-error hover:text-semantic-error/70"
+          >
+            <X size={14} aria-hidden="true" />
           </button>
         </div>
       )}
+
+      <div id="approvals-tabpanel" role="tabpanel" aria-labelledby={`approvals-tab-${view}`}>
 
       {/* Loading state */}
       {isLoading && (
@@ -377,23 +420,26 @@ export default function ApprovalsPage() {
       {!isLoading && !isError && approvals.length > 0 && (
         <div className="bg-parchment rounded-lg border border-lichen overflow-hidden">
           <table className="w-full text-sm">
+            <caption className="sr-only">
+              {view === 'mine' ? 'Approvals awaiting you' : view === 'pending' ? 'All pending approvals' : 'Approval history'}
+            </caption>
             <thead>
               <tr className="bg-stone text-left">
-                <th className="px-4 py-3 font-medium text-ink">Entity</th>
-                <th className="px-4 py-3 font-medium text-ink">Description</th>
-                <th className="px-4 py-3 font-medium text-ink">
+                <th scope="col" className="px-4 py-3 font-medium text-ink">Entity</th>
+                <th scope="col" className="px-4 py-3 font-medium text-ink">Description</th>
+                <th scope="col" className="px-4 py-3 font-medium text-ink">
                   <span className="flex items-center gap-1.5">
-                    <User size={14} />
+                    <User size={14} aria-hidden="true" />
                     Requester
                   </span>
                 </th>
-                <th className="px-4 py-3 font-medium text-ink">
+                <th scope="col" className="px-4 py-3 font-medium text-ink">
                   <span className="flex items-center gap-1.5">
-                    <Clock size={14} />
+                    <Clock size={14} aria-hidden="true" />
                     {view === 'history' ? 'Reviewed' : 'Created'}
                   </span>
                 </th>
-                <th className="px-4 py-3 font-medium text-ink text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-ink text-right">
                   {view === 'history' ? 'Decision' : 'Actions'}
                 </th>
               </tr>
@@ -435,7 +481,7 @@ export default function ApprovalsPage() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-ink">
-                    <div>{approval.rule_description}</div>
+                    <div id={`approval-${approval.request_id}-desc`}>{approval.rule_description}</div>
                     {approval.requested_action?.resubmitted && (
                       <div className="mt-1 flex flex-wrap items-center gap-1">
                         <span className="px-1.5 py-0.5 text-xs bg-semantic-warning/10 text-semantic-warning rounded">
@@ -469,6 +515,9 @@ export default function ApprovalsPage() {
                     ) : reviewingId === approval.request_id ? (
                       <div className="flex flex-col gap-2 items-end">
                         <textarea
+                          ref={reviewNoteRef}
+                          aria-label={reviewAction === 'approved' ? 'Approval note (optional)' : 'Rejection note (optional)'}
+                          aria-describedby={`approval-${approval.request_id}-desc`}
                           value={reviewNote}
                           onChange={(e) => setReviewNote(e.target.value)}
                           placeholder={`Add a note (optional)...`}
@@ -477,13 +526,16 @@ export default function ApprovalsPage() {
                         />
                         <div className="flex items-center gap-2">
                           <button
+                            type="button"
                             onClick={cancelReview}
                             className="text-archive hover:text-ink text-sm px-2 py-1"
                           >
                             Cancel
                           </button>
                           <button
+                            type="button"
                             onClick={submitReview}
+                            aria-describedby={`approval-${approval.request_id}-desc`}
                             disabled={reviewMutation.isPending}
                             className={cn(
                               'rounded-lg px-3 py-1.5 text-sm font-medium',
@@ -509,7 +561,9 @@ export default function ApprovalsPage() {
                     ) : (
                       <div className="flex items-center gap-2 justify-end">
                         <button
+                          type="button"
                           onClick={() => startAssign(approval.request_id)}
+                          aria-describedby={`approval-${approval.request_id}-desc`}
                           className="text-archive hover:text-ink rounded-lg px-3 py-1.5 text-sm font-medium inline-flex items-center gap-1.5"
                           title={
                             approval.assignee_name
@@ -517,21 +571,25 @@ export default function ApprovalsPage() {
                               : 'Direct this approval to a specific person'
                           }
                         >
-                          <UserPlus size={14} />
+                          <UserPlus size={14} aria-hidden="true" />
                           {approval.assignee_name ?? 'Assign'}
                         </button>
                         <button
+                          type="button"
                           onClick={() => startReview(approval.request_id, 'approved')}
+                          aria-describedby={`approval-${approval.request_id}-desc`}
                           className="bg-semantic-success/10 text-semantic-success hover:bg-semantic-success/20 rounded-lg px-3 py-1.5 text-sm font-medium inline-flex items-center gap-1.5"
                         >
-                          <Check size={14} />
+                          <Check size={14} aria-hidden="true" />
                           Approve
                         </button>
                         <button
+                          type="button"
                           onClick={() => startReview(approval.request_id, 'rejected')}
+                          aria-describedby={`approval-${approval.request_id}-desc`}
                           className="bg-semantic-error/10 text-semantic-error hover:bg-semantic-error/20 rounded-lg px-3 py-1.5 text-sm font-medium inline-flex items-center gap-1.5"
                         >
-                          <X size={14} />
+                          <X size={14} aria-hidden="true" />
                           Reject
                         </button>
                       </div>
@@ -544,6 +602,7 @@ export default function ApprovalsPage() {
           </table>
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -586,17 +645,21 @@ function AssignPicker({
   });
 
   const assignees = data?.assignees ?? [];
+  const firstOptionRef = useRef<HTMLButtonElement>(null);
+  useFocusWhen(firstOptionRef, !isLoading);
 
   return (
-    <div className="flex flex-col gap-1 items-end w-64">
-      {isLoading && <span className="text-sm text-archive py-1">Loading…</span>}
+    <div role="group" aria-label="Assign approver" className="flex flex-col gap-1 items-end w-64">
+      {isLoading && <span role="status" className="text-sm text-archive py-1">Loading…</span>}
       {!isLoading && assignees.length === 0 && (
         <span className="text-sm text-archive py-1">No eligible approvers</span>
       )}
-      {assignees.map((a) => (
+      {assignees.map((a, i) => (
         <button
           key={a.user_id}
+          ref={i === 0 ? firstOptionRef : undefined}
           type="button"
+          aria-pressed={a.user_id === request.assigned_to_user_id}
           onClick={() => assignMutation.mutate(a.user_id)}
           disabled={assignMutation.isPending}
           className={cn(
@@ -649,9 +712,9 @@ function HistoryDecisionCell({ approval }: { approval: ApprovalRequest }) {
         )}
       >
         {isApproved ? (
-          <CheckCircle size={12} />
+          <CheckCircle size={12} aria-hidden="true" />
         ) : isRejected ? (
-          <XCircle size={12} />
+          <XCircle size={12} aria-hidden="true" />
         ) : null}
         {isApproved ? 'Approved' : isRejected ? 'Rejected' : approval.status}
       </span>

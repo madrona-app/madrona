@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render as rtlRender, screen, fireEvent } from '@testing-library/react';
+import type { ReactElement } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Stub heavy children before importing SUTs
 vi.mock('../../../components/collections/SignedDocumentSlot', () => ({
@@ -22,6 +24,12 @@ import { LoanDetailsSection } from '../../../pages/collections/LoanOutWorkspaceP
 import { BorrowerSection } from '../../../pages/collections/LoanOutWorkspacePage/BorrowerSection';
 import { defaultFormData } from '../../../pages/collections/LoanOutWorkspacePage/constants';
 import type { FormData, ExistingLoan, Contact } from '../../../pages/collections/LoanOutWorkspacePage/types';
+
+// Some sections look up linked contacts, so render inside a query client.
+function render(ui: ReactElement) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return rtlRender(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+}
 
 const baseFormData: FormData = { ...defaultFormData } as FormData;
 
@@ -189,6 +197,23 @@ describe('VenueSection (LoanOut)', () => {
     );
     fireEvent.change(screen.getByLabelText(/^city$/i), { target: { value: 'Berlin' } });
     expect(onUpdate).toHaveBeenCalledWith('venue_city', 'Berlin');
+  });
+
+  it('offers a venue contact picker in a labelled group', () => {
+    render(
+      <VenueSection
+        formData={baseFormData}
+        isExpanded
+        isEditing
+        order={undefined}
+        onToggle={vi.fn()}
+        onUpdateField={vi.fn()}
+        onFieldBlur={vi.fn()}
+        organizationId="org-1"
+      />
+    );
+    const group = screen.getByRole('group', { name: 'Venue Contact' });
+    expect(group).toContainElement(screen.getByRole('button', { name: /Search or create venue contact/ }));
   });
 });
 

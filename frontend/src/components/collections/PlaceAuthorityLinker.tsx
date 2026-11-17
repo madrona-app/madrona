@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MapPin } from 'lucide-react';
 import {
@@ -125,6 +126,7 @@ export function PlaceAuthorityLinker({
   addLabel: addLabelOverride,
   onCountChange,
 }: PlaceAuthorityLinkerProps) {
+  const fid = useId();
   const { data: placeAuthorities, isLoading } = useQuery({
     queryKey: ['object-place-authorities', organizationId, objectId],
     queryFn: () => getObjectPlaceAuthorities(organizationId, objectId),
@@ -158,6 +160,7 @@ export function PlaceAuthorityLinker({
       linkedItems={items}
       isLoading={isLoading}
       getItemId={(link) => link.link_id}
+      getItemLabel={(link) => link.place_authority?.preferred_name || 'Unknown'}
       getLinkedEntityId={(link) => link.place_authority_id}
       getItemGroup={(link) => link.role}
       groupLabels={filteredRoleLabels}
@@ -243,10 +246,11 @@ export function PlaceAuthorityLinker({
                 New Place Details
               </h4>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">
+                <label htmlFor={`${fid}-name`} className="block text-sm font-medium text-ink mb-1">
                   Name <span className="text-semantic-error">*</span>
                 </label>
                 <input
+                  id={`${fid}-name`}
                   type="text"
                   value={formData.name ?? searchTerm}
                   onChange={(e) =>
@@ -254,12 +258,12 @@ export function PlaceAuthorityLinker({
                   }
                   className="w-full px-3 py-2 border border-lichen rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bark/30 focus-visible:ring-offset-2 focus-visible:border-bark"
                   placeholder="e.g., Florence"
-                  autoFocus
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1">Type</label>
+                <label htmlFor={`${fid}-type`} className="block text-sm font-medium text-ink mb-1">Type</label>
                 <select
+                  id={`${fid}-type`}
                   value={formData.place_type || 'city'}
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, place_type: e.target.value }))
@@ -277,10 +281,11 @@ export function PlaceAuthorityLinker({
             <div className="border-t border-lichen pt-4 space-y-4">
               <h4 className="text-sm font-medium text-ink">Link Details</h4>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">
+                <label htmlFor={`${fid}-role`} className="block text-sm font-medium text-ink mb-1.5">
                   Role <span className="text-semantic-error">*</span>
                 </label>
                 <select
+                  id={`${fid}-role`}
                   value={formData.role || metadata.role || 'creation_place'}
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, role: e.target.value }))
@@ -295,8 +300,9 @@ export function PlaceAuthorityLinker({
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">Date</label>
+                <label htmlFor={`${fid}-date`} className="block text-sm font-medium text-ink mb-1.5">Date</label>
                 <input
+                  id={`${fid}-date`}
                   type="text"
                   value={formData.date_display ?? metadata.date_display ?? ''}
                   onChange={(e) =>
@@ -307,8 +313,9 @@ export function PlaceAuthorityLinker({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">Notes</label>
+                <label htmlFor={`${fid}-notes`} className="block text-sm font-medium text-ink mb-1.5">Notes</label>
                 <textarea
+                  id={`${fid}-notes`}
                   value={formData.notes ?? metadata.notes ?? ''}
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, notes: e.target.value }))

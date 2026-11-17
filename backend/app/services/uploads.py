@@ -110,8 +110,55 @@ ALLOWED_TYPES = {
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
         'text/plain': 'txt',
         'text/csv': 'csv',
+        # Braille-ready format (BRF): ASCII braille text, no registered MIME type.
+        'application/x-brf': 'brf',
+        # HTML is stored as a document, never served for inline rendering:
+        # see ATTACHMENT_ONLY_TYPES.
+        'text/html': 'html',
     },
 }
+
+# Types that can run script if a browser renders them. They are stored with
+# ``Content-Disposition: attachment`` so every storage backend and CDN serves
+# them as a download, never rendered inline (and never on the app origin).
+ATTACHMENT_ONLY_TYPES = frozenset({'text/html'})
+
+# Browsers send no useful MIME type for some extensions (.brf arrives as
+# application/octet-stream or empty). Map those extensions to a canonical type.
+_EXTENSION_CONTENT_TYPES = {
+    'brf': 'application/x-brf',
+    'html': 'text/html',
+    'htm': 'text/html',
+}
+_GENERIC_CONTENT_TYPES = {'', 'application/octet-stream', 'binary/octet-stream', 'text/plain'}
+
+
+def normalize_upload_content_type(content_type: str | None, filename: str | None) -> str:
+    """Return the canonical MIME type for an upload.
+
+    Browsers report ``.brf`` as ``application/octet-stream`` (or nothing) and
+    some report ``.html`` as ``text/plain``. When the reported type is generic
+    and the extension is one we recognise, use the extension's type. A specific
+    type the browser did report is kept as-is.
+    """
+    ct = (content_type or '').split(';')[0].strip().lower()
+    ext = ''
+    if filename and '.' in filename:
+        ext = filename.rsplit('.', 1)[1].lower()
+    mapped = _EXTENSION_CONTENT_TYPES.get(ext)
+    if mapped and (ct in _GENERIC_CONTENT_TYPES or ct == mapped):
+        return mapped
+    return ct or 'application/octet-stream'
+
+
+def content_disposition_for(content_type: str, filename: str | None = None) -> str | None:
+    """Content-Disposition to store with an object, or None for inline-safe types."""
+    if content_type not in ATTACHMENT_ONLY_TYPES:
+        return None
+    if filename:
+        safe = re.sub(r'[^A-Za-z0-9._ -]', '_', filename)[:200]
+        return f'attachment; filename="{safe}"'
+    return 'attachment'
 
 # Max file sizes by media type
 # No file size limits for org media uploads — museums routinely work with
@@ -165,6 +212,25 @@ _SVG_JAVASCRIPT_URLS = re.compile(
 )
 
 
+def _validate_brf_content(file_content: bytes) -> None:
+    """BRF is 7-bit ASCII braille text with form feeds; reject binary content."""
+    if b'\x00' in file_content:
+        raise ValueError("File content does not appear to be a braille-ready (.brf) text file")
+    try:
+        file_content.decode('ascii')
+    except UnicodeDecodeError:
+        # Some producers emit UTF-8 (e.g. Unicode braille cells); accept valid UTF-8 text.
+        try:
+            file_content.decode('utf-8')
+        except UnicodeDecodeError:
+            raise ValueError("File content does not appear to be a braille-ready (.brf) text file")
+
+
+def _validate_html_content(file_content: bytes) -> None:
+    if b'\x00' in file_content[:4096]:
+        raise ValueError("File content does not appear to be an HTML document")
+
+
 def validate_file_magic_bytes(file_content: bytes, claimed_type: str) -> None:
     """
     Verify that file content matches the claimed MIME type using magic bytes.
@@ -172,6 +238,13 @@ def validate_file_magic_bytes(file_content: bytes, claimed_type: str) -> None:
     Raises ValueError if the file content doesn't match the claimed type.
     Silently passes for types without known magic signatures (text/plain, text/csv, etc.).
     """
+    if claimed_type == 'application/x-brf':
+        _validate_brf_content(file_content)
+        return
+    if claimed_type == 'text/html':
+        _validate_html_content(file_content)
+        return
+
     # SVG: text-based, check for valid XML/SVG content
     if claimed_type == 'image/svg+xml':
         _validate_svg_content(file_content)
@@ -581,6 +654,8 @@ def upload_org_media(
         StorageLimitExceeded: If upload would exceed storage limit
         ClientError: If S3 upload fails
     """
+    content_type = normalize_upload_content_type(content_type, filename)
+
     # Auto-detect media type from content_type if not provided
     if media_type is None:
         media_type = detect_media_type(content_type)
@@ -629,7 +704,7 @@ def upload_org_media(
     bucket = get_media_bucket(region)
     s3_client = get_s3_client(region)
     try:
-        s3_client.put_object(
+        put_params = dict(
             Bucket=bucket,
             Key=s3_key,
             Body=file_content,
@@ -637,6 +712,10 @@ def upload_org_media(
             CacheControl='max-age=86400',  # 1 day cache for media
             Tagging='FileType=original',  # Tag for S3 lifecycle policy targeting
         )
+        disposition = content_disposition_for(content_type, filename)
+        if disposition:
+            put_params['ContentDisposition'] = disposition
+        s3_client.put_object(**put_params)
         logger.info("Uploaded media for org %s to %s/%s (%d bytes)", organization_id, bucket, s3_key, file_size)
 
         # Update storage usage
@@ -1129,6 +1208,8 @@ def _upload_org_media_via_backend(
     """
     from app.services.storage import get_storage_backend
 
+    content_type = normalize_upload_content_type(content_type, filename)
+
     # Auto-detect media type
     if media_type is None:
         media_type = detect_media_type(content_type)
@@ -1180,6 +1261,7 @@ def _upload_org_media_via_backend(
             content_type=content_type,
             cache_control="max-age=86400",
             tags={"FileType": "original"},
+            content_disposition=content_disposition_for(content_type, filename),
         )
         logger.info(
             "Uploaded media for org %s via %s backend: %s (%d bytes)",
