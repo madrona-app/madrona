@@ -22,6 +22,7 @@ from app.fastapi_app.schemas.layout_overrides import (
     LayoutOverrideCreate,
 )
 from app.models import Organization, User
+from tests.conftest import _serialize_schema_ddl
 from app.models.layout_preferences import UserLayoutOverride
 
 
@@ -86,15 +87,20 @@ def test_create_make_active_defaults_true():
 @pytest.fixture(scope="module")
 def _engine():
     eng = create_engine(os.environ["TEST_DATABASE_URL"], future=True)
-    M.Base.metadata.create_all(
-        eng,
-        tables=[
-            Organization.__table__,
-            User.__table__,
-            UserLayoutOverride.__table__,
-        ],
-        checkfirst=True,
-    )
+    # Both modules build these tables in the shared base database; under
+    # xdist two workers doing it at once collide on CREATE TABLE.
+    with _serialize_schema_ddl(eng):
+        M.Base.metadata.create_all(
+            eng,
+            tables=[
+                Organization.__table__,
+                User.__table__,
+                M.EntityAuditEvent.__table__,  # Organization writes are audited
+                M.EntityAuditFieldDiff.__table__,
+                UserLayoutOverride.__table__,
+            ],
+            checkfirst=True,
+        )
     yield eng
     eng.dispose()
 

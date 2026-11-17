@@ -19,6 +19,7 @@ BRF_BYTES = b"  ,purchase invoice\n\x0c"
 class _RecordingS3:
     def __init__(self):
         self.puts: list[dict] = []
+        self.download_urls: list[dict] = []
 
     def put_object(self, **kwargs):
         self.puts.append(kwargs)
@@ -36,6 +37,18 @@ class _RecordingS3:
 def s3(monkeypatch):
     rec = _RecordingS3()
     monkeypatch.setattr("app.services.uploads.get_s3_client", lambda *a, **k: rec)
+
+    # Downloads are signed by the org's storage backend, not the upload client.
+    # Unstubbed, it signs with whatever AWS credentials the machine has: CI has
+    # none, so the route answered 502 there while passing on a laptop.
+    def _media_url(key, *, organization_id, db_session, expiry_seconds, filename=None, **_kw):
+        rec.download_urls.append({"key": key, "organization_id": organization_id,
+                                  "expiry_seconds": expiry_seconds, "filename": filename})
+        return f"https://test-bucket.s3.amazonaws.com/{key}?sig=fake"
+
+    monkeypatch.setattr(
+        "app.fastapi_app.routers.signed_documents.get_org_media_url_byob", _media_url
+    )
     return rec
 
 
@@ -184,6 +197,10 @@ class TestAttachmentDownloadAndDelete:
         location = resp.headers["location"]
         assert location.startswith("https://")
         assert f"orgs/{org.organization_id}/media/documents/" in location
+        # The quote cannot break out of the Content-Disposition header.
+        assert '"' not in s3.download_urls[-1]["filename"]
+        assert s3.download_urls[-1]["filename"].endswith(".pdf")
+        assert s3.download_urls[-1]["organization_id"] == str(org.organization_id)
 
     def test_download_without_file_404(self, auth_setup, db_session, s3):
         client, org, _ = auth_setup
