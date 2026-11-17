@@ -7,7 +7,6 @@ import * as api from '../../../lib/api';
 
 // jsdom polyfill
 if (!Element.prototype.scrollIntoView) {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   Element.prototype.scrollIntoView = function () {};
 }
 

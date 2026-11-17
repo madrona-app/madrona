@@ -7,7 +7,6 @@ import * as constituentsApi from '../../../lib/api/constituents';
 
 // jsdom doesn't implement scrollIntoView; useUnifiedSectionState uses it
 if (!Element.prototype.scrollIntoView) {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   Element.prototype.scrollIntoView = function () {};
 }
 

@@ -137,7 +137,8 @@ describe('BlockEditor', () => {
       );
       const results = await checkA11y(container);
       expect(results.violations, formatViolations(results)).toEqual([]);
-    });
+      // axe over thirty expanded editors runs past the 5s default under full-suite load.
+    }, 30_000);
 
     it('names each block control after its block and exposes expand state', () => {
       const blocks: ContentBlock[] = [

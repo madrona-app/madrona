@@ -145,9 +145,10 @@ describe('useEntryForm', () => {
 
     await waitFor(() => {
       expect(result.current.entry?.entry_id).toBe('entry-1');
+      // The form is filled by an effect after the entry arrives, one render later.
+      expect(result.current.formData.entry_date).toBe('2024-01-10');
     });
     expect(apiMocks.getObjectEntry).toHaveBeenCalledWith('org-1', 'entry-1');
-    expect(result.current.formData.entry_date).toBe('2024-01-10');
     expect(result.current.formData.reason).toBe('loan_consideration');
     expect(result.current.formData.insurance_value).toBe('1500');
     expect(result.current.formData.terms_accepted).toBe(true);
