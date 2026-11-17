@@ -80,11 +80,18 @@ def upgrade() -> None:
     for table in ("record_flag_definitions", "object_flags", "completeness_rules"):
         op.execute(f"ALTER TABLE collections.{table} ENABLE ROW LEVEL SECURITY")
         op.execute(f"ALTER TABLE collections.{table} FORCE ROW LEVEL SECURITY")
-        op.execute(f"DROP POLICY IF EXISTS {table}_org_isolation ON collections.{table}")
-        op.execute(
-            f"CREATE POLICY {table}_org_isolation ON collections.{table} FOR ALL "
-            f"USING (organization_id = current_org_id()) WITH CHECK (organization_id = current_org_id())"
-        )
+        # current_org_id() comes from seeds/seed_rls_policies.py, which runs at
+        # boot after migrations; on a fresh database it does not exist yet and
+        # the seed creates this policy instead.
+        op.execute(f"""
+        DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'current_org_id') THEN
+                DROP POLICY IF EXISTS {table}_org_isolation ON collections.{table};
+                CREATE POLICY {table}_org_isolation ON collections.{table} FOR ALL
+                    USING (organization_id = current_org_id())
+                    WITH CHECK (organization_id = current_org_id());
+            END IF;
+        END $$""")
         op.execute(f"""
         DO $$ BEGIN
             IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'madrona_app') THEN

@@ -45,9 +45,17 @@ def upgrade() -> None:
                "ON collections.custom_field_definitions (organization_id, entity_type, is_active)")
     op.execute("ALTER TABLE collections.custom_field_definitions ENABLE ROW LEVEL SECURITY")
     op.execute("ALTER TABLE collections.custom_field_definitions FORCE ROW LEVEL SECURITY")
-    op.execute("DROP POLICY IF EXISTS custom_field_definitions_org_isolation ON collections.custom_field_definitions")
-    op.execute("CREATE POLICY custom_field_definitions_org_isolation ON collections.custom_field_definitions FOR ALL "
-               "USING (organization_id = current_org_id()) WITH CHECK (organization_id = current_org_id())")
+    # current_org_id() comes from seeds/seed_rls_policies.py, which runs at boot
+    # after migrations; on a fresh database the seed creates this policy instead.
+    op.execute("""
+    DO $$ BEGIN
+        IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'current_org_id') THEN
+            DROP POLICY IF EXISTS custom_field_definitions_org_isolation ON collections.custom_field_definitions;
+            CREATE POLICY custom_field_definitions_org_isolation ON collections.custom_field_definitions FOR ALL
+                USING (organization_id = current_org_id())
+                WITH CHECK (organization_id = current_org_id());
+        END IF;
+    END $$""")
     op.execute("""
     DO $$ BEGIN
         IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'madrona_app') THEN
