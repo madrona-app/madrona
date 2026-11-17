@@ -13,5 +13,5 @@
 -r requirements.txt
 
 openai-clip>=1.0.1
-torch>=2.14.1
+torch>=2.15.0
 faster-whisper>=1.2.1
