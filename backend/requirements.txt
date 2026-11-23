@@ -1,13 +1,13 @@
 # Direct dependencies. Pins live here; there is no separate lockfile.
-sqlalchemy>=2.1.8
+sqlalchemy>=2.1.9
 alembic>=1.20.1
 psycopg[binary]>=3.3.9
-pydantic[email]>=2.14.3
+pydantic[email]>=2.14.4
 pydantic-settings>=2.16.3
 python-dotenv>=1.2.4
 jsonschema>=4.26.0
-fastapi>=0.162.5
-python-multipart>=0.0.33
+fastapi>=0.165.0
+python-multipart>=0.0.34
 uvicorn[standard]>=0.54.0
 httpx>=0.28.1
 requests>=2.34.2
@@ -31,7 +31,7 @@ gevent>=24.11.1
 gevent-websocket>=0.10.1
 
 # Email sending
-boto3>=1.44.2
+boto3>=1.44.7
 cryptography>=41.0.7  # For SNS signature verification
 
 # QR code generation (visitor labels, ticketing)
@@ -64,7 +64,7 @@ pymysql>=1.2.4                 # For MySQL/MariaDB connections. Replaced
                                # nothing turns on reading an exception schedule.
 pyodbc>=5.5.0                  # For SQL Server connections
 oracledb>=2.5.1                # For Oracle Database connections
-pymongo>=4.20.0                 # For MongoDB connections
+pymongo>=4.20.1                 # For MongoDB connections
 
 # SQL parsing and validation (SQL Explorer)
 sqlparse>=0.6.1
